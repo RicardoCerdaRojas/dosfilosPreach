@@ -22,7 +22,8 @@ import { HebrewLoadingTips } from './components/HebrewLoadingTips';
 import { useVerseAnalysis } from './hooks/useVerseAnalysis';
 import { addRecentVerse, useRecentVerses } from './hooks/useRecentVerses';
 import { HEBREW_BOOKS_CATALOG } from '@dosfilos/infrastructure';
-import { hebrewStudySessionRepo } from '@/hooks/useHebrewSessions';
+import { hebrewStudySessionRepo, useHebrewSessions } from '@/hooks/useHebrewSessions';
+import { hebrewSessionTarget } from './utils/sessionTarget';
 import { useFirebase } from '@/context/firebase-context';
 import type { TutorMode } from './HebrewTutorPage';
 
@@ -75,6 +76,21 @@ export const VerseAnalyzerPage: React.FC<VerseAnalyzerPageProps> = ({
   const [searchParams] = useSearchParams();
   const projectIdFromUrl = searchParams.get('projectId') || undefined;
   const queryClient = useQueryClient();
+
+  // `?sessionId=` (los enlaces del escritorio del proyecto): abre el versículo
+  // de esa sesión, una sola vez. `navigate` lee el análisis guardado sin
+  // volver a generarlo.
+  const sessionIdFromUrl = searchParams.get('sessionId');
+  const { sessions: hebrewSessions } = useHebrewSessions();
+  const sesionAbierta = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!sessionIdFromUrl || sesionAbierta.current === sessionIdFromUrl) return;
+    const sesion = hebrewSessions.find((s) => s.id === sessionIdFromUrl);
+    if (!sesion) return;
+    sesionAbierta.current = sessionIdFromUrl;
+    const destino = hebrewSessionTarget(sesion.passage, HEBREW_BOOKS_CATALOG);
+    if (destino) navigate(destino.book, destino.chapter, destino.verse);
+  }, [sessionIdFromUrl, hebrewSessions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   React.useEffect(() => {
     if (analysis && selectedBook) {

@@ -75,6 +75,17 @@
     --primary-solid: 244 76% 59%;
     /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
     --primary-solid-hover: 244 76% 53%;
+    /* Texto e íconos en el color de la marca (enlaces, rótulos, «Fase n»).
+       `--primary` es un tono de fondo: como texto chico no llega a AA en
+       varios temas. Este sí: ≥ 4,5:1 sobre `--card`, `--background` y los
+       fondos tintados (`bg-primary/5`, `/10`, `info-subtle`, `success-subtle`).
+       Lo mide `barraUnica.test.tsx`. */
+    --primary-text: 244 76% 59%;
+    /* El anillo de foco: el mismo tono que el texto de la marca, que ya
+       llega a 4,5:1 sobre la tarjeta y el fondo (un indicador de foco pide
+       3:1). `ring-primary/40` quedaba bajo 3:1 en varios temas. Lo mide
+       `barraUnica.test.tsx`; cada tema lo repite junto a `--primary-text`. */
+    --focus: 244 76% 59%;
 
     /* Secondary - Dorado (sabiduría, divinidad) */
     --secondary: 45 93% 47%;
@@ -113,6 +124,12 @@
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
+    /* Botón destructivo lleno (borrar, quitar una entrega): `--destructive`
+       (0 84% 60%) da 3,8:1 con texto blanco y en oscuro (0 62% 30%) se
+       confunde con el fondo. Este llega a AA en los dos modos; el hover
+       oscurece. Lo mide `barraUnica.test.tsx`. */
+    --destructive-solid: 0 72% 45%;
+    --destructive-solid-hover: 0 72% 38%;
 
     /* ── Semantic status tokens (theme-agnostic) ────────────────────────────
        Used for stateful UI: success badges, warning callouts, info hints.
@@ -128,7 +145,10 @@
        ──────────────────────────────────────────────────────────────────── */
 
     /* Success — green */
-    --success: 142 71% 45%;
+    /* Más oscuro que el verde vivo de antes (142 71% 45%): el ✓ blanco
+       sobre él daba 2,30:1 y `text-success` sobre blanco, lo mismo. Ahora
+       5,07:1 para los dos. */
+    --success: 142 72% 29%;
     --success-foreground: 0 0% 100%;
     --success-subtle: 142 71% 95%;
     --success-subtle-foreground: 142 71% 25%;
@@ -182,6 +202,10 @@
     --primary-solid: 244 76% 59%;
     /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
     --primary-solid-hover: 244 76% 53%;
+    /* Texto de la marca en oscuro: el índigo de `--primary` da 2,9:1 sobre
+       la tarjeta; aclarado llega a AA también sobre `info-subtle`. */
+    --primary-text: 244 76% 79%;
+    --focus: 244 76% 79%;
 
     --secondary: 45 93% 47%;
     --secondary-foreground: 222 47% 11%;
@@ -207,10 +231,14 @@
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
+    --destructive-solid: 0 72% 45%;
+    --destructive-solid-hover: 0 72% 38%;
 
     /* Status tokens — dark variants */
     --success: 142 71% 50%;
-    --success-foreground: 0 0% 100%;
+    /* En oscuro el verde es claro (para que `text-success` se lea sobre la
+       tarjeta): el ✓ va oscuro encima, como en `warning`. Blanco daba 1,86:1. */
+    --success-foreground: 222 47% 11%;
     --success-subtle: 142 71% 15%;
     --success-subtle-foreground: 142 71% 75%;
 
@@ -253,6 +281,8 @@
     --primary-solid: 244 76% 59%;
     /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
     --primary-solid-hover: 244 76% 53%;
+    --primary-text: 244 76% 59%;
+    --focus: 244 76% 59%;
 
     --secondary: 45 93% 47%;
     --secondary-foreground: 222 47% 11%;
@@ -278,9 +308,14 @@
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
+    --destructive-solid: 0 72% 45%;
+    --destructive-solid-hover: 0 72% 38%;
 
     /* Status tokens — forced-light overrides (Landing page contexts) */
-    --success: 142 71% 45%;
+    /* Más oscuro que el verde vivo de antes (142 71% 45%): el ✓ blanco
+       sobre él daba 2,30:1 y `text-success` sobre blanco, lo mismo. Ahora
+       5,07:1 para los dos. */
+    --success: 142 72% 29%;
     --success-foreground: 0 0% 100%;
     --success-subtle: 142 71% 95%;
     --success-subtle-foreground: 142 71% 25%;
@@ -317,6 +352,8 @@
     --primary-solid: 271 91% 58%;
     /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
     --primary-solid-hover: 271 91% 52%;
+    --primary-text: 271 91% 58%;
+    --focus: 271 91% 58%;
     --ring: 271 91% 65%;
   }
 
@@ -326,6 +363,8 @@
     --primary-solid: 271 91% 58%;
     /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
     --primary-solid-hover: 271 91% 52%;
+    --primary-text: 271 91% 78%;
+    --focus: 271 91% 78%;
   }
 
   /* Color Theme: Green Hope */
@@ -335,6 +374,8 @@
     --primary-solid: 160 84% 28%;
     /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
     --primary-solid-hover: 160 84% 22%;
+    --primary-text: 160 84% 25%;
+    --focus: 160 84% 25%;
     --ring: 160 84% 39%;
   }
 
@@ -344,6 +385,8 @@
     --primary-solid: 160 84% 28%;
     /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
     --primary-solid-hover: 160 84% 22%;
+    --primary-text: 160 84% 43%;
+    --focus: 160 84% 43%;
   }
 
   /* Color theme "blue" intentionally has no override block.
@@ -360,6 +403,8 @@
     --primary-solid: 24 95% 38%;
     /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
     --primary-solid-hover: 24 95% 32%;
+    --primary-text: 24 95% 35%;
+    --focus: 24 95% 35%;
     --ring: 24 95% 53%;
   }
 
@@ -369,6 +414,8 @@
     --primary-solid: 24 95% 38%;
     /* Hover: más oscuro, no más claro (`/90` lo mezclaba con el fondo y bajaba de AA). */
     --primary-solid-hover: 24 95% 32%;
+    --primary-text: 24 95% 61%;
+    --focus: 24 95% 61%;
   }
 }
 

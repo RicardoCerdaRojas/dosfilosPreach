@@ -35,6 +35,7 @@ vi.mock('@/hooks/library', () => ({
             { id: 'r-mayor', pageNumbering: mayorNumbering },
             { id: 'r-tuggy', pageNumbering: { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 999, offset: 0 }] } },
             { id: 'r-runge', pageNumbering: null },
+            { id: 'r-wallace', pageNumbering: { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 999, offset: 0 }] } },
         ],
     }),
 }));
@@ -168,6 +169,28 @@ describe('«¿Qué responde cada pregunta?»', () => {
         montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }]), fuente('runge', 'grammar-syntax', [{ start: 100, end: 110 }])]));
         await screen.findByText(/warning\.unindexed/);
         expect(screen.queryByText(/warning\.unrelated/)).toBeNull();
+    });
+
+    // TP #9 (Santiago 4:11-17, B21): «Ver por pregunta» ocultaba los libros
+    // sin referencias; Tuggy y el léxico parecían no revisados.
+    it('muestra en cada pregunta los libros revisados sin referencias y los que no tienen índice', async () => {
+        sinIndice.add('r-runge');
+        hits['r-wallace'] = [];
+        montar(trabajo([
+            fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }]),
+            fuente('wallace', 'grammar-syntax', [{ start: 1, end: 5 }]),
+            fuente('runge', 'grammar-syntax', [{ start: 100, end: 110 }]),
+        ]));
+        await screen.findByText(/warning\.unindexed/);
+        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.byQuestion'));
+        const listas = screen.getAllByTestId('pregunta-sin-aporte');
+        // Las dos preguntas: Wallace revisada sin referencias, Runge sin índice.
+        expect(listas).toHaveLength(2);
+        for (const lista of listas) {
+            expect(lista.textContent).toContain('Wallace · paperSetup.subSteps.corpus.questionReview.uncovered.noReferences');
+            expect(lista.textContent).toContain('Runge · paperSetup.subSteps.corpus.questionReview.uncovered.unindexed');
+            expect(lista.textContent).not.toContain('Mayor');
+        }
     });
 
     it('sin preguntas con versículos del pasaje no se muestra', () => {

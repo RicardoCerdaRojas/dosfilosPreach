@@ -17,6 +17,8 @@ interface UseLibraryResult {
     resources: LibraryResourceEntity[];
     /** True only on the very first cold read for this user in the session. */
     isLoading: boolean;
+    /** La lectura falló y no hay datos. */
+    isError: boolean;
 }
 
 /**
@@ -53,5 +55,7 @@ export function useLibrary(): UseLibraryResult {
     return {
         resources: query.data ?? [],
         isLoading: query.isLoading,
+        // El escritorio del proyecto no afirma «sin fuentes» si la lectura falló.
+        isError: query.isError,
     };
 }

@@ -233,3 +233,69 @@ describe('SelectSourcePagesUseCase — sumar a lo que ya hay', () => {
         expect(repo.updateSource).not.toHaveBeenCalled();
     });
 });
+
+/**
+ * TP #9 (Santiago 4:11-17, B20): quitar TODAS las páginas de Tuggy no se
+ * podía guardar. Ahora se guarda la fuente vacía, con marca explícita.
+ */
+describe('SelectSourcePagesUseCase — guardar sin páginas', () => {
+    const conPaginas = {
+        id: 'source-existing',
+        sourceLibraryResourceId: 'lib-1',
+        corpusId: 'lib-1',
+        excerpts: [],
+        excerptRecipe: {
+            sheetRanges: [{ start: 60, end: 61 }],
+            proposedRanges: [{ start: 60, end: 60 }],
+            pinnedRanges: [{ start: 60, end: 60 }],
+            passageFingerprint: 'huella',
+        },
+    };
+
+    const sinUndefined = (o: unknown): boolean =>
+        o === undefined ? false
+            : o === null || typeof o !== 'object' || o instanceof Date ? true
+                : Object.values(o as Record<string, unknown>).every(sinUndefined);
+
+    it('vacía la fuente que ya estaba: receta sin hojas ni fijadas, cero fragmentos, sin leer el libro', async () => {
+        const { repo, reader } = makeDeps(makePaper([conPaginas]));
+        const result = await new SelectSourcePagesUseCase(repo as never, reader as never).execute({
+            ...BASE_INPUT, sheetRanges: [], pinnedRanges: [{ start: 60, end: 60 }], allowEmpty: true,
+        });
+        expect(reader.readChunks).not.toHaveBeenCalled();
+        expect(repo.addSource).not.toHaveBeenCalled();
+        const patch = repo.updateSource.mock.calls[0]![3];
+        expect(patch.excerptRecipe.sheetRanges).toEqual([]);
+        expect(patch.excerptRecipe.pinnedRanges).toEqual([]);
+        expect(patch.excerpts).toEqual([]);
+        expect(patch.mode).toBe('extracted-excerpts');
+        expect(patch.extractedAt).toBeInstanceOf(Date);
+        // Firestore no acepta undefined.
+        expect(sinUndefined(patch)).toBe(true);
+        expect(result).toMatchObject({ sourceId: 'source-existing', excerptCount: 0, emptySheets: 0, expectedChunks: 0, incomplete: false });
+    });
+
+    it('sin la marca, una lista vacía sigue siendo un error', async () => {
+        const { repo, reader } = makeDeps(makePaper([conPaginas]));
+        await expect(new SelectSourcePagesUseCase(repo as never, reader as never).execute({
+            ...BASE_INPUT, sheetRanges: [],
+        })).rejects.toThrow();
+        expect(repo.updateSource).not.toHaveBeenCalled();
+    });
+
+    it('no crea una fuente vacía nueva', async () => {
+        const { repo, reader } = makeDeps(makePaper());
+        await expect(new SelectSourcePagesUseCase(repo as never, reader as never).execute({
+            ...BASE_INPUT, sheetRanges: [], allowEmpty: true,
+        })).rejects.toThrow();
+        expect(repo.addSource).not.toHaveBeenCalled();
+    });
+
+    it('al sumar no se vacía nada aunque llegue la marca', async () => {
+        const { repo, reader } = makeDeps(makePaper([{ ...conPaginas, excerptRecipe: { ...conPaginas.excerptRecipe, sheetRanges: [] } }]));
+        await expect(new SelectSourcePagesUseCase(repo as never, reader as never).execute({
+            ...BASE_INPUT, sheetRanges: [], allowEmpty: true, mergeWithExisting: true,
+        })).rejects.toThrow();
+        expect(repo.updateSource).not.toHaveBeenCalled();
+    });
+});

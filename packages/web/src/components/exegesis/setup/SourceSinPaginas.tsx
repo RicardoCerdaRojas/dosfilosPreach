@@ -14,7 +14,7 @@ import { useTranslation } from '@/i18n';
  * BHQ, sin un solo aviso. Hoy se busca en el libro entero lo que habla de cada
  * versículo (`retrievalScopeOf`); elegir las páginas sigue siendo más preciso.
  */
-export function SourceSinPaginas({ paperId, sourceId, vacia = false }: {
+export function SourceSinPaginas({ paperId, sourceId, vacia = false, aMano = false }: {
     paperId: string;
     sourceId: string;
     /**
@@ -22,13 +22,20 @@ export function SourceSinPaginas({ paperId, sourceId, vacia = false }: {
      * diferencia de la fuente sin páginas, ésta no aporta NADA al análisis.
      */
     vacia?: boolean;
+    /**
+     * Vacía porque se quitaron todas sus páginas en el selector
+     * (`isSourceEmptiedByHand`, TP #9, B20): no fue la extracción.
+     */
+    aMano?: boolean;
 }) {
     const { t } = useTranslation('exegesis');
     const navigate = useNavigate();
     return (
         <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-warning/30 bg-warning-subtle/40 px-3 py-2 text-[11px] text-warning-subtle-foreground">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            <span className="flex-1 min-w-0">{t(vacia ? 'paperSetup.subSteps.corpus.sinPaginas.vacia' : 'paperSetup.subSteps.corpus.sinPaginas.body')}</span>
+            <span className="flex-1 min-w-0">{t(vacia
+                ? (aMano ? 'paperSetup.subSteps.corpus.sinPaginas.vaciaAMano' : 'paperSetup.subSteps.corpus.sinPaginas.vacia')
+                : 'paperSetup.subSteps.corpus.sinPaginas.body')}</span>
             <Button
                 type="button"
                 size="sm"

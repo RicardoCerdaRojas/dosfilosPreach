@@ -13,14 +13,25 @@ import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBri
 import { ProjectOriginPicker } from '@/components/exegesis/ProjectOriginPicker';
 import { ProjectBibliographyOffer } from '@/components/exegesis/ProjectBibliographyOffer';
 import { MethodPicker } from '@/components/exegesis/MethodPicker';
+import { WorkProfileSelect } from '@/components/exegesis/create/WorkProfileSelect';
+import { LanguageOption, Step, StrategyOption } from '@/components/exegesis/create/CreateStepParts';
+import { BriefSlotNotices } from '@/components/exegesis/create/BriefSlotNotices';
+import { MethodToWorkTypeOffer } from '@/components/exegesis/create/MethodToWorkTypeOffer';
+import { useMethodToWorkType } from '@/hooks/exegesis/useMethodToWorkType';
+import { usePreviousCourseDelivery } from '@/hooks/exegesis/usePreviousCourseDelivery';
 import {
     ASSIGNMENT_BRIEF_MAX_CHARS,
     defaultWorkTypeId,
+    fillBriefSlots,
+    findPassageInText,
+    formatPassageForReader,
     nextAssignmentDate,
+    nextLabelFor,
     projectWorkTypes,
     resolveProjectCharge,
     type AddProjectSourceInput,
     type AIProject,
+    type CourseOp,
     type ExegeticalMethod,
     type ExegeticalStrategy,
     type PassageReference,
@@ -55,12 +66,48 @@ export function ExegesisCreatePage() {
     // estudio asociado por error a otro curso confunde más de lo que ahorra
     // (decisión del fundador, 2026-10-22). Se puede asociar después.
     const [searchParams] = useSearchParams();
-    const { projects } = useFacultyProjects();
+    const { t: tc } = useTranslation('projectDeskCourse');
+    const { projects, updateProject } = useFacultyProjects();
     const proyectosActivos = (projects ?? []).filter(p => !p.archivedAt && !p.deletedAt);
     const [projectId, setProjectId] = useState<string | null>(() => searchParams.get('projectId'));
     const proyectoElegido = proyectosActivos.find(p => p.id === projectId) ?? null;
+    // Desde el escritorio del Curso (`docs/FASE_ESCRITORIO_PROYECTO_2026-10.md`
+    // §9.1): «Crear el TP #10» trae el tipo de trabajo, la entrega del
+    // calendario y su rótulo. Solo valen mientras el estudio siga naciendo en
+    // ESE curso: si el estudiante elige otro proyecto, no se vincula nada.
+    const proyectoDeLaUrl = searchParams.get('projectId');
+    const delCurso = !!proyectoElegido && proyectoElegido.id === proyectoDeLaUrl && proyectoElegido.type === 'course';
+    const entradaDeLaUrl = searchParams.get('scheduleEntryId');
+    const rotuloDeLaUrl = searchParams.get('label')?.trim() || null;
+    const entradaDelCalendario = delCurso && entradaDeLaUrl
+        ? (proyectoElegido.courseSchedule ?? []).find(e => e.id === entradaDeLaUrl) ?? null
+        : null;
+    // Semana a semana, un trabajo creado desde el escritorio (trae su tipo) crea
+    // igual su entrada sin fecha: entregado y devolución necesitan dónde vivir.
+    const tipoDeLaUrl = searchParams.get('workTypeId');
+    const semanaASemana = delCurso && proyectoElegido.courseScheduleMode === 'free' && !!tipoDeLaUrl;
+    const rotuloSugerido = rotuloDeLaUrl
+        ?? (semanaASemana && tipoDeLaUrl ? nextLabelFor(tipoDeLaUrl, proyectoElegido.courseSchedule ?? []) : null);
+    /** El trabajo cumple una entrega: la del calendario, o una nueva (sin fecha). */
+    const entrega = delCurso && (entradaDelCalendario || rotuloSugerido || semanaASemana)
+        ? { entry: entradaDelCalendario, label: entradaDelCalendario?.label || rotuloSugerido || '' }
+        : null;
     /** Qué tipo de trabajo del proyecto es (etapa 1b): TP semanal, paper final. */
     const [workTypeId, setWorkTypeId] = useState<string | null>(null);
+    // Si el estudiante cambia el tipo después de llegar con una entrega (o
+    // con el tipo de la URL), el trabajo ya no la cumple: «Crear el TP #10»
+    // y elegir «Ensayo» no puede dejar el ensayo como TP #10. Se crea una
+    // entrada nueva del tipo elegido, sin fecha, con el número que sigue de
+    // ESE tipo (y se dice antes de crear). Una entrega sin tipo conocido no
+    // pone condición: el estudiante lo está eligiendo.
+    const tipoPedido = entradaDelCalendario ? entradaDelCalendario.workTypeId || null : tipoDeLaUrl;
+    const otroTipo = !!entrega && !!workTypeId && !!tipoPedido && workTypeId !== tipoPedido;
+    const entregaFinal = !entrega
+        ? null
+        : otroTipo
+            // Sin entrega del calendario (semana a semana), solo cambia el número que sigue.
+            ? { entry: null, label: nextLabelFor(workTypeId!, proyectoElegido?.courseSchedule ?? []) ?? '', changedFrom: entrega.entry ? entrega.label : null }
+            : { ...entrega, changedFrom: null as string | null };
     const tiposDelProyecto = projectWorkTypes(proyectoElegido);
     /** Lo que hereda del estado del arte del proyecto (etapa 2). */
     const [fuentesDelProyecto, setFuentesDelProyecto] = useState<AddProjectSourceInput[]>([]);
@@ -195,8 +242,26 @@ export function ExegesisCreatePage() {
     useEffect(() => {
         if (encargoAplicado.current || !proyectoElegido) return;
         encargoAplicado.current = true;
-        aplicarEncargo(proyectoElegido, defaultWorkTypeId(proyectoElegido));
-    }, [proyectoElegido, aplicarEncargo]);
+        // El tipo que pidió el escritorio, si es de este proyecto; si no, el de siempre.
+        const pedido = searchParams.get('workTypeId');
+        const tipo = pedido && proyectoElegido.id === searchParams.get('projectId') && projectWorkTypes(proyectoElegido).some(x => x.id === pedido)
+            ? pedido
+            : defaultWorkTypeId(proyectoElegido);
+        aplicarEncargo(proyectoElegido, tipo);
+    }, [proyectoElegido, aplicarEncargo, searchParams]);
+
+    // El pasaje de la entrega, mientras el estudiante no haya elegido otro: el
+    // del calendario, o el que nombra su rótulo («TP9 - Santiago 4:11-17»): en
+    // el TP #9 estaba solo en el rótulo y hubo que escribirlo otra vez (B7).
+    const pasajeDeLaEntrada = entradaDelCalendario?.passage
+        ?? findPassageInText(entradaDelCalendario?.label)
+        ?? (delCurso ? findPassageInText(rotuloDeLaUrl) : null);
+    const pasajeDeLaEntrega = useRef(false);
+    useEffect(() => {
+        if (pasajeDeLaEntrega.current || !pasajeDeLaEntrada) return;
+        pasajeDeLaEntrega.current = true;
+        setPassage(p => p ?? pasajeDeLaEntrada);
+    }, [pasajeDeLaEntrada]);
 
     // El perfil por defecto se aplica al entrar, y sólo mientras el
     // estudiante no haya tocado nada. Si se llegó desde un proyecto, su
@@ -209,19 +274,75 @@ export function ExegesisCreatePage() {
     // Auto-load the user's default brief once the hook resolves.
     // Skip when the user already typed something so we don't clobber.
     // El del perfil gana sobre el encuadre por defecto.
+    const plantillaDelEncuadre = briefToPrefill(briefs, briefDelPerfilId, defaultBrief);
+    // La entrega anterior del mismo tipo en el curso: llena el hueco
+    // [FUENTES DE LA SEMANA ANTERIOR] con lo que no se puede repetir (B4).
+    const anterior = usePreviousCourseDelivery(proyectoElegido, workTypeId);
+    const pasajeEscrito = passage ? formatPassageForReader(passage, displayLanguage) : null;
+    const clavesAnteriores = anterior.restrictedKeys?.join('\u0000') ?? null;
     useEffect(() => {
         if (briefUserTyped) return;
-        const elegido = briefToPrefill(briefs, briefDelPerfilId, defaultBrief);
         // Sin encuadre que heredar se vacía: pasar del TP al paper final no
         // puede dejar la consigna del TP (revisión de la etapa 1b). Lo que el
         // estudiante escribió no se toca: lo protege `briefUserTyped`.
-        if (!elegido) { setAssignmentBrief(''); return; }
-        setAssignmentBrief(elegido.body.slice(0, briefMaxChars));
-    }, [briefs, briefDelPerfilId, defaultBrief, briefUserTyped]);
+        if (!plantillaDelEncuadre) { setAssignmentBrief(''); return; }
+        // Los huecos del encargo se llenan por entrega (B5, B4): el pasaje
+        // de este trabajo y las fuentes que no se repiten.
+        const { text } = fillBriefSlots(plantillaDelEncuadre.body, {
+            passage: pasajeEscrito,
+            previousSources: clavesAnteriores === null ? null : clavesAnteriores.split('\u0000').filter(Boolean),
+            language: displayLanguage,
+        });
+        setAssignmentBrief(text.slice(0, briefMaxChars));
+    }, [plantillaDelEncuadre, briefUserTyped, pasajeEscrito, clavesAnteriores, displayLanguage]);
+    const metodoAlTipo = useMethodToWorkType(proyectoElegido, workTypeId, exegeticalMethod);
 
     const isCreating = createPaper.isPending;
     const canCreate = !!passage && !isCreating;
     const briefCharCount = assignmentBrief.length;
+
+    /**
+     * Vincula el trabajo recién creado con su entrega. Si la entrega ya no
+     * está (otra pestaña la quitó) o no había (semana a semana), se crea con
+     * su tipo y su rótulo, sin fecha: así «entregado» y la devolución tienen
+     * dónde vivir. Si falla, el trabajo ya existe: se avisa y se sigue.
+     */
+    const vincularEntrega = async (proyecto: string, paperId: string) => {
+        if (!entregaFinal) return;
+        const label = entregaFinal.label || (passage ? formatPassageForReader(passage, displayLanguage) : '');
+        const ops: CourseOp[] = entregaFinal.entry
+            ? [{ op: 'linkPaper', entryId: entregaFinal.entry.id, paperId }]
+            // Sin rótulo, el pasaje: la fila de la mesa necesita cómo llamarse.
+            : [{ op: 'upsertEntry', entry: { workTypeId: workTypeId ?? '', label, paperId } }];
+        const vincular = async () => { await updateProject?.mutateAsync({ projectId: proyecto, courseOps: ops }); };
+        try {
+            await vincular();
+            return;
+        } catch (err) {
+            console.error('[exegesis] link schedule entry failed, retrying:', err);
+        }
+        // Un segundo intento: el corte suele ser de un momento.
+        try {
+            await vincular();
+            return;
+        } catch (err) {
+            console.error('[exegesis] link schedule entry failed:', err);
+        }
+        // El trabajo ya existe: crearlo de nuevo dejaría dos. El aviso queda
+        // abierto (también en la página siguiente) con «Vincular» para reintentar.
+        const avisar = () => toast.error(tc('create.linkFailed', { label }), {
+            duration: Infinity,
+            action: {
+                label: tc('create.linkRetry'),
+                onClick: () => {
+                    vincular()
+                        .then(() => toast.success(tc('create.linked', { label })))
+                        .catch(e => { console.error('[exegesis] link schedule entry retry failed:', e); avisar(); });
+                },
+            },
+        });
+        avisar();
+    };
 
     const handleCreate = async () => {
         if (!passage) return;
@@ -250,7 +371,11 @@ export function ExegesisCreatePage() {
                 ...(cover ? { cover } : {}),
             });
             toast.success(t('create.toast.created'));
-            navigate(`/dashboard/exegesis/${paper.id}/setup`);
+            if (entregaFinal && proyectoElegido) await vincularEntrega(proyectoElegido.id, paper.id);
+            await metodoAlTipo.saveIfChosen();
+            // Nacido en un proyecto, la configuración y el estudio vuelven a él.
+            const vuelta = proyectoElegido ? `?from=${encodeURIComponent(`/dashboard/projects/${proyectoElegido.id}`)}` : '';
+            navigate(`/dashboard/exegesis/${paper.id}/setup${vuelta}`);
         } catch (err) {
             console.error('[exegesis] create failed:', err);
             toast.error(t('create.toast.createFailed'));
@@ -305,13 +430,13 @@ export function ExegesisCreatePage() {
                         <div className="flex gap-2">
                             <LanguageOption
                                 value="es"
-                                label="Español"
+                                label={t('create.language.nameEs')}
                                 selected={displayLanguage === 'es'}
                                 onSelect={() => setDisplayLanguage('es')}
                             />
                             <LanguageOption
                                 value="en"
-                                label="English"
+                                label={t('create.language.nameEn')}
                                 selected={displayLanguage === 'en'}
                                 onSelect={() => setDisplayLanguage('en')}
                             />
@@ -350,6 +475,9 @@ export function ExegesisCreatePage() {
                     </p>
                     <div className="mt-4 border-t border-border pt-3">
                         <MethodPicker value={exegeticalMethod} onChange={setExegeticalMethod} />
+                        {metodoAlTipo.offer && exegeticalMethod && (
+                            <MethodToWorkTypeOffer method={exegeticalMethod} typeLabel={metodoAlTipo.typeLabel} checked={metodoAlTipo.checked} onChange={metodoAlTipo.setChecked} />
+                        )}
                     </div>
                 </Step>
 
@@ -364,31 +492,25 @@ export function ExegesisCreatePage() {
                         onWorkType={tipo => aplicarEncargo(proyectoElegido, tipo)}
                     />
                 )}
-                <ProjectBibliographyOffer project={proyectoElegido} bookId={passage?.bookId ?? null} onChange={setFuentesDelProyecto} />
+                {entregaFinal && (
+                    <p role="note" data-testid="create-schedule-entry" className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground">
+                        {entregaFinal.changedFrom !== null
+                            ? entregaFinal.label
+                                ? tc('create.otherType', { from: entregaFinal.changedFrom, label: entregaFinal.label })
+                                : tc('create.otherTypeUnlabeled', { from: entregaFinal.changedFrom })
+                            : entregaFinal.entry
+                                ? tc('create.fulfills', { label: entregaFinal.label })
+                                : entregaFinal.label
+                                    ? tc('create.newEntry', { label: entregaFinal.label })
+                                    : tc('create.newEntryUnlabeled')}
+                    </p>
+                )}
+                <ProjectBibliographyOffer project={proyectoElegido} bookId={passage?.bookId ?? null} onChange={setFuentesDelProyecto} language={displayLanguage} />
 
-                {profiles.length > 0 && (
-                    <div className="rounded-xl border border-border bg-card p-3 space-y-1">
-                        <label htmlFor="work-profile" className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">
-                            {t('paperSetup.workProfile.pickLabel')}
-                        </label>
-                        <select
-                            id="work-profile"
-                            value={workProfileId ?? ''}
-                            onChange={e => aplicarPerfil(profiles.find(p => p.id === e.target.value) ?? null)}
-                            className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                        >
-                            <option value="">{t('paperSetup.workProfile.pickNone')}</option>
-                            {profiles.map(p => (
-                                <option key={p.id} value={p.id}>
-                                    {p.displayName}{p.course ? ` · ${p.course}` : ''}
-                                </option>
-                            ))}
-                        </select>
-                        <p className="text-[11px] text-muted-foreground">{t('paperSetup.workProfile.pickHint')}</p>
-                        {perfilElegido && perfilElegido.rubricTemplateId === null && (
-                            <p className="text-[11px] text-warning-subtle-foreground">{t('paperSetup.workProfile.noRubric')}</p>
-                        )}
-                    </div>
+                {/* Llegando desde la entrada del curso, el tipo ya se sabe y trae lo
+                    mismo que un perfil: el selector sobra (TP #9, B9). */}
+                {profiles.length > 0 && !(delCurso && !!tipoPedido && workTypeId === tipoPedido) && (
+                    <WorkProfileSelect profiles={profiles} value={workProfileId} onPick={aplicarPerfil} />
                 )}
 
                 <Step
@@ -434,6 +556,14 @@ export function ExegesisCreatePage() {
                             rows={6}
                             className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary resize-y"
                         />
+                        <BriefSlotNotices
+                            brief={assignmentBrief}
+                            template={plantillaDelEncuadre}
+                            passage={passage}
+                            language={displayLanguage}
+                            previous={anterior}
+                            onReplace={body => { setAssignmentBrief(body.slice(0, briefMaxChars)); setBriefUserTyped(true); }}
+                        />
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                             <span>{t('create.brief.optional')}</span>
                             <span>{t('create.brief.characterCount', { count: briefCharCount, max: briefMaxChars })}</span>
@@ -470,109 +600,3 @@ export function ExegesisCreatePage() {
         </div>
     );
 }
-
-interface StepProps {
-    number: number;
-    icon: React.ReactNode;
-    title: string;
-    subtitle: string;
-    children: React.ReactNode;
-}
-
-function Step({ number, icon, title, subtitle, children }: StepProps) {
-    return (
-        <section className="rounded-2xl border border-border bg-card p-5">
-            <header className="flex items-start gap-3 mb-4">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-success-subtle text-success-subtle-foreground flex items-center justify-center text-xs font-semibold">
-                    {number}
-                </div>
-                <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">{icon}</span>
-                        <h2 className="text-base font-semibold text-foreground">
-                            {title}
-                        </h2>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
-                </div>
-            </header>
-            <div>
-                {children}
-            </div>
-        </section>
-    );
-}
-
-function LanguageOption({
-    value,
-    label,
-    selected,
-    onSelect,
-}: {
-    value: 'es' | 'en';
-    label: string;
-    selected: boolean;
-    onSelect: () => void;
-}) {
-    return (
-        <button
-            type="button"
-            onClick={onSelect}
-            className={[
-                'rounded-lg border px-4 py-2 text-sm font-medium transition-colors',
-                selected
-                    ? 'border-success bg-success-subtle text-success-subtle-foreground'
-                    : 'border-border bg-card text-foreground hover:bg-accent',
-            ].join(' ')}
-            aria-pressed={selected}
-        >
-            <span className="text-[10px] uppercase tracking-wide opacity-70 mr-2">{value}</span>
-            {label}
-        </button>
-    );
-}
-
-function StrategyOption({
-    value,
-    selected,
-    onSelect,
-    title,
-    body,
-    recommended = false,
-}: {
-    value: ExegeticalStrategy;
-    selected: boolean;
-    onSelect: () => void;
-    title: string;
-    body: string;
-    recommended?: boolean;
-}) {
-    const { t } = useTranslation('exegesis');
-    return (
-        <button
-            type="button"
-            onClick={onSelect}
-            aria-pressed={selected}
-            data-strategy={value}
-            className={[
-                'text-left rounded-lg border-2 p-3 transition-colors space-y-1',
-                selected
-                    ? 'border-primary bg-primary/5 text-foreground shadow-sm'
-                    : 'border-border bg-card text-foreground hover:border-foreground/30',
-            ].join(' ')}
-        >
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold">{title}</span>
-                {recommended && (
-                    <span className="text-[10px] uppercase tracking-wide font-medium rounded-full border border-success/40 bg-success-subtle text-success-subtle-foreground px-1.5 py-0">
-                        {t('create.strategy.recommended')}
-                    </span>
-                )}
-            </div>
-            <p className="text-[12px] text-muted-foreground leading-snug">
-                {body}
-            </p>
-        </button>
-    );
-}
-

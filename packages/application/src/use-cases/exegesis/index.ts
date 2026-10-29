@@ -132,6 +132,21 @@ export {
     type PaperProjectChange,
 } from './SetPaperProjectUseCase';
 export {
+    AddRuleToStyleGuideUseCase,
+    AddRuleToStyleGuideError,
+    type AddRuleToStyleGuideErrorCode,
+    type AddRuleToStyleGuideInput,
+    type AddRuleToStyleGuideResult,
+} from './AddRuleToStyleGuideUseCase';
+export {
+    ImportPreviousWorksUseCase,
+    IMPORT_PREVIOUS_WORKS_MAX,
+    type ImportPreviousWorksInput,
+    type ImportPreviousWorksResult,
+    type PreviousWorkInput,
+    type PreviousWorkStatus,
+} from './ImportPreviousWorksUseCase';
+export {
     ReviewVerseProseUseCase,
     type ReviewVerseProseInput,
     type ReviewVerseProseOutput,

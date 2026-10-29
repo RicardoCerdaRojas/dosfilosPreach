@@ -34,7 +34,7 @@ const montar = () => {
 describe('BuscarEnElLibro', () => {
     it('«Ir a p. 534» lleva a la hoja 613 con el desfase del libro', () => {
         const { onGo } = montar();
-        const ir = screen.getByLabelText('citationViewer.goToPage');
+        const ir = screen.getByLabelText('citationViewer.jump.printedAria');
         fireEvent.change(ir, { target: { value: '534' } });
         fireEvent.submit(ir.closest('form')!);
         expect(onGo).toHaveBeenCalledWith(613);
@@ -42,11 +42,11 @@ describe('BuscarEnElLibro', () => {
 
     it('algo que no es un número no navega y lo dice', () => {
         const { onGo } = montar();
-        const ir = screen.getByLabelText('citationViewer.goToPage');
+        const ir = screen.getByLabelText('citationViewer.jump.printedAria');
         fireEvent.change(ir, { target: { value: 'abc' } });
         fireEvent.submit(ir.closest('form')!);
         expect(onGo).not.toHaveBeenCalled();
-        expect(screen.getByText('citationViewer.goToPageInvalid')).toBeInTheDocument();
+        expect(screen.getByText('citationViewer.jump.invalidPrinted')).toBeInTheDocument();
     });
 
     it('buscar en el libro muestra dónde aparece, con su página impresa, y lleva ahí', () => {
@@ -54,7 +54,7 @@ describe('BuscarEnElLibro', () => {
         escribir('dativus commodi');
         expect(buscados.at(-1)).toBe('dativus commodi');
         expect(onSearchTerm).toHaveBeenLastCalledWith('dativus commodi');
-        const hit = screen.getByText('citationViewer.hitPage {"printed":538,"sheet":617}');
+        const hit = screen.getByText('citationViewer.hitPage {"printed":"538","sheet":617}');
         fireEvent.click(hit.closest('button')!);
         expect(onGo).toHaveBeenCalledWith(617);
     });

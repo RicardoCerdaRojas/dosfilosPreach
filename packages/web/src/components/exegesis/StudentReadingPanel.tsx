@@ -1,18 +1,20 @@
-import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Loader2, PenLine } from 'lucide-react';
-import { toast } from 'sonner';
-import { exegesisService } from '@dosfilos/application';
 import { observationCitationAlerts, type CanonicalVerseAnalysis, type ExegeticalMethod, type ProjectSource } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
-import { useFirebase } from '@/context/firebase-context';
 import { useTranslation } from '@/i18n';
+import { useStudentReadingDraft, type StudentReadingDraft } from './useStudentReadingDraft';
 
 interface StudentReadingPanelProps {
     paperId: string;
     stepId: string;
     initial: string | null | undefined;
     method: ExegeticalMethod | null | undefined;
+    /**
+     * El borrador de la tarjeta del paso, que lo guarda antes de generar
+     * (TP #9, B25). Sin él, el panel lleva el suyo.
+     */
+    draft?: StudentReadingDraft;
 }
 
 /**
@@ -22,28 +24,21 @@ interface StudentReadingPanelProps {
  * la discute. Es donde el orden de Fee —primero tu exégesis— se cumple en
  * quien estudia.
  */
-export function StudentReadingPanel({ paperId, stepId, initial, method }: StudentReadingPanelProps) {
+export function StudentReadingPanel(props: StudentReadingPanelProps) {
+    return props.draft ? <PanelView {...props} draft={props.draft} /> : <PanelOwnDraft {...props} />;
+}
+
+function PanelOwnDraft(props: StudentReadingPanelProps) {
+    const draft = useStudentReadingDraft({ paperId: props.paperId, stepId: props.stepId, initial: props.initial });
+    return <PanelView {...props} draft={draft} />;
+}
+
+function PanelView({ stepId, initial, method, draft }: StudentReadingPanelProps & { draft: StudentReadingDraft }) {
     const { t } = useTranslation('exegesis');
-    const { user } = useFirebase();
-    const queryClient = useQueryClient();
-    const guardada = (initial ?? '').trim();
-    const [texto, setTexto] = useState(guardada);
-    useEffect(() => setTexto(guardada), [guardada]);
-    const guardar = useMutation({
-        mutationFn: async () => {
-            if (!user) throw new Error('No authenticated user');
-            return exegesisService.updateStepStudentReading.execute({ ownerId: user.uid, paperId, stepId, studentReading: texto });
-        },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] }),
-        onError: err => {
-            console.error('[exegesis] save student reading failed:', err);
-            toast.error(t('studentReading.saveFailed'));
-        },
-    });
-    const sinCambios = texto.trim() === guardada;
+    const { texto, setTexto, sinCambios, guardando, guardar } = draft;
     const id = `student-reading-${stepId}`;
     // Abierta al entrar si ya hay una lectura; después la abre y cierra quien estudia.
-    const [abierta] = useState(!!guardada);
+    const [abierta] = useState(!!(initial ?? '').trim());
 
     return (
         <details className="mb-3 rounded-lg border border-border bg-card px-3 py-2" open={abierta || undefined}>
@@ -60,16 +55,16 @@ export function StudentReadingPanel({ paperId, stepId, initial, method }: Studen
                     value={texto}
                     maxLength={2000}
                     onChange={e => setTexto(e.target.value)}
-                    // Se guarda también al salir del campo: si no, quien escribe y
-                    // pulsa «Analizar» genera sin su lectura.
-                    onBlur={() => { if (!sinCambios && !guardar.isPending) guardar.mutate(); }}
+                    // Se guarda también al salir del campo; «Analizar» además
+                    // espera a que esté guardada (`useStudentReadingDraft`).
+                    onBlur={() => { if (!sinCambios) void guardar(); }}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
                 <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={() => guardar.mutate()} disabled={sinCambios || guardar.isPending}>
-                        {guardar.isPending && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}{t('studentReading.save')}
+                    <Button size="sm" variant="outline" onClick={() => void guardar()} disabled={sinCambios || guardando}>
+                        {guardando && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}{t('studentReading.save')}
                     </Button>
-                    {!sinCambios && !guardar.isPending && <span className="text-[11px] text-warning-subtle-foreground">{t('studentReading.unsaved')}</span>}
+                    {!sinCambios && !guardando && <span className="text-[11px] text-warning-subtle-foreground">{t('studentReading.unsaved')}</span>}
                 </div>
             </div>
         </details>

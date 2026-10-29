@@ -5,7 +5,10 @@ import { useTranslation } from '@/i18n';
 import type { RoadmapCtaKind } from '@/pages/projects/projectRoadmaps';
 import { cn } from '@/lib/utils';
 
-/** Shape exposed by `computeRoadmapState` — one phase entry. */
+/**
+ * Una fase, en la forma mínima que se dibuja. `computeRoadmapState`
+ * (`RoadmapState` de projectRoadmaps) la cumple sin moldes.
+ */
 export interface RoadmapPhaseEntry {
     complete: boolean;
     phase: {
@@ -38,8 +41,10 @@ interface ProjectRoadmapProps {
 }
 
 /**
- * Renders the roadmap section: section label, phase pills, and either the
- * "active phase" callout or the "all complete" success callout.
+ * El recorrido de los tipos que todavía no tienen escritorio propio
+ * (Investigación, Consejería, Sermón y Serie heredados): fases, el próximo
+ * paso y el aviso de terminado. Exegético, Curso y General usan
+ * `desk/DeskJourney`.
  *
  * Self-contained — only depends on the roadmap state shape and a single CTA
  * callback. Caller doesn't need to know about phase rendering details.
@@ -57,7 +62,7 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
 
     return (
         <section className="space-y-4">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-medium inline-flex items-center gap-2">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-primary-text font-medium inline-flex items-center gap-2">
                 <span>{t('roadmap.label', { type: typeLabel })}</span>
                 <span className="text-border normal-case tracking-normal">·</span>
                 <span className="text-muted-foreground normal-case tracking-normal font-mono">
@@ -66,13 +71,13 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
             </div>
 
             {/* Phase pills */}
-            <ol className="flex items-stretch gap-2 overflow-x-auto pb-1">
+            <ol className="flex flex-col gap-2 pb-1 sm:flex-row sm:items-stretch sm:overflow-x-auto">
                 {roadmap.phases.map((p, idx) => {
                     const PhaseIcon = p.phase.icon;
                     const isActive = idx === roadmap.activeIndex;
                     const isComplete = p.complete;
                     return (
-                        <li key={p.phase.id} className="flex-1 min-w-[160px] flex">
+                        <li key={p.phase.id} className="flex flex-1 sm:min-w-[160px]">
                         {/* Cada fase se puede abrir, también las cumplidas: si no, la
                             página del estado del arte quedaba sin entrada una vez
                             cumplida (prueba del fundador, NT785). */}
@@ -81,11 +86,12 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                             onClick={() => onPhaseCta(p.phase.cta.kind)}
                             title={texto(p.phase, 'cta')}
                             className={cn(
-                                'w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                                'w-full min-h-11 text-left flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
                                 isComplete
                                     ? 'bg-success-subtle border-success/30'
                                     : isActive
-                                        ? 'bg-info-subtle border-info/30'
+                                        // La fase activa lleva el tinte de la marca, no el de un estado.
+                                        ? 'bg-primary/5 border-primary/30'
                                         : 'bg-card border-border/60'
                             )}
                         >
@@ -93,7 +99,8 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
                                 className={cn(
                                     'h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-mono font-medium',
                                     isComplete
-                                        ? 'bg-success text-success-foreground'
+                                        // El ✓ blanco sobre `success` no llega a AA: el par sutil sí.
+                                        ? 'bg-success-subtle text-success-subtle-foreground border border-success/30'
                                         : isActive
                                             ? 'bg-primary-solid text-primary-foreground'
                                             : 'bg-muted text-muted-foreground'
@@ -123,12 +130,12 @@ export function ProjectRoadmap({ roadmap, typeLabel, onPhaseCta }: ProjectRoadma
 
             {/* Active phase callout */}
             {activePhase && !roadmap.allComplete && (
-                <div className="bg-info-subtle border border-info/30 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4">
+                <div className="bg-primary/5 border border-primary/30 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4">
                     <div className="h-11 w-11 rounded-lg bg-primary-solid text-primary-foreground flex items-center justify-center shrink-0">
                         <activePhase.icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-primary font-medium mb-1">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-primary-text font-medium mb-1">
                             {t('roadmap.activePhase.label', { number: roadmap.activeIndex + 1 })}
                         </div>
                         <h2 className="font-reading text-[19px] leading-tight text-foreground mb-1">

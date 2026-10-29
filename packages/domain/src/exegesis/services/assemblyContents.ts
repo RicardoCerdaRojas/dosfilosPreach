@@ -1,7 +1,8 @@
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
-import type { ExegeticalStep } from '../entities/ExegeticalStep';
+import { versionUnderReview, type ExegeticalStep } from '../entities/ExegeticalStep';
 import { countWords } from '../../services/movementBudget';
+import { rangosConRaya } from './rangeDash';
 import type { DocumentSections } from './paperLength';
 import { parseBriefQuestions, questionsForVerse, type BriefQuestion } from './briefQuestions';
 
@@ -292,7 +293,10 @@ export function assembleMarkdown(
     contents: AssemblyContents = assemblyContents(paper.steps, language),
 ): string {
     const passage = formatPassageReference(paper.passage, language);
-    const out: string[] = [`# ${paper.title?.trim() || passage}`, ''];
+    // Raya corta en el título (TP #9, B44). Solo el título: los encabezados de
+    // sección se buscan al recomponer con `sectionHeadings` y no pueden
+    // divergir de lo escrito.
+    const out: string[] = [`# ${rangosConRaya(paper.title?.trim() || passage)}`, ''];
     const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
 
     for (const parte of contents.included) {
@@ -309,6 +313,22 @@ export function assembleMarkdown(
         out.push(body, '');
     }
     return out.join('\n');
+}
+
+/**
+ * Si el ensamble vigente tiene ediciones a mano (TP #9, B33).
+ *
+ * Volver a ensamblar las pisaba sin aviso, y la edición tampoco pasa por la
+ * verificación de citas (`SaveStepEditUseCase` no la corre). Una edición que
+ * dejó el texto igual al que saldría de ensamblar no tiene nada que perder.
+ * `verified` dice si alguien verificó esa edición después.
+ */
+export function assemblyHandEdit(paper: ExegeticalPaper): { verified: boolean } | null {
+    const step = (paper.steps ?? []).find(s => s.kind === 'assembly');
+    const version = step ? versionUnderReview(step) : null;
+    if (!version || version.origin !== 'edited' || !version.markdown?.trim()) return null;
+    if (version.markdown.trim() === assembleMarkdown(paper, paper.displayLanguage).trim()) return null;
+    return { verified: !!version.verifications?.lastRunAt };
 }
 
 /**

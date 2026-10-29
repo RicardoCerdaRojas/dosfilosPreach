@@ -13,7 +13,7 @@ vi.mock('@/hooks/exegesis/useWorkProfiles', () => ({ useWorkProfiles: () => ({ p
 vi.mock('@/hooks/exegesis/useUserRubrics', () => ({ useUserRubrics: () => ({ rubrics: [{ id: 'r1', displayName: 'TP Semanal Griego NT' }, { id: 'r2', displayName: 'Paper' }] }) }));
 vi.mock('@/hooks/exegesis/useUserAssignmentBriefs', () => ({ useUserAssignmentBriefs: () => ({ briefs: [{ id: 'b1', displayName: 'TP' }] }) }));
 vi.mock('@/hooks/exegesis/useUserStyleGuides', () => ({ useUserStyleGuides: () => ({ guides: [{ id: 'g1', displayName: 'Guía TMS' }] }) }));
-const { ProjectWorkTypesCard } = await import('../ProjectWorkTypesCard');
+const { ProjectWorkTypesCard, withRubric } = await import('../ProjectWorkTypesCard');
 const { ProjectCourseCard } = await import('../ProjectCourseCard');
 const { ProjectSetupCards } = await import('../ProjectSetupCards');
 
@@ -35,6 +35,27 @@ describe('ProjectWorkTypesCard', () => {
         expect(new Set(tipos.map((x: { id: string }) => x.id)).size).toBe(2);
     });
 
+    // TP #9 (B11): el curso dice qué tipos de fuente no se repiten entre
+    // entregas; en NT785, los comentarios sí se restringen y las gramáticas no.
+    it('guarda qué tipos de fuente no se repiten: sin fijar, la regla general; «Fijar» y desmarcar', () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        render(<ProjectWorkTypesCard project={{ ...curso, workTypes: [{ id: 'a', label: 'TP' }] } as never} onSave={onSave} saving={false} />);
+        fireEvent.click(screen.getByText('workTypes.edit'));
+        expect(screen.getByTestId('no-repeat-unset')).toBeInTheDocument();
+        // Sin fijar se muestra la regla general: comentarios marcados, gramáticas no.
+        expect(screen.getByLabelText('workTypes.noRepeatGroup_commentaries')).toBeChecked();
+        expect(screen.getByLabelText('workTypes.noRepeatGroup_grammars')).not.toBeChecked();
+        fireEvent.click(screen.getByText('workTypes.noRepeatFix'));
+        expect(screen.getByTestId('no-repeat-set')).toBeInTheDocument();
+        fireEvent.click(screen.getByText('workTypes.save'));
+        expect(onSave.mock.calls[0]![0][0].noRepeatSourceTypes).toEqual(['commentary-critical', 'commentary-expository', 'textual-commentary']);
+        // Sumar el texto base y quitar los comentarios.
+        fireEvent.click(screen.getByLabelText('workTypes.noRepeatGroup_text'));
+        fireEvent.click(screen.getByLabelText('workTypes.noRepeatGroup_commentaries'));
+        fireEvent.click(screen.getByText('workTypes.save'));
+        expect(onSave.mock.calls[1]![0][0].noRepeatSourceTypes).toEqual(['biblical-text-edition', 'critical-apparatus']);
+    });
+
     it('uno a mano se nombra y su rúbrica tiene tres estados', () => {
         const onSave = vi.fn().mockResolvedValue(undefined);
         render(<ProjectWorkTypesCard project={curso as never} onSave={onSave} saving={false} />);
@@ -45,6 +66,19 @@ describe('ProjectWorkTypesCard', () => {
         const [ensayo] = onSave.mock.calls[0]![0];
         expect(ensayo).toMatchObject({ label: 'Ensayo', rubricTemplateId: null });
         expect(ensayo.exegeticalStrategy).toBeUndefined();
+    });
+
+    it('cambiar la rúbrica borra «el curso no da rúbrica» (se dijo de la anterior); elegir la misma, no', () => {
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const confirmado = { id: 'a', label: 'TP', rubricTemplateId: null, rubricConfirmed: true };
+        render(<ProjectWorkTypesCard project={{ ...curso, workTypes: [confirmado] } as never} onSave={onSave} saving={false} />);
+        fireEvent.click(screen.getByText('workTypes.edit'));
+        fireEvent.change(screen.getByLabelText('workTypes.rubric'), { target: { value: 'r1' } });
+        fireEvent.click(screen.getByText('workTypes.save'));
+        const [tipo] = onSave.mock.calls[0]![0];
+        expect(tipo).toEqual({ id: 'a', label: 'TP', rubricTemplateId: 'r1' });
+        expect('rubricConfirmed' in tipo).toBe(false);
+        expect(withRubric(confirmado as never, null)).toBe(confirmado);
     });
 
     it('cada tipo guarda su método (capa 3)', () => {

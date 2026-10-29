@@ -179,3 +179,33 @@ describe('rango y segunda mano', () => {
         expect(collectAnalysisClaims(a)[0]).not.toHaveProperty('pageEnd');
     });
 });
+
+describe('analysisClaimsToCitations — una afirmación citada a varias páginas de la misma fuente (TP #9, 4:15)', () => {
+    const conDosPaginas = (): CanonicalVerseAnalysis => ({
+        ...buildEmptyCanonicalVerseAnalysis({ bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 15, verseEnd: 15 }),
+        footnoteExtensions: [
+            {
+                anchorPhrase: 'ἀντὶ τοῦ λέγειν',
+                text: 'Robertson incluye ἀντί con Santiago 4:15 entre las preposiciones del infinitivo en genitivo y lo llama sustitución de perspectivas.',
+                sources: [{ sourceKey: 'Robertson', page: 574 }, { sourceKey: 'Robertson', page: 1060 }, { sourceKey: 'Wallace', page: 610 }],
+            },
+            { anchorPhrase: 'x', text: 'Otra nota.', sources: [{ sourceKey: 'Robertson', page: 900 }] },
+        ],
+    } as CanonicalVerseAnalysis);
+
+    it('cada entrada se coteja contra todas sus páginas, la propia primero', () => {
+        const cites = analysisClaimsToCitations(collectAnalysisClaims(conDosPaginas()), c => String(c.page));
+        expect(cites.map(c => c.pages)).toEqual(['574, 1060', '1060, 574', '610', '900']);
+    });
+
+    it('la evidencia se sigue eligiendo por la página propia', () => {
+        const cites = analysisClaimsToCitations(collectAnalysisClaims(conDosPaginas()), c => String(c.page));
+        expect(cites.map(c => c.evidencePage)).toEqual(['574', '1060', '610', '900']);
+    });
+
+    it('no junta páginas de otra afirmación ni de otra fuente', () => {
+        const cites = analysisClaimsToCitations(collectAnalysisClaims(conDosPaginas()), c => String(c.page));
+        expect(cites[2]!.pages).toBe('610');
+        expect(cites[3]!.pages).toBe('900');
+    });
+});

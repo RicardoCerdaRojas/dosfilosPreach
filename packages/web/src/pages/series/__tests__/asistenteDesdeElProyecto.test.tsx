@@ -178,9 +178,15 @@ describe('crear la serie dentro del proyecto', () => {
         expect(plan.project.excludedResourceIds).toEqual(['halot']);
         // La bibliografía no se copia a los valores por defecto de la serie.
         expect(plan.series.metadata.exegesisDefaults).toBeUndefined();
-        await waitFor(() => expect(toast.success).toHaveBeenCalledWith('expository.project.createdInProject:Nehemías'));
+        await waitFor(() => expect(toast.success).toHaveBeenCalledWith('expository.project.createdInProject:Nehemías', expect.anything()));
         expect(localStorage.getItem(`${CLAVE}:neh`)).toBeNull();
-        expect(navigate).toHaveBeenCalledWith('/dashboard/plans/s1');
+        // Vuelve al escritorio del proyecto; la serie queda a un clic en el aviso.
+        expect(navigate).toHaveBeenCalledTimes(1);
+        expect(navigate).toHaveBeenCalledWith('/dashboard/projects/neh');
+        const { action } = toast.success.mock.calls.find((c: unknown[]) => c[0] === 'expository.project.createdInProject:Nehemías')![1];
+        expect(action.label).toBe('expository.project.openSeries');
+        action.onClick();
+        expect(navigate).toHaveBeenLastCalledWith('/dashboard/plans/s1');
     });
 
     it('un título de menos de 3 letras se avisa antes de crear los estudios', async () => {
@@ -307,6 +313,9 @@ describe('proyecto archivado', () => {
         await waitFor(() => expect(svc.createSeriesFromPlan).toHaveBeenCalledTimes(1));
         expect('project' in svc.createSeriesFromPlan.mock.calls[0]![1]).toBe(false);
         expect(toast.success).toHaveBeenCalledWith('expository.toast.seriesCreated');
+        // Suelta, no hay proyecto al que volver: a la serie, como siempre.
+        expect(navigate).toHaveBeenCalledWith('/dashboard/plans/s1');
+        expect(navigate).not.toHaveBeenCalledWith(expect.stringContaining('/dashboard/projects/'));
     });
 
     it('si se archiva mientras se analizaba, se vuelve a leer al crear y la serie nace suelta', async () => {
@@ -320,6 +329,9 @@ describe('proyecto archivado', () => {
         await waitFor(() => expect(svc.createSeriesFromPlan).toHaveBeenCalledTimes(1));
         expect('project' in svc.createSeriesFromPlan.mock.calls[0]![1]).toBe(false);
         expect(toast.warning).toHaveBeenCalledWith('expository.project.unavailable');
+        // Nació suelta: va a la serie, no al proyecto archivado.
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard/plans/s1'));
+        expect(navigate).not.toHaveBeenCalledWith('/dashboard/projects/neh');
         // El borrador era del proyecto: se borra de su clave.
         expect(localStorage.getItem(`${CLAVE}:neh`)).toBeNull();
     });

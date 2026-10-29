@@ -69,7 +69,6 @@
 3 packages/web/src/pages/bible/BiblePage.tsx
 2 packages/web/src/pages/bible/components/SearchSidebar.tsx
 1 packages/web/src/pages/bible/components/VersionSelector.tsx
-1 packages/web/src/pages/exegesis/ExegesisCreatePage.tsx
 5 packages/web/src/pages/exegesis/ExegesisPage.tsx
 5 packages/web/src/pages/faculty/ProjectEditDialog.tsx
 15 packages/web/src/pages/generate-sermon.tsx
@@ -80,13 +79,10 @@
 4 packages/web/src/pages/hebrew-tutor/components/NominalDetectivePanel.tsx
 4 packages/web/src/pages/hebrew-tutor/components/VerbTable.tsx
 8 packages/web/src/pages/hebrew-tutor/components/VerseAnalysisResult.tsx
-4 packages/web/src/pages/hebrew-tutor/components/VerseNavBar.tsx
+1 packages/web/src/pages/hebrew-tutor/components/VerseNavBar.tsx
 1 packages/web/src/pages/hebrew-tutor/components/VersePreview.tsx
 1 packages/web/src/pages/hebrew-tutor/components/VerseSelector.tsx
 7 packages/web/src/pages/hebrew-tutor/components/WeakVerbDetective.tsx
-6 packages/web/src/pages/hebrew-tutor/components/WordCard.tsx
-4 packages/web/src/pages/hebrew-tutor/components/WordTooltipContent.tsx
-3 packages/web/src/pages/hebrew-tutor/components/WordTutorSheet.tsx
 3 packages/web/src/pages/hebrew-tutor/components/detective/DetectivePhase2Triage.tsx
 1 packages/web/src/pages/hebrew-tutor/components/detective/DetectivePhase3wPreformative.tsx
 1 packages/web/src/pages/hebrew-tutor/components/detective/DetectivePhaseVerbForm.tsx

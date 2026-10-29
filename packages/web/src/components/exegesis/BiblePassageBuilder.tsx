@@ -6,6 +6,7 @@ import {
     parsePassageReference,
     formatPassageReference,
     getAllBooks,
+    versesInChapter,
     type BibleBookId,
     type BibleCanonBook,
     type PassageReference,
@@ -81,7 +82,7 @@ export function BiblePassageBuilder({
             chapterEnd: chapter,
             verseStart,
             verseEnd: verseEnd ?? verseStart ?? null,
-        });
+        }, { strictVerses: true });
         onResult(result);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bookId, chapter, verseStart, verseEnd]);
@@ -93,7 +94,7 @@ export function BiblePassageBuilder({
     useEffect(() => {
         const trimmed = query.trim();
         if (trimmed.length < 3) return;
-        const parsed = parsePassageReference(trimmed);
+        const parsed = parsePassageReference(trimmed, { strictVerses: true });
         if (!parsed.ok) return;
         // Only snap when the parser produced a same-chapter ref — this
         // matches our drill-down's single-chapter scope. For
@@ -521,7 +522,10 @@ function VerseStage({
     onExpandGrid: () => void;
     t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
-    const verses = Array.from({ length: gridSize }, (_, i) => i + 1);
+    // Los versículos que el capítulo tiene (TP #9, B1: Santiago 4 mostraba 50
+    // y tiene 17). Sin el dato, la grilla de antes, que crece a pedido.
+    const total = versesInChapter(book.id, chapter);
+    const verses = Array.from({ length: total ?? gridSize }, (_, i) => i + 1);
 
     const inRange = (v: number): boolean => {
         if (verseStart === null) return false;
@@ -575,13 +579,17 @@ function VerseStage({
                     )}
                     <span>{hint}</span>
                 </p>
-                <button
-                    type="button"
-                    onClick={onExpandGrid}
-                    className="text-[11px] text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 transition-colors"
-                >
-                    {t('setup.passage.builder.showMore')}
-                </button>
+                {total === null ? (
+                    <button
+                        type="button"
+                        onClick={onExpandGrid}
+                        className="text-[11px] text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 transition-colors"
+                    >
+                        {t('setup.passage.builder.showMore')}
+                    </button>
+                ) : (
+                    <span className="text-[11px] text-muted-foreground" data-testid="verse-count">{t('setup.passage.verseCount', { count: total })}</span>
+                )}
             </div>
         </div>
     );

@@ -70,9 +70,13 @@ import { CoherencePassDialog } from '@/components/exegesis/CoherencePassDialog';
 import { ExegesisQuotaBadge } from '@/components/exegesis/ExegesisQuotaBadge';
 import { PaperDerivedArtifactsPanel } from '@/components/exegesis/PaperDerivedArtifactsPanel';
 import { ReadingOfTheBookPanel } from './components/ReadingOfTheBookPanel';
+import { NotRequestedSteps, splitNotRequestedSteps } from './components/NotRequestedSteps';
 import { TextZoomControl } from '@/components/ui/text-zoom-control';
 import { getTextZoomClass, type TextZoomLevel } from '@/lib/textZoom';
 import { exportPaperToDocx } from '@/lib/exegesis/exportPaperToDocx';
+import { paperBackLink, type PaperBackKind } from './paperBackLink';
+import { offersSermonStart } from './paperSermonStart';
+import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import {
     exportPaperToMarkdown,
     formatPassageReference,
@@ -89,6 +93,15 @@ import {
     sectionBudgets,
     uncitedRubricRequirements,
 } from '@dosfilos/domain';
+
+/** El rótulo de la flecha cuando quien abrió el estudio no mandó uno. */
+const BACK_LABEL_KEY: Record<PaperBackKind, string> = {
+    given: 'detail.back',
+    project: 'detail.backToProject',
+    series: 'detail.backToSeries',
+    list: 'detail.back',
+    other: 'detail.backGeneric',
+};
 
 /**
  * Detail view for a single exegetical paper.
@@ -107,13 +120,12 @@ export function ExegesisPaperPage() {
     const { t, i18n } = useTranslation('exegesis');
     const activeLanguage: SupportedLanguage = i18n.language?.split('-')[0] === 'en' ? 'en' : 'es';
 
-    // Context-aware back: when the user came from a planner / series /
-    // dashboard surface, return them there instead of the global paper
-    // list. The originating page passes `{ from, fromLabel }` via
-    // react-router state when navigating in.
-    const navState = (location.state ?? null) as { from?: string; fromLabel?: string } | null;
-    const backTo = navState?.from && navState.from.startsWith('/') ? navState.from : '/dashboard/exegesis';
-    const backLabel = navState?.fromLabel ?? (t('detail.back') as string);
+    // La flecha vuelve adonde se abrió el estudio (el escritorio del
+    // proyecto, la serie, el panel): `{ from, fromLabel }` en el estado o
+    // `?from=` en la dirección. Sin eso, al listado.
+    const back = paperBackLink(location.state, location.search);
+    const backTo = back.to;
+    const backLabel = back.label ?? (t(BACK_LABEL_KEY[back.kind]) as string);
 
     const {
         archivePaper,
@@ -186,7 +198,8 @@ export function ExegesisPaperPage() {
         try {
             await archivePaper.mutateAsync({ paperId: paper.id, archived: true });
             toast.success(t('detail.toast.archived'));
-            navigate('/dashboard/exegesis');
+            // Archivado, vuelve adonde se abrió (el proyecto, la serie), no al listado.
+            navigate(backTo);
         } catch (err) {
             console.error('[exegesis] archive failed:', err);
             toast.error(t('detail.toast.archiveFailed'));
@@ -694,13 +707,16 @@ function StartStudyButton({
     pending: boolean;
     t: (key: string) => string;
 }) {
+    // En un TP del curso no se ofrece el sermón (TP #9, B24).
+    const { projects, isLoadingProjects } = useFacultyProjects();
+    const derivados = usePaperDerivedArtifacts(paper.id);
+    if (!offersSermonStart(paper, isLoadingProjects ? null : projects)) return null;
     const hasAcceptedAnalysis = paper.steps.some(
         (step) => step.kind === 'verse' && Boolean(step.accepted?.canonicalAnalysis),
     );
     // Si este paper ya abrió un borrador, el botón NO empieza nada: vuelve.
     // Decir «comenzar» sobre algo ya empezado fue lo que llevó a cinco
     // borradores del mismo pasaje, todos parados en el paso 1.
-    const derivados = usePaperDerivedArtifacts(paper.id);
     const yaHayBorrador = (derivados.data ?? []).some(a => a.kind === 'sermon' && a.isDraft);
 
     return (
@@ -759,11 +775,28 @@ function StepsPanel({
     // (`verseWordBudget`): es el número que muestra y que el diálogo de
     // recomposición propone.
     const formatting = paper.rubric?.formatting ?? null;
+    const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
     const wordsPerShare = sectionBudgets(
         paper.rubric?.expectedLength ?? null,
-        documentSections(steps, parseBriefQuestions(paper.assignmentBrief, paper.passage)),
+        documentSections(steps, preguntas),
         formatting,
     ).perShare;
+    const { requested: pedidos, notRequested: noPedidos } = splitNotRequestedSteps(sortedSteps);
+    const renderStep = (step: ExegeticalPaper['steps'][number]) => (
+        <StepCard
+            key={step.id}
+            step={step}
+            paperId={paper.id}
+            language={language}
+            allSteps={paper.steps}
+            assignmentBrief={paper.assignmentBrief}
+            passage={paper.passage}
+            assembledMarkdown={paper.assembledMarkdown}
+            hasAssembly={!!paper.assembledMarkdown?.trim()}
+            wordsPerShare={wordsPerShare}
+            formatting={formatting}
+        />
+    );
 
     return (
         <section className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
@@ -816,21 +849,14 @@ function StepsPanel({
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {sortedSteps.map(step => (
-                        <StepCard
-                            key={step.id}
-                            step={step}
-                            paperId={paper.id}
-                            language={language}
-                            allSteps={paper.steps}
-                            assignmentBrief={paper.assignmentBrief}
-                            passage={paper.passage}
-                            assembledMarkdown={paper.assembledMarkdown}
-                            hasAssembly={!!paper.assembledMarkdown?.trim()}
-                            wordsPerShare={wordsPerShare}
-                            formatting={formatting}
-                        />
-                    ))}
+                    {pedidos.map(renderStep)}
+                    {/* Lo que el encargo no pide, plegado al final (TP #9, B22). */}
+                    <NotRequestedSteps
+                        steps={noPedidos}
+                        language={language}
+                        hasQuestions={preguntas.length > 0}
+                        renderStep={renderStep}
+                    />
                     {/* v1.7 corpus-usage planning — coverage report
                         once the user starts accepting steps. Self-hides
                         when there's nothing to report (no sources or

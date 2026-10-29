@@ -122,7 +122,7 @@ export function ProjectSeriesSection({ project, series, papers, sermons, onPlanS
                                     <Link
                                         to={`/dashboard/plans/${s.id}`}
                                         title={t('seriesSection.open')}
-                                        className="text-sm font-medium text-foreground hover:text-primary hover:underline underline-offset-2"
+                                        className="text-sm font-medium text-foreground hover:text-primary-text hover:underline underline-offset-2"
                                     >
                                         {s.title?.trim() || t('seriesSection.title')}
                                     </Link>
@@ -158,7 +158,7 @@ export function ProjectSeriesSection({ project, series, papers, sermons, onPlanS
                                                             <Link
                                                                 to={`/dashboard/exegesis/${r.paper.id}`}
                                                                 title={t('seriesSection.row.openStudy')}
-                                                                className="text-foreground hover:text-primary hover:underline underline-offset-2"
+                                                                className="text-foreground hover:text-primary-text hover:underline underline-offset-2"
                                                             >
                                                                 {r.paper.title}
                                                             </Link>

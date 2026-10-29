@@ -1,7 +1,5 @@
 import {
     BookOpen,
-    ClipboardList,
-    Library,
     ScrollText,
     Mic2,
     HeartHandshake,
@@ -12,20 +10,24 @@ import {
     FileEdit,
     NotebookPen,
     FileCode,
-    Split,
     type LucideIcon,
 } from 'lucide-react';
-import { currentRevisedIdea, framingStatus, projectWorkTypes, type AIProject, type ProjectType, type ProjectOutput, type SermonEntity, type AIChatSession } from '@dosfilos/domain';
+import type { AIProject, ProjectType, ProjectOutput, SermonEntity } from '@dosfilos/domain';
 
 /**
- * Roadmap definitions per project type. Each phase represents one step in the
- * pastor's natural workflow for that kind of work. Phases are ordered, and the
- * first non-complete phase becomes the "current step" surfaced to the user.
+ * Lo que cada tipo de proyecto muestra en su escritorio
+ * (`docs/FASE_ESCRITORIO_PROYECTO_2026-10.md` §2.9): sus capacidades y, para
+ * los tipos que todavía no tienen escritorio propio, su recorrido de hoy.
  *
- * Roadmaps are presentational: they live in the web layer (not the domain)
- * because they describe how we COACH the user through the work, not data
- * invariants. The completion check (`isComplete`) only inspects existing
- * project data — no separate state to maintain.
+ * Exegético y Curso NO tienen recorrido aquí: sus fases, estados y «Ahora»
+ * salen del dominio (`buildProjectDesk`), con su evidencia. Antes el
+ * Exegético estaba escrito dos veces y una acción completaba fases que no
+ * tenían relación entre sí. General no tiene modelo (como un estudio en
+ * blanco): su escritorio no dibuja fases, pero conserva su lista para
+ * quienes la lean.
+ *
+ * Los recorridos que quedan (Investigación, Consejería, Sermón, Serie y
+ * General) son presentacionales: `isComplete` solo mira datos del proyecto.
  */
 
 /** Qué hace el botón de una fase. Un solo lugar: antes estaba copiado en tres. */
@@ -35,19 +37,13 @@ export interface RoadmapContext {
     project: AIProject;
     /** Estudios del proyecto: de origen y vinculados (ADR-046). */
     studyCount: number;
-    /** Estudios del proyecto ya ensamblados (listos para entregar). */
-    deliveredCount: number;
-    /** Estudios del proyecto que ya salieron de la configuración: los que la serie crea en lote nacen vacíos. */
-    workedStudyCount: number;
-    /** Series de predicación ligadas al proyecto (`series.projectId`). */
-    seriesCount: number;
     sourceCount: number;
     greekCount: number;
     hebrewCount: number;
     sessionCount: number;
     outputs: ProjectOutput[];
-    sermons: SermonEntity[];
-    sessions: AIChatSession[];
+    /** Cada versión: el recorrido de Serie cuenta como antes, sin agrupar. */
+    sermons: ReadonlyArray<Pick<SermonEntity, 'id'>>;
 }
 
 export interface RoadmapPhase {
@@ -71,12 +67,41 @@ export interface RoadmapPhase {
     variant?: (ctx: RoadmapContext) => Partial<Pick<RoadmapPhase, 'description' | 'cta' | 'i18nKey'>> | null;
 }
 
+/**
+ * Qué muestra el escritorio de cada tipo. Reemplaza los `includes([...])`
+ * que el panel tenía regados (deuda 6): Consejería mostraba estudios y
+ * griego, y un Exegético las opciones de curso.
+ */
+export interface ProjectTypeCapabilities {
+    /**
+     * De dónde salen el recorrido y «Ahora»: `exegetical` y `course`, del
+     * dominio con su mesa; `general`, del dominio sin fases (lo último que se
+     * tocó); `legacy`, el recorrido de aquí, como hasta ahora.
+     */
+    desk: 'exegetical' | 'course' | 'general' | 'legacy';
+    /** La lista simple de estudios (los tipos sin mesa propia). */
+    studies: boolean;
+    /** Las herramientas de griego y hebreo. */
+    languages: boolean;
+    /**
+     * Cómo se eligen las fuentes. `stateOfArt`: solo por el estado del arte
+     * (Exegético y Curso, sin atajo que apruebe sin pasar por el método);
+     * `picker`: el selector de la biblioteca; `both`: los dos (Investigación).
+     */
+    sources: 'stateOfArt' | 'picker' | 'both';
+    /** Los datos del curso y los tipos de trabajo como tarjetas: abiertas, plegadas mientras no se usen, o ninguna. */
+    courseSetup: 'open' | 'collapsible' | 'none';
+    /** La tarjeta de series de los tipos viejos (en Exegético la serie vive en su mesa). */
+    seriesCard: 'always' | 'whenLinked';
+}
+
 export interface ProjectTypeMeta {
     type: ProjectType;
     label: string;
     description: string;
     icon: LucideIcon;
     roadmap: RoadmapPhase[];
+    capabilities: ProjectTypeCapabilities;
 }
 
 const SERMON_ROADMAP: RoadmapPhase[] = [
@@ -258,117 +283,6 @@ const SERIES_ROADMAP: RoadmapPhase[] = [
     },
 ];
 
-/** Curso (ADR-046): sus tipos de trabajo, un estado del arte y las tareas como estudios. */
-const COURSE_ROADMAP: RoadmapPhase[] = [
-    {
-        id: 'charge',
-        title: 'Encargo',
-        description: 'Los tipos de trabajo del curso (TP semanal, ensayo, paper final), cada uno con su rúbrica, su encuadre y su guía.',
-        icon: ClipboardList,
-        // El nombre del curso solo no es un encargo: hace falta saber qué se pide.
-        isComplete: (ctx) => projectWorkTypes(ctx.project).length > 0,
-        cta: { label: 'Definir los tipos de trabajo', kind: 'charge' },
-    },
-    {
-        id: 'state-of-art',
-        title: 'Estado del arte',
-        description: 'La bibliografía del curso: los libros y artículos que sirven para todas las tareas.',
-        icon: Library,
-        isComplete: (ctx) => ctx.sourceCount > 0,
-        cta: { label: 'Preparar el estado del arte', kind: 'stateOfArt' },
-    },
-    {
-        id: 'studies',
-        title: 'Estudios',
-        description: 'Cada tarea del curso (un TP, un ensayo) es un estudio que nace como uno de sus tipos de trabajo.',
-        icon: ScrollText,
-        isComplete: (ctx) => ctx.studyCount > 0,
-        cta: { label: 'Nuevo estudio', kind: 'study' },
-    },
-    {
-        id: 'deliveries',
-        title: 'Entregas',
-        description: 'Los estudios ensamblados y listos para entregar.',
-        icon: FileEdit,
-        isComplete: (ctx) => ctx.deliveredCount > 0,
-        cta: { label: 'Nuevo estudio', kind: 'study' },
-    },
-];
-
-/** Exegético (ADR-046): un pasaje largo, estudiado por perícopas. */
-const EXEGETICAL_ROADMAP: RoadmapPhase[] = [
-    {
-        id: 'passage',
-        title: 'Pasaje y propósito',
-        description: 'Tu lectura del libro antes de dividirlo: el pasaje, para qué lo estudias, su estructura y su idea central.',
-        icon: NotebookPen,
-        // Completa con libro e idea central (fase «Encuadre de la serie»). Un
-        // proyecto viejo que la completó con una nota sigue completo.
-        isComplete: (ctx) => framingStatus(ctx.project).status === 'complete'
-            || !!ctx.project.contextNote || ctx.outputs.some((o) => o.kind === 'note'),
-        cta: { label: 'Definir el encuadre', kind: 'frame' },
-        i18nKey: 'exegetical.passage',
-        // Con un encuadre ya guardado, el botón lo edita.
-        variant: (ctx) => ctx.project.framing
-            ? {
-                description: 'Tu encuadre del libro. Vuelve a él cuando un estudio cambie tu lectura.',
-                cta: { label: 'Editar el encuadre', kind: 'frame' },
-                i18nKey: 'exegetical.passageEdit',
-            }
-            : null,
-    },
-    {
-        id: 'sources',
-        title: 'Fuentes',
-        description: 'Los comentarios, léxicos y gramáticas que sirven para todo el pasaje.',
-        icon: Library,
-        isComplete: (ctx) => ctx.sourceCount > 0,
-        cta: { label: 'Preparar el estado del arte', kind: 'stateOfArt' },
-        i18nKey: 'exegetical.sources',
-    },
-    {
-        id: 'division',
-        title: 'División en perícopas',
-        description: 'Divide el libro en perícopas con el planificador. Cada perícopa nace como un estudio de este proyecto, con su bibliografía.',
-        icon: Split,
-        // Con dos estudios también: un proyecto para una clase o el archivo
-        // no predica, y no debe quedar trabado sin serie.
-        isComplete: (ctx) => ctx.seriesCount > 0 || ctx.studyCount >= 2,
-        cta: { label: 'Planificar la serie', kind: 'planSeries' },
-        i18nKey: 'exegetical.division',
-    },
-    {
-        id: 'pericopes',
-        title: 'Estudios por perícopa',
-        description: 'Un estudio trabajado por cada perícopa del pasaje.',
-        icon: ScrollText,
-        // Trabajados: los estudios vacíos que la serie crea en lote no cuentan.
-        isComplete: (ctx) => ctx.workedStudyCount >= 2,
-        cta: { label: 'Nuevo estudio', kind: 'study' },
-        i18nKey: 'exegetical.pericopes',
-        // Con la serie creada, sus estudios ya esperan en la tarjeta: un
-        // estudio nuevo quedaría suelto y duplicaría una perícopa.
-        variant: (ctx) => ctx.seriesCount > 0
-            ? {
-                description: 'La serie ya creó un estudio por perícopa: trabájalos desde su tarjeta, en el orden del plan.',
-                cta: { label: 'Trabajar los estudios de la serie', kind: 'openSeries' },
-                i18nKey: 'exegetical.pericopesSeries',
-            }
-            : null,
-    },
-    {
-        id: 'synthesis',
-        title: 'Síntesis',
-        description: 'Lo que el pasaje dice como un todo: conversa con los tutores o escribe la síntesis.',
-        icon: MessageSquareQuote,
-        // También con la idea consolidada y vigente: la síntesis consolida el
-        // registro de la hipótesis (desactualizada no cuenta).
-        isComplete: (ctx) => ctx.sessionCount > 0 || ctx.outputs.length > 0 || currentRevisedIdea(ctx.project.framing) !== null,
-        cta: { label: 'Iniciar conversación', kind: 'newSession' },
-        i18nKey: 'exegetical.synthesis',
-    },
-];
-
 const GENERAL_ROADMAP: RoadmapPhase[] = [
     {
         id: 'context',
@@ -404,6 +318,7 @@ export const PROJECT_TYPES: Record<ProjectType, ProjectTypeMeta> = {
         description: 'Un mensaje individual: pasaje, exégesis, bosquejo y redacción.',
         icon: Mic2,
         roadmap: SERMON_ROADMAP,
+        capabilities: { desk: 'legacy', studies: true, languages: true, sources: 'picker', courseSetup: 'none', seriesCard: 'always' },
     },
     series: {
         type: 'series',
@@ -411,6 +326,7 @@ export const PROJECT_TYPES: Record<ProjectType, ProjectTypeMeta> = {
         description: 'Una secuencia de mensajes sobre un libro o tema, con marco común.',
         icon: GraduationCap,
         roadmap: SERIES_ROADMAP,
+        capabilities: { desk: 'legacy', studies: true, languages: true, sources: 'picker', courseSetup: 'none', seriesCard: 'always' },
     },
     counseling: {
         type: 'counseling',
@@ -418,6 +334,7 @@ export const PROJECT_TYPES: Record<ProjectType, ProjectTypeMeta> = {
         description: 'Acompañamiento pastoral: situación, análisis bíblico, plan de acción, seguimiento.',
         icon: HeartHandshake,
         roadmap: COUNSELING_ROADMAP,
+        capabilities: { desk: 'legacy', studies: false, languages: false, sources: 'picker', courseSetup: 'none', seriesCard: 'whenLinked' },
     },
     study: {
         type: 'study',
@@ -425,20 +342,25 @@ export const PROJECT_TYPES: Record<ProjectType, ProjectTypeMeta> = {
         description: 'Una pregunta que se responde con varios estudios: pasajes, temas o términos.',
         icon: BookOpen,
         roadmap: STUDY_ROADMAP,
+        capabilities: { desk: 'legacy', studies: true, languages: true, sources: 'both', courseSetup: 'open', seriesCard: 'whenLinked' },
     },
     course: {
         type: 'course',
         label: 'Curso',
         description: 'Las tareas de un curso (TP, ensayos, investigación final), cada una con su rúbrica, sobre una bibliografía común.',
         icon: GraduationCap,
-        roadmap: COURSE_ROADMAP,
+        // Sus fases salen del dominio (`buildProjectDesk`).
+        roadmap: [],
+        capabilities: { desk: 'course', studies: false, languages: true, sources: 'stateOfArt', courseSetup: 'none', seriesCard: 'whenLinked' },
     },
     exegetical: {
         type: 'exegetical',
         label: 'Exegético',
         description: 'Un pasaje largo estudiado por perícopas, para predicarlo, enseñarlo o archivarlo.',
         icon: ScrollText,
-        roadmap: EXEGETICAL_ROADMAP,
+        // Sus fases salen del dominio (`buildProjectDesk`).
+        roadmap: [],
+        capabilities: { desk: 'exegetical', studies: false, languages: true, sources: 'stateOfArt', courseSetup: 'none', seriesCard: 'whenLinked' },
     },
     general: {
         type: 'general',
@@ -446,6 +368,7 @@ export const PROJECT_TYPES: Record<ProjectType, ProjectTypeMeta> = {
         description: 'Proyecto libre, sin un flujo prescrito.',
         icon: Sparkles,
         roadmap: GENERAL_ROADMAP,
+        capabilities: { desk: 'general', studies: true, languages: true, sources: 'picker', courseSetup: 'collapsible', seriesCard: 'whenLinked' },
     },
 };
 
@@ -454,12 +377,19 @@ export function getProjectTypeMeta(type?: ProjectType): ProjectTypeMeta {
     return Object.prototype.hasOwnProperty.call(PROJECT_TYPES, clave) ? PROJECT_TYPES[clave] : PROJECT_TYPES.general;
 }
 
+/** El estado de un recorrido de los tipos viejos: un solo tipo, sin moldes a mano en el panel. */
+export interface RoadmapState {
+    phases: Array<{ phase: RoadmapPhase; complete: boolean }>;
+    activeIndex: number;
+    allComplete: boolean;
+}
+
 /**
  * Computes the current state of every phase for a project, plus identifies
  * the "active" phase (the first one that's not yet complete). When all
  * phases are complete, returns the last phase as active (a finished project).
  */
-export function computeRoadmapState(meta: ProjectTypeMeta, ctx: RoadmapContext) {
+export function computeRoadmapState(meta: ProjectTypeMeta, ctx: RoadmapContext): RoadmapState {
     const phases = meta.roadmap.map((phase) => {
         const cambio = phase.variant?.(ctx);
         return {

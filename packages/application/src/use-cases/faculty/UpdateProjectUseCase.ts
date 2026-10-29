@@ -2,6 +2,8 @@ import {
     IAIProjectRepository, AIProject, ProjectColor, ProjectType,
     cleanBibliographyCriteria, cleanProjectBibliography, cleanSearchLog, cleanProjectCourseInfo, cleanProjectWorkTypes, sourceIdsFromBibliography,
     FRAMING_TEXT_MAX, cleanFramingPatch, newHypothesisEntry, scopeFitsBooks,
+    applyCourseOps, cleanCourseScheduleMode, projectWorkTypes,
+    type CourseOp, type CourseScheduleMode,
     type AIProjectUpdate, type BibleBookId, type BibliographySearchLogEntry, type NewHypothesisEntry, type ProjectBibliographyCriteria,
     type ProjectBibliographyEntry, type ProjectCourseInfo, type ProjectFraming, type ProjectFramingPatch, type ProjectWorkType,
 } from '@dosfilos/domain';
@@ -44,6 +46,17 @@ export interface UpdateProjectDTO {
      * (sin leer el proyecto): dos anotaciones casi simultáneas no se pisan.
      */
     hypothesisEntry?: NewHypothesisEntry;
+    /**
+     * Curso: operaciones sobre el calendario de entregas y los patrones de
+     * corrección (`applyCourseOps`). Se aplican DENTRO de una transacción
+     * (`updateCourseRecord`): sobre el proyecto leído en ella, no sobre la
+     * caché de la página, y se guardan las dos listas enteras y limpias junto
+     * con el resto del cambio. Dos pestañas no se pisan: si el proyecto cambió
+     * entre la lectura y la escritura, Firestore repite la transacción.
+     */
+    courseOps?: CourseOp[];
+    /** Curso: con calendario o semana a semana. `null` lo quita. */
+    courseScheduleMode?: CourseScheduleMode | null;
 }
 
 export class UpdateProjectUseCase {
@@ -71,8 +84,10 @@ export class UpdateProjectUseCase {
             ...(dto.bibliographySearchLog !== undefined && { bibliographySearchLog: cleanSearchLog(dto.bibliographySearchLog) }),
             ...(framingPatch && { framingPatch }),
             ...(hypothesisAppend && { hypothesisAppend }),
+            ...(dto.courseScheduleMode !== undefined && { courseScheduleMode: cleanCourseScheduleMode(dto.courseScheduleMode) }),
             ...this.fuentes(dto),
         };
+        if (dto.courseOps?.length) return this.curso(projectId, dto.courseOps, update);
         return this.projectRepository.updateProject(projectId, update);
     }
 
@@ -84,6 +99,7 @@ export class UpdateProjectUseCase {
     private hayQueLeer(dto: UpdateProjectDTO): boolean {
         const p = dto.framingPatch ?? {};
         const presente = (v: unknown) => v !== undefined && v !== null;
+        // Las operaciones del curso leen dentro de su transacción: no cuentan aquí.
         return dto.bibliographyCriteria !== undefined
             || dto.bibleBooks !== undefined
             || presente(p.scope)
@@ -123,6 +139,26 @@ export class UpdateProjectUseCase {
             patch.revision = { ...patch.revision, ofIdea: (idea ?? '').trim().slice(0, FRAMING_TEXT_MAX) };
         }
         return Object.keys(patch).length ? patch : undefined;
+    }
+
+    /**
+     * Las operaciones del curso, en la transacción del repositorio: se aplican
+     * sobre el proyecto leído EN ella (si otra pestaña escribió entre medio, se
+     * repite sobre lo nuevo) y el resto del cambio va en la misma escritura.
+     * Sin proyecto, el repositorio falla: la página no cree que guardó. Las
+     * fechas que faltan se fijan aquí, una vez: un reintento no las mueve.
+     */
+    private curso(projectId: string, ops: CourseOp[], resto: AIProjectUpdate): Promise<AIProject> {
+        const ahora = new Date();
+        return this.projectRepository.updateCourseRecord(
+            projectId,
+            guardado => applyCourseOps(
+                { schedule: guardado.courseSchedule ?? [], patterns: guardado.feedbackPatterns ?? [] },
+                ops,
+                { workTypeIds: projectWorkTypes(guardado).map(t => t.id), now: () => ahora },
+            ),
+            resto,
+        );
     }
 
     /** La bibliografía manda sobre `sourceIds`: no pueden quedar contradiciéndose. */

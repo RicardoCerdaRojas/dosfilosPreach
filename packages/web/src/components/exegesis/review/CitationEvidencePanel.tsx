@@ -179,6 +179,9 @@ export function CitationEvidencePanel({ path, verdict, claim, review, isReviewin
 
             {canReview && (
                 <CitationDiagnosis
+                    // Una por cita: al elegir otra, el diagnóstico vuelve a cerrarse
+                    // (seguía abierto y parecía que se había diagnosticado esa también).
+                    key={path}
                     verdict={verdict}
                     knownAuthors={knownAuthors}
                     isCorrecting={isCorrecting}

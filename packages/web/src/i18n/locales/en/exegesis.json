@@ -38,6 +38,9 @@
     "none": "As always",
     "noneHint": "The usual analysis: it reads tools and commentaries together.",
     "saveFailed": "The method could not be changed.",
+    "saveToType": "Save «{{method}}» in the «{{type}}» work type: the next works will bring it preset.",
+    "savedToType": "The «{{type}}» work type now keeps the «{{method}}» method.",
+    "saveToTypeFailed": "The work was created, but the method could not be saved in the «{{type}}» work type.",
     "mixed": {
       "label": "Mixed (weekly paper)",
       "hint": "Per question: first the grammatical answer with the tools; then the readings with who defends them, the decisive criterion and the decision."
@@ -57,7 +60,8 @@
     "hintMethod": "First your exegesis, then the commentaries (Fee). Write here what you see with the tools before generating: the analysis will start from it and say which commentators confirm it and which dispute it.",
     "save": "Save my reading",
     "unsaved": "Unsaved",
-    "saveFailed": "Your reading could not be saved."
+    "saveFailed": "Your reading could not be saved.",
+    "analyzeBlocked": "The analysis was not generated: your reading has to be saved first so it goes into it."
   },
   "observationCheck": {
     "title": "The observation cites a commentary",
@@ -400,7 +404,7 @@
     },
     "style-template-paper": {
       "label": "Style template (never cited)",
-      "description": "Sample paper the agent imitates in form — never cited inline.",
+      "description": "Sample paper the assistant imitates in form — never cited inline.",
       "examples": "Your prior paper, seminary exemplar"
     },
     "other": {
@@ -424,14 +428,16 @@
       "hint": "They come from the project's approved bibliography, with its classification. Uncheck what this study does not need; the pages of each book are chosen later, in the corpus."
     },
     "title": "New exegetical paper",
-    "subtitle": "Set the passage and frame the work for the agent. We'll define rubric, sources, and structural plan next.",
+    "subtitle": "Set the passage and frame the work for the assistant. Next you define the rubric, sources, and structural plan.",
     "backToList": "Back to list",
     "submit": "Create and configure",
     "cancel": "Cancel",
     "language": {
       "title": "Paper language",
-      "subtitle": "The language the agent will use to write verses, conclusion, and introduction. Editable later — it always affects the WHOLE paper.",
-      "hint": "Independent of the UI language or the rubric you paste."
+      "subtitle": "The language the assistant uses to write verses, conclusion, and introduction. Editable later — it always affects the WHOLE paper.",
+      "hint": "Independent of the UI language or the rubric you paste.",
+      "nameEs": "Español",
+      "nameEn": "English"
     },
     "strategy": {
       "title": "Exegetical strategy",
@@ -474,11 +480,23 @@
     },
     "brief": {
       "title": "Paper framing",
-      "subtitle": "What did your professor assign? What angle do you want to take? This guides the agent across EVERY step.",
+      "subtitle": "What did your professor assign? What angle do you want to take? This guides the assistant across EVERY step.",
       "placeholder": "Ex: My professor assigned an exegetical analysis of Hebrews 1:1-4 with a Christological focus. I want to argue that the final revelation in the Son establishes the thematic superiority of the epistle.",
       "optional": "Optional but strongly recommended. You can edit it later.",
       "characterCount": "{{count}} / {{max}} characters",
       "tip": "The clearer the framing, the more cohesive the paper. Mention the passage, the emphasis (Christological, ecclesiological, etc.), and any explicit professor expectations.",
+      "slotPassagePending": "The [PASSAGE] slot in the framing is filled when you pick the passage.",
+      "slotSourcesFilled": "[PREVIOUS SOURCES] was filled with what you cited in {{paper}} and cannot be repeated: {{sources}}. Check it before creating.",
+      "slotSourcesNone": "{{paper}} cited nothing that cannot be repeated: fill in the [PREVIOUS SOURCES] slot or delete it.",
+      "slotSourcesNoPrevious": "There is no previous assignment of this kind in the course: fill in the [PREVIOUS SOURCES] slot or delete it.",
+      "stalePassage_one": "The framing names a passage that is not this work's ({{passage}}). Check it if it was left over from another assignment:",
+      "stalePassage_other": "The framing names passages that are not this work's ({{passage}}). Check the ones left over from another assignment:",
+      "staleUseHere": "Use {{passage}} in the checked ones",
+      "staleFixTemplate": "Leave the [PASSAGE] slot in the «{{name}}» template (checked ones only)",
+      "staleTemplateFixed": "The «{{name}}» template now has the [PASSAGE] slot: each work will put its own.",
+      "staleTemplateFailed": "Could not update the template. Please try again.",
+      "stalePreviousMarked": "The one matching the passage of {{paper}} comes checked.",
+      "slotSourcesRuleOff": "«Do not repeat sources» does not apply in this project: fill in the [PREVIOUS SOURCES] slot or delete it.",
       "templates": {
         "pickLabel": "Load saved template",
         "appliedLabel": "Template: {{name}}",
@@ -969,6 +987,14 @@
           "toast": {
             "added": "Added and pinned {{pages}} from {{source}}.",
             "addFailed": "The page could not be added. Try again."
+          },
+          "uncovered": {
+            "label": "Sources with nothing for this question",
+            "noReferences": "checked: no references to these verses found",
+            "lemmaMentioned": "checked: names the word, but no entry of its own found",
+            "unindexed": "not indexed: could not be checked",
+            "failed": "could not be checked",
+            "pending": "checking…"
           }
         },
         "gap": {
@@ -1024,7 +1050,7 @@
           "loadingIndex": "Reading the document index…",
           "indexFailed": "Could not read this document's index. Check that it finished processing and try again.",
           "proposal": {
-            "structural": "We found the section covering this passage in the commentary's own index.",
+            "structural": "We found this passage in the book's headings: its own index or, in a text edition, the running head of each page.",
             "semantic": "This document has no reference headings, so the suggestion comes from content matching and is worth reviewing.",
             "passage": "We found the pages that name the verses with a question. Check they are the ones you need.",
             "accept": "Accept suggestion",
@@ -1052,8 +1078,9 @@
             "loadFailed": "Could not open the document. Try again in a few seconds.",
             "pageFailed": "Could not show this sheet. Try another one or reopen the document.",
             "sheetLabel": "Sheet {{sheet}} of the document",
-            "sheet": "sheet {{sheet}}",
-            "printed": "· printed {{printed}}",
+            "sheet": "Sheet {{sheet}}",
+            "printed": "· p. {{printed}}",
+            "unnumbered": "· no printed page",
             "noPrinted": "· numbering not detected",
             "previous": "Previous sheet",
             "next": "Next sheet",
@@ -1074,6 +1101,7 @@
             "saveFailed": "Could not save the selection. Try again.",
             "incomplete": "Saved {{saved}} of {{expected}} passages. Review the selection before generating.",
             "tooLarge": "The paper corpus is too large to save. Remove sheets here or in another source.",
+            "savedEmpty": "{{source}} now has no pages: it stays in the corpus, empty.",
             "attachedStructural_one": "Added: the passage section, {{count}} sheet",
             "attachedStructural_other": "Added: the passage section, {{count}} sheets",
             "attachedPassage_one": "Added: {{count}} page that names the verses with a question",
@@ -1115,6 +1143,14 @@
             "resave": "Save again",
             "update_one": "Save changes · {{count}} sheet",
             "update_other": "Save changes · {{count}} sheets",
+            "clearSave": "Save without pages",
+            "clearHint": "You removed every page. If you save like this, the source stays in the corpus but empty.",
+            "clearDialog": {
+              "title": "Save this source without pages?",
+              "body": "The source stays in the corpus, but empty: it gives no text to the analysis and does not count toward the rubric. You can choose its pages again at any time. If you won't use it, remove it from the corpus.",
+              "confirm": "Save without pages",
+              "cancel": "Keep choosing"
+            },
             "clear": "Clear",
             "cleared_one": "1 range removed.",
             "cleared_other": "{{count}} ranges removed.",
@@ -1477,6 +1513,12 @@
         "excluded": {
           "alternate": "· grammar: may be repeated, better to alternate",
           "alternateWith": "· grammar: may be repeated, better to alternate with {{others}}",
+          "whyWorkType": "· {{type}}: not repeated in «{{workType}}»",
+          "whyDefault": "· {{type}}: not repeated (general rule)",
+          "whyUnknownType": "· that paper does not say what kind of source it was: proposed just in case",
+          "freeByWorkType": "{{sources}} not proposed: «{{workType}}» allows repeating those kinds of source.",
+          "defaultRuleHint": "Your course does not say which kinds of source are not repeated in «{{workType}}»: the general rule applies (commentaries; grammars are better alternated). You can set it when editing the course work types.",
+          "alternateUnchecked": "Grammars may be repeated: check them only if you prefer to alternate.",
           "freeByType": "{{sources}} not proposed: the no-repeat rule is for commentaries (and grammars, better alternated); lexicons, dictionaries, the base text and the rest may be repeated.",
           "title": "Sources excluded from this paper",
           "hint": "What your syllabus or professor doesn't allow here. They appear last in every list, marked, and the assistant is told not to cite them.",
@@ -1523,7 +1565,8 @@
         "sinPaginas": {
           "body": "No pages for this passage: the analysis searches the whole book for what bears on each verse. Choosing the passage pages is more precise and shows what goes in.",
           "vacia": "Extraction found no excerpts for this passage: this source adds nothing to the analysis and does not count toward the rubric. Choose its pages; for a grammar, the sections that cover the passage's forms.",
-          "cta": "Choose pages"
+          "cta": "Choose pages",
+          "vaciaAMano": "You removed every page: this source stays in the corpus, but empty. It adds nothing to the analysis and does not count toward the rubric. Choose its pages or remove it from the corpus."
         },
         "suggestion": {
           "cta_one": "Suggested selection · 1 sheet",
@@ -1621,7 +1664,7 @@
         },
         "tab": "Structural plan",
         "heading": "Structural plan",
-        "description": "For each step (intro, verse, conclusion) confirm or adjust which source types the agent should prioritize. Suggestions come from the rubric.",
+        "description": "For each step (intro, verse, conclusion) confirm or adjust which source types the assistant should prioritize. Suggestions come from the rubric.",
         "kinds": {
           "introduction": "Introduction",
           "verse": "Verses",
@@ -1641,7 +1684,7 @@
         },
         "noRubric": "No rubric attached yet. Configure the rubric first to see academic suggestions.",
         "emphasizedTypesLabel": "Types to prioritize",
-        "emphasizedTypesHint": "The agent cites these types generously in this step.",
+        "emphasizedTypesHint": "The assistant cites these types generously in this step.",
         "addType": "Add type",
         "deemphasizedToggle": "Show types to de-emphasize",
         "deemphasizedTypesLabel": "Types to de-emphasize",
@@ -1798,7 +1841,9 @@
       "verse": "Verse",
       "verseEnd": "Verse end",
       "helperHint": "Supports abbreviations, accents, and both separators (Heb 1:1 / Heb 1.1).",
-      "parsedAs": "Recognized as"
+      "parsedAs": "Recognized as",
+      "errorVerseOutOfRange": "{{book}} {{chapter}} has {{count}} verses: verse {{verse}} does not exist.",
+      "verseCount": "{{count}} verses"
     }
   },
   "list": {
@@ -1879,7 +1924,8 @@
         "greek-grave": "Greek accent: a final acute becomes grave before another word.",
         "punctuation": "Punctuation: double comma or space before a comma.",
         "lowercase-start": "The paragraph starts in lowercase.",
-        "repetition": "Repetition: \"{{excerpt}}\" appears {{count}} times."
+        "repetition": "Repetition: \"{{excerpt}}\" appears {{count}} times.",
+        "translation-mismatch": "The translation the closing adopts is not the analysis's final translation (\"{{analysis}}\"). Is this on purpose? If not, fix the closing or the analysis's translation."
       },
       "reviewer": {
         "criterion": "Criterion {{number}}",
@@ -2142,6 +2188,13 @@
     },
     "review": {
       "inProse": "in the prose",
+      "prose": {
+        "title": "The prose (what goes into the Word file)",
+        "subtitle": "Each citation carries the dot of its verdict: click it to see its evidence on the right.",
+        "notVerified": "The prose citations have not been verified yet: click \"Verify citations\" and each one will show its verdict.",
+        "needsVerify": "The prose changed after the last verification (for example, you edited it by hand) and its citations have no verdict: click \"Verify citations\" to check them again."
+      },
+      "analysisTitle": "The analysis (raw material for the prose)",
       "unverifiedQuoteBadge": "quote not found",
       "proseOnly": "This step has no structured analysis: its citations are in the list on the right.",
       "diagnosis": {
@@ -2380,6 +2433,9 @@
   },
   "detail": {
     "back": "Back to list",
+    "backToProject": "Back to the project",
+    "backToSeries": "Back to the series",
+    "backGeneric": "Back",
     "loading": "Loading paper...",
     "openSetup": "Configure",
     "moreActions": "More actions",
@@ -2466,7 +2522,18 @@
         "generating": "Generating",
         "awaiting-review": "Ready for review",
         "accepted": "Accepted",
-        "failed": "Failed"
+        "failed": "Failed",
+        "notRequested": "Not asked for in the assignment",
+        "excluded": "Left out of the document"
+      },
+      "notRequestedGroup": {
+        "title_one": "{{count}} step the assignment does not ask for",
+        "title_other": "{{count}} steps the assignment does not ask for",
+        "titleExcluded_one": "{{count}} step left out of the document",
+        "titleExcluded_other": "{{count}} steps left out of the document",
+        "hint": "They are not overdue work and they do not block the assembly. You can still study them if they help you answer.",
+        "show": "Show",
+        "hide": "Hide"
       },
       "action": {
         "generate": "Generate",
@@ -2512,6 +2579,11 @@
         "pendingHint_other": "{{count}} selected sections have no prose yet: they will not enter the document until you compose them.",
         "hint": "Uncheck whatever you do not want in the document; steps not generated yet can be unchecked too. The length the rubric asks for is split only among what is checked, by question answered.",
         "toggleFailed": "Could not change the selection. Try again.",
+        "handEdit": {
+          "title": "You edited the assembled paper by hand",
+          "body": "Assembling again rebuilds it from the steps and replaces these edits. For a correction to stick, make it in its step (verse, introduction or conclusion) and assemble again.",
+          "unverified": "These edits did not go through citation verification: verify the assembled paper before delivering it."
+        },
         "unanswered_one": "⚠ Question {{numbers}} of the brief is not answered by any selected section.",
         "unanswered_other": "⚠ Questions {{numbers}} of the brief are not answered by any selected section."
       },
@@ -2519,6 +2591,7 @@
       "verseBudget": "target ~{{count}} words",
       "regenerate": {
         "title": "Regenerate {{step}}",
+        "handEditWarning": "Assembling again replaces your hand edits to the assembly. Corrections belong in each section's step, so they are not lost when assembling.",
         "description": "This section is written again from the accepted analyses.",
         "analysisWarning": "The verse's canonical analysis is run again. The composed prose and the verified citations of the current version are left behind: you will need to recompose the prose and review the citations again. If you only want to redo the writing, use “Recompose prose”.",
         "hintLabel": "What to change (optional)",
@@ -2816,7 +2889,24 @@
     "nextSheet": "Next sheet",
     "sheetOf": "sheet {{sheet}} of {{total}}",
     "goToPage": "Go to p.",
-    "goToPageInvalid": "Type a page number.",
+    "jump": {
+      "modeLabel": "Which number you type",
+      "mode": {
+        "printed": "printed p.",
+        "sheet": "sheet"
+      },
+      "sheetPlaceholder": "Go to sheet",
+      "printedAria": "Go to a printed page of the book (for a file sheet, type “s. 803”)",
+      "sheetAria": "Go to a sheet of the file",
+      "noNumberingHint": "No printed numbering: by file sheet",
+      "invalidPrinted": "Type a page number: 692, xii, or “s. 803” for a sheet.",
+      "invalidSheet": "Type a sheet number.",
+      "noNumbering": "This book has no known printed numbering: type the file sheet.",
+      "sheetOutOfBook": "The file has {{total}} sheets.",
+      "printedOutOfBook": "The book has no p. {{page}}: its numbering runs from {{first}} to {{last}}.",
+      "printedOutOfBookNoRange": "The book has no p. {{page}}.",
+      "printedUnnumbered": "No sheet carries printed p. {{page}}: it may fall on plates or an unnumbered stretch. Try by sheet."
+    },
     "awayFromCited": "the citation said p. {{page}}",
     "scopeLabel": "Where to search",
     "scope": {

@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
-import { useFramingInPlanner } from '../useFramingInPlanner';
+import { act, renderHook } from '@testing-library/react';
+
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'es' } }) }));
+const { useFramingInPlanner } = await import('../useFramingInPlanner');
 
 /**
  * La tarjeta «Tu lectura y lo que propone el panorama» se monta con una
@@ -15,9 +18,9 @@ const proyecto = {
     framing: { centralIdea: 'Idea', rhythm: { sundays: 3 } },
 } as never;
 
-const montar = (p: ReturnType<typeof panorama>) => renderHook(({ pan }) => useFramingInPlanner({
-    project: proyecto, projectState: 'ok', bookParam: 'EZR', lang: 'es', panorama: pan as never, macroSections: null,
-    analyzedBookId: 'EZR', updateProject: { mutateAsync: vi.fn() }, setCollapsedPasses: vi.fn(),
+const montar = (p: ReturnType<typeof panorama>, mutateAsync = vi.fn().mockResolvedValue({}), project: unknown = proyecto) => renderHook(({ pan }) => useFramingInPlanner({
+    project: project as never, projectState: 'ok', bookParam: 'EZR', lang: 'es', panorama: pan as never, macroSections: null,
+    analyzedBookId: 'EZR', updateProject: { mutateAsync }, setCollapsedPasses: vi.fn(),
 }), { initialProps: { pan: p } });
 
 describe('useFramingInPlanner — la corrida del panorama', () => {
@@ -31,8 +34,34 @@ describe('useFramingInPlanner — la corrida del panorama', () => {
         expect(result.current.contrast!.key).not.toBe(k1);
     });
 
-    it('el aviso de domingos lleva al encuadre del proyecto', () => {
+    it('«Ajustar el calendario» abre el encuadre AQUÍ, sin ir al panel por la URL', () => {
         const { result } = montar(panorama());
-        expect(result.current.unitsNotice(4)).toMatchObject({ units: 4, sundays: 3, calendarHref: '/dashboard/projects/ezr?encuadre=1' });
+        const aviso = result.current.unitsNotice(4)!;
+        expect(aviso).toMatchObject({ units: 4, sundays: 3 });
+        expect(aviso).not.toHaveProperty('calendarHref');
+        expect(result.current.framingDialog).toMatchObject({ project: proyecto, open: false });
+        act(() => aviso.onAdjustCalendar());
+        expect(result.current.framingDialog!.open).toBe(true);
+    });
+
+    it('al guardar el encuadre, la fecha y la frecuencia nuevas pasan a la serie; un ritmo borrado no pisa lo escrito', async () => {
+        const mutateAsync = vi.fn().mockResolvedValue({});
+        const { result } = montar(panorama(), mutateAsync);
+        act(() => result.current.setStartDate('2026-11-01'));
+        act(() => result.current.unitsNotice(4)!.onAdjustCalendar());
+        await act(() => result.current.framingDialog!.onSave({ framingPatch: { rhythm: { sundays: 4, startDate: '2026-12-06', frequency: 'biweekly' } }, bibleBooks: ['EZR'] as never }));
+        expect(mutateAsync).toHaveBeenCalledWith({ projectId: 'ezr', framingPatch: { rhythm: { sundays: 4, startDate: '2026-12-06', frequency: 'biweekly' } }, bibleBooks: ['EZR'] });
+        expect(result.current.startDate).toBe('2026-12-06');
+        expect(result.current.frequency).toBe('biweekly');
+        expect(result.current.framingDialog!.open).toBe(false);
+        await act(() => result.current.framingDialog!.onSave({ framingPatch: { rhythm: null }, bibleBooks: ['EZR'] as never }));
+        expect(result.current.startDate).toBe('2026-12-06');
+        expect(result.current.frequency).toBe('biweekly');
+    });
+
+    it('sin proyecto no hay aviso ni diálogo', () => {
+        const { result } = montar(panorama(), vi.fn(), null);
+        expect(result.current.unitsNotice(4)).toBeNull();
+        expect(result.current.framingDialog).toBeNull();
     });
 });

@@ -77,6 +77,19 @@ export function isEmptyExtractedSource(
 }
 
 /**
+ * Una fuente vacía porque el usuario quitó todas sus páginas en el selector y
+ * guardó así (TP #9, B20), no porque la extracción no hallara nada: el aviso
+ * del corpus no puede decirle «la extracción no encontró fragmentos». La
+ * receta vacía se lee como `null`, así que la marca es el modo `manual`, que
+ * sólo escribe el selector.
+ */
+export function isSourceEmptiedByHand(
+    source: Pick<ProjectSource, 'sourceType' | 'excerptRecipe' | 'mode' | 'excerpts' | 'extractedAt' | 'excerptSelectionMode'>,
+): boolean {
+    return isEmptyExtractedSource(source) && source.excerptSelectionMode === 'manual';
+}
+
+/**
  * ¿Esta fuente se organiza por lema o por categoría (léxico, diccionario,
  * gramática)? Esas no se extraen por cercanía al pasaje: se eligen sus páginas
  * en el selector, por las formas del texto.

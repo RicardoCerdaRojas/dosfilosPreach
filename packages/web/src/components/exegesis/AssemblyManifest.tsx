@@ -2,6 +2,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/i18n';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
+import { AssemblyHandEditNotice } from './AssemblyHandEditNotice';
 import { unansweredQuestions } from '@dosfilos/domain';
 import type { AssemblyContents, AssemblyPart, parseBriefQuestions } from '@dosfilos/domain';
 
@@ -55,6 +56,8 @@ export function AssemblyManifest({ contents, paperId, preguntas }: {
     );
 
     return (
+        <>
+        <AssemblyHandEditNotice paperId={paperId} />
         <div className="mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2.5 space-y-2">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 {t('detail.steps.assembly.manifestTitle', { count: contents.words })}
@@ -106,5 +109,6 @@ export function AssemblyManifest({ contents, paperId, preguntas }: {
                 {t('detail.steps.assembly.hint')}
             </p>
         </div>
+        </>
     );
 }

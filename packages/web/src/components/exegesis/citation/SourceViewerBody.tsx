@@ -7,6 +7,7 @@ import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageVi
 import { BookSearchResults } from './BookSearchResults';
 import { CitationViewerToolbar, type SearchScope } from './CitationViewerToolbar';
 import { IndiceDelLibro } from './IndiceDelLibro';
+import { SubtituloDelLibro } from './SubtituloDelLibro';
 import { useCitationSheet } from './useCitationSheet';
 import { useDocumentTextSearch } from '@/hooks/exegesis/useDocumentTextSearch';
 import type { CitationTarget, ViewedSheet } from './CitationSourceModal';
@@ -116,6 +117,7 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
             <div className={cn('flex items-start gap-3 border-b border-border px-5 py-3', layout === 'full' && 'pr-14')}>
                 <div className="min-w-0 flex-1 space-y-1">
                     {renderTitle ? renderTitle(title) : <h2 className="m-0">{title}</h2>}
+                    <SubtituloDelLibro label={view.label} title={view.bookTitle} author={view.author} />
                     <p className="text-xs text-muted-foreground">
                         {viewed.printed !== null
                             ? t('citationViewer.pageWithSheet', { printed: viewed.printed, sheet: viewed.sheet })
@@ -151,7 +153,8 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
                     viewSheet={view.viewSheet}
                     totalSheets={view.totalSheets}
                     onGo={view.goTo}
-                    onGoToPageInput={view.goToPageInput}
+                    numbering={view.numbering}
+                    printedPageOffset={view.printedPageOffset}
                     search={search}
                     onSearch={setSearch}
                     scope={scope}

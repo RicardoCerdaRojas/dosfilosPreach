@@ -3,12 +3,15 @@ import { Library } from 'lucide-react';
 import {
     inheritableProjectEntries,
     initialSourcesFromBibliography,
+    sourceTypeForInherited,
     type AddProjectSourceInput,
+    type KnownSourceIdentity,
     type AIProject,
     type BibleBookId,
 } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { useLibrary } from '@/hooks/library';
+import { useCourseSourceIdentities } from '@/hooks/exegesis/usePreviousCourseDelivery';
 
 interface ProjectBibliographyOfferProps {
     project: AIProject | null;
@@ -17,6 +20,8 @@ interface ProjectBibliographyOfferProps {
     onChange: (sources: AddProjectSourceInput[]) => void;
     /** El texto de ayuda; sin él, el del estudio suelto. La serie lo dice para todos sus estudios. */
     hint?: string;
+    /** El idioma del trabajo: la clave de cita de varios autores se une con «y» o «and». */
+    language?: 'es' | 'en';
 }
 
 /**
@@ -25,7 +30,7 @@ interface ProjectBibliographyOfferProps {
  * pueden desmarcar antes de crear. Las hojas de cada libro se eligen
  * después, en el corpus, contra el pasaje de este estudio.
  */
-export function ProjectBibliographyOffer({ project, bookId, onChange, hint }: ProjectBibliographyOfferProps) {
+export function ProjectBibliographyOffer({ project, bookId, onChange, hint, language = 'es' }: ProjectBibliographyOfferProps) {
     const { t } = useTranslation('exegesis');
     const { resources } = useLibrary();
     const [desmarcadas, setDesmarcadas] = useState<ReadonlySet<string>>(new Set());
@@ -39,7 +44,13 @@ export function ProjectBibliographyOffer({ project, bookId, onChange, hint }: Pr
     // Se avisa solo cuando cambia QUÉ se hereda: la lista de la biblioteca
     // puede llegar como un arreglo nuevo en cada render, y avisar por eso
     // hacía un ciclo de renders.
-    const fuentes = initialSourcesFromBibliography(elegidas, id => porId.get(id)?.exegeticalType ?? null, id => porId.get(id)?.title);
+    // Lo que ya se sabe de cada libro por los trabajos del curso: una obra
+    // traída al curso sin clasificar llegaba como «otro» y sin clave de cita
+    // (TP #9, B13/B14).
+    const identidades = useCourseSourceIdentities(project?.id ?? null);
+    const tipoEnBiblioteca = (id: string) => porId.get(id)?.exegeticalType ?? null;
+    const known: KnownSourceIdentity = { usedBefore: id => identidades.get(id), authorOf: id => porId.get(id)?.author, language };
+    const fuentes = initialSourcesFromBibliography(elegidas, tipoEnBiblioteca, id => porId.get(id)?.title, known);
     const clave = JSON.stringify(fuentes);
     const ultimo = useRef<string | null>(null);
     useEffect(() => {
@@ -67,9 +78,13 @@ export function ProjectBibliographyOffer({ project, bookId, onChange, hint }: Pr
                             <input type="checkbox" className="mt-1" checked={!desmarcadas.has(e.id)} onChange={() => alternar(e.id)} />
                             <span className="min-w-0">
                                 <span className="block truncate">{e.title || porId.get(e.resourceId!)?.title}</span>
-                                {(e.sourceType ?? porId.get(e.resourceId!)?.exegeticalType) && (
-                                    <span className="block text-[11px] text-muted-foreground">{t(`sourceTypes.${e.sourceType ?? porId.get(e.resourceId!)?.exegeticalType}.label`)}</span>
+                                {/* El autor a la vista, para saber qué desmarcar (p. ej. lo citado la semana anterior). */}
+                                {(e.author || porId.get(e.resourceId!)?.author) && (
+                                    <span className="block truncate text-xs text-foreground/80" data-testid="project-source-author">{e.author || porId.get(e.resourceId!)?.author}</span>
                                 )}
+                                <span className="block text-[11px] text-muted-foreground" data-testid="project-source-type">
+                                    {t(`sourceTypes.${sourceTypeForInherited(e, tipoEnBiblioteca, known)}.label`)}
+                                </span>
                             </span>
                         </label>
                     </li>

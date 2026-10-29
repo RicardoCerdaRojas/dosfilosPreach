@@ -13,8 +13,8 @@ import {
     type SheetRange,
 } from '@dosfilos/domain';
 import { VERSE_CORPUS_SPACE_CHARS } from '@dosfilos/infrastructure';
-import { Button } from '@/components/ui/button';
 import type { CartSaveMode } from './cartSaveMode';
+import { CartSaveButton } from './CartSaveButton';
 
 /**
  * Lo que va al trabajo, y cuánto corpus llega con eso a cada versículo.
@@ -53,14 +53,6 @@ interface Props {
     /** La numeración confirmada del recurso; manda sobre el desfase. */
     numbering: PageNumbering | null;
 }
-
-const SAVE_LABEL: Record<CartSaveMode, string> = {
-    saving: 'paperSetup.subSteps.corpus.picker.cart.saving',
-    saved: 'paperSetup.subSteps.corpus.picker.cart.saved',
-    resave: 'paperSetup.subSteps.corpus.picker.cart.resave',
-    update: 'paperSetup.subSteps.corpus.picker.cart.update',
-    add: 'paperSetup.subSteps.corpus.picker.cart.confirm',
-};
 
 export function SelectionCart({
     ranges,
@@ -281,20 +273,12 @@ export function SelectionCart({
                     </p>
                 )}
 
-                {/* Guardar NO se bloquea por presupuesto. La única forma de
-                    bajarlo es guardar una selección más chica, así que
-                    bloquearlo dejaba al usuario encerrado: no podía arreglar lo
-                    que el aviso le pedía arreglar. Y si las otras fuentes ya se
-                    pasan solas, esta fuente no se podría guardar nunca. */}
-                <Button
-                    type="button"
-                    className="w-full"
-                    variant={overBudget ? 'outline' : 'default'}
-                    disabled={sheetCount === 0 || saveMode === 'saving' || saveMode === 'saved'}
-                    onClick={onConfirm}
-                >
-                    {t(SAVE_LABEL[saveMode], { count: sheetCount })}
-                </Button>
+                {saveMode === 'clear' && (
+                    <p className="text-[11px] text-warning-subtle-foreground" data-testid="carrito-vaciar-aviso">
+                        {t('paperSetup.subSteps.corpus.picker.cart.clearHint')}
+                    </p>
+                )}
+                <CartSaveButton saveMode={saveMode} sheetCount={sheetCount} overBudget={overBudget} onConfirm={onConfirm} />
             </div>
         </div>
     );

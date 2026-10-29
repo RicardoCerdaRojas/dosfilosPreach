@@ -338,3 +338,21 @@ describe('registro: una anotación para arrayUnion (C7)', () => {
     });
 });
 
+
+describe('«di por hecha la división» (escritorio, fase 3)', () => {
+    it('solo se guarda el sí explícito', () => {
+        expect(cleanProjectFraming({ purpose: 'teach', divisionWithoutSeries: true }, opts).divisionWithoutSeries).toBe(true);
+        expect('divisionWithoutSeries' in cleanProjectFraming({ divisionWithoutSeries: false }, opts)).toBe(false);
+        expect('divisionWithoutSeries' in cleanProjectFraming({ divisionWithoutSeries: 'sí' }, opts)).toBe(false);
+    });
+
+    it('en un cambio, desmarcar borra el campo (null) y marcar lo escribe', () => {
+        expect(cleanFramingPatch({ divisionWithoutSeries: true }, opts)).toEqual({ divisionWithoutSeries: true });
+        expect(cleanFramingPatch({ divisionWithoutSeries: false }, opts)).toEqual({ divisionWithoutSeries: null });
+    });
+
+    it('no es un campo del formulario: no cambia el estado del encuadre', () => {
+        expect(FRAMING_FIELDS).not.toContain('divisionWithoutSeries');
+        expect(framingStatus({ framing: { divisionWithoutSeries: true }, bibliographyCriteria: null }).status).toBe('missing');
+    });
+});

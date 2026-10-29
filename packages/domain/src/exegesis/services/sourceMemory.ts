@@ -42,6 +42,14 @@ export interface PreviousDelivery {
 }
 
 /**
+ * Lo que la memoria de entregas lee de un resumen. El escritorio del curso
+ * (`projectDesk`) arma este mínimo con sus estudios y usa la MISMA regla, así
+ * la mesa y el analizador no eligen «la anterior» de dos maneras distintas.
+ */
+export type DeliveryMemorySummary = Pick<ExegesisPaperSummary, 'id' | 'title' | 'passage' | 'createdAt' | 'citedSourceKeys'>
+    & { sources?: ExegesisPaperSummary['sources'] };
+
+/**
  * La entrega inmediatamente anterior a un trabajo, entre las del mismo autor.
  *
  * Sólo cuentan las que CITARON algo: un trabajo abierto y sin aceptar nada no
@@ -52,7 +60,7 @@ export interface PreviousDelivery {
  * ninguno de los anteriores citó nada.
  */
 export function previousDelivery(
-    summaries: ReadonlyArray<ExegesisPaperSummary>,
+    summaries: ReadonlyArray<DeliveryMemorySummary>,
     currentPaperId: string,
 ): PreviousDelivery | null {
     return previousDeliveries(summaries, currentPaperId, 1)[0] ?? null;
@@ -63,17 +71,28 @@ export function previousDelivery(
  * La gramática se alterna (A7): para sugerir «la otra» hay que mirar dos.
  */
 export function previousDeliveries(
-    summaries: ReadonlyArray<ExegesisPaperSummary>,
+    summaries: ReadonlyArray<DeliveryMemorySummary>,
     currentPaperId: string,
     count: number,
 ): PreviousDelivery[] {
     const actual = summaries.find(s => s.id === currentPaperId);
     if (!actual) return [];
+    return deliveriesBefore(summaries.filter(s => s.id !== currentPaperId), actual.createdAt, count);
+}
 
+/**
+ * Las últimas entregas antes de un momento, para un trabajo que todavía no
+ * existe: al CREAR el TP #10, el hueco [FUENTES DE LA SEMANA ANTERIOR] del
+ * encargo se llena con lo citado en el TP #9 (TP #9, B4).
+ */
+export function deliveriesBefore(
+    summaries: ReadonlyArray<DeliveryMemorySummary>,
+    before: Date,
+    count: number,
+): PreviousDelivery[] {
     return summaries
-        .filter(s => s.id !== currentPaperId)
         .filter(s => s.citedSourceKeys.length > 0)
-        .filter(s => s.createdAt.getTime() < actual.createdAt.getTime())
+        .filter(s => s.createdAt.getTime() < before.getTime())
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, count)
         .map(previa => {
@@ -132,4 +151,33 @@ export function summariesForDeliveryMemory(
     if (!paper.projectId) return [...summaries];
     // Un trabajo de otro proyecto que colabora con éste también cuenta.
     return summaries.filter(s => !s.projectId || s.projectId === paper.projectId || (s.linkedProjectIds ?? []).includes(paper.projectId!));
+}
+
+/**
+ * Entre qué trabajos del curso se busca la entrega anterior de un tipo de
+ * trabajo: los del MISMO tipo (TP #9, B4/B11). El TP semanal se compara con
+ * el TP semanal anterior, no con el ensayo que se entregó en medio. Cuentan
+ * los que nacieron como ese tipo y los que el calendario vincula a una
+ * entrada de ese tipo (un TP suelto traído al curso).
+ *
+ * Si ninguno de los otros es de ese tipo (trabajos de antes de los tipos,
+ * sueltos sin vincular), el corpus de un trabajo que ya existe mira la lista
+ * entera: perder la entrega anterior es peor que compararse con un trabajo
+ * de otro tipo. Al CREAR (`fallbackToAll: false`) no: la primera entrega de
+ * un tipo no tiene anterior, y llenar el encargo con lo que citó un ensayo
+ * o un trabajo suelto de otro libro sería inventarla (revisión de B4).
+ */
+export function summariesOfSameWorkType<S extends Pick<ExegesisPaperSummary, 'id'> & { projectWorkTypeId?: string | null }>(
+    summaries: ReadonlyArray<S>,
+    paper: { id?: string | null; projectWorkTypeId?: string | null },
+    project: { courseSchedule?: ReadonlyArray<{ workTypeId: string; paperId?: string | null }> | null } | null | undefined,
+    options: { fallbackToAll?: boolean } = {},
+): S[] {
+    const tipo = paper.projectWorkTypeId;
+    if (!tipo) return [...summaries];
+    const vinculados = new Set((project?.courseSchedule ?? []).filter(e => e.workTypeId === tipo && e.paperId).map(e => e.paperId!));
+    const delTipo = (s: S) => s.id === paper.id || s.projectWorkTypeId === tipo || vinculados.has(s.id);
+    const mismos = summaries.filter(delTipo);
+    if (mismos.some(s => s.id !== paper.id)) return mismos;
+    return options.fallbackToAll === false ? mismos : [...summaries];
 }

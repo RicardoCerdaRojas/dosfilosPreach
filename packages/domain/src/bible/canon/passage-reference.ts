@@ -9,14 +9,22 @@
  * never silently degrades — it returns an error code so the UI can show a
  * specific message.
  *
- * v1 scope: book + chapter range validated against `BIBLE_CANON`. Verse-
- * level validation (e.g. "Sal 23:7" rejecting because Psalm 23 only has 6
- * verses) is deferred to v1.5 — it requires verses-per-chapter data we
- * haven't embedded yet.
+ * Book + chapter range validated against `BIBLE_CANON`. Verses are checked
+ * against `VERSES_PER_CHAPTER` only with `{ strictVerses: true }`, for what
+ * the student TYPES (TP #9, B1: «Santiago 4:11-19» se aceptaba y Santiago 4
+ * tiene 17). The parser also reads STORED strings and headings of books
+ * («Juan 1:50-2:30», «12:18–13:1» de un comentario griego): rejecting them
+ * there would lose data silently, so the default stays lenient.
  */
+
+/** `strictVerses`: rechazar versículos que no existen (solo para la entrada del usuario). */
+export interface PassageParseOptions {
+    strictVerses?: boolean;
+}
 
 import type { BibleBookId, BibleCanonBook } from './BibleCanon';
 import { findBooksByAlias, getBookById, normalizeAlias } from './BibleCanon';
+import { VERSES_PER_CHAPTER } from './versesPerChapter';
 
 export interface PassageReference {
     bookId: BibleBookId;
@@ -47,6 +55,7 @@ export type ParseError =
     | 'chapter-out-of-range'
     | 'invalid-verse'
     | 'inverted-range'
+    | 'verse-out-of-range'
     | 'malformed';
 
 export interface ParseSuccess {
@@ -63,6 +72,35 @@ export interface ParseFailure {
     hint: string;
     /** When `error === 'book-ambiguous'`, the candidates that matched. */
     candidates?: BibleCanonBook[];
+    /** When `error === 'verse-out-of-range'`: the chapter and how many verses it has. */
+    limit?: { bookId: BibleBookId; chapter: number; verses: number; verse: number };
+}
+
+/**
+ * Cuántos versículos tiene un capítulo (el mayor entre la numeración del
+ * lector y la del original). `null` si el libro o el capítulo no existen.
+ */
+export function versesInChapter(bookId: BibleBookId, chapter: number): number | null {
+    const n = VERSES_PER_CHAPTER[bookId]?.[chapter - 1];
+    return typeof n === 'number' && n > 0 ? n : null;
+}
+
+/** El primer versículo que no existe en el pasaje, como error; `null` si todos existen. */
+function verseBeyondChapter(book: BibleCanonBook, ref: PassageReference): ParseFailure | null {
+    const pares: Array<[number, number | null]> = [[ref.chapterStart, ref.verseStart], [ref.chapterEnd, ref.verseEnd]];
+    for (const [chapter, verse] of pares) {
+        if (verse === null) continue;
+        const max = versesInChapter(book.id, chapter);
+        if (max !== null && verse > max) {
+            return {
+                ok: false,
+                error: 'verse-out-of-range',
+                hint: `${book.nameEn} ${chapter} only has ${max} verse${max === 1 ? '' : 's'} (got ${verse}).`,
+                limit: { bookId: book.id, chapter, verses: max, verse },
+            };
+        }
+    }
+    return null;
 }
 
 export type ParseResult = ParseSuccess | ParseFailure;
@@ -102,7 +140,7 @@ const TAIL_REGEX = /\s+(\d+)(?:[:.](\d+)(?:[-–—](?:(\d+)[:.](\d+)|(\d+)))?|[
  *
  * Returns `{ ok: false, error, hint }` for unparseable or invalid input.
  */
-export function parsePassageReference(input: string): ParseResult {
+export function parsePassageReference(input: string, options: PassageParseOptions = {}): ParseResult {
     const cleaned = input.normalize('NFC').trim();
     if (!cleaned) {
         return fail('empty', 'Empty passage reference.');
@@ -210,17 +248,10 @@ export function parsePassageReference(input: string): ParseResult {
     }
     // else: chapter-only reference (e.g. "Heb 1"). verses remain null.
 
-    return {
-        ok: true,
-        book,
-        ref: {
-            bookId: book.id,
-            chapterStart: chapter,
-            chapterEnd,
-            verseStart,
-            verseEnd,
-        },
-    };
+    const ref = { bookId: book.id, chapterStart: chapter, chapterEnd, verseStart, verseEnd };
+    const fuera = options.strictVerses ? verseBeyondChapter(book, ref) : null;
+    if (fuera) return fuera;
+    return { ok: true, book, ref };
 }
 
 /**
@@ -236,7 +267,7 @@ export function buildPassageReference(input: {
     chapterEnd?: number;
     verseStart?: number | null;
     verseEnd?: number | null;
-}): ParseResult {
+}, options: PassageParseOptions = {}): ParseResult {
     const book = getBookById(input.bookId);
     if (!book) {
         return fail('book-not-found', `Unknown book id "${input.bookId}".`);
@@ -276,11 +307,10 @@ export function buildPassageReference(input: {
         }
     }
 
-    return {
-        ok: true,
-        book,
-        ref: { bookId: book.id, chapterStart, chapterEnd, verseStart, verseEnd },
-    };
+    const ref = { bookId: book.id, chapterStart, chapterEnd, verseStart, verseEnd };
+    const fuera = options.strictVerses ? verseBeyondChapter(book, ref) : null;
+    if (fuera) return fuera;
+    return { ok: true, book, ref };
 }
 
 /**
@@ -351,3 +381,30 @@ function fail(error: ParseError, hint: string): ParseFailure {
 // Re-export the normalizer because some UIs (autocomplete) want to apply it
 // to user input as they type without going through the full parser.
 export { normalizeAlias };
+
+/**
+ * El primer pasaje válido nombrado dentro de un texto libre: «TP9 - Santiago
+ * 4:11-17» → Santiago 4:11-17. Una entrada del calendario del curso puede
+ * traer el pasaje solo en su rótulo, y crear el trabajo desde ella obligaba
+ * a escribirlo otra vez (TP #9, B7). `null` si no nombra ninguno.
+ */
+export function findPassageInText(text: string | null | undefined): PassageReference | null {
+    if (!text) return null;
+    const tokens = text.normalize('NFC')
+        .replace(/(\d)\s*[-–—]\s*(\d)/g, '$1-$2')
+        .split(/\s+/)
+        .map(t => t.replace(/^[^\p{L}\d]+/u, ''))
+        .filter(Boolean);
+    const cola = /^\d+(?:[:.]\d+)?(?:-\d+(?:[:.]\d+)?)?[.,;:)\]]*$/;
+    for (let j = 1; j < tokens.length; j++) {
+        if (!cola.test(tokens[j]!)) continue;
+        const ref = tokens[j]!.replace(/[.,;:)\]]+$/, '');
+        // Del nombre más largo al más corto: «1 Juan 3:1» antes que «Juan 3:1».
+        for (let k = Math.min(4, j); k >= 1; k--) {
+            // Estricto: lo que nombra un rótulo se va a proponer como pasaje del trabajo.
+            const r = parsePassageReference([...tokens.slice(j - k, j), ref].join(' '), { strictVerses: true });
+            if (r.ok) return r.ref;
+        }
+    }
+    return null;
+}

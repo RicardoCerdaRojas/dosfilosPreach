@@ -19,7 +19,7 @@ import {
     printedLabelIn,
     type AnalysisClaim,
 } from '@dosfilos/domain';
-import { findUnsupportedWitnessClaims, versionUnderReview } from '@dosfilos/domain';
+import { findUnsupportedWitnessClaims, formatPassageReference, sourceFingerprint, versionUnderReview } from '@dosfilos/domain';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 import { VerifierSourcesBuilder } from '../../services/exegesis/VerifierSourcesBuilder';
 
@@ -112,9 +112,15 @@ export class VerifyStepCitationsUseCase {
             const sources = await this.sourcesBuilder.build(paper);
             reservation.markLlmContacted();
 
-            const { citations, summary } = target.canonicalAnalysis
-                ? await this.verifyAnalysisAndProse(target, sources, paper.displayLanguage, ownerId, stepId)
-                : await this.verifyMarkdown(target.markdown, sources, ownerId, stepId, paper.displayLanguage);
+            const contexto: StepContext = {
+                previous: verifiedVerdictsOf(step),
+                ...(step.verseRef ? { passageRef: formatPassageReference(step.verseRef, paper.displayLanguage) } : {}),
+            };
+            const { citations: juzgadas, summary } = target.canonicalAnalysis
+                ? await this.verifyAnalysisAndProse(target, sources, paper.displayLanguage, ownerId, stepId, contexto)
+                : await this.verifyMarkdown(target.markdown, sources, ownerId, stepId, paper.displayLanguage, undefined,
+                    contexto.previous.filter(v => v.origin !== 'analysis'), contexto.passageRef);
+            const citations = stampSourceFingerprints(juzgadas, sources);
 
             await this.paperRepository.setStepVersionVerifications(
                 ownerId,
@@ -152,8 +158,12 @@ export class VerifyStepCitationsUseCase {
         language: 'es' | 'en',
         ownerId: string,
         stepId: string,
+        contexto: StepContext,
     ): Promise<{ citations: VerifiedCitation[]; summary: VerificationSummary }> {
-        const analysis = await this.verifyAnalysis(target.canonicalAnalysis!, sources, language, ownerId);
+        // Cada camino reusa los suyos: el offset de una cita del análisis es
+        // su índice, el de la prosa su posición en el texto.
+        const analysis = await this.verifyAnalysis(target.canonicalAnalysis!, sources, language, ownerId,
+            contexto.previous.filter(v => v.origin !== 'prose'), contexto.passageRef);
         if (!target.markdown?.trim()) return analysis;
 
         // La prosa hereda lo que el análisis resolvió para la misma cita, y se
@@ -161,7 +171,8 @@ export class VerifyStepCitationsUseCase {
         // se adivinaban por la evidencia, a veces una oración en inglés.
         // Solo de las verificadas: heredar de una cita con alarma propaga la alarma.
         const prosa = await this.verifyMarkdown(target.markdown, sources, ownerId, stepId, language,
-            analysis.citations.filter(c => c.status === 'verified'));
+            analysis.citations.filter(c => c.status === 'verified'),
+            contexto.previous.filter(v => v.origin === 'prose'), contexto.passageRef);
         const deLaProsa = prosa.citations.map(c => ({ ...c, origin: 'prose' as const }));
         const problemas = deLaProsa.filter(c => c.status !== 'verified').length;
         return {
@@ -186,6 +197,8 @@ export class VerifyStepCitationsUseCase {
         stepId: string,
         language?: 'es' | 'en',
         inheritFrom?: ReadonlyArray<ParsedCitation>,
+        reuseVerified: ReadonlyArray<VerifiedCitation> = [],
+        passageRef?: string,
     ): Promise<{ citations: VerifiedCitation[]; summary: VerificationSummary }> {
         const { citations } = await this.verifier.verify({
             markdown,
@@ -193,6 +206,8 @@ export class VerifyStepCitationsUseCase {
             userId: ownerId,
             ...(language ? { language } : {}),
             ...(inheritFrom && inheritFrom.length > 0 ? { inheritFrom } : {}),
+            ...(reuseVerified.length > 0 ? { reuseVerified } : {}),
+            ...(passageRef ? { passageRef } : {}),
         });
 
         // Las afirmaciones sobre manuscritos se cuentan aparte de las
@@ -229,6 +244,8 @@ export class VerifyStepCitationsUseCase {
         sources: VerifierSource[],
         language: 'es' | 'en',
         ownerId: string,
+        reuseVerified: ReadonlyArray<VerifiedCitation> = [],
+        passageRef?: string,
     ): Promise<{ citations: VerifiedCitation[]; summary: VerificationSummary }> {
         const claims = collectAnalysisClaims(analysis);
         const numberingByKey = new Map(
@@ -245,6 +262,8 @@ export class VerifyStepCitationsUseCase {
             sources,
             userId: ownerId,
             language,
+            ...(reuseVerified.length > 0 ? { reuseVerified } : {}),
+            ...(passageRef ? { passageRef } : {}),
         });
 
         const summary = buildSummary(verdicts, {
@@ -258,6 +277,66 @@ export class VerifyStepCitationsUseCase {
         return { citations: verdicts, summary };
     }
 
+}
+
+/**
+ * Cada veredicto lleva la huella de la fuente con que se juzgó (revisión de
+ * B46): un verde solo se reusa si la fuente sigue igual. Se estampa aquí, con
+ * las fuentes completas del trabajo, y no en el verificador: las relecturas
+ * (página citada, libro) juzgan con fuentes recortadas a las hojas leídas, y
+ * su huella no se repetiría nunca.
+ */
+export function stampSourceFingerprints(
+    citations: ReadonlyArray<VerifiedCitation>,
+    sources: ReadonlyArray<VerifierSource>,
+): VerifiedCitation[] {
+    const huellas = new Map<string, string>();
+    const huellaDe = (id: string): string | null => {
+        if (!huellas.has(id)) {
+            const fuente = sources.find(s => s.corpusId === id);
+            if (!fuente) return null;
+            huellas.set(id, sourceFingerprint(fuente));
+        }
+        return huellas.get(id)!;
+    };
+    return citations.map(c => {
+        const huella = c.matchedCorpusId ? huellaDe(c.matchedCorpusId) : null;
+        return huella ? { ...c, sourceFingerprint: huella } : c;
+    });
+}
+
+/** Lo que el paso aporta a juzgar sus citas, aparte del texto. */
+interface StepContext {
+    /** Veredictos verdes de cualquier versión del paso (B46). */
+    previous: VerifiedCitation[];
+    /** «Santiago 4:14», para «este versículo» (B35b). */
+    passageRef?: string;
+}
+
+/**
+ * Los veredictos `verified` de TODAS las versiones del paso, la más nueva
+ * primero (TP #9, B46).
+ *
+ * Todas y no solo la madre: editar la prosa a mano crea una versión nueva
+ * que nace sin los veredictos de la prosa (`buildManualEditVersion`), pero la
+ * anterior sigue en `step.versions` con los suyos; y volver a verificar la
+ * misma versión tiene que respetar lo que esa misma versión ya resolvió
+ * («Kittel y Friedrich, pp. 230–231», del análisis, verde y luego alarma sin
+ * que nadie lo tocara). Es el mismo versículo y las mismas fuentes; la
+ * identidad exacta de la cita la decide `reuseIdenticalVerdicts`.
+ */
+export function verifiedVerdictsOf(step: ExegeticalStep): VerifiedCitation[] {
+    const porId = new Map<string, ExegeticalStepVersion>();
+    for (const v of [...step.versions, step.current, step.accepted]) {
+        if (v && !porId.has(v.id)) porId.set(v.id, v);
+    }
+    const masNuevaPrimero = [...porId.values()].sort((a, b) => fecha(b) - fecha(a));
+    return masNuevaPrimero.flatMap(v => (v.citationVerdicts ?? []).filter(c => c.status === 'verified'));
+}
+
+function fecha(v: ExegeticalStepVersion): number {
+    const t = v.createdAt instanceof Date ? v.createdAt.getTime() : NaN;
+    return Number.isFinite(t) ? t : 0;
 }
 
 function pickVersion(

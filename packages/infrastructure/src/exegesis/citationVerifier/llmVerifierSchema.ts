@@ -43,13 +43,27 @@ export const LLM_CITATION_VERIFIER_SCHEMA = {
             type: SchemaType.BOOLEAN,
             description: 'True when a chunk whose pageHint is one of the CITED pages supports the claim on its own, even if another chunk supports it better. False when no cited page was given or no chunk of a cited page supports it.',
         },
+        // TP #9 (Diagnosticar): distingue la cita hallada ENTERA en otra página
+        // de la que halló algo parecido. Después del veredicto, para no
+        // endurecerlo: el análisis del autor no se le exige a la fuente.
+        notFromSource: {
+            type: SchemaType.STRING,
+            description: 'What the paper SENTENCE asserts under the citation that the chunks do NOT say (the author\'s own analysis or what exceeds the source), in the sentence\'s words. Empty string when the source covers all of it. Never the preceding context. Does not change the verdict.',
+        },
+        // Revisión adversarial: con `notFromSource` solo, una página realmente
+        // equivocada en una oración con análisis propio salía «mixta».
+        claimCoverage: {
+            type: SchemaType.STRING,
+            enum: ['whole', 'partial'],
+            description: '"whole" when the supporting chunk (bestPageHint) states the CENTRAL claim the sentence makes under the citation — an own conclusion the sentence adds ("which confirms…") does not make it partial. "partial" when the chunk only touches the topic or states something similar or adjacent. "partial" also when nothing supported it.',
+        },
         reasoning: {
             type: SchemaType.STRING,
             description: 'One sentence in the requested language explaining the verdict about takenFromSource.',
         },
     },
-    required: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'supportingQuote', 'citedPageSupports', 'reasoning'],
+    required: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'supportingQuote', 'citedPageSupports', 'notFromSource', 'claimCoverage', 'reasoning'],
     // Gemini ordena las propiedades alfabéticamente si no se le dice; el
     // orden importa: se escribe lo tomado antes de decidir.
-    propertyOrdering: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'supportingQuote', 'citedPageSupports', 'reasoning'],
+    propertyOrdering: ['takenFromSource', 'status', 'confidence', 'bestPageHint', 'supportingQuote', 'citedPageSupports', 'notFromSource', 'claimCoverage', 'reasoning'],
 } as const;

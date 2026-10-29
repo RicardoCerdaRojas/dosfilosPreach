@@ -7,6 +7,7 @@ vi.mock('@/i18n', () => ({
     useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k} ${JSON.stringify(o)}` : k) }),
 }));
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
+vi.mock('@/hooks/exegesis/useExegesisPaper', () => ({ useExegesisPaper: () => ({ paper: null }) }));
 const { AssemblyManifest } = await import('../AssemblyManifest');
 
 const parte = (stepId: string, kind: 'verse' | 'introduction', words = 100) => ({ stepId, kind, label: `Santiago 4:${stepId}`, words });

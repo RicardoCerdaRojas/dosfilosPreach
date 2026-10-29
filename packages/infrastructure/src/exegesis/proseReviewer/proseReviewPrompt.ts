@@ -36,6 +36,9 @@ export function buildProseReviewPrompt(input: ProseReviewInput): { systemInstruc
             '- Report only real failures of the numbered criteria. If the prose meets a criterion, say nothing about it. An empty list is a valid answer.',
             '- Copy the failing phrase EXACTLY as it appears in the prose. If the failure is something missing, leave "quote" empty.',
             '- The fix uses only what the prose and the analysis already say. Do not propose sources, pages or data that are not there.',
+            '- Never name a citation (author and page) that is not in AVAILABLE CITATIONS. Do not ask for a reference the work does not have.',
+            '- The analysis is the student\'s draft, not the truth: the student may depart from it in the prose on purpose. If the prose departs from the analysis and a STUDENT REVIEW NOTE explains it, it is not a failure: do not report it.',
+            '- If the prose departs from the analysis and no note explains it, report it as a question ("The prose does not follow the analysis on X: is this on purpose?"), never as an order to restore what the analysis said.',
             '- Accents, dashes and commas are checked elsewhere: do not report them.',
             '',
             'Criteria:',
@@ -46,6 +49,9 @@ export function buildProseReviewPrompt(input: ProseReviewInput): { systemInstruc
             '- Informa solo fallas reales de los criterios numerados. Si la prosa cumple un criterio, no digas nada de él. Una lista vacía es una respuesta válida.',
             '- Copia la frase que falla EXACTA, como aparece en la prosa. Si la falla es algo que falta, deja "quote" vacío.',
             '- El arreglo usa solo lo que ya dicen la prosa y el análisis. No propongas fuentes, páginas ni datos que no estén.',
+            '- Nunca nombres una cita (autor y página) que no esté en CITAS DISPONIBLES. No pidas una referencia que el trabajo no tiene.',
+            '- El análisis es el borrador del estudiante, no la verdad: el estudiante puede apartarse de él en la prosa a propósito. Si la prosa se aparta del análisis y una NOTA DE REVISIÓN DEL ESTUDIANTE lo explica, no es falla: no lo informes.',
+            '- Si la prosa se aparta del análisis y ninguna nota lo explica, infórmalo como pregunta («La prosa no sigue al análisis en X: ¿es a propósito?»), nunca como orden de restituir lo que decía el análisis.',
             '- Acentos, rayas y comas se revisan aparte: no los informes.',
             '',
             'Criterios:',
@@ -53,15 +59,25 @@ export function buildProseReviewPrompt(input: ProseReviewInput): { systemInstruc
         ].join('\n');
 
     const preguntas = input.questions.map(q => `${q.number}. ${q.text}`).join('\n');
-    const decididos = input.decisiveCriteria.map(c => en
-        ? `- Question ${c.questionNumber}: criterion «${c.text}» (why: ${c.whyThisOverThat}). Decision: ${c.decision}`
-        : `- Pregunta ${c.questionNumber}: criterio «${c.text}» (por qué: ${c.whyThisOverThat}). Decisión: ${c.decision}`).join('\n');
+    const decididos = input.decisiveCriteria.map(c => {
+        const linea = en
+            ? `- Question ${c.questionNumber}: criterion «${c.text}» (why: ${c.whyThisOverThat}). Decision: ${c.decision}`
+            : `- Pregunta ${c.questionNumber}: criterio «${c.text}» (por qué: ${c.whyThisOverThat}). Decisión: ${c.decision}`;
+        // La nota va pegada a lo que corrige: «el criterio no decide; se
+        // corrige en la prosa» (TP #9, 4:14).
+        const notas = (c.reviewNotes ?? []).map(n => en ? `  · Student's review note: ${n}` : `  · Nota de revisión del estudiante: ${n}`);
+        return [linea, ...notas].join('\n');
+    }).join('\n');
     const gramatica = input.grammarCitations.join('; ');
+    const notas = (input.reviewNotes ?? []).map(n => `- ${n.citation}: ${n.note}`).join('\n');
+    const disponibles = (input.availableCitations ?? []).join('; ');
     const bloques = [
         `${en ? 'VERSE' : 'VERSÍCULO'}: ${input.verseLabel}`,
         preguntas ? `${en ? 'QUESTIONS IT ANSWERS' : 'PREGUNTAS QUE RESPONDE'}:\n${preguntas}` : '',
         decididos ? `${en ? 'WHAT THE ANALYSIS DECIDED' : 'LO QUE EL ANÁLISIS DECIDIÓ'}:\n${decididos}` : '',
         gramatica ? `${en ? 'COURSE GRAMMAR CITED IN THE ANALYSIS' : 'GRAMÁTICA DEL CURSO CITADA EN EL ANÁLISIS'}: ${gramatica}` : '',
+        notas ? `${en ? 'STUDENT REVIEW NOTES (they outweigh the analysis)' : 'NOTAS DE REVISIÓN DEL ESTUDIANTE (pesan más que el análisis)'}:\n${notas}` : '',
+        disponibles ? `${en ? 'AVAILABLE CITATIONS' : 'CITAS DISPONIBLES'}: ${disponibles}` : '',
         `${en ? 'PROSE' : 'PROSA'}:\n${input.prose.trim()}`,
     ].filter(Boolean);
     return { systemInstruction, userMessage: bloques.join('\n\n') };

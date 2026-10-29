@@ -101,6 +101,7 @@ import {
     shouldRestoreDraft,
 } from './utils/serieDesdeProyecto';
 import { useFramingInPlanner } from './expository/useFramingInPlanner';
+import { ProjectFramingDialog } from '@/pages/faculty/components/project/ProjectFramingDialog';
 import { useIssueTriage } from './expository/useIssueTriage';
 
 /**
@@ -972,12 +973,17 @@ export function ExpositoryAssistantPage() {
                     : paperCount > 0
                         ? (t('expository.toast.seriesCreatedWithPapers', { count: paperCount }) as string)
                         : (t('expository.toast.seriesCreated') as string);
-            toast.success(
-                vigente
-                    ? (t('expository.project.createdInProject', { title: vigente.title }) as string)
-                    : toastMsg,
-            );
-            navigate(`/dashboard/plans/${series.id}`);
+            // Desde un proyecto, la serie es la fase 3 de su recorrido: se
+            // vuelve a su escritorio, con la serie a un clic en el aviso.
+            if (vigente) {
+                toast.success(t('expository.project.createdInProject', { title: vigente.title }) as string, {
+                    action: { label: t('expository.project.openSeries') as string, onClick: () => navigate(`/dashboard/plans/${series.id}`) },
+                });
+                navigate(`/dashboard/projects/${encodeURIComponent(vigente.id)}`);
+            } else {
+                toast.success(toastMsg);
+                navigate(`/dashboard/plans/${series.id}`);
+            }
         } catch (err: any) {
             console.error('[expository] createSeries failed:', err);
             toast.error(err?.message ?? (t('expository.toast.createFailed') as string));
@@ -1208,6 +1214,8 @@ export function ExpositoryAssistantPage() {
                 {preachableUnits && preachableUnits.length > 0 && encuadre.unitsNotice(preachableUnits.length) && (
                     <UnitsVsSundaysNotice {...encuadre.unitsNotice(preachableUnits.length)!} t={t} />
                 )}
+                {/* «Ajustar el calendario»: el encuadre se edita aquí, sin salir del análisis. */}
+                {encuadre.framingDialog && <ProjectFramingDialog {...encuadre.framingDialog} />}
 
                 {!collapsedPasses.has(5) && (
                     <div id="expository-pass-5">

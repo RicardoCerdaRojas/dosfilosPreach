@@ -44,8 +44,60 @@ export type SourceRepetitionPolicy = Readonly<Partial<Record<SourceType, SourceR
 export const DEFAULT_SOURCE_REPETITION_POLICY: SourceRepetitionPolicy = {
     'commentary-critical': 'exclude',
     'commentary-expository': 'exclude',
+    // Metzger es un comentario (del aparato): en el TP #9 el profesor lo
+    // prohibió con Adamson y Mayor, y la propuesta no lo traía (B16).
+    'textual-commentary': 'exclude',
     'grammar-syntax': 'alternate',
 };
+
+/**
+ * Los grupos de tipos que se ofrecen en el formulario del tipo de trabajo
+ * («qué no se repite entre entregas»). El estudiante piensa en «los
+ * comentarios», no en tres tipos; se guarda la lista de tipos.
+ */
+export type SourceRepetitionGroup = 'commentaries' | 'grammars' | 'lexicons' | 'text' | 'studies' | 'ancient';
+export const SOURCE_REPETITION_GROUPS: ReadonlyArray<{ id: SourceRepetitionGroup; types: ReadonlyArray<SourceType> }> = [
+    { id: 'commentaries', types: ['commentary-critical', 'commentary-expository', 'textual-commentary'] },
+    { id: 'grammars', types: ['grammar-syntax'] },
+    { id: 'lexicons', types: ['lexicon-technical', 'theological-dictionary'] },
+    { id: 'text', types: ['biblical-text-edition', 'critical-apparatus'] },
+    { id: 'studies', types: ['theological-monograph', 'journal-article', 'historical-background'] },
+    { id: 'ancient', types: ['primary-source-ancient'] },
+];
+
+/** La regla que rige un trabajo y de dónde sale, para decir el porqué de cada exclusión. */
+export interface WorkTypeRepetitionPolicy {
+    policy: SourceRepetitionPolicy;
+    /**
+     * `workType`: el curso dijo qué no se repite en este tipo de trabajo
+     * (TP #9, B11: «comentarios sí; gramáticas y texto base no»).
+     * `default`: no lo dijo; rige la regla general.
+     */
+    origin: 'workType' | 'default';
+    /**
+     * Qué hacer con una clave citada que ninguna fuente declara de qué tipo
+     * es. Por defecto se excluye (proponer de más se corrige con un clic);
+     * con la lista vacía («todo se repite», revisión de B11) no se excluye.
+     */
+    untyped: SourceRepetitionRule;
+}
+
+/**
+ * La regla de no repetir de un tipo de trabajo. Con la lista guardada, solo
+ * esos tipos se proponen excluir y el resto queda libre: en el TP #9 la
+ * propuesta sacó a Wallace (gramática), que el curso sí deja repetir (B15).
+ * Sin lista, la regla general.
+ */
+export function repetitionPolicyForWorkType(
+    workType: { noRepeatSourceTypes?: ReadonlyArray<SourceType> | null } | null | undefined,
+): WorkTypeRepetitionPolicy {
+    const lista = workType?.noRepeatSourceTypes;
+    if (!lista || !Array.isArray(lista)) return { policy: DEFAULT_SOURCE_REPETITION_POLICY, origin: 'default', untyped: 'exclude' };
+    const tipos: ReadonlyArray<SourceType> = lista;
+    const policy: Partial<Record<SourceType, SourceRepetitionRule>> = {};
+    for (const t of tipos) policy[t] = 'exclude';
+    return { policy, origin: 'workType', untyped: tipos.length === 0 ? 'free' : 'exclude' };
+}
 
 /**
  * La regla de un tipo. Sin tipo (una clave citada que ninguna fuente de esa
@@ -55,8 +107,9 @@ export const DEFAULT_SOURCE_REPETITION_POLICY: SourceRepetitionPolicy = {
 export function repetitionRuleFor(
     type: SourceType | null | undefined,
     policy: SourceRepetitionPolicy = DEFAULT_SOURCE_REPETITION_POLICY,
+    untyped: SourceRepetitionRule = 'exclude',
 ): SourceRepetitionRule {
-    if (!type) return 'exclude';
+    if (!type) return untyped;
     return policy[type] ?? 'free';
 }
 
@@ -79,7 +132,7 @@ export interface ProposedExclusion extends ExcludedSource {
 export function proposeExclusions(
     previous: PreviousDelivery | null,
     language: 'es' | 'en' = 'es',
-    options: { beforePrevious?: PreviousDelivery | null; policy?: SourceRepetitionPolicy } = {},
+    options: { beforePrevious?: PreviousDelivery | null; policy?: SourceRepetitionPolicy; untyped?: SourceRepetitionRule } = {},
 ): ProposedExclusion[] {
     if (!previous) return [];
     // Sin título, el pasaje: con `null` la propuesta decía «(trabajo
@@ -96,7 +149,7 @@ export function proposeExclusions(
     const out: ProposedExclusion[] = [];
     for (const key of previous.citedSourceKeys) {
         const sourceType = tipoDe(key);
-        const rule = repetitionRuleFor(sourceType, options.policy);
+        const rule = repetitionRuleFor(sourceType, options.policy, options.untyped);
         if (rule === 'free') continue;
         const antes = options.beforePrevious;
         const alternatives = rule === 'alternate' && antes

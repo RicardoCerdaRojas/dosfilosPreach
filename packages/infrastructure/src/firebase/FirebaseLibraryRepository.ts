@@ -11,7 +11,8 @@ import {
     orderBy,
     limit,
     Timestamp,
-    onSnapshot
+    onSnapshot,
+    documentId
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { LibraryResourceEntity, SYSTEM_SOURCE_OWNER_ID } from '@dosfilos/domain';
@@ -20,6 +21,7 @@ export interface ILibraryRepository {
     create(resource: LibraryResourceEntity): Promise<void>;
     findById(id: string): Promise<LibraryResourceEntity | null>;
     findByUserId(userId: string): Promise<LibraryResourceEntity[]>;
+    getResourcesByIds(userId: string, ids: readonly string[]): Promise<LibraryResourceEntity[]>;
     subscribeToUserResources(userId: string, callback: (resources: LibraryResourceEntity[]) => void): () => void;
     update(id: string, updates: Partial<LibraryResourceEntity>): Promise<void>;
     delete(id: string): Promise<void>;
@@ -53,6 +55,50 @@ export class FirebaseLibraryRepository implements ILibraryRepository {
 
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => this.firestoreToResource(doc.id, doc.data()));
+    }
+
+    /**
+     * Los recursos del usuario con ESOS ids, sin bajar la biblioteca entera.
+     *
+     * El panel del proyecto traía todos los `library_resources` del usuario
+     * (cada uno pesa hasta 800 KB) para quedarse con las tres o cuatro fuentes
+     * del proyecto. Aquí se piden por id, en lotes de 30 (el tope de `in`).
+     *
+     * El filtro por dueño va siempre: las reglas rechazan ENTERA una consulta
+     * que no lo garantice, y con él un id ajeno o de la biblioteca común no
+     * entra (igual que antes, cuando se filtraba en el cliente). Los ids
+     * repetidos se piden una vez; los que no existen no vuelven. El orden es
+     * el de `ids`. Un documento ilegible se salta con un aviso en la consola.
+     */
+    async getResourcesByIds(userId: string, ids: readonly string[]): Promise<LibraryResourceEntity[]> {
+        const unicos = [...new Set(ids.filter(id => typeof id === 'string' && id !== ''))];
+        if (!userId || unicos.length === 0) return [];
+
+        const LOTE = 30;
+        const lotes: string[][] = [];
+        for (let i = 0; i < unicos.length; i += LOTE) lotes.push(unicos.slice(i, i + LOTE));
+
+        const respuestas = await Promise.all(lotes.map(lote => getDocs(query(
+            collection(db, this.collectionName),
+            where('userId', '==', userId),
+            where(documentId(), 'in', lote),
+        ))));
+        const porId = new Map<string, LibraryResourceEntity>();
+        for (const snap of respuestas) {
+            for (const d of snap.docs) {
+                // Un documento que la entidad rechaza (un título de menos de 3
+                // letras, sin archivo ni texto) no tumba las demás fuentes.
+                try {
+                    porId.set(d.id, this.firestoreToResource(d.id, d.data()));
+                } catch (err) {
+                    console.warn(`[FirebaseLibraryRepository.getResourcesByIds] recurso ${d.id} ilegible:`, err);
+                }
+            }
+        }
+        return unicos.flatMap(id => {
+            const recurso = porId.get(id);
+            return recurso ? [recurso] : [];
+        });
     }
 
     /**

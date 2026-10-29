@@ -1,7 +1,7 @@
 
 import { ISessionRepository, StudySession, ExegeticalInsight, SessionsPage } from '@dosfilos/domain';
 import { db } from '../../config/firebase';
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Helper to recursively remove undefined fields (Firestore doesn't accept undefined)
@@ -130,6 +130,18 @@ export class FirestoreGreekSessionRepository implements ISessionRepository {
         // Let's rewrite for now as session object is authoritative in this architecture
         const { id, ...data } = session;
         await setDoc(docRef, removeUndefined(data), { merge: true });
+    }
+
+    /**
+     * Liga una sesión existente a un proyecto («Vincular existente» del panel
+     * del proyecto). Toca solo `projectId` y `updatedAt`, como su par de
+     * hebreo (`FirestoreHebrewStudySessionRepository.linkToProject`).
+     */
+    async linkToProject(sessionId: string, projectId: string | null): Promise<void> {
+        await updateDoc(doc(db, this.sessionsCollection, sessionId), {
+            projectId: projectId ?? null,
+            updatedAt: serverTimestamp(),
+        });
     }
 
     async saveInsight(insight: ExegeticalInsight): Promise<void> {

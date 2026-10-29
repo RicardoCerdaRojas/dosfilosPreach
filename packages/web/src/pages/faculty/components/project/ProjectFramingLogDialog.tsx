@@ -18,6 +18,8 @@ interface ProjectFramingLogDialogProps {
     /** Agrega la anotación al registro GUARDADO (`hypothesisEntry`); lanza si falla. */
     onSave: (entry: NewHypothesisEntry) => Promise<void>;
     saving: boolean;
+    /** El estudio ya elegido (la fila de la mesa desde la que se anota). */
+    initialStudyId?: string | null;
 }
 
 /**
@@ -25,14 +27,19 @@ interface ProjectFramingLogDialogProps {
  * pastor dice si confirma, matiza o contradice su lectura del libro. La
  * hipótesis se revisa durante el trabajo, no al final.
  */
-export function ProjectFramingLogDialog({ open, onOpenChange, studies, onSave, saving }: ProjectFramingLogDialogProps) {
+export function ProjectFramingLogDialog({ open, onOpenChange, studies, onSave, saving, initialStudyId }: ProjectFramingLogDialogProps) {
     const { t, i18n } = useTranslation('projects');
     const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
     const [studyId, setStudyId] = useState('');
     const [verdict, setVerdict] = useState<HypothesisVerdict | ''>('');
     const [note, setNote] = useState('');
     useEffect(() => {
-        if (open) { setStudyId(studies.length === 1 ? studies[0]!.id : ''); setVerdict(''); setNote(''); }
+        if (open) {
+            const elegido = initialStudyId && studies.some(s => s.id === initialStudyId) ? initialStudyId : null;
+            setStudyId(elegido ?? (studies.length === 1 ? studies[0]!.id : ''));
+            setVerdict('');
+            setNote('');
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 

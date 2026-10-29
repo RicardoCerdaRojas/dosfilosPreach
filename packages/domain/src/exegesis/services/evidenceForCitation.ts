@@ -1,4 +1,5 @@
-import type { VerifierSourceChunk } from '../ports/ICitationVerifier';
+import type { VerifierSource, VerifierSourceChunk } from '../ports/ICitationVerifier';
+import type { VerifiedCitation } from '../entities/CitationVerification';
 
 /**
  * Ordena la evidencia de una fuente para verificar UNA cita: primero los
@@ -170,4 +171,177 @@ export function inheritFromAnalysisCitations<T extends {
             .filter(o => clave(o) !== clave(c.author));
         return otras.length > 0 ? { ...c, otherSources: otras } : c;
     });
+}
+
+/**
+ * Una cita que no cambió no cambia de veredicto (TP #9, B46).
+ *
+ * El juez es un modelo y no responde dos veces igual: en la prosa de Stg 4:14,
+ * «Varner, en cambio, distingue la relativa, una interrogación principal, y la
+ * explicación final (Varner, 162)» salió verificada a las 19:46 y «página no
+ * coincide: el pasaje de apoyo está en 163» a las 22:03, con el mismo texto
+ * (solo se había editado OTRA oración del párrafo). Lo mismo «Kittel y
+ * Friedrich, pp. 230–231» del análisis, que nadie tocó.
+ *
+ * Por cada cita devuelve el veredicto previo de una cita IDÉNTICA (misma
+ * fuente, páginas, afirmación, marca de textual, otras fuentes y sitio del
+ * análisis; y el contexto previo cuando la afirmación depende de él), o `null`
+ * para juzgarla.
+ *
+ * SOLO LOS VERDES. El llamador pasa únicamente veredictos `verified`, y aquí
+ * se vuelve a filtrar. Reusar también las alarmas congelaría una falsa
+ * alarma: volver a verificar es justamente lo que hace el estudiante cuando
+ * cree que el verificador se equivocó, y cada arreglo del verificador (leer
+ * la página citada, el contexto de B35b) tiene que poder rescatarla. La
+ * asimetría es a propósito: que una alarma pase a verde al repetir es una
+ * mejora visible; que un verde pase a alarma sin tocar el texto es el defecto.
+ *
+ * Tampoco si la fuente cambió: el veredicto guarda la huella de la fuente con
+ * que se juzgó (`sourceFingerprint`) y tiene que coincidir con la de ahora. Una
+ * fuente que ya no está en el trabajo no tiene huella. Un veredicto sin huella
+ * (anterior a esta regla) no se reusa: el primero que se juzgue la estampa.
+ */
+export function reuseIdenticalVerdicts<T extends ReusableCitationFields>(
+    citations: ReadonlyArray<T>,
+    previous: ReadonlyArray<ReusableCitationFields & VerdictFields>,
+    /** corpusId → huella actual de cada fuente del trabajo. */
+    fingerprints: ReadonlyMap<string, string>,
+): Array<(T & VerdictFields) | null> {
+    const porClave = new Map<string, ReusableCitationFields & VerdictFields>();
+    for (const p of previous) {
+        if (p.status !== 'verified' || !p.matchedCorpusId) continue;
+        const huella = fingerprints.get(p.matchedCorpusId);
+        if (!huella || p.sourceFingerprint !== huella) continue;
+        const k = citationIdentity(p);
+        if (!porClave.has(k)) porClave.set(k, p);
+    }
+    return citations.map(c => {
+        const previo = porClave.get(citationIdentity(c));
+        return previo ? { ...sinIndefinidos(c), ...soloVeredicto(previo) } : null;
+    });
+}
+
+/** Lo que identifica a una cita para reusar su veredicto. */
+export interface ReusableCitationFields {
+    author: string;
+    title: string;
+    pages: string | null;
+    evidencePage?: string | null;
+    evidence: string;
+    evidenceIsQuoted: boolean;
+    evidenceContext?: string;
+    otherSources?: string[];
+    site?: string;
+}
+
+/** Los campos del veredicto (lo que añade `VerifiedCitation` a la cita). */
+interface VerdictFields {
+    status: VerifiedCitation['status'];
+    matchedCorpusId: string | null;
+    matchedSourceLabel: string | null;
+    similarityScore: number | null;
+    matchedPage: string | null;
+    matchedPageLabel?: string | null;
+    note: string | null;
+    bookSearch?: VerifiedCitation['bookSearch'];
+    takenFromSource?: string;
+    supportingSpan?: VerifiedCitation['supportingSpan'];
+    foundInOtherSource?: VerifiedCitation['foundInOtherSource'];
+    notFromSource?: string;
+    claimCoverage?: VerifiedCitation['claimCoverage'];
+    sourceFingerprint?: string;
+}
+
+const CAMPOS_DEL_VEREDICTO = [
+    'status', 'matchedCorpusId', 'matchedSourceLabel', 'similarityScore', 'matchedPage', 'matchedPageLabel',
+    'note', 'bookSearch', 'takenFromSource', 'supportingSpan', 'foundInOtherSource', 'notFromSource',
+    'claimCoverage', 'sourceFingerprint',
+] as const;
+
+/**
+ * Solo lo que el juez decidió: la cita (offset, `raw`, contexto) es la nueva.
+ * Firestore rechaza `undefined`: no se copia ninguna clave que lo valga.
+ */
+function soloVeredicto(v: VerdictFields): VerdictFields {
+    const out: Record<string, unknown> = {};
+    for (const k of CAMPOS_DEL_VEREDICTO) {
+        if (v[k] !== undefined) out[k] = v[k];
+    }
+    return out as unknown as VerdictFields;
+}
+
+function sinIndefinidos<T extends object>(o: T): T {
+    return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T;
+}
+
+/**
+ * La clave de identidad. Autor y título sin tildes ni mayúsculas (la misma
+ * fuente escrita igual); la afirmación tal cual, salvo espacios (una tilde
+ * griega distinta es otra afirmación); las páginas sin espacios y con un solo
+ * guion. El contexto previo entra solo si la afirmación depende de él: editar
+ * la oración anterior no cambia «Varner distingue la relativa…», pero sí lo
+ * que es «él» en «Robertson cita el versículo sin él».
+ */
+export function citationIdentity(c: ReusableCitationFields): string {
+    const texto = (s: string | null | undefined) => (s ?? '').normalize('NFC').replace(/\s+/g, ' ').trim();
+    const clave = (s: string | null | undefined) => texto(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const paginas = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, '').replace(/[–—]/g, '-');
+    return JSON.stringify([
+        clave(c.author),
+        clave(c.title),
+        paginas(c.pages),
+        paginas(c.evidencePage ?? null),
+        texto(c.evidence),
+        c.evidenceIsQuoted,
+        [...new Set((c.otherSources ?? []).map(clave))].sort(),
+        c.site ?? '',
+        dependsOnContext(c.evidence) ? texto(c.evidenceContext) : '',
+    ]);
+}
+
+/**
+ * Si la afirmación tiene palabras que solo se entienden con lo anterior
+ * («él», «esto», «este versículo», «aquí»). Pecar de más es seguro: una
+ * afirmación marcada así solo deja de reusarse cuando cambia su contexto.
+ */
+export function dependsOnContext(evidence: string): boolean {
+    return DEIXIS.test(evidence);
+}
+
+const DEIXIS = new RegExp(
+    '(^|[^\\p{L}])(' + [
+        // es
+        'él', 'ella', 'ellos', 'ellas', 'ello', 'esto', 'eso', 'aquello', 'este', 'esta', 'estos', 'estas',
+        'ese', 'esa', 'esos', 'esas', 'aquel', 'aquella', 'aquellos', 'aquellas', 'éste', 'ésta', 'ése', 'ésa',
+        'dicho', 'dicha', 'dichos', 'dichas', 'tal', 'tales', 'aquí', 'ahí', 'allí', 'mismo', 'misma',
+        // en. Sin «that» ni «there»: casi siempre son conjunción («argues that…»)
+        // y existencial («there is…»), y marcarían casi toda afirmación en inglés.
+        'it', 'its', 'this', 'these', 'those', 'he', 'she', 'they', 'them', 'here', 'such',
+    ].join('|') + ')(?=$|[^\\p{L}])',
+    'iu',
+);
+
+/**
+ * La huella de una fuente tal como la ve el verificador: su numeración y el
+ * texto y el rótulo de cada fragmento. Cambia si se recalibra la numeración
+ * (hoja → página), si se re-extrae el libro (reproceso en lote) o si cambian
+ * las hojas admitidas; en los tres casos un verde viejo ya no está probado.
+ * FNV-1a de 32 bits: no es criptográfica, alcanza para notar un cambio.
+ */
+export function sourceFingerprint(source: Pick<VerifierSource, 'numbering' | 'chunks'>): string {
+    let h = 0x811c9dc5;
+    const mezclar = (t: string) => {
+        for (let i = 0; i < t.length; i++) {
+            h ^= t.charCodeAt(i);
+            h = Math.imul(h, 0x01000193) >>> 0;
+        }
+        h ^= 0x1f; // separador: «ab»+«c» no es «a»+«bc»
+        h = Math.imul(h, 0x01000193) >>> 0;
+    };
+    mezclar(JSON.stringify(source.numbering ?? null));
+    for (const c of source.chunks) {
+        mezclar(c.pageHint ?? '');
+        mezclar(c.text);
+    }
+    return `${source.chunks.length}:${h.toString(16)}`;
 }

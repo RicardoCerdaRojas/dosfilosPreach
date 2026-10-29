@@ -1,0 +1,149 @@
+{
+    "reading": {
+        "title": "Tu lectura del libro",
+        "description": "Lo que tú lees en el libro antes de ver el panorama (la vista del libro que propone el asistente): tu idea central provisional y sus movimientos. Es tu hipótesis; cada perícopa la va a poner a prueba.",
+        "edit": "Editar",
+        "editLabel": "Editar tu lectura del libro",
+        "write": "Escribir tu lectura",
+        "emptyTitle": "Todavía no escribiste tu lectura del libro",
+        "empty": "Antes de ver el panorama, escribe qué crees que dice el libro y en qué movimientos avanza. No tiene que ser definitivo: es lo que vas a contrastar con el texto.",
+        "passage": "Pasaje",
+        "purpose": "Para qué",
+        "idea": "Tu idea central",
+        "ideaOriginal": "provisional",
+        "ideaRevised": "revisada",
+        "noIdea": "Todavía no escribiste tu idea central.",
+        "movements_one": "{{count}} movimiento",
+        "movements_other": "{{count}} movimientos",
+        "untitledMovement": "Sin título",
+        "oldNote": {
+            "title": "Tienes una nota de antes",
+            "body": "Ya no cuenta como tu lectura del libro. Pásala a tu lectura: se copia tal cual y tú la corriges y confirmas.",
+            "action": "Pasar tu nota a tu lectura",
+            "loading": "Cargando tu nota…",
+            "missing": "No se encontró el texto de la nota."
+        }
+    },
+    "noteDialog": {
+        "title": "Tu nota de antes",
+        "intoIdea": "Se copió tal cual en «Idea central». Córtala, muévela a otro campo o bórrala: nada se guarda hasta que confirmes.",
+        "ideaTaken": "Tu idea central ya tiene texto y no se tocó. Tu nota queda aquí para que copies lo que te sirva.",
+        "truncated": "La nota es más larga que el campo: se copió el comienzo ({{max}} caracteres)."
+    },
+    "sources": {
+        "title": "Fuentes",
+        "description": "Tu estado del arte: lo que se ha escrito sobre el libro, de donde eliges, con su razón, las obras con que vas a trabajar. Aquí ves qué pide el trabajo, las candidatas y las que apruebas.",
+        "open": "Ver tus fuentes",
+        "choose": "Elegir tus fuentes",
+        "emptyTitle": "Todavía no hay fuentes",
+        "empty": "En el estado del arte fijas qué pide el trabajo, juntas candidatas de tu biblioteca, del sílabo y del catálogo, y apruebas las obras con su razón.",
+        "approved_one": "{{count}} aprobada",
+        "approved_other": "{{count}} aprobadas",
+        "toAcquire_one": "{{count}} por conseguir",
+        "toAcquire_other": "{{count}} por conseguir",
+        "candidates_one": "{{count}} candidata",
+        "candidates_other": "{{count}} candidatas",
+        "requirements": "requisitos {{met}} de {{total}}",
+        "manual_one": "{{count}} agregada a mano, antes del estado del arte.",
+        "manual_other": "{{count}} agregadas a mano, antes del estado del arte.",
+        "incomplete_one": "A {{count}} requisito le falta la cifra para poder medirlo.",
+        "incomplete_other": "A {{count}} requisitos les falta la cifra para poder medirlos.",
+        "accepted_one": "{{count}} requisito dado por cumplido a propósito.",
+        "accepted_other": "{{count}} requisitos dados por cumplidos a propósito.",
+        "requiredToAcquire_one": "Obligatoria por conseguir:",
+        "requiredToAcquire_other": "Obligatorias por conseguir:",
+        "toAcquireNote": "Una obra aprobada puede quedar «por conseguir»: aprobar decide la obra, no si ya la tienes en tu biblioteca."
+    },
+    "table": {
+        "eyebrow": "Fases 3 y 4",
+        "title": "La mesa de perícopas",
+        "description": "Una perícopa es una unidad completa del texto, con comienzo y final propios. Por cada una ves su estudio (ensamblado: todos los pasos hechos y el trabajo armado), lo que anotaste en tu lectura y su sermón.",
+        "phase": {
+            "division": "División en perícopas",
+            "pericopes": "Estudios por perícopa"
+        },
+        "filter": {
+            "label": "Qué filas ver",
+            "pending": "Pendientes",
+            "all": "Todas"
+        },
+        "columns": {
+            "pericope": "Perícopa",
+            "study": "Estudio",
+            "reading": "Tu lectura",
+            "sermon": "Sermón"
+        },
+        "study": {
+            "none": "Sin estudio",
+            "notStarted": "Sin empezar",
+            "inProgress": "{{done}} de {{total}} pasos",
+            "assembled": "Ensamblado",
+            "open": "Abrir el estudio de {{label}}: {{state}}"
+        },
+        "reading": {
+            "none": "—",
+            "pending": "Por anotar",
+            "annotated": "Anotada",
+            "annotate": "Anotar",
+            "annotateLabel": "Anotar en tu lectura lo que dice el estudio de {{label}}"
+        },
+        "sermon": {
+            "none": "Sin sermón",
+            "draft": "Borrador",
+            "published": "Publicado"
+        },
+        "planSeries": "Planificar la serie",
+        "planAnother": "Planificar otra serie",
+        "addOutside": "Agregar un estudio fuera de la serie",
+        "newStudy": "Empezar un estudio",
+        "orStudy": "Si prefieres empezar por una perícopa sin dividir el libro todavía:",
+        "noSeriesTitle": "Todavía no dividiste el libro en perícopas",
+        "noSeries": "El planificador te ayuda a dividirlo: escribes tu división primero y después la comparas con el panorama. Al crear la serie, cada perícopa recibe su estudio.",
+        "withoutSeries": "Dijiste que la división queda hecha sin serie: tus estudios van aquí abajo.",
+        "untitledSeries": "Serie sin título",
+        "groupCounts": "{{done}} de {{total}} ensambladas · {{annotated}} anotadas en tu lectura",
+        "looseTitle": "Fuera de la serie",
+        "studiesTitle": "Estudios",
+        "nothingPending": "Nada pendiente aquí.",
+        "sermonsError": "No se pudieron cargar los sermones: la columna «Sermón» queda sin datos por ahora."
+    },
+    "synthesis": {
+        "title": "Síntesis",
+        "description": "Contrasta tu idea central con lo que anotaste de cada perícopa y revísala. Solo tu idea revisada, y vigente, llega al sermón.",
+        "emptyTitle": "La síntesis se abre con tu primera anotación",
+        "empty": "Cuando termines un estudio, anota si confirma, matiza o contradice tu lectura del libro. Así tu idea se pone a prueba mientras trabajas, no solo al final.",
+        "annotate": "Anotar un estudio",
+        "history": "Ver cómo cambió tu lectura",
+        "confirms_one": "{{count}} confirma",
+        "confirms_other": "{{count}} confirman",
+        "nuances_one": "{{count}} matiza",
+        "nuances_other": "{{count}} matizan",
+        "contradicts_one": "{{count}} contradice",
+        "contradicts_other": "{{count}} contradicen",
+        "seeAll": "Ver las {{count}} anotaciones",
+        "revisedIdea": "Tu idea revisada",
+        "stale": "Cambiaste tu idea original después de revisarla: vuelve a revisarla para que llegue al sermón.",
+        "revise": "Revisar tu idea central",
+        "reviseAgain": "Volver a revisar tu idea central",
+        "needsIdea": "Para revisar tu idea central, primero escríbela en tu lectura del libro."
+    },
+    "history": {
+        "title": "Cómo cambió tu lectura",
+        "description": "Tu idea original, lo que anotaste de cada estudio y tu idea revisada. Son solo tus palabras.",
+        "original": "1 · Tu idea original",
+        "noOriginal": "No escribiste una idea central en tu lectura del libro.",
+        "log_one": "2 · Tu registro ({{count}} anotación)",
+        "log_other": "2 · Tu registro ({{count}} anotaciones)",
+        "noLog": "Todavía no anotaste ningún estudio.",
+        "revised": "3 · Tu idea revisada",
+        "noRevision": "Todavía no revisaste tu idea central.",
+        "why": "Por qué:",
+        "stale": "Esta revisión quedó vieja: cambiaste la idea original después.",
+        "close": "Cerrar"
+    },
+    "later": {
+        "sources": "se abre cuando escribas tu lectura del libro: eliges las obras para leer ese libro",
+        "division": "se abre con tu lectura del libro y tus fuentes: divides el libro con tus movimientos a la vista",
+        "synthesis": "se abre con tu primera anotación de un estudio ensamblado"
+    }
+}

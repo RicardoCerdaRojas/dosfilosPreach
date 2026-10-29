@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { WHOLE_DOCUMENT_RANGE, hasCuratedScope, isEmptyExtractedSource, isPickedByPages, isSourceWithoutScope, retrievalScopeOf } from '../curatedScope';
+import { WHOLE_DOCUMENT_RANGE, hasCuratedScope, isEmptyExtractedSource, isPickedByPages, isSourceEmptiedByHand, isSourceWithoutScope, retrievalScopeOf } from '../curatedScope';
 
 describe('hasCuratedScope — de dónde sale el texto de una fuente', () => {
     const conTramos = (n: number) => ({
@@ -125,5 +125,30 @@ describe('isEmptyExtractedSource — se extrajo y no trajo nada', () => {
     });
     it('una plantilla de estilo no se cita: no', () => {
         expect(isEmptyExtractedSource({ ...robertson, sourceType: 'style-template-paper' as const })).toBe(false);
+    });
+});
+
+describe('isSourceEmptiedByHand — quitó todas las páginas y guardó (TP #9, B20)', () => {
+    // Tuggy tras «Guardar sin páginas»: la receta vacía se lee como null.
+    const tuggy = {
+        sourceType: 'lexicon-technical' as const,
+        mode: 'extracted-excerpts' as const,
+        excerpts: [],
+        excerptRecipe: null,
+        extractedAt: new Date('2026-10-28'),
+        excerptSelectionMode: 'manual' as const,
+    };
+
+    it('vacía y guardada desde el selector: sí, y no aporta texto', () => {
+        expect(isSourceEmptiedByHand(tuggy)).toBe(true);
+        expect(retrievalScopeOf(tuggy)).toBeNull();
+    });
+    it('la extracción no halló nada (Robertson, TP #7): no', () => {
+        expect(isSourceEmptiedByHand({ ...tuggy, excerptSelectionMode: 'passage' })).toBe(false);
+        expect(isSourceEmptiedByHand({ ...tuggy, excerptSelectionMode: null })).toBe(false);
+    });
+    it('con páginas: no', () => {
+        const receta = { sheetRanges: [{ start: 584, end: 585 }], proposedRanges: [], pinnedRanges: [], passageFingerprint: '' };
+        expect(isSourceEmptiedByHand({ ...tuggy, excerptRecipe: receta })).toBe(false);
     });
 });

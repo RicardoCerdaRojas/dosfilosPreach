@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, Loader2 } from 'lucide-react';
-import { FRAMING_MAX_SUNDAYS, FRAMING_PURPOSES, getBookById, type AIProject, type BibleBookId, type FramingPurpose } from '@dosfilos/domain';
+import { FRAMING_MAX_SUNDAYS, FRAMING_PURPOSES, FRAMING_TEXT_MAX, getBookById, type AIProject, type BibleBookId, type FramingPurpose } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,6 +13,7 @@ import {
     formErrors,
     formFromProject,
     formScope,
+    formWithNote,
     highlightedNoteIds,
     notesForBooks,
     saveFromForm,
@@ -33,6 +34,12 @@ interface ProjectFramingDialogProps {
     /** Guarda en UNA llamada (`framingPatch` + `bibleBooks`) y avisa; lanza si falla, para no cerrar. */
     onSave: (save: FramingSave) => Promise<void>;
     saving: boolean;
+    /**
+     * «Pasar tu nota al encuadre»: la nota de antes, que se precarga en la
+     * idea central si está vacía (`formWithNote`) y se muestra arriba. Cuenta
+     * como cambio: nada se guarda hasta que el pastor confirma.
+     */
+    prefillNote?: string | null;
 }
 
 /** En el teléfono, los radios y las tarjetas miden al menos 44 px de alto. */
@@ -44,8 +51,10 @@ const tactil = 'min-h-11 sm:min-h-0';
  * el panorama (Osborne, *The Hermeneutical Spiral*); nada se genera aquí y
  * ningún campo es obligatorio salvo un libro. Con cambios, cerrar pregunta.
  */
-export function ProjectFramingDialog({ project, open, onOpenChange, onSave, saving }: ProjectFramingDialogProps) {
+export function ProjectFramingDialog({ project, open, onOpenChange, onSave, saving, prefillNote }: ProjectFramingDialogProps) {
     const { t, i18n } = useTranslation('projects');
+    const { t: tn } = useTranslation('projectDeskExegetical');
+    const [conNota, setConNota] = useState<{ placed: boolean; truncated: boolean } | null>(null);
     const lang: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
     const [inicial, setInicial] = useState<FramingForm>(() => formFromProject(project, lang));
     const [form, setForm] = useState<FramingForm>(inicial);
@@ -55,7 +64,10 @@ export function ProjectFramingDialog({ project, open, onOpenChange, onSave, savi
         if (!open) return;
         const desdeGuardado = formFromProject(project, lang);
         setInicial(desdeGuardado);
-        setForm(desdeGuardado);
+        // Con la nota, el formulario parte de lo guardado más la nota: cerrar pregunta.
+        const nota = prefillNote?.trim() ? formWithNote(desdeGuardado, prefillNote) : null;
+        setForm(nota ? nota.form : desdeGuardado);
+        setConNota(nota ? { placed: nota.placed, truncated: nota.truncated } : null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
@@ -105,6 +117,16 @@ export function ProjectFramingDialog({ project, open, onOpenChange, onSave, savi
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
                     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
                         <div className="space-y-6">
+                            {conNota && prefillNote?.trim() && (
+                                <div className="space-y-2 rounded-lg border border-border bg-muted/40 px-3 py-3" role="status" data-testid="framing-old-note">
+                                    <p className="text-sm font-semibold text-foreground">{tn('noteDialog.title')}</p>
+                                    <p className="text-xs text-foreground">
+                                        {tn(conNota.placed ? 'noteDialog.intoIdea' : 'noteDialog.ideaTaken')}
+                                        {conNota.truncated && <> {tn('noteDialog.truncated', { max: FRAMING_TEXT_MAX })}</>}
+                                    </p>
+                                    <blockquote className="max-h-40 overflow-y-auto whitespace-pre-line border-l-2 border-border pl-3 text-sm text-foreground/90">{prefillNote.trim()}</blockquote>
+                                </div>
+                            )}
                             {/* En pantallas angostas, «Para predicar…» va arriba y plegado. */}
                             {notas.length > 0 && (
                                 <details className="group rounded-lg border border-border bg-card px-3 py-2 lg:hidden" data-testid="framing-notes-compact">

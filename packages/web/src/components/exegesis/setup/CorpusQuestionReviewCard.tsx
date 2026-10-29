@@ -4,7 +4,9 @@ import { toast } from 'sonner';
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, HelpCircle, Loader2, Pin, Plus } from 'lucide-react';
 import {
     printedLabelForSheet,
+    uncoveredSourcesOfRow,
     type CorpusReviewWarning,
+    type QuestionSourceCheck,
     type ExegeticalPaper,
     type QuestionReviewRow,
     type QuestionSheet,
@@ -16,6 +18,7 @@ import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useCorpusQuestionReview, type ReviewedSource } from '@/hooks/exegesis/useCorpusQuestionReview';
 import { useAddAndPinSheets } from '@/hooks/exegesis/useAddAndPinSheets';
 import { nombreCortoDeFuente } from '../corpus-plan/nombreCortoDeFuente';
+import { QuestionUncoveredSources } from './QuestionUncoveredSources';
 
 /**
  * «¿Qué responde cada pregunta?» (TP #8, fase 8a, A4).
@@ -169,6 +172,7 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
                             key={row.number}
                             row={row}
                             versiculos={versiculos(row.verses)}
+                            sinAporte={uncoveredSourcesOfRow(row, review, { unindexed, failed })}
                             nombre={nombre}
                             sources={sources}
                             ocupada={ocupada}
@@ -308,6 +312,7 @@ function WarningItem({
 function QuestionItem({
     row,
     versiculos,
+    sinAporte,
     nombre,
     sources,
     ocupada,
@@ -316,6 +321,8 @@ function QuestionItem({
 }: {
     row: QuestionReviewRow;
     versiculos: string;
+    /** Las fuentes que no aportan a la pregunta, con su porqué (TP #9, B21). */
+    sinAporte: ReadonlyArray<QuestionSourceCheck>;
     nombre: (id: string) => string;
     sources: ReadonlyMap<string, ReviewedSource>;
     ocupada: string | null;
@@ -356,6 +363,7 @@ function QuestionItem({
                     ))}
                 </ul>
             )}
+            <QuestionUncoveredSources checks={sinAporte} nombre={nombre} />
         </li>
     );
 }

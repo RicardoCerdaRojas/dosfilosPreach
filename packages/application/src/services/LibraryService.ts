@@ -338,6 +338,14 @@ export class LibraryService {
         return this.libraryRepository.findById(resourceId);
     }
 
+    /**
+     * Los recursos del usuario con esos ids (las fuentes de un proyecto), sin
+     * bajar la biblioteca entera. Ver `FirebaseLibraryRepository.getResourcesByIds`.
+     */
+    async getResourcesByIds(userId: string, ids: readonly string[]): Promise<LibraryResourceEntity[]> {
+        return this.libraryRepository.getResourcesByIds(userId, ids);
+    }
+
     async getUserResources(userId: string): Promise<LibraryResourceEntity[]> {
         return this.libraryRepository.findByUserId(userId);
     }
@@ -462,6 +470,31 @@ export class LibraryService {
         >(getFunctions(), 'reprocessWithLlamaParse', { timeout: 900_000 });
         const result = await fn({ resourceId, force: true });
         return result.data ?? { success: false };
+    }
+
+    /**
+     * «Procesar» una fuente de un proyecto (solo administradores en el panel).
+     * Dos caminos, según cómo se extrajo:
+     *   - con la cadena vieja (`extractionVersion` distinto de
+     *     '3.0-llamaparse'): `reprocessWithLlamaParse` sin forzar, que vuelve
+     *     a extraer; el disparador de indexado escribe los fragmentos después;
+     *   - ya con LlamaParse pero sin índice: `indexStructuredDocument`
+     *     forzado, que solo re-indexa.
+     * Devuelve qué camino tomó, para que el aviso diga lo que pasó.
+     */
+    async reprocessProjectSource(resource: { id: string; extractionVersion?: string }): Promise<'reextracted' | 'reindexed'> {
+        if (resource.extractionVersion !== '3.0-llamaparse') {
+            const fn = httpsCallable<{ resourceId: string; force: boolean }, unknown>(
+                getFunctions(), 'reprocessWithLlamaParse', { timeout: 900_000 },
+            );
+            await fn({ resourceId: resource.id, force: false });
+            return 'reextracted';
+        }
+        const fn = httpsCallable<{ resourceId: string; force: boolean }, unknown>(
+            getFunctions(), 'indexStructuredDocument', { timeout: 900_000 },
+        );
+        await fn({ resourceId: resource.id, force: true });
+        return 'reindexed';
     }
 
     /**

@@ -242,7 +242,57 @@ export function parseHeadingReference(
         if (deNotas) return deNotas;
     }
 
+    // 6. Capítulo en romanos, coma (o punto) y versículos: «IV, 11», «IV. 11»,
+    //    «IV 11-12», «Ⅳ, 17–Ⅴ, 1». Es el encabezado de página de Ropes (ICC):
+    //    sin él, el comentario quedaba sin índice y la sugerencia salía por
+    //    parecido de contenido, y no llegaba a 4:17 (TP #9, B17/B18).
+    if (contextBookId) {
+        const romano = romanChapterHeadingReference(cleaned, contextBookId);
+        if (romano) return romano;
+    }
+
     return null;
+}
+
+/**
+ * «IV, 11», «iv, 11», «IV. 11», «IV 11-12», «IV, 11–17», «Ⅳ, 17–Ⅴ, 1».
+ *
+ * NFKC primero: Ropes escribe «Ⅳ» con el carácter de numeral romano (U+2163),
+ * no con «I» y «V». El separador decide qué se acepta, para no leer como
+ * capítulo lo que es otra cosa:
+ *   - coma: siempre («V, 1-3» de Ropes);
+ *   - punto: sólo con dos letras o más, porque «V. 11» y «v. 11» son
+ *     «versículo 11»;
+ *   - espacio: sólo en mayúscula («IV 11-12»).
+ * Una sola letra minúscula (`v`, `i`, `x`) nunca es capítulo. «CHAPTER IV» o
+ * «IV» suelto no llegan aquí: hace falta el versículo.
+ */
+const ROMAN_CHAPTER_HEADING = /^([IVXL]{1,6})(\s*,\s*|\.\s*|\s+)(\d{1,3})(?:\s*[–—-]\s*(?:([IVXL]{1,6})(\s*,\s*|\.\s*|\s+))?(\d{1,3}))?\.?$/i;
+
+function romanSeparatorOk(roman: string, separator: string): boolean {
+    const lower = roman !== roman.toUpperCase();
+    if (lower && roman.length < 2) return false;
+    if (separator.includes(',')) return true;
+    if (separator.includes('.')) return roman.length >= 2;
+    return !lower;
+}
+
+function romanChapterHeadingReference(heading: string, bookId: BibleBookId): PassageReference | null {
+    const m = heading.normalize('NFKC').match(ROMAN_CHAPTER_HEADING);
+    if (!m) return null;
+    const [, romanStart, sepStart, verseStartRaw, romanEnd, sepEnd, verseEndRaw] = m;
+    if (!romanSeparatorOk(romanStart!, sepStart!)) return null;
+    if (romanEnd && !romanSeparatorOk(romanEnd, sepEnd!)) return null;
+    const chapterStart = romanToNumber(romanStart!);
+    const chapterEnd = romanEnd ? romanToNumber(romanEnd) : chapterStart;
+    if (!chapterStart || !chapterEnd) return null;
+    const chapters = getBookById(bookId)?.chapterCount ?? 0;
+    if (chapterEnd > chapters) return null;
+    const verseStart = Number(verseStartRaw);
+    const verseEnd = verseEndRaw !== undefined ? Number(verseEndRaw) : verseStart;
+    if (verseStart < 1 || verseEnd < 1 || verseStart > 176 || verseEnd > 176) return null;
+    if (chapterEnd < chapterStart || (chapterEnd === chapterStart && verseEnd < verseStart)) return null;
+    return { bookId, chapterStart, verseStart, chapterEnd, verseEnd };
 }
 
 const NOTES_RUNNING_HEAD = /^([IVXL]{1,6})\s+(\d{1,3})((?:\s*[,–—-]\s*(?:[IVXL]{1,6}\s+)?\d{1,3})*)\s*\]\s*(?:notes?|notas?)?$/i;
@@ -361,30 +411,74 @@ export function selectChunksForPassage(
     const overlapping = resolved.filter(
         e => e.reference !== null && referencesOverlap(e.reference, passage),
     );
-    const hits = (contained.length > 0 ? contained : overlapping).map(e => e.chunkIndex);
+    const core = (contained.length > 0 ? contained : overlapping).map(e => e.chunkIndex);
 
-    if (hits.length === 0) {
+    if (core.length === 0) {
         return { ranges: [], chunkCount: 0, truncated: false };
+    }
+
+    // Los BORDES del pasaje (TP #9, B17). Quedarse sólo con lo contenido
+    // dejaba afuera la sección que empieza dentro del pasaje y sigue después:
+    // en Ropes, la página «Ⅳ, 17–Ⅴ, 1» trae el final de 4:17 y la sugerencia
+    // no llegaba a 4:17; y la «Ⅳ, 9–11» trae el comienzo de 4:11. Desde el
+    // primer y el último fragmento del pasaje se sigue hacia afuera mientras la
+    // sección se pise con el pasaje sin envolverlo (el envolvente sigue
+    // descartado). Hacia atrás vale el cuerpo heredado: termina en su propio
+    // encabezado. Hacia adelante, sólo lo que lleva el encabezado: el cuerpo
+    // heredado que sigue a «Ⅳ, 17–Ⅴ, 1» ya es el capítulo 5. Lo que queda ENTRE
+    // dos fragmentos del pasaje y se pisa con él se completa.
+    const selected = new Set(core);
+    if (contained.length > 0) {
+        const ordered = [...resolved].sort((a, b) => a.chunkIndex - b.chunkIndex);
+        const edge = (e: ResolvedOutlineEntry) =>
+            e.reference !== null && referencesOverlap(e.reference, passage) && !referenceContains(e.reference, passage);
+        const firstAt = ordered.findIndex(e => e.chunkIndex === Math.min(...core));
+        const lastAt = ordered.findIndex(e => e.chunkIndex === Math.max(...core));
+        for (let i = firstAt - 1; i >= 0 && edge(ordered[i]!); i--) selected.add(ordered[i]!.chunkIndex);
+        for (let i = lastAt + 1; i < ordered.length && edge(ordered[i]!) && ordered[i]!.resolution === 'heading'; i++) {
+            selected.add(ordered[i]!.chunkIndex);
+        }
+        const first = Math.min(...selected);
+        const last = Math.max(...selected);
+        for (const e of overlapping) {
+            if (e.chunkIndex > first && e.chunkIndex < last) selected.add(e.chunkIndex);
+        }
     }
 
     const lowest = resolved[0]?.chunkIndex ?? 0;
     const highest = resolved[resolved.length - 1]?.chunkIndex ?? 0;
 
     const padded = new Set<number>();
-    for (const index of hits) {
+    for (const index of selected) {
         for (let i = index - contextChunks; i <= index + contextChunks; i++) {
             if (i >= lowest && i <= highest) padded.add(i);
         }
     }
 
     const sorted = [...padded].sort((a, b) => a - b);
-    const capped = sorted.slice(0, maxChunks);
+    const capped = capKeepingCore(sorted, core, maxChunks);
 
     return {
         ranges: groupContiguous(capped),
         chunkCount: capped.length,
         truncated: capped.length < sorted.length,
     };
+}
+
+/**
+ * Recorta al tope sin perder el final del pasaje (TP #9, B17): cortar desde
+ * el comienzo dejaba afuera los últimos versículos. Entran primero los
+ * fragmentos del pasaje mismo, en orden, y después los demás por cercanía a
+ * ellos: de la sección anterior, su cola, que es donde llega al pasaje.
+ */
+function capKeepingCore(sorted: ReadonlyArray<number>, core: ReadonlyArray<number>, max: number): number[] {
+    if (sorted.length <= max) return [...sorted];
+    const coreSet = new Set(core);
+    const distance = (i: number) => (coreSet.has(i) ? 0 : Math.min(...core.map(c => Math.abs(c - i))));
+    return [...sorted]
+        .sort((a, b) => distance(a) - distance(b) || a - b)
+        .slice(0, max)
+        .sort((a, b) => a - b);
 }
 
 /** Agrupa índices ordenados en tramos contiguos. */

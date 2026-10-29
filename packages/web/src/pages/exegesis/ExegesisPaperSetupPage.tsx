@@ -15,6 +15,7 @@ import { SaveWorkProfileButton } from '@/components/exegesis/setup/SaveWorkProfi
 import { PaperMethodSelect } from '@/components/exegesis/setup/PaperMethodSelect';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
+import { safeInternalPath } from './paperBackLink';
 
 /**
  * Rich academic-configuration page for an exegetical paper.
@@ -70,6 +71,10 @@ export function ExegesisPaperSetupPage() {
     // on the right sub-step, and back/refresh preserve the tab.
     const [searchParams, setSearchParams] = useSearchParams();
     const activeKey = parseTab(searchParams.get('tab'));
+    // La vuelta al proyecto (`?from=`, la pone la creación desde un proyecto)
+    // sigue hasta el estudio: si no, su flecha volvía a la lista de estudios.
+    const desde = safeInternalPath(searchParams.get('from'));
+    const paperPath = `/dashboard/exegesis/${paperId}${desde ? `?from=${encodeURIComponent(desde)}` : ''}`;
     const setActiveKey = useCallback((next: SubStepKey) => {
         setSearchParams(prev => {
             const updated = new URLSearchParams(prev);
@@ -113,7 +118,7 @@ export function ExegesisPaperSetupPage() {
             <header className="border-b border-border bg-card px-6 py-4">
                 <div className="max-w-7xl mx-auto flex items-center gap-3">
                     <Link
-                        to={`/dashboard/exegesis/${paperId}`}
+                        to={paperPath}
                         className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                         aria-label={t('paperSetup.backToPaper')}
                     >
@@ -177,7 +182,7 @@ export function ExegesisPaperSetupPage() {
 
                 <footer className="flex items-center justify-end pt-6">
                     <Button
-                        onClick={() => navigate(`/dashboard/exegesis/${paperId}`)}
+                        onClick={() => navigate(paperPath)}
                         className="bg-primary-solid hover:bg-primary-solid-hover text-primary-foreground"
                     >
                         {t('paperSetup.goToPaper')}

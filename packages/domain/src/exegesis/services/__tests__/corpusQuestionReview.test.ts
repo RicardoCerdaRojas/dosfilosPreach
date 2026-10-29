@@ -3,6 +3,7 @@ import {
     addAndPinSheets,
     evidenceFromReview,
     reviewCorpusByQuestion,
+    uncoveredSourcesOfRow,
     type QuestionReviewSource,
 } from '../corpusQuestionReview';
 import type { BriefQuestion } from '../briefQuestions';
@@ -268,6 +269,54 @@ describe('reviewCorpusByQuestion (TP #8, A4)', () => {
         const muchas = { ...mayor, selected: [], verseHits: Array.from({ length: 9 }, (_, i) => ({ sheet: 100 + i, count: i, verses: [5] })) };
         const fila = revisar([muchas]).rows.find(r => r.number === 3)!;
         expect(fila.sources[0]!.sheets.map(s => s.sheet)).toEqual([108, 107, 106, 105]);
+    });
+});
+
+/**
+ * TP #9 (Santiago 4:11-17, B21): «Ver por pregunta» ocultaba los libros sin
+ * referencias, y Tuggy y el léxico parecían no revisados.
+ */
+describe('las fuentes revisadas que no tocan la pregunta (TP #9, B21)', () => {
+    it('la gramática que no nombra 4:3 queda en la fila como revisada sin referencias', () => {
+        const { rows } = revisar([mayor, wallace, runge]);
+        const p2 = rows.find(r => r.number === 2)!;
+        // Wallace nombra 4:3 en la 633 (afuera): sí aporta, no va aquí.
+        expect(p2.unmatched).toEqual([{ sourceId: 'runge', lemmaMentioned: false }]);
+        // Mayor y Wallace aportan a la pregunta 1; Runge, nada.
+        expect(rows.find(r => r.number === 1)!.unmatched.map(u => u.sourceId)).toEqual(['runge']);
+    });
+
+    it('un léxico sin la entrada ni el versículo de una pregunta queda sin referencias en ESA pregunta', () => {
+        const { rows } = revisar([tuggy]);
+        expect(rows.find(r => r.number === 1)!.unmatched).toEqual([]);
+        expect(rows.find(r => r.number === 2)!.unmatched).toEqual([{ sourceId: 'tuggy', lemmaMentioned: false }]);
+    });
+
+    it('distingue la palabra que aparece sin entrada propia', () => {
+        const sinEntrada = { ...tuggy, verseHits: [], lemmaEntries: [{ ...tuggy.lemmaEntries![0]!, entry: null, appears: true }] };
+        expect(revisar([sinEntrada]).rows.find(r => r.number === 1)!.unmatched)
+            .toEqual([{ sourceId: 'tuggy', lemmaMentioned: true }]);
+    });
+
+    it('una fuente sin datos no se da por revisada sin referencias', () => {
+        const { rows } = revisar([{ ...runge, verseHits: null }]);
+        expect(rows.every(r => r.unmatched.length === 0)).toBe(true);
+    });
+
+    it('junta las revisadas sin referencias con las que no se pudieron revisar, cada una con su porqué', () => {
+        const review = revisar([mayor, runge, { ...wallace, verseHits: null }, { ...na28, verseHits: null }, { ...tuggy, sourceId: 'kittel', verseHits: null }]);
+        const p2 = review.rows.find(r => r.number === 2)!;
+        expect(uncoveredSourcesOfRow(p2, review, { unindexed: ['wallace'], failed: ['na28'] })).toEqual([
+            { sourceId: 'runge', state: 'no-references', lemmaMentioned: false },
+            { sourceId: 'na28', state: 'failed' },
+            { sourceId: 'wallace', state: 'unindexed' },
+            { sourceId: 'kittel', state: 'pending' },
+        ]);
+    });
+
+    it('sin nada que falte, la lista queda vacía', () => {
+        const review = revisar([mayor]);
+        expect(uncoveredSourcesOfRow(review.rows[0]!, review, { unindexed: [], failed: [] })).toEqual([]);
     });
 });
 

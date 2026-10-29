@@ -496,8 +496,8 @@ describe('textos del encuadre en es y en', () => {
     const ph = (s: string) => [...s.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map(m => m[1]).sort();
     const nuevos = (json: Record<string, any>) => ({
         framing: json.framing,
-        passage: json.roadmap.phases.exegetical.passage,
-        passageEdit: json.roadmap.phases.exegetical.passageEdit,
+        // La fase 1 salió del recorrido viejo: su nombre y su andamiaje viven en el escritorio.
+        passage: json.desk.journey.phases.exegetical.passage,
         options: json.course.options, hideOptions: json.course.hideOptions,
         booksFromFraming: json.stateOfArt.criteria.booksFromFraming,
         changeInFraming: json.stateOfArt.criteria.changeInFraming,

@@ -127,6 +127,8 @@ import {
     PlaceIdeaInSectionUseCase,
     ReviewVerseProseUseCase,
     SetPaperProjectUseCase,
+    AddRuleToStyleGuideUseCase,
+    ImportPreviousWorksUseCase,
     ComposeSermonFromAnalysesUseCase,
     ComposeStudyGuideFromAnalysesUseCase,
     GenerateStepUseCase,
@@ -285,6 +287,10 @@ class ExegesisService {
     public placeIdeaInSection: PlaceIdeaInSectionUseCase;
     /** El proyecto de origen y los vínculos de un estudio (ADR-046). */
     public setPaperProject: SetPaperProjectUseCase;
+    /** Curso: «Pasar a tu guía» una corrección que se repite. */
+    public addRuleToStyleGuide: AddRuleToStyleGuideUseCase;
+    /** Curso: «Traer los trabajos anteriores», sin reaplicarles el encargo. */
+    public importPreviousWorks: ImportPreviousWorksUseCase;
     public reviewVerseProse: ReviewVerseProseUseCase;
 
     // Ministry composers (Phase 6) — sermon / devotional / study
@@ -373,6 +379,8 @@ class ExegesisService {
         // cuyo libro ya se borró.
         const aiProjectRepository = new FirestoreAIProjectRepository();
         this.setPaperProject = new SetPaperProjectUseCase(paperRepository, aiProjectRepository);
+        this.addRuleToStyleGuide = new AddRuleToStyleGuideUseCase(styleGuideRepository, aiProjectRepository);
+        this.importPreviousWorks = new ImportPreviousWorksUseCase(paperRepository, aiProjectRepository);
         this.createPaper = new CreateExegeticalPaperUseCase(paperRepository, userRubricRepository, libraryRepository, aiProjectRepository);
         this.listPapers = new ListExegeticalPapersUseCase(paperRepository);
         this.listPaperSummaries = new ListExegesisPaperSummariesUseCase(paperRepository);

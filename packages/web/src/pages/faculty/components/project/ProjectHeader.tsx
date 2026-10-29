@@ -38,13 +38,13 @@ export function ProjectHeader({
             <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] font-medium">
                 <Link
                     to="/dashboard/projects"
-                    className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary"
+                    className="inline-flex items-center gap-1 text-muted-foreground hover:text-primary-text"
                 >
                     <ArrowLeft className="h-3 w-3" />
                     {t('breadcrumb.back')}
                 </Link>
                 <span className="text-border">/</span>
-                <span className="inline-flex items-center gap-1.5 text-primary">
+                <span className="inline-flex items-center gap-1.5 text-primary-text">
                     {accentColorVar && (
                         <span
                             className={cn('h-1.5 w-1.5 rounded-full')}

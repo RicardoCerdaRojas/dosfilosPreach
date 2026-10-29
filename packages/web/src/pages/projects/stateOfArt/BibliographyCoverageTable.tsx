@@ -39,7 +39,7 @@ export function BibliographyCoverageTable({ coverage, requirements = [], filter,
                     <span className="text-xs text-foreground">{t('stateOfArt.coverage.showing', { label: filter.label })}</span>
                 )}
                 {filter && (
-                    <button type="button" onClick={() => onFilter(null)} className="text-xs text-primary underline-offset-2 hover:underline">
+                    <button type="button" onClick={() => onFilter(null)} className="text-xs text-primary-text underline-offset-2 hover:underline">
                         {t('stateOfArt.coverage.clear')}
                     </button>
                 )}

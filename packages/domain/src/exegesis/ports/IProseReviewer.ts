@@ -21,11 +21,25 @@ export interface ProseReviewInput {
     /** Las preguntas del encuadre que responde este versículo. */
     questions: ReadonlyArray<{ number: number; text: string }>;
     /** Lo que el análisis decidió, para ver si la prosa lo conserva. */
-    decisiveCriteria: ReadonlyArray<{ questionNumber: number; text: string; whyThisOverThat: string; decision: string }>;
+    decisiveCriteria: ReadonlyArray<{
+        questionNumber: number;
+        text: string;
+        whyThisOverThat: string;
+        decision: string;
+        /** Las notas de revisión manual sobre las citas de esta respuesta (TP #9, B39). */
+        reviewNotes?: ReadonlyArray<string>;
+    }>;
     /** Las citas de la gramática del curso en el análisis: «Wallace, p. 533». */
     grammarCitations: ReadonlyArray<string>;
     /** Los criterios numerados desde 1 (`proseReviewCriteria`). */
     criteria: ReadonlyArray<string>;
+    /**
+     * Lo que el estudiante dejó escrito al revisar citas a mano. Pesa más que
+     * el análisis: puede apartarse de él a propósito (TP #9, B39).
+     */
+    reviewNotes?: ReadonlyArray<{ citation: string; note: string }>;
+    /** Las únicas citas que el revisor puede nombrar: «Wallace, p. 232» (TP #9, B40). */
+    availableCitations?: ReadonlyArray<string>;
 }
 
 export interface ProseReviewOutput {

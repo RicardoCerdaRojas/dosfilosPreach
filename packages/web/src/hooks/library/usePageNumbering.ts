@@ -29,6 +29,13 @@ export interface NumberingState {
     storedOrigin: PageNumbering['origin'] | null;
     /** De quién es el libro (`userId` del recurso): «Preguntar a este libro» sólo busca en los propios. */
     ownerId: string | null;
+    /**
+     * Título y autor del recurso, para la cabecera del visor (TP #9, B19). Se
+     * leen del mismo documento que la numeración: no cuestan otra lectura.
+     * `null` cuando el recurso no los trae o no es de la biblioteca.
+     */
+    title: string | null;
+    author: string | null;
 }
 
 /**
@@ -72,6 +79,8 @@ export function usePageNumbering(resourceId: string | null) {
                 lastSheet,
                 storedOrigin: stored?.origin ?? null,
                 ownerId: (resource as { userId?: string } | null)?.userId ?? null,
+                title: resource?.title?.trim() || null,
+                author: resource?.author?.trim() || null,
                 points: calibrationSheets(numbering, lastSheet).map(sheet => ({
                     sheet,
                     proposed: printedLabelIn(numbering, sheet),

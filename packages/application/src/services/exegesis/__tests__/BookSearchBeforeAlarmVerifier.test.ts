@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { CitationVerifierInput, IBookSearch, ICitationVerifier, VerifiedCitation } from '@dosfilos/domain';
-import { BookSearchBeforeAlarmVerifier } from '../BookSearchBeforeAlarmVerifier';
+import { BookSearchBeforeAlarmVerifier, MAX_ALARMAS_RELEIDAS, MAX_PAGINAS_RELEIDAS } from '../BookSearchBeforeAlarmVerifier';
 
 /**
  * TP #8 (2026-10-21, fase 8b, D1): Adamson 171 → 170 y McCartney 203 (TP #7)
@@ -29,6 +29,8 @@ function juez(primera: VerifiedCitation[]): ICitationVerifier & { verify: Return
             ...(c as VerifiedCitation),
             status: pagina === c.pages ? 'verified' as const : 'page-mismatch' as const,
             matchedPage: pagina, matchedPageLabel: hallado.pageHint, note: 'juez',
+            // El juez copia el tramo que lo respalda, tal cual.
+            supportingSpan: { text: c.evidence, pageLabel: hallado.pageHint },
         }] };
     });
     return { verify };
@@ -207,5 +209,103 @@ describe('BookSearchBeforeAlarmVerifier', () => {
         const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
         expect(citations[0]).toMatchObject({ status: 'not-found', note: 'No aparece.' });
         expect(citations[0]).not.toHaveProperty('bookSearch');
+    });
+});
+
+/**
+ * TP #9 (B46): «Varner, 162» salió verde a las 19:46 y, con el mismo texto,
+ * «el pasaje de apoyo está en 163» a las 22:03: la 163 lo repite con palabras
+ * más parecidas y el juez no marcó que la 162 también lo decía. Una «página
+ * no coincide» del juez se relee con la página citada SOLA.
+ */
+describe('BookSearchBeforeAlarmVerifier — «página no coincide» del juez (B46)', () => {
+    const VARNER_162 = 'composed of a relative clause, a primary interrogative clause and a final complex clause';
+    const vecina = (over: Partial<VerifiedCitation> = {}): VerifiedCitation => alarma({
+        raw: '(Varner, 162)', author: 'Mayor', pages: '162', evidence: VARNER_162, evidenceIsQuoted: false,
+        status: 'page-mismatch', matchedPage: '163', matchedPageLabel: 'p. 163',
+        note: 'Citaste p. 162 pero el pasaje de apoyo está en 163.', ...over,
+    });
+
+    it('Varner 162 → 163: la 162 sola lo sostiene → verificada, leyendo SOLO la citada', async () => {
+        const j = juez([vecina()]);
+        // Hoja 440 = p. 162 (numeración −278).
+        const b = libro({ 440: `I understand the verse to be ${VARNER_162}.`, 441: 'otra cosa' });
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify({ ...entrada(), passageRef: 'Santiago 4:14' });
+        expect(b.readSheets).toHaveBeenCalledWith('r-mayor', [440]);
+        expect(citations[0]).toMatchObject({ status: 'verified', matchedPage: '162', bookSearch: 'cited-page', offset: 7 });
+        const segunda = j.verify.mock.calls[1]![0] as CitationVerifierInput;
+        expect(segunda.sources[0]!.chunks.map(c => c.pageHint)).toEqual(['p. 162']);
+        expect(segunda.passageRef).toBe('Santiago 4:14');
+        expect(b.sheetsWithTerm).not.toHaveBeenCalled();
+    });
+
+    it('Kittel 230–231 → 229: se leen las dos citadas, sin la 229', async () => {
+        const j = juez([vecina({ pages: '230–231', raw: '(Kittel y Friedrich, 230–231)', matchedPage: '229' })]);
+        const original = j.verify.getMockImplementation()!;
+        // Un juez que acepta cualquier página del tramo citado.
+        j.verify.mockImplementation(async (input: CitationVerifierInput) => {
+            const out = await original(input) as { citations: VerifiedCitation[] };
+            return { citations: out.citations.map(c => (c.matchedPage === '230' || c.matchedPage === '231' ? { ...c, status: 'verified' as const } : c)) };
+        });
+        const b = libro({ 508: `Significa ${VARNER_162}`, 509: 'la vida indestructible' });
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(b.readSheets).toHaveBeenCalledWith('r-mayor', [508, 509]);
+        expect(citations[0]).toMatchObject({ status: 'verified', bookSearch: 'cited-page' });
+    });
+
+    it('si la citada sola no lo sostiene, queda el veredicto del juez tal cual', async () => {
+        const j = juez([vecina()]);
+        const b = libro({ 440: 'nada que ver' });
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(citations[0]).toEqual(vecina());
+    });
+
+    it('el verde de la relectura exige que el tramo del juez esté TAL CUAL en la hoja citada', async () => {
+        const j = juez([vecina()]);
+        const original = j.verify.getMockImplementation()!;
+        // Un juez indulgente: verifica, pero «copia» un tramo que la hoja no tiene.
+        j.verify.mockImplementation(async (input: CitationVerifierInput) => {
+            const out = await original(input) as { citations: VerifiedCitation[] };
+            return { citations: out.citations.map(c => (input.citations && c.status === 'verified'
+                ? { ...c, supportingSpan: { text: 'the verse has three clauses of which the last is causal', pageLabel: 'p. 162' } } : c)) };
+        });
+        const b = libro({ 440: `I understand the verse to be ${VARNER_162}.` });
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(citations[0]).toEqual(vecina());
+    });
+
+    it('topes separados: doce «página no coincide» delante no dejan sin releer una «no encontrada»', async () => {
+        const paginas = Array.from({ length: 12 }, (_, i) => vecina({ offset: 100 + i }));
+        const j = juez([...paginas, alarma({ offset: 900 })]);
+        const b = libro({ 411: 'the active may include the force of the middle voice.' });
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(citations.find(c => c.offset === 900)).toMatchObject({ status: 'verified', bookSearch: 'cited-page' });
+        // Las de página, con su propio tope: se releen MAX_PAGINAS_RELEIDAS.
+        const releidasDePagina = b.readSheets.mock.calls.filter(c => (c[1] as number[]).length === 1 && (c[1] as number[])[0] === 440).length;
+        expect(releidasDePagina).toBe(MAX_PAGINAS_RELEIDAS);
+    });
+
+    it('las relecturas de página no gastan el tope de las alarmas: con seis delante, se releen las doce', async () => {
+        const paginas = Array.from({ length: MAX_PAGINAS_RELEIDAS }, (_, i) => vecina({ offset: 100 + i }));
+        const alarmas = Array.from({ length: MAX_ALARMAS_RELEIDAS }, (_, i) => alarma({ offset: 900 + i }));
+        const j = juez([...paginas, ...alarmas]);
+        const b = libro({ 411: 'the active may include the force of the middle voice.' });
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(citations.filter(c => c.offset >= 900 && c.bookSearch === 'cited-page')).toHaveLength(MAX_ALARMAS_RELEIDAS);
+    });
+
+    it('una cita textual hallada en otra hoja está donde está: no se relee', async () => {
+        const j = juez([vecina({ evidenceIsQuoted: true })]);
+        const b = libro({ 440: VARNER_162 });
+        const { citations } = await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(b.readSheets).not.toHaveBeenCalled();
+        expect(citations[0]!.status).toBe('page-mismatch');
+    });
+
+    it('una página que ya salió de buscar en el libro no se relee', async () => {
+        const j = juez([vecina({ bookSearch: 'book' })]);
+        const b = libro({ 440: VARNER_162 });
+        await new BookSearchBeforeAlarmVerifier(j, b).verify(entrada());
+        expect(b.readSheets).not.toHaveBeenCalled();
     });
 });

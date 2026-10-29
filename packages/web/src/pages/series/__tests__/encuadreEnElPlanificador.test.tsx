@@ -380,13 +380,22 @@ describe('aviso de unidades contra domingos (tras el Pase 4)', () => {
         expect(screen.queryByText('expository.framing.units.moreUnits')).not.toBeInTheDocument();
     });
 
-    it('dos salidas reales: «Ajustar el calendario» abre el encuadre del proyecto y «Revisar la división» despliega el Pase 4 y le da el foco', async () => {
+    it('dos salidas reales: «Ajustar el calendario» abre el encuadre del proyecto AQUÍ y «Revisar la división» despliega el Pase 4 y le da el foco', async () => {
         const scroll = vi.fn();
         Element.prototype.scrollIntoView = scroll;
         guardarBorrador({ preachableUnits: [1, 2, 3, 4].map((c) => predicable(`p${c}`, c)) });
         render(arbol());
-        const calendario = await screen.findByRole('link', { name: 'expository.framing.units.adjustCalendar' });
-        expect(calendario).toHaveAttribute('href', '/dashboard/projects/ezr?encuadre=1');
+        const calendario = await screen.findByRole('button', { name: 'expository.framing.units.adjustCalendar' });
+        // Ya no es un enlace al panel: el análisis sigue en pantalla debajo del diálogo.
+        expect(screen.queryByRole('link', { name: 'expository.framing.units.adjustCalendar' })).toBeNull();
+        expect(screen.queryByRole('dialog')).toBeNull();
+        fireEvent.click(calendario);
+        const dialogo = await screen.findByRole('dialog');
+        expect(within(dialogo).getByText('framing.dialog.title')).toBeInTheDocument();
+        // Cerrar sin cambios no pregunta ni escribe; el Pase 4 sigue ahí.
+        fireEvent.keyDown(dialogo, { key: 'Escape' });
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        expect(estado.updateProject).not.toHaveBeenCalled();
         // Pliega el Pase 4 y vuelve a él desde el aviso.
         const pase4 = document.getElementById('expository-pass-4')!;
         fireEvent.click(within(pase4).getAllByRole('button').find((b) => /collapse|plegar/i.test(b.getAttribute('aria-label') ?? b.textContent ?? ''))!);

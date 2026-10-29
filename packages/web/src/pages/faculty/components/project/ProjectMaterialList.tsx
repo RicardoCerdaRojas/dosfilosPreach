@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,6 +9,7 @@ import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { ProjectOutput, ProjectOutputKind } from '@dosfilos/domain';
 import { exportOutputMarkdown } from '../../utils/exportMarkdown';
+import { DeskSection, FOCUS_RING, TOUCH } from './desk/primitives';
 
 /** Visual config per output kind. Brand colours sourced from `phase-*` tokens. */
 const KIND_META: Record<ProjectOutputKind, {
@@ -40,6 +42,9 @@ export type MaterialItem =
     | ({ source: 'sermon' } & SermonItem)
     | ({ source: 'output' } & OutputItem);
 
+/** Las filas que se ven antes de «Ver todo»: el material va al final del escritorio y no debe empujarlo. */
+export const MATERIAL_VISIBLE = 5;
+
 interface ProjectMaterialListProps {
     items: MaterialItem[];
     isLoading: boolean;
@@ -51,10 +56,15 @@ interface ProjectMaterialListProps {
 /**
  * Renders the "Material producido" section: list of project outputs (notes,
  * drafts, outlines) + sermons that reference this project, sorted chronologically.
+ * Los sermones de la serie no vienen aquí: ya se ven en su fila de la mesa.
  *
  * Each row:
  * - Sermon: clickable title navigating to `/dashboard/sermons/:id` + status pill
- * - Output: clickable title opening the editor + hover actions (download, delete)
+ * - Output: clickable title opening the editor + actions (download, delete),
+ *   SIEMPRE visibles: antes aparecían solo al pasar el mouse y en el teléfono
+ *   o con teclado no existían.
+ *
+ * Muestra las 5 más recientes y «Ver todo» para el resto.
  */
 export function ProjectMaterialList({
     items,
@@ -63,41 +73,56 @@ export function ProjectMaterialList({
     onEditOutput,
     onDeleteOutput,
 }: ProjectMaterialListProps) {
-    const { t } = useTranslation('projects');
+    const { t, i18n } = useTranslation('projects');
     const navigate = useNavigate();
-    const dateLocale = 'es'; // TODO: read from i18n.language when EN translation lands
+    const dateLocale = i18n.language?.startsWith('en') ? 'en' : 'es';
+    const [todo, setTodo] = useState(false);
+    const visibles = todo ? items : items.slice(0, MATERIAL_VISIBLE);
+    const ocultas = items.length - MATERIAL_VISIBLE;
 
+    // La misma sección que las demás del escritorio (rótulo, título, ancla).
     return (
-        <section className="bg-card border border-border/60 rounded-xl p-5">
-            <header className="flex items-center justify-between mb-4">
-                <div className="text-[11px] uppercase tracking-[0.2em] text-primary font-medium inline-flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5" />
-                    <span>{t('material.sectionLabel')}</span>
-                    <span className="text-border normal-case tracking-normal">·</span>
-                    <span className="text-muted-foreground normal-case tracking-normal font-mono">
-                        {items.length}
-                    </span>
-                </div>
+        <DeskSection
+            id="material"
+            eyebrow={(
+                <span className="inline-flex items-center gap-1.5">
+                    <FileText className="h-3.5 w-3.5" aria-hidden />
+                    {t('desk.tools.eyebrow')}
+                </span>
+            )}
+            title={(
+                <>
+                    {t('material.sectionLabel')}
+                    {!isLoading && <span className="ml-1.5 font-sans text-[13px] tabular-nums text-muted-foreground">· {items.length}</span>}
+                </>
+            )}
+            data-testid="desk-material"
+            actions={(
+                // De contorno: el único botón lleno del escritorio es «Ahora».
                 <Button
                     onClick={onCreateOutput}
-                    className="bg-foreground hover:bg-foreground/90 text-background font-medium gap-1.5 h-8 text-[12.5px]"
+                    variant="outline"
+                    size="sm"
+                    className={cn('font-medium gap-1.5 text-[12.5px]', TOUCH)}
                 >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="h-3.5 w-3.5" aria-hidden />
                     {t('material.newButton')}
                 </Button>
-            </header>
-
+            )}
+            isEmpty={false}
+        >
             {isLoading ? (
-                <div className="text-center py-6 text-muted-foreground text-sm">
-                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                <div className="flex justify-center py-6 text-muted-foreground" role="status" aria-label={t('material.loading')}>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                 </div>
             ) : items.length === 0 ? (
                 <p className="text-[13px] leading-relaxed text-muted-foreground py-2">
                     {t('material.empty')}
                 </p>
             ) : (
-                <ul className="divide-y divide-border/40">
-                    {items.map(item => {
+                <>
+                <ul className="divide-y divide-border/60">
+                    {visibles.map(item => {
                         if (item.source === 'sermon') {
                             const sermonMeta = KIND_META.sermon;
                             const SermonIcon = sermonMeta.icon;
@@ -108,11 +133,12 @@ export function ProjectMaterialList({
                                 'draft';
                             return (
                                 <li key={`sermon-${item.id}`} className="py-3 flex items-start gap-3 group">
-                                    <SermonIcon className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground/70 group-hover:text-primary transition-colors" />
+                                    <SermonIcon className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground/70 group-hover:text-primary-text transition-colors" />
                                     <div className="flex-1 min-w-0">
                                         <button
+                                            type="button"
                                             onClick={() => navigate(`/dashboard/sermons/${item.id}`)}
-                                            className="text-left text-[14px] font-medium truncate block hover:text-primary w-full transition-colors"
+                                            className={cn('text-left text-[14px] font-medium truncate block hover:text-primary-text w-full transition-colors rounded-sm', TOUCH, FOCUS_RING)}
                                         >
                                             {item.title}
                                         </button>
@@ -145,8 +171,9 @@ export function ProjectMaterialList({
                                 <Icon className={cn('h-4 w-4 mt-0.5 shrink-0', meta.color)} />
                                 <div className="flex-1 min-w-0">
                                     <button
+                                        type="button"
                                         onClick={() => onEditOutput(o)}
-                                        className="text-left text-[14px] font-medium truncate block hover:text-primary w-full transition-colors"
+                                        className={cn('text-left text-[14px] font-medium truncate block hover:text-primary-text w-full transition-colors rounded-sm', TOUCH, FOCUS_RING)}
                                     >
                                         {o.title}
                                     </button>
@@ -157,27 +184,29 @@ export function ProjectMaterialList({
                                         {o.content.length > 0 && (
                                             <>
                                                 <span className="text-border">·</span>
-                                                <span className="font-mono">{o.content.length.toLocaleString()} chars</span>
+                                                <span className="font-mono">{t('material.chars', { n: o.content.length.toLocaleString(dateLocale) })}</span>
                                             </>
                                         )}
                                     </div>
                                 </div>
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                <div className="flex shrink-0 gap-1 self-center">
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                        className="h-11 w-11 sm:h-8 sm:w-8 text-muted-foreground hover:text-foreground"
                                         onClick={() => exportOutputMarkdown(o)}
                                         title={t('material.actions.downloadMarkdown')}
+                                        aria-label={`${t('material.actions.downloadMarkdown')}: ${o.title}`}
                                     >
                                         <Download className="h-3.5 w-3.5" />
                                     </Button>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                        className="h-11 w-11 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive"
                                         onClick={() => onDeleteOutput(o)}
                                         title={t('material.actions.delete')}
+                                        aria-label={`${t('material.actions.delete')}: ${o.title}`}
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </Button>
@@ -186,7 +215,18 @@ export function ProjectMaterialList({
                         );
                     })}
                 </ul>
+                {ocultas > 0 && (
+                    <button
+                        type="button"
+                        onClick={() => setTodo(v => !v)}
+                        aria-expanded={todo}
+                        className={cn('mt-2 inline-flex items-center rounded-sm text-[13px] text-primary-text underline-offset-2 hover:underline', TOUCH, FOCUS_RING)}
+                    >
+                        {todo ? t('material.seeLess') : t('material.seeAll', { count: items.length })}
+                    </button>
+                )}
+                </>
             )}
-        </section>
+        </DeskSection>
     );
 }

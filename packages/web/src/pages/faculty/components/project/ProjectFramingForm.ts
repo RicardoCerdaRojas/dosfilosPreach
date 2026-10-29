@@ -10,6 +10,7 @@ import {
     scopeFitsBooks,
     BIBLE_CANON,
     FRAMING_MAX_SUNDAYS,
+    FRAMING_TEXT_MAX,
     type AIProject,
     type BibleBookId,
     type FramingFrequency,
@@ -354,6 +355,20 @@ export function saveFromForm(form: FramingForm): FramingSave {
             rhythm,
         },
     };
+}
+
+// ── La nota de antes ───────────────────────────────────────────────────
+
+/**
+ * «Pasar tu nota al encuadre»: la nota de antes (la de contexto o una nota
+ * del material) se copia TAL CUAL en la idea central, si está vacía; el
+ * pastor la corrige y confirma al guardar. Nunca pisa lo que ya escribió:
+ * con la idea escrita, la nota solo se muestra para que copie lo que sirva.
+ */
+export function formWithNote(form: FramingForm, note: string | null | undefined): { form: FramingForm; placed: boolean; truncated: boolean } {
+    const texto = note?.trim() ?? '';
+    if (!texto || form.centralIdea.trim()) return { form, placed: false, truncated: false };
+    return { form: { ...form, centralIdea: texto.slice(0, FRAMING_TEXT_MAX) }, placed: true, truncated: texto.length > FRAMING_TEXT_MAX };
 }
 
 // ── Estudios ───────────────────────────────────────────────────────────

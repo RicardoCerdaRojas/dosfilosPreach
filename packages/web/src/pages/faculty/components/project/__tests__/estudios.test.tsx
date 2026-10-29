@@ -15,7 +15,7 @@ describe('ProjectStudiesSection', () => {
             estudio('tp8', { title: 'TP #8' }),
             estudio('serie', { title: 'Santiago 4', projectId: 'otro', linkedProjectIds: ['teo2'] }),
         ] as never} /></MemoryRouter>);
-        expect(screen.getByText('TP #8').closest('a')!.getAttribute('href')).toBe('/dashboard/exegesis/tp8');
+        expect(screen.getByText('TP #8').closest('a')!.getAttribute('href')).toBe('/dashboard/exegesis/tp8?from=%2Fdashboard%2Fprojects%2Fteo2');
         expect(screen.getAllByText('studies.linked')).toHaveLength(1);
     });
 

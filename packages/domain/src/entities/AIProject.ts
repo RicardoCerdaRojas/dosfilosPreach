@@ -1,6 +1,8 @@
 import type { PaperCover } from '../exegesis/entities/ExegeticalPaper';
 import type { BibliographySearchLogEntry, ProjectBibliographyCriteria, ProjectBibliographyEntry } from '../exegesis/services/projectBibliography';
 import type { ProjectFraming } from '../exegesis/services/projectFraming';
+import type { CourseScheduleEntry, CourseScheduleMode, FeedbackPattern } from '../exegesis/services/courseSchedule';
+import { SOURCE_TYPE_CATALOG, type SourceType } from '../exegesis/entities/SourceType';
 
 export type ProjectColor = 'amber' | 'emerald' | 'sky' | 'rose' | 'violet' | 'slate' | 'orange' | 'teal';
 
@@ -85,6 +87,15 @@ export interface AIProject {
      */
     framing?: ProjectFraming;
     /**
+     * Curso: el calendario de entregas, con lo entregado y la devolución del
+     * profesor de cada una (`docs/FASE_ESCRITORIO_PROYECTO_2026-10.md` §9.1).
+     */
+    courseSchedule?: CourseScheduleEntry[];
+    /** Curso: con calendario, o semana a semana sin calendario. */
+    courseScheduleMode?: CourseScheduleMode | null;
+    /** Curso: los patrones de corrección del profesor y qué se decidió con cada uno. */
+    feedbackPatterns?: FeedbackPattern[];
+    /**
      * @deprecated Etapa 1: un solo encargo por proyecto. Ya no se escribe;
      * se lee como datos del curso y un tipo de trabajo, para no perder uno
      * guardado antes de la etapa 1b (en producción no había ninguno).
@@ -125,6 +136,21 @@ export interface ProjectCourseInfo {
 export interface ProjectWorkType extends Omit<ProjectCharge, 'course'> {
     id: string;
     label: string;
+    /**
+     * «El curso no da rúbrica»: el estudiante confirmó que el tipo se evalúa
+     * con la del sistema o con su plantilla por defecto. Sin esta marca, una
+     * rúbrica que no es del profesor deja la fase 1 del Curso en curso. Solo
+     * se guarda `true`.
+     */
+    rubricConfirmed?: boolean;
+    /**
+     * Qué tipos de fuente NO se repiten entre dos entregas seguidas de este
+     * tipo de trabajo. En NT785 el profesor prohíbe repetir los comentarios
+     * del TP anterior; las gramáticas y el texto base sí se repiten (TP #9,
+     * B11). Ausente: el curso no lo dijo y rige la regla general; `[]`: todo
+     * se puede repetir.
+     */
+    noRepeatSourceTypes?: SourceType[];
 }
 
 /** Sin campos `undefined` (Firestore los rechaza también anidados) y sin texto vacío. */
@@ -150,9 +176,26 @@ export function cleanProjectWorkTypes(types: ReadonlyArray<ProjectWorkType>): Pr
         const label = t.label?.trim();
         if (!t.id || !label || vistos.has(t.id)) continue;
         vistos.add(t.id);
-        out.push({ ...limpio(t), id: t.id, label });
+        // `rubricConfirmed` solo como `true`: un `false` o basura no dice nada.
+        const { rubricConfirmed, noRepeatSourceTypes, ...resto } = t;
+        const noRepetir = cleanNoRepeatSourceTypes(noRepeatSourceTypes);
+        out.push({
+            ...limpio(resto), id: t.id, label,
+            ...(rubricConfirmed === true ? { rubricConfirmed: true } : {}),
+            ...(noRepetir ? { noRepeatSourceTypes: noRepetir } : {}),
+        });
     }
     return out;
+}
+
+/**
+ * Los tipos que no se repiten, listos para guardar: solo tipos del catálogo,
+ * sin repetir. `null` si no hay lista (ausente o basura): «el curso no lo
+ * dijo» no se convierte en «todo se repite».
+ */
+export function cleanNoRepeatSourceTypes(value: unknown): SourceType[] | null {
+    if (!Array.isArray(value)) return null;
+    return [...new Set(value.filter((x): x is SourceType => typeof x === 'string' && x in SOURCE_TYPE_CATALOG))];
 }
 
 /** Los datos del curso, o los del encargo de la etapa 1 si no se guardaron aparte. */
@@ -195,7 +238,9 @@ export function resolveProjectCharge(
     const tipo = workTypeId ? projectWorkTypes(project).find(t => t.id === workTypeId) ?? null : null;
     const out: ProjectCharge = {};
     if (tipo) {
-        const { id: _id, label: _label, ...resto } = tipo;
+        // `rubricConfirmed` es del escritorio del curso y la regla de no
+        // repetir la lee el corpus: ninguna de las dos es del estudio al nacer.
+        const { id: _id, label: _label, rubricConfirmed: _rc, noRepeatSourceTypes: _nr, ...resto } = tipo;
         Object.assign(out, resto);
     }
     if (curso?.course?.trim()) out.course = curso.course.trim();

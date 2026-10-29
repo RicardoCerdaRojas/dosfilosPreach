@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 
 /**
  * SeriesDetail conoce su proyecto (etapa 3 de ADR-046, U7): el chip, ligar
@@ -44,8 +44,9 @@ vi.mock('@/i18n', () => ({
     }),
 }));
 vi.mock('@/context/firebase-context', () => ({ useFirebase: () => ({ user: { uid: 'u1' } }) }));
+const navigate = vi.hoisted(() => vi.fn());
 vi.mock('react-router-dom', () => ({
-    useNavigate: () => vi.fn(),
+    useNavigate: () => navigate,
     useParams: () => ({ id: 's1' }),
     Link: ({ to, children, ...rest }: { to: string; children: React.ReactNode }) => <a href={to} {...rest}>{children}</a>,
 }));
@@ -115,6 +116,7 @@ const serie = (over: Record<string, unknown> = {}, metadata: Record<string, unkn
 const crearEstudio = () => screen.getByRole('button', { name: 'detail.table.createPaper' });
 
 beforeEach(() => {
+    navigate.mockReset();
     Object.values(svc).forEach(f => f.mockReset());
     Object.values(estado.toast).forEach(f => f.mockReset());
     estado.reloadData.mockReset().mockResolvedValue(undefined);
@@ -164,6 +166,37 @@ describe('el proyecto en la cabecera de la serie', () => {
         estado.loadingProjects = true;
         render(<SeriesDetail />);
         expect(screen.queryByText('detail.project.unavailable')).toBeNull();
+    });
+});
+
+describe('la flecha de volver (escritorio: siempre hay vuelta)', () => {
+    it('una serie del proyecto vuelve a su escritorio y lo nombra', () => {
+        estado.series = serie({ projectId: 'p1' });
+        render(<SeriesDetail />);
+        const volver = screen.getByRole('button', { name: /detail\.header\.backToProject/ });
+        expect(volver.textContent).toContain('Nehemías');
+        fireEvent.click(volver);
+        expect(navigate).toHaveBeenCalledWith('/dashboard/projects/p1');
+    });
+
+    it('una serie suelta, o con el proyecto borrado, vuelve a la lista de planes', () => {
+        render(<SeriesDetail />);
+        fireEvent.click(screen.getByRole('button', { name: 'detail.header.back' }));
+        expect(navigate).toHaveBeenLastCalledWith('/dashboard/plans');
+        cleanup();
+        estado.series = serie({ projectId: 'p1' });
+        estado.projects = [{ ...nehemias, deletedAt: new Date() }];
+        render(<SeriesDetail />);
+        expect(screen.queryByRole('button', { name: /detail\.header\.backToProject/ })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'detail.header.back' }));
+        expect(navigate).toHaveBeenLastCalledWith('/dashboard/plans');
+    });
+
+    it('el estudio que se abre desde la serie vuelve a la serie', async () => {
+        estado.series = serie({ projectId: 'p1' });
+        render(<SeriesDetail />);
+        fireEvent.click(crearEstudio());
+        await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard/exegesis/paper1', { state: { from: '/dashboard/plans/s1', fromLabel: 'detail.backToSeries' } }));
     });
 });
 

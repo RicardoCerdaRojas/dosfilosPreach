@@ -8,7 +8,10 @@ import type {
     MacroSection,
     NewHypothesisEntry,
     PassageReference,
+    ProjectFraming,
 } from '@dosfilos/domain';
+import type { FramingSave } from '@/pages/faculty/components/project/ProjectFramingForm';
+import { useFramingDialogInPlace } from '@/pages/faculty/hooks/useProjectFramingActions';
 import {
     framingPrefill,
     hasReadingToContrast,
@@ -21,7 +24,9 @@ import {
  * El encuadre del proyecto en el planificador (`docs/FASE_ENCUADRE_SERIE_2026-10.md`,
  * §2 pasos 6–8), fuera de la página: precarga el formulario de la serie UNA
  * vez, decide cuándo aparece «Tu lectura y lo que propone el panorama» y
- * arma las salidas del aviso de unidades contra domingos.
+ * arma las salidas del aviso de unidades contra domingos. «Ajustar el
+ * calendario» abre el diálogo del encuadre AQUÍ (antes iba al panel por la
+ * URL y se salía del análisis); al guardarlo, el ritmo nuevo pasa a la serie.
  *
  * Nada de esto entra a los pases: solo se muestra y precarga.
  */
@@ -33,7 +38,11 @@ export function useFramingInPlanner(input: {
     panorama: BookPanorama | null;
     macroSections: MacroSection[] | null;
     analyzedBookId: BibleBookId | null;
-    updateProject: { mutateAsync: (v: { projectId: string; hypothesisEntry: NewHypothesisEntry }) => Promise<unknown> };
+    /** Anota en el registro y guarda el encuadre (la mutación de `useFacultyProjects`). */
+    updateProject: {
+        mutateAsync: (v: { projectId: string; hypothesisEntry?: NewHypothesisEntry } & Partial<FramingSave>) => Promise<unknown>;
+        isPending?: boolean;
+    };
     setCollapsedPasses: Dispatch<SetStateAction<Set<number>>>;
 }) {
     const { project, projectState, bookParam, lang, panorama, macroSections, analyzedBookId, updateProject, setCollapsedPasses } = input;
@@ -107,12 +116,24 @@ export function useFramingInPlanner(input: {
         });
     }, [setCollapsedPasses]);
 
+    // El pastor acaba de fijar el calendario a propósito: la fecha y la
+    // frecuencia nuevas pasan a la serie (pisan lo precargado, no un ritmo borrado).
+    const framingDialog = useFramingDialogInPlace({
+        project,
+        updateProject,
+        onSaved: ({ framingPatch }) => {
+            const rhythm = framingPatch.rhythm as ProjectFraming['rhythm'] | null | undefined;
+            if (rhythm?.startDate) setStartDate(rhythm.startDate);
+            if (rhythm?.frequency) setFrequency(rhythm.frequency);
+        },
+    });
+
     const unitsNotice = (units: number) => (project
         ? {
             units,
             sundays: framing?.rhythm?.sundays,
             onReviewDivision: reviewDivision,
-            calendarHref: `/dashboard/projects/${encodeURIComponent(project.id)}?encuadre=1`,
+            onAdjustCalendar: () => framingDialog.onOpenChange(true),
         }
         : null);
 
@@ -128,5 +149,7 @@ export function useFramingInPlanner(input: {
             setAnalyzedPassage(isPassageRun(verses, bookId, readerChapterCount)),
         contrast,
         unitsNotice,
+        /** Las props de `ProjectFramingDialog`, con el proyecto; sin proyecto, `null`. */
+        framingDialog: project ? { project, ...framingDialog } : null,
     };
 }

@@ -255,3 +255,98 @@ describe('proseReviewCriteria — las nueve reglas del plan no duplican las de s
         expect(con.length - base.length).toBeLessThanOrEqual(1);
     });
 });
+
+/** TP #9 (Santiago 4:11-17, 2026-10-28), casos leídos en producción. */
+describe('TP #9 · la gramática del curso en una cita de varias páginas o compuesta (B37)', () => {
+    const CLAVES9 = ['Wallace', 'Robertson', 'Tuggy', 'McCartney', 'Varner'];
+    const conCitas = analisis({
+        questionAnswers: [{
+            questionNumber: 2, directAnswer: 'x', options: [], decision: 'y',
+            decisiveCriterion: {
+                text: 'x', whyThisOverThat: '',
+                sources: [{ sourceKey: 'Wallace', page: 232 }, { sourceKey: 'Robertson', page: 574 }],
+            },
+        }],
+    });
+    const fijos = (prose: string) => reviewProseFixed({ prose, analysis: conCitas, citationKeys: CLAVES9, grammarKeys: ['Wallace', 'Robertson'] })
+        .filter(f => f.kind === 'missing-grammar');
+
+    it('«(Wallace, p. 232, 236)» cita la 232 (4:14)', () => {
+        const prosa = 'Wallace reconoce aquí el uso sustantivador del artículo y traduce la construcción como aquello que pertenece al mañana (Wallace, p. 232, 236). Tuggy incluye este empleo de ἀντί entre los que expresan sustitución, mientras Robertson lo describe como sustitución de perspectivas (Tuggy, p. 90; Robertson, p. 574).';
+        expect(fijos(prosa)).toEqual([]);
+    });
+
+    it('la segunda cita de un paréntesis cuenta (4:15)', () => {
+        expect(fijos('Sustitución (Tuggy, 90; Robertson, 574). Artículo (Wallace, 232).')).toEqual([]);
+    });
+
+    it('un rango abreviado «559–61» cubre la 560, como lo lee el verificador', () => {
+        const a = analisis({ commentatorEngagement: [{ commentator: 'Wallace', sourceKey: 'Wallace', page: 560, position: 'x', evaluation: '' } as never] });
+        const f = reviewProseFixed({ prose: 'Es causal (Wallace, 559–61).', analysis: a, citationKeys: CLAVES9, grammarKeys: ['Wallace'] });
+        expect(f.map(x => x.kind)).not.toContain('missing-grammar');
+    });
+
+    it('si de verdad falta, se sigue avisando', () => {
+        expect(fijos('Sustitución (Tuggy, 90). Artículo (Wallace, 236).').map(f => f.data)).toEqual([
+            { key: 'Wallace', page: 232 }, { key: 'Robertson', page: 574 },
+        ]);
+    });
+});
+
+describe('TP #9 · la traducción adoptada en el cierre contra la del análisis (B31)', () => {
+    const FINAL_14 = 'Aunque no saben lo que traerá el mañana. ¿Qué es su vida? Pues ustedes son un vapor que aparece por poco tiempo y después desaparece.';
+    const cierre = (t: string) => `Primer párrafo del análisis.\n\nLa metáfora del vapor permite caracterizar la existencia de los destinatarios como pasajera. Por ello, se prefiere expresar el contraste entre desconocimiento del mañana y fragilidad humana mediante la traducción: ${t}`;
+    const con = (final: string) => analisis({ finalTranslation: final });
+    const mismatch = (prose: string, final: string) => reviewProseFixed({ prose, analysis: con(final) }).filter(f => f.kind === 'translation-mismatch');
+
+    it('4:14: el cierre perdió el «Aunque» concesivo del análisis', () => {
+        const f = mismatch(cierre('«No saben lo que traerá el mañana. ¿Qué es su vida?»'), FINAL_14);
+        expect(f).toEqual([{ kind: 'translation-mismatch', excerpt: 'No saben lo que traerá el mañana. ¿Qué es su vida?', data: { analysis: FINAL_14 } }]);
+    });
+
+    it('4:14 corregido: «aunque no saben…» (minúscula, parte del versículo) coincide', () => {
+        expect(mismatch(cierre('«aunque no saben lo que traerá el mañana. ¿Qué es su vida?»'), FINAL_14)).toEqual([]);
+    });
+
+    it('4:12: una frase de la traducción basta («el que puede salvar y destruir»)', () => {
+        const prosa = 'Uno.\n\nPara expresar que la capacidad de salvar y destruir identifica al único legislador y juez, se adopta la traducción apositiva «el que puede salvar y destruir».';
+        expect(mismatch(prosa, 'Uno solo es legislador y juez, el que puede salvar y destruir; pero tú, ¿quién eres, tú que juzgas al prójimo?')).toEqual([]);
+        // La versión del análisis que decía «que puede» (atributiva) sí difiere.
+        expect(mismatch(prosa, 'Uno solo es legislador y juez, que puede salvar y destruir; pero tú, ¿quién eres, tú que juzgas al prójimo?')).toHaveLength(1);
+    });
+
+    it('4:15 y 4:17: comillas anidadas, dos puntos y texto entre «traducción» y la cita', () => {
+        const p15 = 'Uno.\n\nSe adopta, por ello, la traducción: «En lugar de eso, deberían decir: “Si el Señor quiere, viviremos y haremos esto o aquello”».';
+        expect(mismatch(p15, 'En lugar de eso, deberían decir: «Si el Señor quiere, viviremos y haremos esto o aquello».')).toEqual([]);
+        const p17 = 'Uno.\n\nSe adopta, por ello, una traducción que presenta la omisión del bien conocido como pecado: «Por tanto, al que sabe hacer el bien y no lo hace, le es pecado».';
+        expect(mismatch(p17, 'Por tanto, al que sabe hacer el bien y no lo hace, le es pecado.')).toEqual([]);
+    });
+
+    it('una pregunta que abre con «¿» dentro de la oración empieza ahí', () => {
+        const prosa = 'Uno.\n\nSe adopta la traducción «¿quién eres, tú que juzgas al prójimo?».';
+        expect(mismatch(prosa, 'Uno solo es legislador y juez; pero tú, ¿quién eres, tú que juzgas al prójimo?')).toEqual([]);
+    });
+
+    it('la «traducción» de un párrafo que no es el cierre no cuenta; sin traducción final, nada', () => {
+        const prosa = 'La traducción «deberían decir» no presupone un modal equivalente a la traducción «deber».\n\nCierre sin traducción adoptada.';
+        expect(mismatch(prosa, 'En lugar de eso, deberían decir: «Si el Señor quiere…».')).toEqual([]);
+        expect(reviewProseFixed({ prose: cierre('«No saben.»'), analysis: con('') }).map(f => f.kind)).not.toContain('translation-mismatch');
+    });
+
+    it('la traducción rechazada no cuenta como adoptada (revisión)', () => {
+        const prosa = 'Uno.\n\nPor el contexto forense se prefiere «condenar» y no la traducción «juzgar» de la RVR60.';
+        expect(mismatch(prosa, 'No condenen al hermano.')).toEqual([]);
+        // Sin verbo de adopción, tampoco: «la traducción «juzgar» es la de la RVR60».
+        expect(mismatch('Uno.\n\nLa traducción «juzgar» es la de la RVR60.', 'No condenen al hermano.')).toEqual([]);
+    });
+
+    it('un punto solo al final de la comilla no vuelve oración a una frase (revisión)', () => {
+        const prosa = 'Uno.\n\nSe adopta la traducción apositiva «el que puede salvar y destruir.»';
+        expect(mismatch(prosa, 'Uno solo es legislador y juez, el que puede salvar y destruir; pero tú, ¿quién eres?')).toEqual([]);
+    });
+
+    it('la indicación para recomponer lleva las dos traducciones', () => {
+        const f = mismatch(cierre('«No saben lo que traerá el mañana. ¿Qué es su vida?»'), FINAL_14);
+        expect(proseReviewGuidance(f, [], 'es')).toContain('pero la traducción final del análisis es «Aunque no saben');
+    });
+});

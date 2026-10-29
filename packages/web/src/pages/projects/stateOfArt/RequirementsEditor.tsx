@@ -31,6 +31,13 @@ const CIFRAS: Partial<Record<RequirementKind, Array<'minimum' | 'before' | 'afte
     perspectives: ['minimum'],
     'date-range': ['before', 'after', 'recentMinimum'],
 };
+/**
+ * Los que se miden sobre lo aprobado. A estos se les puede «dar por
+ * cumplido» (`done: true`): el escritorio los cuenta como aceptados a
+ * propósito aunque la medida no llegue (p. ej. el profesor aceptó 2
+ * comentarios en vez de 3). `rule` y `other` ya se marcan a mano.
+ */
+const MEDIBLES = new Set<RequirementKind>(['minimum-type', 'quantity', 'date-range', 'perspectives', 'variety']);
 const numero = (v: string) => { const n = parseInt(v, 10); return Number.isFinite(n) && n > 0 ? n : null; };
 
 interface Nuevo {
@@ -95,6 +102,12 @@ export function RequirementsEditor({ measures, onChange, onShowUnmeasurable }: R
         const nuevos = propios.filter(p => !items.some(r => r.kind === p.kind && (r.sourceType ?? null) === (p.sourceType ?? null)));
         onChange([...items, ...nuevos]);
     };
+    /** Deshacer «dar por cumplido» quita el campo: Firestore no acepta `undefined`. */
+    const sinAceptar = (id: string) => onChange(items.map(r => {
+        if (r.id !== id) return r;
+        const { done: _done, ...resto } = r;
+        return resto;
+    }));
     const supuestoDe = (r: ProjectRequirement) => (r.assumed ?? [])
         .map(a => t(`stateOfArt.requirement.assumedPart.${a}`, { value: r[a] ?? '' }))
         .join(', ');
@@ -134,6 +147,17 @@ export function RequirementsEditor({ measures, onChange, onShowUnmeasurable }: R
                                 {m.status === 'incomplete'
                                     ? <span className="text-xs text-warning-subtle-foreground">{t('stateOfArt.requirement.incomplete')}</span>
                                     : m.status !== 'manual' && <span className="text-xs tabular-nums text-foreground">{t('stateOfArt.requirement.measure', { value: m.value, target: m.target })}</span>}
+                                {MEDIBLES.has(r.kind) && !r.done && m.status !== 'met' && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="min-h-11 shrink-0 sm:min-h-0"
+                                        onClick={() => cambiar(r.id, { done: true })}
+                                        aria-label={t('stateOfArt.requirement.acceptLabel', { text: r.text })}
+                                    >
+                                        {t('stateOfArt.requirement.accept')}
+                                    </Button>
+                                )}
                                 {(r.kind === 'other' || r.kind === 'rule') && (
                                     <label className="inline-flex items-center gap-1 text-xs text-foreground">
                                         <input type="checkbox" checked={!!r.done} onChange={e => cambiar(r.id, { done: e.target.checked })} />{t('stateOfArt.requirement.done')}
@@ -162,11 +186,24 @@ export function RequirementsEditor({ measures, onChange, onShowUnmeasurable }: R
                             {r.kind === 'variety' && (
                                 <TiposElegidos value={r.types ?? []} onChange={types => cambiar(r.id, { types })} label={r.text} />
                             )}
+                            {MEDIBLES.has(r.kind) && r.done === true && (
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <p className="text-[11px] text-foreground">{t('stateOfArt.requirement.accepted')}</p>
+                                    <button
+                                        type="button"
+                                        className="inline-flex min-h-11 items-center rounded text-[11px] text-foreground underline underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:min-h-0"
+                                        onClick={() => sinAceptar(r.id)}
+                                        aria-label={t('stateOfArt.requirement.undoAcceptLabel', { text: r.text })}
+                                    >
+                                        {t('stateOfArt.requirement.undoAccept')}
+                                    </button>
+                                </div>
+                            )}
                             {(r.assumed?.length ?? 0) > 0 && (
                                 <p className="text-[11px] text-warning-subtle-foreground">{t('stateOfArt.requirement.assumedNote', { what: supuestoDe(r) })}</p>
                             )}
                             {m.unmeasurable.length > 0 && (
-                                <button type="button" className="text-[11px] text-foreground underline underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded" onClick={() => onShowUnmeasurable(m.unmeasurable, r.text)}>
+                                <button type="button" className="text-[11px] text-foreground underline underline-offset-2 hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded" onClick={() => onShowUnmeasurable(m.unmeasurable, r.text)}>
                                     {t(`stateOfArt.requirement.unmeasurable.${r.kind}`, { count: m.unmeasurable.length })}
                                 </button>
                             )}
