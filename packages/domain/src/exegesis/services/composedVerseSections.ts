@@ -168,6 +168,16 @@ function headingNames(headingText: string, normalizedKey: string): boolean {
  * latinos, sin puntuación decorativa y con los espacios colapsados.
  * Así «### Santiago 1:2 — La prueba» encuentra la clave «Santiago 1:2».
  */
+/**
+ * La forma con que se compara un encabezado con la clave de su sección:
+ * sin tildes, mayúsculas ni marcas de markdown, y «Salmos» igual a «Salmo».
+ * La usan el reensamble y el exportador del Word, que tienen que encontrar
+ * la misma sección.
+ */
+export function sectionHeadingKey(text: string): string {
+    return normalizeHeading(text);
+}
+
 function normalizeHeading(text: string): string {
     // «## Salmos 23:4», guardado antes de B68a, es la sección de «Salmo 23:4».
     return sameBookNameForPsalms(text)

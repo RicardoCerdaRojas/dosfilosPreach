@@ -946,3 +946,41 @@ describe('exportPaperToDocx — CONTENIDO y numeración por secciones (guía, ho
         expect(biblio).toContain('<w:keepLines/>');
     });
 });
+
+describe('exportPaperToDocx — el texto del versículo bajo su título, como el TI #1 (B68c)', () => {
+    const PSA = (v: number) => ({ bookId: 'PSA' as const, chapterStart: 23, chapterEnd: 23, verseStart: v, verseEnd: v });
+    const ANALISIS = { originalText: 'יְהוָ֥ה רֹ֝עִ֗/י לֹ֣א אֶחְסָֽר׃', initialTranslation: 'x', finalTranslation: 'El SEÑOR es mi pastor; nada me falta.' };
+    const conVersiculo = (titulo: string) => paper({
+        passage: PSA(1),
+        steps: [{ id: 'v1', kind: 'verse', order: 1, verseRef: PSA(1), accepted: { markdown: 'La prosa del versículo.', canonicalAnalysis: ANALISIS }, current: null }] as never,
+        assembledMarkdown: ['# Análisis de Salmo 23:1', '', '## Introducción', '', 'La introducción.', '', `## ${titulo}`, '', 'La prosa del versículo.', '', '## Conclusión', '', 'Fin.'].join('\n'),
+    });
+    const parrafos = (doc: string) => doc.split(/(?=<w:p[ >])/).filter(p => p.startsWith('<w:p'));
+    const texto = (p: string) => p.replace(/<[^>]+>/g, '');
+
+    it('debajo del título: el hebreo sin acentos, a la derecha y sangrado; después la traducción entre comillas', async () => {
+        const ps = parrafos(await xmlOf(conVersiculo('Salmo 23:1'), 'word/document.xml'));
+        const i = ps.findIndex(p => texto(p) === 'Salmo 23:1');
+        expect(ps[i]).toMatch(/w:pStyle w:val="Heading1"/);
+        const hebreo = ps[i + 1]!;
+        expect(texto(hebreo).replace(/\u00A0/g, ' ')).toBe('יְהוָה רֹעִי לֹא אֶחְסָר׃'.normalize('NFC'));
+        expect(hebreo).toMatch(/<w:jc w:val="(right|end)"\/>/);
+        expect(hebreo).toMatch(/<w:bidi\/>/);
+        expect(hebreo).toMatch(/w:left="720"/);
+        expect(hebreo).toMatch(/w:right="720"/);
+        expect(texto(ps[i + 2]!)).toBe('«El SEÑOR es mi pastor; nada me falta.»');
+        expect(ps[i + 2]).toMatch(/w:after="360"/);
+        expect(texto(ps[i + 3]!)).toBe('La prosa del versículo.');
+    });
+
+    it('un ensamble guardado con «Salmos 23:1» también lo lleva', async () => {
+        const ps = parrafos(await xmlOf(conVersiculo('Salmos 23:1'), 'word/document.xml'));
+        const i = ps.findIndex(p => texto(p) === 'Salmos 23:1');
+        expect(texto(ps[i + 2]!)).toBe('«El SEÑOR es mi pastor; nada me falta.»');
+    });
+
+    it('una sección titulada con la pregunta del encuadre (TP) no lleva el texto; la introducción tampoco', async () => {
+        const doc = await xmlOf(conVersiculo('¿Qué tipo de oración es יְהוָה רֹעִי?'), 'word/document.xml');
+        expect(doc).not.toContain('«El SEÑOR es mi pastor');
+    });
+});

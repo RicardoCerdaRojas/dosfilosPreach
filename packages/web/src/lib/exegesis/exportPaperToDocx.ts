@@ -28,6 +28,8 @@ import {
     type CoverStyle,
     type IbidRules,
     resolvesToCitedSource,
+    sectionHeadingKey,
+    verseTextBlocks,
     type BibliographyEntry,
     type ExegeticalPaper,
     type PaperCover,
@@ -43,6 +45,8 @@ import {
     HEADING3_PARAGRAPH,
     TITLE_HEADING_SPACING,
     TOC_STYLES,
+    VERSE_ORIGINAL_PARAGRAPH,
+    VERSE_TRANSLATION_PARAGRAPH,
     isMostlyHebrew,
     splitHebrew,
     TMS,
@@ -147,6 +151,8 @@ export async function exportPaperToDocx(
     const paragraphs: Paragraph[] = [];
     /** Dónde empieza la bibliografía entre los párrafos: va en su propia sección. */
     let bibliographyParagraphAt = -1;
+    /** El original y la traducción de cada versículo, para ponerlos bajo su título (B68c). */
+    const textosDeVersiculo = verseTextBlocks(paper);
     blocks.forEach((block, index) => {
         const inBibliography = bibliographyAt >= 0 && index >= bibliographyAt;
         switch (block.type) {
@@ -165,6 +171,24 @@ export async function exportPaperToDocx(
                         ? textRuns(block.text.toLocaleUpperCase('es'), { bold: false })
                         : textRuns(block.text),
                 }));
+                {
+                    // Bajo el título de un versículo, su texto y la traducción
+                    // del trabajo, como el TI #1 entregado. Solo un título de
+                    // sección (`##`) cuyo rótulo es el del versículo.
+                    const texto = block.level === 2 ? textosDeVersiculo.get(sectionHeadingKey(block.text)) : undefined;
+                    if (texto) {
+                        const hebreo = isMostlyHebrew(texto.original);
+                        paragraphs.push(new Paragraph({
+                            ...VERSE_ORIGINAL_PARAGRAPH,
+                            alignment: hebreo ? AlignmentType.RIGHT : AlignmentType.LEFT,
+                            ...(hebreo ? { bidirectional: true } : {}),
+                            children: textRuns(texto.original),
+                        }));
+                        if (texto.translation) {
+                            paragraphs.push(new Paragraph({ ...VERSE_TRANSLATION_PARAGRAPH, children: textRuns(texto.translation) }));
+                        }
+                    }
+                }
                 break;
             case 'paragraph':
                 paragraphs.push(new Paragraph({

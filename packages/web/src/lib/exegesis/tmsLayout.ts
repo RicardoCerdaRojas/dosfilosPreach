@@ -118,6 +118,20 @@ export const HEADING3_PARAGRAPH: IParagraphStylePropertiesOptions = {
  */
 export const TITLE_HEADING_SPACING = { before: 240, after: 480 } as const;
 
+/**
+ * El texto del versículo bajo su título y su traducción, como el TI #1
+ * entregado (medido en su XML): espacio simple, sangrados 0,5" por los dos
+ * lados; 6 pt después del original y 18 pt después de la traducción.
+ */
+export const VERSE_ORIGINAL_PARAGRAPH = {
+    spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, before: 0, after: 120 },
+    indent: { left: TMS.blockIndent, right: TMS.blockIndent, firstLine: 0 },
+} as const;
+export const VERSE_TRANSLATION_PARAGRAPH = {
+    spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, before: 0, after: 360 },
+    indent: { left: TMS.blockIndent, right: TMS.blockIndent, firstLine: 0 },
+} as const;
+
 /** Cita en bloque: espacio simple, sangrada por los dos lados, sin sangría de primera línea. */
 export const BLOCK_QUOTE_PARAGRAPH = {
     spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 240 },
