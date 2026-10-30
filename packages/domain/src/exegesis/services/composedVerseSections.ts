@@ -1,3 +1,5 @@
+import { sameBookNameForPsalms } from '../../bible/canon/psalmName';
+
 /**
  * Troceo del paper compuesto por sección de verso.
  *
@@ -164,12 +166,26 @@ function headingNames(headingText: string, normalizedKey: string): boolean {
 }
 
 /**
+ * La forma con que se compara un encabezado con la clave de su sección:
+ * sin tildes, mayúsculas ni marcas de markdown, y «Salmos» igual a «Salmo».
+ * La usan el reensamble y el exportador del Word, que tienen que encontrar
+ * la misma sección.
+ */
+export function sectionHeadingKey(text: string): string {
+    return normalizeHeading(text);
+}
+
+/**
  * Normaliza para comparar encabezados: minúsculas, sin acentos
  * latinos, sin puntuación decorativa y con los espacios colapsados.
  * Así «### Santiago 1:2 — La prueba» encuentra la clave «Santiago 1:2».
+ * Un rango con raya corta («Salmo 23:5–6», como pide B44) es el mismo que
+ * con guion: la clave sale de `formatPassageReference`, que escribe guion.
  */
 function normalizeHeading(text: string): string {
-    return text
+    // «## Salmos 23:4», guardado antes de B68a, es la sección de «Salmo 23:4».
+    return sameBookNameForPsalms(text)
+        .replace(/(\d)\s*[‐‑–−]\s*(\d)/g, '$1-$2')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()

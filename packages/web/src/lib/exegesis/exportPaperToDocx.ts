@@ -10,6 +10,8 @@ import {
     PageNumber,
     Packer,
     Paragraph,
+    SectionType,
+    TableOfContents,
     TextRun,
 } from 'docx';
 import {
@@ -20,12 +22,20 @@ import {
     formatFirstNote,
     formatPassageReference,
     rangosConRaya,
+    paginasAbreviadas,
     formatShortNote,
     hasCover,
     TMS_COVER_STYLE,
     type CoverStyle,
     type IbidRules,
     resolvesToCitedSource,
+    referenceAbbreviationOf,
+    referenceKindOfSourceType,
+    formatReferenceShortNote,
+    lexiconEntryOf,
+    sourceTypeWithoutIbid,
+    sectionHeadingKey,
+    verseTextBlocks,
     type BibliographyEntry,
     type ExegeticalPaper,
     type PaperCover,
@@ -40,6 +50,9 @@ import {
     HEADING_PARAGRAPH,
     HEADING3_PARAGRAPH,
     TITLE_HEADING_SPACING,
+    TOC_STYLES,
+    VERSE_ORIGINAL_PARAGRAPH,
+    VERSE_TRANSLATION_PARAGRAPH,
     isMostlyHebrew,
     splitHebrew,
     TMS,
@@ -127,11 +140,23 @@ export async function exportPaperToDocx(
      */
     const yaCitadas = new Set<string>();
     const ibid = options.ibid ?? { enabled: true, label: 'Ibid.', allowPageOverride: true };
+    /** El tipo de cada fuente, por su clave: decide la forma de un léxico o una gramática. */
+    const tipoDeFuente = new Map((paper.sources ?? []).filter(s => s.citationKey).map(s => [s.citationKey!, s.sourceType]));
     const rotuloIbid = ibid.label.trim() || 'Ibid.';
     /** La obra de la nota anterior: con la misma, «Ibid.». */
     let ultimaClave: string | null = null;
     let ultimaPagina: string | null = null;
-    const blocks = parseMarkdownBlocks(markdown);
+    // Con portada, el cuerpo no repite el título del trabajo: ya está en la
+    // portada, y el cuerpo empieza en «Introducción», nivel uno (decisión del
+    // fundador, 2026-10-29, B68d). El ensamble lo escribe como `#` en la
+    // primera línea; sin portada se queda, o el documento no diría qué es.
+    // Solo si ES el título: un ensamble editado que abre con «# Introducción»
+    // no pierde su primera sección.
+    const parsed = parseMarkdownBlocks(markdown);
+    const primero = parsed[0];
+    const abreConElTitulo = primero?.type === 'heading' && primero.level === 1
+        && sectionHeadingKey(primero.text) === sectionHeadingKey(rangosConRaya(titleDisplay));
+    const blocks = cover && abreConElTitulo ? parsed.slice(1) : parsed;
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
 
@@ -142,21 +167,46 @@ export async function exportPaperToDocx(
     );
 
     const paragraphs: Paragraph[] = [];
+    /** Dónde empieza la bibliografía entre los párrafos: va en su propia sección. */
+    let bibliographyParagraphAt = -1;
+    /** El original y la traducción de cada versículo, para ponerlos bajo su título (B68c). */
+    const textosDeVersiculo = verseTextBlocks(paper);
     blocks.forEach((block, index) => {
         const inBibliography = bibliographyAt >= 0 && index >= bibliographyAt;
         switch (block.type) {
             case 'heading':
+                if (index === bibliographyAt) bibliographyParagraphAt = paragraphs.length;
                 paragraphs.push(new Paragraph({
-                    heading: HEADING_LEVELS[Math.min(block.level, 3) as 1 | 2 | 3],
-                    // «Salto de página antes» del párrafo, no un salto DENTRO
-                    // del título: con el salto adentro, Word deja un renglón
-                    // vacío con estilo de título al pie de la hoja anterior.
-                    ...(index === bibliographyAt ? { pageBreakBefore: true } : {}),
+                    heading: HEADING_LEVELS[nivelDeWord(block.level)],
                     // La bibliografía es un encabezado de título (guía, hoja 11):
                     // en mayúsculas y con dos líneas en blanco después.
                     ...(index === bibliographyAt ? { spacing: TITLE_HEADING_SPACING } : {}),
-                    children: textRuns(index === bibliographyAt ? block.text.toLocaleUpperCase('es') : block.text),
+                    // Nivel uno para el índice (guía, hoja 6: «trátela como un
+                    // encabezado de nivel uno»), pero sin negrita: el nivel de
+                    // título es «centrado, mayúsculas», y así sale en la propia
+                    // guía (BIBLIOGRAFÍA y CONTENIDO en redonda, medido en su PDF).
+                    children: index === bibliographyAt
+                        ? textRuns(block.text.toLocaleUpperCase('es'), { bold: false })
+                        : textRuns(block.text),
                 }));
+                {
+                    // Bajo el título de un versículo, su texto y la traducción
+                    // del trabajo, como el TI #1 entregado. Solo un título de
+                    // sección (`##`) cuyo rótulo es el del versículo.
+                    const texto = block.level === 2 ? textosDeVersiculo.get(sectionHeadingKey(block.text)) : undefined;
+                    if (texto) {
+                        const hebreo = isMostlyHebrew(texto.original);
+                        paragraphs.push(new Paragraph({
+                            ...VERSE_ORIGINAL_PARAGRAPH,
+                            alignment: hebreo ? AlignmentType.RIGHT : AlignmentType.LEFT,
+                            ...(hebreo ? { bidirectional: true } : {}),
+                            children: textRuns(texto.original),
+                        }));
+                        if (texto.translation) {
+                            paragraphs.push(new Paragraph({ ...VERSE_TRANSLATION_PARAGRAPH, children: textRuns(texto.translation) }));
+                        }
+                    }
+                }
                 break;
             case 'paragraph':
                 paragraphs.push(new Paragraph({
@@ -193,33 +243,28 @@ export async function exportPaperToDocx(
     });
 
 
+    // La guía arma el documento en secciones, cada una con su numeración
+    // (hojas 3, 6 y 17; medido en Word): portada sin número, CONTENIDO en
+    // romanos, cuerpo desde 1 y bibliografía siguiendo al cuerpo con su
+    // primera página abajo al centro, «como si comenzara un nuevo capítulo».
+    // Dentro de la sección del cuerpo, la bibliografía salía arriba a la
+    // derecha, como en el TI #1.
+    const conIndice = paper.rubric?.formatting?.tableOfContents === true;
+    const cuerpo = bibliographyParagraphAt >= 0 ? paragraphs.slice(0, bibliographyParagraphAt) : paragraphs;
+    const bibliografia = bibliographyParagraphAt >= 0 ? paragraphs.slice(bibliographyParagraphAt) : [];
     const doc = new Document({
         title: titleDisplay,
         creator: paper.cover?.author?.trim() || 'Dosfilos · Exegesis',
         styles: documentStyles(paper.rubric?.formatting ?? null),
+        // El índice es un campo: Word lo arma al abrir el archivo (medido en
+        // Word para Mac: entradas y páginas correctas, sin preguntar).
+        ...(conIndice ? { features: { updateFields: true } } : {}),
         footnotes,
         sections: [
             ...(cover ? [cover] : []),
-            {
-                properties: {
-                    page: {
-                        size: TMS.page,
-                        margin: { top: TMS.margin, right: TMS.margin, bottom: TMS.margin, left: TMS.margin, header: TMS.headerFooterDistance, footer: TMS.headerFooterDistance },
-                        pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL },
-                    },
-                    // La primera página del cuerpo lleva el número abajo al
-                    // centro y las siguientes arriba a la derecha: es la
-                    // regla de la guía y la razón de tener primera página
-                    // distinta.
-                    titlePage: true,
-                },
-                headers: { default: new Header({ children: [pageNumberParagraph(AlignmentType.RIGHT)] }) },
-                footers: {
-                    first: new Footer({ children: [pageNumberParagraph(AlignmentType.CENTER)] }),
-                    default: new Footer({ children: [new Paragraph({ children: [] })] }),
-                },
-                children: paragraphs,
-            },
+            ...(conIndice ? [indexSection(paper.displayLanguage)] : []),
+            numberedSection(cuerpo, true),
+            ...(bibliografia.length > 0 ? [numberedSection(bibliografia, false)] : []),
         ],
     });
 
@@ -233,19 +278,30 @@ export async function exportPaperToDocx(
      * se ve. El aviso de fichas cojas al descargar ya nombra a los libros que
      * están en este caso.
      */
-    function textoDeLaNota(author: string, pages: string | null, crudo: string, sinIbid = false): string {
+    function textoDeLaNota(cita: CitaDeNota, sinIbid = false): string {
+        const { author, pages, raw: crudo } = cita;
         const clave = [...fichas.keys()].find(k => resolvesToCitedSource(author, [k]));
         const ficha = clave ? fichas.get(clave)! : null;
         // Una nota sin ficha corta la racha: el «Ibid.» siguiente sería ambiguo.
         if (!ficha || !clave) { ultimaClave = null; return crudo; }
+        // Léxicos y gramáticas de referencia (guía, «Léxicos y gramáticas»):
+        // la nota siguiente va con la abreviatura, y un léxico, un diccionario
+        // o un artículo nunca lleva «Ibid.» (nota 31).
+        const tipo = tipoDeFuente.get(clave);
+        const referencia = referenceAbbreviationOf(ficha);
+        // Una abreviatura escrita en la ficha sin tipo de referencia va como
+        // gramática («TWOT, 123»): quien la escribió la quiere en la nota.
+        const clase = referencia?.kind ?? referenceKindOfSourceType(tipo) ?? (referencia ? 'grammar' : null);
+        const sinIbidPorTipo = sourceTypeWithoutIbid(tipo) || clase === 'lexicon';
         const primera = !yaCitadas.has(clave);
         yaCitadas.add(clave);
         // La misma obra que la nota inmediatamente anterior: «Ibid.», como
         // admite la guía de TMS (y como salió el TI #1, notas 24, 40 y 44).
         // Sin página detrás de una nota con página, «Ibid.» solo diría «la
         // misma página»: va la abreviada. Y lo que la guía no admite, tampoco.
-        const pagina = pages?.trim() || null;
-        const repetida = ibid.enabled && !sinIbid && !primera && ultimaClave === clave
+        // La página con el rango abreviado de la guía («567–68»), también en «Ibid.».
+        const pagina = pages?.trim() ? paginasAbreviadas(pages.trim()) : null;
+        const repetida = ibid.enabled && !sinIbid && !sinIbidPorTipo && !primera && ultimaClave === clave
             && !(pagina === null && ultimaPagina !== null)
             && (pagina === ultimaPagina || ibid.allowPageOverride);
         // Turabian: la misma página que la nota anterior, «Ibid.» solo.
@@ -257,20 +313,22 @@ export async function exportPaperToDocx(
             : repetida
                 // En cursiva, como el ejemplo de la guía de TMS (hoja 22): «² *Ibid.*, 12».
                 ? (pagina && !mismaPagina ? `*${rotuloIbid}*, ${pagina}` : `*${rotuloIbid}*`)
-                : formatShortNote(ficha, pages ?? undefined);
+                : referencia && clase
+                    ? formatReferenceShortNote(referencia, clase, clase === 'lexicon' ? lexiconEntryOf(cita.raw) : null, pagina)
+                    : formatShortNote(ficha, pages ?? undefined);
         // Turabian cierra la nota con punto; las dos funciones devuelven la
         // referencia sin él porque también sirven en pantalla.
         // «*Ibid.*» ya termina en punto, aunque detrás venga el cierre de la cursiva.
         return /\.\*?$/.test(nota) ? nota : `${nota}.`;
     }
 
-    function registerFootnote(citas: ReadonlyArray<{ author: string; pages: string | null; raw: string }>): number {
+    function registerFootnote(citas: ReadonlyArray<CitaDeNota>): number {
         // «(A, 638; B, 59)» es UNA nota con dos obras separadas por punto y
         // coma, como en Turabian; dos llamadas seguidas no lo son. Dentro de
         // ella no hay «Ibid.», y después tampoco: no diría a cuál de las dos.
         const citationText = citas.length === 1
-            ? textoDeLaNota(citas[0]!.author, citas[0]!.pages, citas[0]!.raw)
-            : `${citas.map(c => textoDeLaNota(c.author, c.pages, c.raw, true).replace(/\.$/, '')).join('; ')}.`;
+            ? textoDeLaNota(citas[0]!)
+            : `${citas.map(c => textoDeLaNota(c, true).replace(/\.$/, '')).join('; ')}.`;
         if (citas.length > 1) ultimaClave = null;
         footnoteCounter += 1;
         footnotes[footnoteCounter] = {
@@ -321,7 +379,59 @@ function documentStyles(formatting: PaperFormatting | null) {
             paragraph: HEADING3_PARAGRAPH,
         },
     },
-    } as const;
+    paragraphStyles: TOC_STYLES,
+    };
+}
+
+const PAGE = {
+    size: TMS.page,
+    margin: { top: TMS.margin, right: TMS.margin, bottom: TMS.margin, left: TMS.margin, header: TMS.headerFooterDistance, footer: TMS.headerFooterDistance },
+};
+const emptyParagraph = () => new Paragraph({ children: [] });
+
+/**
+ * El cuerpo, o la bibliografía: la primera página con el número abajo al
+ * centro y las siguientes arriba a la derecha. El cuerpo empieza en 1; la
+ * bibliografía sigue su numeración.
+ */
+function numberedSection(children: Paragraph[], startsAtOne: boolean) {
+    return {
+        properties: {
+            type: SectionType.NEXT_PAGE,
+            page: { ...PAGE, ...(startsAtOne ? { pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL } } : {}) },
+            titlePage: true,
+        },
+        headers: { default: new Header({ children: [pageNumberParagraph(AlignmentType.RIGHT)] }), first: new Header({ children: [emptyParagraph()] }) },
+        footers: { first: new Footer({ children: [pageNumberParagraph(AlignmentType.CENTER)] }), default: new Footer({ children: [emptyParagraph()] }) },
+        children,
+    };
+}
+
+/**
+ * CONTENIDO (guía, hoja 3): «parte de la portada», con número romano abajo al
+ * centro desde «i». El título es un encabezado de título —centrado, en
+ * mayúsculas, sin negrita y con dos líneas en blanco después— pero NO un
+ * estilo de título: el índice no se lista a sí mismo.
+ */
+function indexSection(language: 'es' | 'en') {
+    const titulo = language === 'en' ? 'CONTENTS' : 'CONTENIDO';
+    return {
+        properties: {
+            type: SectionType.NEXT_PAGE,
+            page: { ...PAGE, pageNumbers: { start: 1, formatType: NumberFormat.LOWER_ROMAN } },
+        },
+        headers: { default: new Header({ children: [emptyParagraph()] }) },
+        footers: { default: new Footer({ children: [pageNumberParagraph(AlignmentType.CENTER)] }) },
+        children: [
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                indent: { firstLine: 0 },
+                spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, before: 0, after: TITLE_HEADING_SPACING.after },
+                children: textRuns(titulo),
+            }),
+            new TableOfContents(titulo, { hyperlink: true, headingStyleRange: '1-3' }),
+        ],
+    };
 }
 
 /** Número de página como campo, para que Word lo actualice solo. */
@@ -352,6 +462,13 @@ export function typographicQuotes(text: string): string {
         .replace(/'/g, '\u2019');
 }
 
+/** Una cita del cuerpo que va a nota: lo que hace falta para buscar su ficha. */
+interface CitaDeNota {
+    author: string;
+    pages: string | null;
+    raw: string;
+}
+
 /**
  * El texto de una nota, con el título de la obra en cursiva. La nota
  * Turabian llega con el título entre asteriscos (`*Psalms 1-50*`, igual que
@@ -375,7 +492,8 @@ function textRuns(text: string, options: { size?: number; bold?: boolean; italic
         text: seg.hebrew ? seg.text : typographicQuotes(seg.text),
         font: TMS.font,
         size: options.size ?? TMS.bodyHalfPt,
-        ...(options.bold ? { bold: true } : {}),
+        // `false` explícito apaga la negrita del estilo del párrafo (BIBLIOGRAFÍA en nivel uno).
+        ...(options.bold !== undefined ? { bold: options.bold } : {}),
         ...(options.italics ? { italics: true } : {}),
         ...(seg.hebrew ? { rightToLeft: true } : {}),
     }));
@@ -480,10 +598,28 @@ const HEADING_LEVELS = {
     3: HeadingLevel.HEADING_3,
 } as const;
 
+/**
+ * El nivel de la guía para un encabezado del markdown.
+ *
+ * El ensamble escribe el título del trabajo en `#` y cada sección
+ * (introducción, versículo, conclusión, bibliografía) en `##`; los
+ * subtítulos de una sección, en `###`. La guía de TMS (2024–2025, hoja 11)
+ * dice que los trabajos de MDiv y MMB «comienzan el cuerpo del texto con
+ * un encabezado Nivel Uno», y el TI #1 entregado lleva el título y cada
+ * versículo en nivel uno y las cuestiones en nivel dos. Pasado tal cual,
+ * el TI #2 salió con todas las secciones en nivel dos, sin negrita.
+ *
+ * Se corre aquí y no en el markdown: la pantalla y el reensamble buscan
+ * el `## ` escrito (`replaceVerseSection`, `sectionHeadings`).
+ */
+export function nivelDeWord(nivelMarkdown: number): 1 | 2 | 3 {
+    return Math.min(Math.max(nivelMarkdown - 1, 1), 3) as 1 | 2 | 3;
+}
+
 // ── Markdown parsing (block level) ──────────────────────────────────
 
 type Block =
-    | { type: 'heading'; level: 1 | 2 | 3; text: string }
+    | { type: 'heading'; level: 1 | 2 | 3 | 4; text: string }
     | { type: 'paragraph'; text: string }
     | { type: 'list-item'; text: string }
     | { type: 'blockquote'; text: string }
@@ -491,7 +627,7 @@ type Block =
 
 /**
  * Tiny block-level parser tailored to exegetical paper output.
- * Handles `#` `##` `###` headings, `-`/`*` lists, `>` blockquotes,
+ * Handles `#` to `####` headings, `-`/`*` lists, `>` blockquotes,
  * `---` rules, and paragraph blocks separated by blank lines. Inline
  * formatting is left in the text and parsed at run-render time.
  */
@@ -518,12 +654,12 @@ function parseMarkdownBlocks(markdown: string): Block[] {
             blocks.push({ type: 'rule' });
             continue;
         }
-        const heading = line.match(/^(#{1,3})\s+(.+)$/);
+        const heading = line.match(/^(#{1,4})\s+(.+)$/);
         if (heading) {
             flushParagraph();
             blocks.push({
                 type: 'heading',
-                level: heading[1]!.length as 1 | 2 | 3,
+                level: heading[1]!.length as 1 | 2 | 3 | 4,
                 text: heading[2]!.trim(),
             });
             continue;
@@ -564,7 +700,7 @@ const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
  */
 function buildInlineRuns(
     paragraphText: string,
-    registerFootnote: (citas: ReadonlyArray<{ author: string; pages: string | null; raw: string }>) => number,
+    registerFootnote: (citas: ReadonlyArray<CitaDeNota>) => number,
     /**
      * `'parenthetical'` deja la cita donde está, tal como se escribió.
      *
@@ -601,7 +737,7 @@ function buildInlineRuns(
         author?: string;
         pages?: string | null;
         /** Las obras de una cita combinada «(A, 638; B, 59)», en orden. */
-        parts?: Array<{ author: string; pages: string | null; raw: string }>;
+        parts?: CitaDeNota[];
     }
     const markers: Marker[] = [];
 
@@ -618,7 +754,7 @@ function buildInlineRuns(
             // es la única señal que la separa de un pie de imprenta o de una
             // referencia bíblica.
             if (!cita.title && !resolvesToCitedSource(cita.author, citationKeys)) continue;
-            const part = {
+            const part: CitaDeNota = {
                 author: cita.author,
                 pages: cita.pages,
                 raw: cita.raw.replace(/^[(;]\s*/, '').replace(/\s*[);]$/, ''),

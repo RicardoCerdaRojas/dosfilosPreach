@@ -1,3 +1,5 @@
+import { paginasAbreviadas } from './rangeDash';
+
 /**
  * Los datos con que se cita un libro, y cómo se escriben.
  *
@@ -29,6 +31,13 @@ export interface BibliographicData {
     subtitle?: string;
     /** Título abreviado para las notas siguientes: «Commentary on the Psalms». */
     shortTitle?: string;
+    /**
+     * La abreviatura de un léxico o gramática para las notas siguientes:
+     * «IBHS», «HALOT», «GKC» (guía de TMS, «Léxicos y gramáticas»). Las ocho
+     * de la guía se reconocen por el título sin escribirla; esto es para
+     * otra obra que el profesor abrevie.
+     */
+    abbreviation?: string;
     /** Volumen dentro de una obra mayor: «1». */
     volume?: string;
     /** Título del volumen, cuando lo tiene: «1–41». */
@@ -68,7 +77,7 @@ export interface BibliographicData {
  * compilación en vez de desaparecer en silencio de la pantalla.
  */
 export const BIBLIOGRAPHY_FIELDS = [
-    'author', 'authorSorted', 'title', 'subtitle', 'shortTitle',
+    'author', 'authorSorted', 'title', 'subtitle', 'shortTitle', 'abbreviation',
     'volume', 'volumeTitle', 'series', 'edition', 'translator', 'editor',
     'city', 'publisher', 'year', 'isbn',
 ] as const satisfies ReadonlyArray<keyof BibliographicData>;
@@ -314,7 +323,8 @@ function formatImprint(data: BibliographicData): string {
 }
 
 function appendPages(text: string, pages?: string): string {
-    const p = (pages ?? '').trim();
+    // Rangos con raya y abreviados como la guía: «567–68», no «567-568».
+    const p = paginasAbreviadas((pages ?? '').trim());
     if (!text) return p;
     return p ? `${text}, ${p}` : text;
 }

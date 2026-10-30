@@ -15,6 +15,7 @@ import { ExegesisQuotaBadge } from '@/components/exegesis/ExegesisQuotaBadge';
 import { CreditPacksDialog } from '@/pages/library/components/CreditPacksDialog';
 import {
     formatPassageReference,
+    sameBookNameForPsalms,
     matchesProjectFilter,
     projectsOfPaper,
     type ExegesisPaperSummary,
@@ -126,8 +127,9 @@ export function ExegesisPage() {
             if (phaseFilter !== 'all' && p.phase !== phaseFilter) return false;
             if (!matchesProjectFilter(p, projectFilter)) return false;
             if (q.length > 0) {
-                const haystack = `${p.title ?? ''} ${formatPassageReference(p.passage, activeLanguage)}`.toLowerCase();
-                if (!haystack.includes(q)) return false;
+                // «salmos 23» encuentra «Salmo 23» (B68a).
+                const haystack = sameBookNameForPsalms(`${p.title ?? ''} ${formatPassageReference(p.passage, activeLanguage)}`.toLowerCase());
+                if (!haystack.includes(sameBookNameForPsalms(q))) return false;
             }
             return true;
         });

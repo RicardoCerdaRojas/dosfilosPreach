@@ -320,13 +320,21 @@ export function buildPassageReference(input: {
  *   formatPassageReference({GEN, 1, 1, 1, 1}, 'es')      → "Génesis 1:1"
  *   formatPassageReference({HEB, 1, 1, 1, 4}, 'es')      → "Hebreos 1:1-4"
  *   formatPassageReference({HEB, 1, 1, 2, 5}, 'es')      → "Hebreos 1:1-2:5"
- *   formatPassageReference({PSA, 23, 23, null, null}, 'es') → "Salmos 23"
+ *   formatPassageReference({PSA, 23, 23, null, null}, 'es') → "Salmo 23"
+ *   formatPassageReference({PSA, 23, 24, null, null}, 'es') → "Salmos 23-24"
  *   formatPassageReference({HEB, 1, 2, null, null}, 'es')  → "Hebreos 1-2"
+ *
+ * Un solo salmo va en singular: «Salmo 23», «Psalm 23» (TI #1 entregado,
+ * nueve veces y nunca «Salmos»; B68a). Lo guardado en plural se compara con
+ * `sameBookNameForPsalms`.
  */
 export function formatPassageReference(ref: PassageReference, language: 'es' | 'en' = 'es'): string {
     const book = getBookById(ref.bookId);
     if (!book) return `${ref.bookId} ${ref.chapterStart}`;
-    const name = language === 'en' ? book.nameEn : book.nameEs;
+    const unSalmo = book.id === 'PSA' && ref.chapterEnd === ref.chapterStart;
+    const name = unSalmo
+        ? (language === 'en' ? 'Psalm' : 'Salmo')
+        : (language === 'en' ? book.nameEn : book.nameEs);
 
     if (ref.verseStart === null && ref.verseEnd === null) {
         // Chapter-level.

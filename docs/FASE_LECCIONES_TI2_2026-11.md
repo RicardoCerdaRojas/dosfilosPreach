@@ -241,9 +241,11 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
    - Un título en tope de página sin espacio antes.
    - *Dónde:* `tmsLayout.ts`, `exportPaperToDocx.ts:142,299-307`.
    - *Mide:* la prueba del XML, y el PDF del TI #1 como referencia (51 pt después de un párrafo).
+   - **Hecho (2026-10-29).** Medido en el PDF del TI #1: Word pone el espacio extra del doble espacio **debajo** de cada línea, así que el párrafo anterior ya deja una línea en blanco. Con 24 pt antes, el TI #1 tuvo **tres** líneas en blanco antes de cada título (51,6 pt entre líneas base): eso marcó el profesor. Los 12 pt de hoy (nota 10 de la guía) dan las dos que pide; después, una (25,8 pt); en tope de página Word quita el espacio. El defecto real era el nivel: el ensamble escribe cada sección en `##` y el Word la pasaba a nivel dos. Ahora `#` y `##` son nivel uno, `###` nivel dos y `####` nivel tres (`nivelDeWord`), sin tocar el markdown. BIBLIOGRAFÍA va en nivel uno sin negrita, como en la propia guía (redonda en su PDF, hoja 66).
 2. **«Salmo» para un solo salmo (B68a).**
    - *Dónde:* `formatPassageReference` (`passage-reference.ts:326`, `BibleCanon.ts:141`).
    - *Riesgo:* 153 llamadas; `sectionHeadings` y `replaceVerseSection` buscan el rótulo escrito. Se aceptan las dos formas al leer y se escribe la nueva.
+   - **Hecho (2026-10-29).** `formatPassageReference` escribe «Salmo 23:4» / «Psalm 23:4» con un solo salmo; un rango de salmos sigue en plural. Una auditoría de los llamadores encontró tres lugares que comparan con texto guardado y que se habrían roto en un trabajo sobre un salmo: la huella de extracción de cada fuente (todas habrían salido «desactualizadas», y «Re-extraer» reemplaza las páginas elegidas), la búsqueda de la sección en el ensamble al recomponer un versículo, y el aviso de edición a mano del ensamble. Los tres, más la búsqueda de la lista de trabajos, comparan con `sameBookNameForPsalms`, que trata «Salmo» y «Salmos» como el mismo libro. El analizador lee las dos formas (alias de `BibleCanon.ts:142`).
 3. **«CONTENIDO» automático y paginación por secciones, como pide la guía (B68b).**
 
    La guía (leída, hojas 8, 10, 17 y 57) arma el documento en cuatro secciones, cada una con su numeración:
@@ -284,16 +286,43 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
    - comprobar que el índice trae las páginas reales.
 
    **Supuesto:** que Word para Mac actualice el campo al abrir. Si no lo hace, el índice va con las entradas guardadas y un aviso «Actualizar tabla».
+
+   **Hecho (2026-10-29).** Medido en Word para Mac: el campo se arma solo al abrir, con las páginas correctas (el supuesto se cumple). Exportado con el exportador real y pasado a PDF por Word: portada sin número; CONTENIDO «i» abajo al centro; cuerpo «1» abajo al centro y 2–5 arriba a la derecha; BIBLIOGRAFÍA «6» abajo al centro y «7» arriba a la derecha; ninguna entrada partida entre páginas. La guía deja el índice a la tarea (hoja 3: «puede requerirse … para tareas específicas»), así que es un campo de la rúbrica, `formatting.tableOfContents` («Con CONTENIDO» en el editor del formato), que el extractor del sílabo marca si lo pide. Para el TI #3 hay que marcarlo en su rúbrica.
 4. **Hebreo y traducción bajo el título del versículo (B68c).** De `originalText` del análisis (`CanonicalVerseAnalysis.ts:56`) y de la traducción final, sin acentos (como el TI #1).
-5. **La introducción bajo el título del trabajo, sin el rótulo «Introducción» (B68d).**
+   - **Hecho (2026-10-29).** Medido contra el TI #1: el WLC de Sal 23:1–3 sin te'amim (U+0591–U+05AF) ni meteg (U+05BD) es idéntico, en NFC, a lo entregado. El paseq (׀, Sal 23:5–6) también se quita: es del sistema de acentos; **decisión, no medida** (el TI #1 no lo tenía). Formato del TI #1: espacio simple, sangría de 0,5" a los dos lados, el hebreo a la derecha con 6 pt después y la traducción entre comillas con 18 pt después. Va solo bajo un título de sección cuyo rótulo es el del versículo: un TP titulado con las preguntas no lo lleva. El análisis se lee de la versión del paso (`accepted ?? current`), como el compositor de la prosa.
+   - **Para la etapa 3:** los títulos temáticos ya no dirán «Salmo 23:4». El vínculo título → versículo tendrá que salir del paso, no del texto del título.
+5. **~~La introducción bajo el título del trabajo, sin el rótulo «Introducción»~~ (B68d). Corregido por el fundador (2026-10-29): al revés. Con portada, el cuerpo NO repite el título del trabajo (ya está en la portada) y empieza en «Introducción», nivel uno.**
+   - **Hecho (2026-10-29).** El exportador quita el `#` del título cuando hay portada. Sin portada se queda. Queda anotado, fuera de esta unidad: sin portada el Word trae el título dos veces (la cabecera de trabajo y el del ensamble).
    - *Dónde:* `assemblyContents.ts:240-246`, prompt de `GeminiIntroductionComposer.ts:215`.
 6. **Notas por tipo de obra (B66).**
    - Campo `abbreviation` en la ficha (*IBHS*), y `sourceType` en `BibliographyEntry`.
    - Léxico: la entrada entre comillas en la forma corta y sin «Ibid.».
    - *Dónde:* `bibliography.ts:16`, `paperBibliography.ts:25`, `exportPaperToDocx.ts:228`.
+   - **Hecho (2026-10-30).** Leído en la guía («Léxicos y gramáticas», hoja 50, y nota 31) y medido en su PDF: las ocho obras de su tabla (BDAG, BDB, BDF, *BHRG*, GKC, *HALOT*, *IBHS*, Joüon) se reconocen por el título, con su cursiva (las de título en cursiva, las de autor en redonda). La nota siguiente de un léxico es «"entrada", *HALOT*, 2:457»; la de una gramática, «GKC §18» (sin coma) o «*IBHS*, 436». Léxicos, diccionarios y artículos no llevan «Ibid.» (nota 31). La ficha tiene un campo nuevo, «Abreviatura», para otra obra. La entrada del léxico sale del título entre comillas de la cita o de «s.v.». **Supuesto:** que la ficha de Waltke-O’Connor del TI #2 diga «An Introduction to Biblical Hebrew Syntax»; si no, basta escribir «IBHS» en su abreviatura.
 7. **Rangos de páginas abreviados**, si la guía lo confirma («567–68»).
    - *Dónde:* `appendPages` (`bibliography.ts`).
    - *Mide:* lectura de la guía primero (supuesto hoy).
+   - **Hecho (2026-10-30).** Confirmado en la guía («Números», leído): raya corta; si el primer número es menor que 100, el segundo entero (92–137); si es 100 o más, al menos dos cifras (162–75, 2156–89) y sin cero inicial (103–6). Un múltiplo de 100 va entero (100–104), como Turabian y Chicago. `paginasAbreviadas` se aplica en todas las notas (completa, abreviada, *Ibid.* y obras de referencia, también con tomo: «2:457–58»).
+
+**Revisión adversarial de la etapa 1 (2026-10-30).** Corregido antes del PR (seis defectos reproducidos y uno de concordancia):
+- títulos de la tabla de la guía demasiado amplios: Louw–Nida y Thayer salían BDAG, y Holladay salía *HALOT*. Ahora se exige también el autor;
+- la «entrada» de un léxico salía del título de la cita, que en la tubería real es el nombre de la obra. Ahora solo sale de «s.v.»;
+- un rango de cuatro cifras con tres que cambian iba abreviado (1496–504). Ahora va entero;
+- con portada se quitaba cualquier `#` inicial. Ahora solo el título del trabajo;
+- un título con raya corta no encontraba su versículo;
+- una abreviatura escrita a mano salía siempre en redonda. Ahora va en cursiva si se escribe entre asteriscos;
+- `yaTraeBibliografia` leía hasta `###` y el Word hasta `####`.
+
+Queda para etapas siguientes:
+- **Etapa 2:**
+  - el hebreo bajo el título es la copia del analizador (`originalText`), no el WLC: verificar contra el WLC;
+  - el índice sin entradas guardadas sale vacío fuera de Word (Google Docs, Pages): avisar;
+  - Word para Windows preguntaría si actualizar campos (supuesto).
+- **Etapa 4:**
+  - la tubería no lleva la entrada del léxico a la cita: hace falta para la forma «"entrada", *HALOT*, 2:457»;
+  - la nota siguiente de un léxico pierde el tomo que solo está en la ficha;
+  - en las notas, los artículos se arman como libros (ya pasaba antes).
+- **Etapa 3:** el compositor del trabajo entero titula los versículos con `###` y el respaldo sin ensamble con «Versículo N». En esos dos casos no sale el hebreo.
 
 ### Etapa 2 · «Revisar el Word antes de entregar» (M) — nuevo, B65 + B70
 **Por qué:** el «Ibid.» de página nueva solo se sabe en el Word guardado por Word, y las ediciones a mano metieron 9 errores en el Word final (medido).
@@ -391,6 +420,35 @@ Y marca, sin modelo:
 3. Ortografía de la BHS extraída: medir la vocalización, y la búsqueda de צַלְמָוֶת y וְשַׁבְתִּי.
 
 ### Etapa 7 · La devolución alimenta el trabajo siguiente (M)
+0. **La guía en tres capas (decidido por el fundador el 2026-10-29; reemplaza el punto 4).**
+
+   **Por qué:** hoy un trabajo apunta a UNA guía por id, sin copia al crearse (`CreateExegeticalPaperUseCase.ts:126`); la copia solo nace al volver a elegir la guía (`SetPaperStyleGuideUseCase.ts:32-67`). NT785 y OT603 apuntan a la misma, así que las reglas del profesor de griego rigen en hebreo, y un cambio en la guía alcanza a los trabajos ya entregados. `AddRuleToStyleGuideUseCase` escribe la regla del profesor en esa guía compartida. Además, sin guía, el servidor cae a TMS y el navegador a la guía activa del usuario (`useEffectiveStyleGuide.ts:10-13`): no coinciden.
+
+   **El modelo:**
+   | Capa | Qué tiene | Dónde vive | A quién alcanza un cambio |
+   |---|---|---|---|
+   | Institución | la guía de TMS (notas, portada, bibliografía, reglas de Turabian) | la guía (`UserStyleGuide`) | todos los cursos que la usan |
+   | Mías | la forma de escribir del estudiante | el usuario | todos sus trabajos, de cualquier curso |
+   | Curso | lo que pide el profesor, salido de sus devoluciones | el curso (`ai_projects`) | solo los trabajos de ese curso |
+
+   - Una sola función arma las reglas vigentes (institución + mías + curso) y la usan el servidor y el navegador.
+   - Si dos reglas chocan, gana la del curso: el profesor califica. El choque se muestra; no se resuelve en silencio.
+   - «Pasar a la guía» desde una devolución escribe en la capa del **curso**. Desde ahí se puede subir a «Mías» si el estudiante la quiere en todos sus cursos.
+   - Un trabajo **en curso** lee las reglas vigentes y avisa cuando se agrega una. Al **entregarlo**, se congela la copia con las reglas de ese día: un trabajo entregado no cambia nunca, y la devolución se lee contra las reglas con que se escribió.
+   - Un proyecto sin curso (serie de sermones, proyecto exegético) usa solo institución y mías.
+   - Las copias que ya existen se respetan hasta que se refresquen.
+
+   **Migración de «Guia Test 2026»** (propuesta por origen; el fundador confirma regla por regla, con el texto leído de producción):
+   | Reglas | Origen | Capa propuesta |
+   |---|---|---|
+   | 1–8 | Turabian y TMS | Institución |
+   | 9–17 | profesor de griego (TP #7) | Curso NT785. Las 11, 12 y 13 se aplicaron en el TI #2 de hebreo: candidatas a «Mías» |
+   | 18–21 | fortalezas del TI #1 de hebreo | Curso OT603 |
+   | 22 | vocabulario, de las correcciones del fundador | Mías |
+
+   **Descartado:** una copia completa de la guía por curso (la parte de TMS se desfasa entre copias); herencia de guías con bifurcación (lo mismo, más complejo, y no separa «mías» de «curso»).
+
+   **Mide:** con los TP de NT785 y el TI de OT603, el prompt de cada uno lleva solo sus reglas de curso, más las de institución y las mías; un trabajo entregado conserva sus reglas aunque se edite la guía.
 1. **Las fortalezas como reglas «a mantener».** Pasar a la guía las 4 que siguen `pending` y que el profesor elogió:
    - cierre que vuelve a la tesis;
    - transparencia metodológica;
@@ -399,7 +457,7 @@ Y marca, sin modelo:
    - Con el OK del fundador, desde la pantalla.
 2. **Patrón «Erratas».** Una marca sin texto («afimar») se importa como errata, no se descarta.
 3. **La copia de la guía se refresca:** al agregar una regla, el sistema ofrece aplicarla a los trabajos abiertos que tienen copia (`SetPaperStyleGuideUseCase`).
-4. **Una guía por curso, o una base común más las reglas del curso** (§5). Hoy NT785 y OT603 comparten «Guia Test 2026».
+4. ~~Una guía por curso, o una base común más las reglas del curso~~: resuelto en 7.0.
 5. **La devolución del trabajo anterior como contexto del revisor.** Lo que el profesor corrigió una vez se vigila en el siguiente: espaciado, apóstrofo y errata en el TI #1.
 
 ### Etapa 8 · Flujo y pantallas (M)
@@ -454,13 +512,13 @@ Se cuenta lo mismo que en el TI #2. La fase cumple si:
 
 ## 5. Decisiones del fundador antes de empezar
 
-1. **¿Separamos la guía por curso?** Hebreo y griego comparten hoy las reglas 2–17, que nacieron del profesor de griego.
-2. **Las «doce páginas» ya tienen interpretación.** Byblos tiene una entrada del 2026-09-17, del TI #1: 12 páginas de **cuerpo**, sin portada, contenido ni bibliografía, unas 3.000 palabras con alrededor de 50 notas. Con esa interpretación, el TI #2 quedó corto: 11 páginas de cuerpo, 2.740 palabras y 34 notas (medido). Solo falta confirmar que el criterio sigue vigente y, si se puede, preguntarlo al profesor.
+1. **¿Separamos la guía por curso?** Hebreo y griego comparten hoy las reglas 2–17, que nacieron del profesor de griego. **Decidido (2026-10-29): tres capas —institución, mías y curso— con copia congelada al entregar (etapa 7.0).**
+2. **Las «doce páginas» ya tienen interpretación.** Byblos tiene una entrada del 2026-09-17, del TI #1: 12 páginas de **cuerpo**, sin portada, contenido ni bibliografía, unas 3.000 palabras con alrededor de 50 notas. Con esa interpretación, el TI #2 quedó corto: 11 páginas de cuerpo, 2.740 palabras y 34 notas (medido). Solo falta confirmar que el criterio sigue vigente y, si se puede, preguntarlo al profesor. **Decidido (2026-10-29): sigue vigente, 12 páginas de cuerpo.**
 3. **P4:** al aplicar una corrección propuesta, ¿se vuelven a verificar las citas de esa oración? Hoy una edición manual no las verifica, a propósito.
-4. **Títulos temáticos:** ¿los propone el sistema y tú los apruebas, o los escribes tú y el sistema solo los revisa?
+4. **Títulos temáticos:** ¿los propone el sistema y tú los apruebas, o los escribes tú y el sistema solo los revisa? **Decidido (2026-10-29): el sistema propone y el estudiante aprueba.**
 5. **¿Pasamos a la guía las 4 fortalezas pendientes** (etapa 7.1) y el «Cierre que vuelve a la tesis»?
 6. **Rangos de páginas abreviados («567–68»):** se confirma con la guía antes de cambiarlos.
-7. **Orden de las etapas:** el propuesto es 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8. Si el TI #3 tiene fecha cercana, lo mínimo es 0, 1, 2 y 4.1–4.3. Esas etapas eliminan los defectos medidos del Word y la mayor parte de las correcciones humanas.
+7. **Orden de las etapas:** el propuesto es 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8. Si el TI #3 tiene fecha cercana, lo mínimo es 0, 1, 2 y 4.1–4.3. Esas etapas eliminan los defectos medidos del Word y la mayor parte de las correcciones humanas. **Decidido (2026-10-29): el orden completo, 0 → 8.**
 
 ## 6. Crítica previa
 

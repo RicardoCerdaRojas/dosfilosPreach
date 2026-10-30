@@ -1,4 +1,5 @@
 import { formatPassageReference } from '../../bible/canon/passage-reference';
+import { sameBookNameForPsalms } from '../../bible/canon/psalmName';
 import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
 import { versionUnderReview, type ExegeticalStep } from '../entities/ExegeticalStep';
 import { countWords } from '../../services/movementBudget';
@@ -327,7 +328,9 @@ export function assemblyHandEdit(paper: ExegeticalPaper): { verified: boolean } 
     const step = (paper.steps ?? []).find(s => s.kind === 'assembly');
     const version = step ? versionUnderReview(step) : null;
     if (!version || version.origin !== 'edited' || !version.markdown?.trim()) return null;
-    if (version.markdown.trim() === assembleMarkdown(paper, paper.displayLanguage).trim()) return null;
+    // Un ensamble guardado con «Salmos 23:4» no es una edición a mano (B68a).
+    const igual = (t: string) => sameBookNameForPsalms(t.trim());
+    if (igual(version.markdown) === igual(assembleMarkdown(paper, paper.displayLanguage))) return null;
     return { verified: !!version.verifications?.lastRunAt };
 }
 

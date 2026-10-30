@@ -690,7 +690,8 @@
           "citationFormAria": "Citation form",
           "pageLabelAria": "Page label in the citation",
           "pageLabelLabelled": "Page with “p.”: (Mayor, p. 77)",
-          "pageLabelBare": "Page without “p.”: (Carballosa, 208)"
+          "pageLabelBare": "Page without “p.”: (Carballosa, 208)",
+          "tableOfContentsLabel": "With table of contents (page “i”)"
         },
         "requirements": {
           "title": "Corpus requirements",
@@ -2749,6 +2750,7 @@
         "title": "Title",
         "subtitle": "Subtitle",
         "shortTitle": "Short title",
+        "abbreviation": "Abbreviation",
         "volume": "Volume",
         "volumeTitle": "Volume title",
         "series": "Series",
@@ -2766,6 +2768,7 @@
         "title": "Full title, without the subtitle",
         "subtitle": "What follows the colon",
         "shortTitle": "For the later notes",
+        "abbreviation": "Lexicon or grammar: GKC, BDAG… In asterisks if italic: *TWOT*",
         "volume": "Volume number",
         "volumeTitle": "If the volume has its own title",
         "series": "Name of the series",

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
-import { DEFAULT_TMS_EXEGETICAL_RUBRIC, PAPER_COVER_FIELDS, buildCitationFormBlock } from '@dosfilos/domain';
+import { DEFAULT_TMS_EXEGETICAL_RUBRIC, PAPER_COVER_FIELDS, assembleMarkdown, buildCitationFormBlock } from '@dosfilos/domain';
 import type { CoverStyle, ExegeticalPaper, PaperCover } from '@dosfilos/domain';
 import { EMPTY_VERIFICATION_SUMMARY } from '@dosfilos/domain';
-import { exportPaperToDocx } from '../exportPaperToDocx';
+import { exportPaperToDocx, nivelDeWord } from '../exportPaperToDocx';
 
 /**
  * El formato ES el entregable.
@@ -328,6 +328,14 @@ describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
         expect(notas).toContain('Ross, Commentary on the Psalms, 60.');
     });
 
+    it('REGRESIÓN TI #2: los rangos de página van abreviados, en la nota completa y en «Ibid.»', async () => {
+        const { notas } = await exportarConDos('Uno (Ross, pp. 567-568). Dos (Ross, p. 570-571). Tres (Craigie, p. 206). Cuatro (Ross, p. 572-575).');
+        expect(notas).toContain('2011), 567–68.');
+        expect(notas).toContain('Ibid., 570–71.');
+        expect(notas).toContain('Commentary on the Psalms, 572–75.');
+        expect(notas).not.toMatch(/\d{3}[-–]\d{3}/);
+    });
+
     it('Turabian: la misma página que la nota anterior es «Ibid.» solo', async () => {
         const { notas } = await exportarConDos('Uno (Ross, p. 565). Dos (Ross, p. 565). Tres (Ross, p. 566).');
         expect(notas).toMatch(/2011\), 565\.\s*Ibid\.\s*Ibid\., 566\./);
@@ -605,12 +613,13 @@ describe('exportPaperToDocx — formato de la guía', () => {
 
     it('la bibliografía empieza en página nueva y va con sangría francesa', async () => {
         const doc = await xmlOf(paper(), 'word/document.xml');
-        // El título de la bibliografía empieza la hoja por sí mismo: sin un
-        // salto de página DENTRO del título, que dejaba un renglón de título
-        // vacío al pie de la hoja anterior.
-        const titulo = doc.slice(doc.lastIndexOf('<w:p>', doc.indexOf('BIBLIOGRAF')) , doc.indexOf('BIBLIOGRAF'));
-        expect(titulo).toContain('<w:pageBreakBefore/>');
-        expect(titulo).not.toContain('<w:br w:type="page"/>');
+        // La bibliografía empieza la hoja con su propia sección (un salto de
+        // sección justo antes), no con un salto de página DENTRO del título,
+        // que dejaba un renglón de título vacío al pie de la hoja anterior.
+        const i = doc.indexOf('BIBLIOGRAF');
+        const antes = doc.slice(doc.lastIndexOf('</w:p>', doc.lastIndexOf('</w:p>', i) - 1), i);
+        expect(antes).toContain('<w:sectPr');
+        expect(doc.slice(doc.lastIndexOf('<w:p', i), i)).not.toContain('<w:br w:type="page"/>');
         expect(doc).toMatch(/w:hanging="720"/);
     });
 
@@ -629,8 +638,10 @@ describe('exportPaperToDocx — formato de la guía', () => {
         expect(doc).toContain('RICARDO CERDA');
         expect(doc).toContain('POR');
         expect(doc.indexOf('THE MASTER’S SEMINARY')).toBeLessThan(doc.indexOf('Introducción'));
-        // Dos secciones: la portada y el cuerpo.
-        expect(doc.match(/<w:sectPr/g)?.length).toBe(2);
+        // Tres secciones: la portada, el cuerpo y la bibliografía. Sin
+        // CONTENIDO pedido, no hay sección de índice.
+        expect(doc.match(/<w:sectPr/g)?.length).toBe(3);
+        expect(doc).not.toContain('instrText xml:space="preserve">TOC');
     });
 
     it('el título del trabajo va ENCIMA del pasaje, que es como lo nombra el profesor', async () => {
@@ -822,3 +833,250 @@ describe('exportPaperToDocx — encabezados y apóstrofos como pide la guía de 
     });
 });
 
+
+describe('exportPaperToDocx — niveles de encabezado de la guía de TMS (hoja 11)', () => {
+    /** Lo que de verdad escribe el ensamble: `#` título, `##` cada sección, `###` las cuestiones. */
+    const ensamblado = (): ExegeticalPaper => {
+        const PSA = (v: number) => ({ bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: v, verseEnd: v });
+        const base = paper({ title: 'Análisis sintáctico y léxico de Salmo 23:4–6' });
+        const steps = [
+            { id: 'i', order: 0, kind: 'introduction', verseRef: null, includeInDocument: true, accepted: { markdown: 'La introducción.' } },
+            { id: 'v4', order: 4, kind: 'verse', verseRef: PSA(4), includeInDocument: true, accepted: { markdown: 'El versículo.\n\n### La vara y el cayado\n\nLa cuestión.' } },
+            { id: 'c', order: 90, kind: 'conclusion', verseRef: null, includeInDocument: true, accepted: { markdown: 'La conclusión.' } },
+        ];
+        const conPasos = { ...base, passage: PSA(4), steps } as unknown as ExegeticalPaper;
+        return { ...conPasos, assembledMarkdown: assembleMarkdown(conPasos, 'es') };
+    };
+    const nivelDe = (doc: string, texto: string): string | null => {
+        // El párrafo que contiene el texto: `<w:p>` o `<w:p …>` (docx le pone atributos).
+        // La última aparición: sin portada, la cabecera de trabajo repite el
+        // título y el pasaje antes del cuerpo.
+        const i = doc.lastIndexOf(texto);
+        const p = doc.slice(0, i).split(/(?=<w:p[ >])/).pop() ?? '';
+        return p.match(/<w:pStyle w:val="(Heading\d)"/)?.[1] ?? null;
+    };
+
+    it('REGRESIÓN TI #2: el título y cada sección van en nivel uno; las cuestiones, en nivel dos', async () => {
+        const doc = await xmlOf(ensamblado(), 'word/document.xml');
+        expect(nivelDe(doc, 'Análisis sintáctico y léxico')).toBe('Heading1');
+        expect(nivelDe(doc, 'Introducción')).toBe('Heading1');
+        expect(nivelDe(doc, 'Salmo 23:4')).toBe('Heading1');
+        expect(nivelDe(doc, 'La vara y el cayado')).toBe('Heading2');
+        expect(nivelDe(doc, 'Conclusión')).toBe('Heading1');
+    });
+
+    it('nivel uno en negrita y centrado; nivel dos centrado y sin negrita; los dos con 12 pt antes y una línea después', async () => {
+        const styles = await xmlOf(ensamblado(), 'word/styles.xml');
+        const estilo = (id: string) => styles.slice(styles.indexOf(`w:styleId="${id}"`), styles.indexOf('</w:style>', styles.indexOf(`w:styleId="${id}"`)));
+        for (const id of ['Heading1', 'Heading2']) {
+            // Medido en el PDF del TI #1: con 24 pt antes quedan TRES líneas en
+            // blanco (51,6 pt entre líneas base), porque el párrafo anterior a
+            // doble espacio ya deja una. La guía pide dos: 12 pt (su nota 10).
+            expect(estilo(id)).toMatch(/w:before="240"/);
+            expect(estilo(id)).toMatch(/w:after="240"/);
+            expect(estilo(id)).toMatch(/w:jc w:val="center"/);
+        }
+        expect(estilo('Heading1')).toMatch(/<w:b\/>/);
+        expect(estilo('Heading2')).not.toMatch(/<w:b\/>/);
+    });
+
+    it('BIBLIOGRAFÍA: nivel uno para el índice, en mayúsculas y sin negrita, como en la propia guía', async () => {
+        const doc = await xmlOf(ensamblado(), 'word/document.xml');
+        const conBiblio = await xmlOf({ ...ensamblado(), assembledMarkdown: `${ensamblado().assembledMarkdown}\n## Bibliografía\n\n- Ross, Allen P. *A Commentary on the Psalms*.\n` } as ExegeticalPaper, 'word/document.xml');
+        expect(doc).not.toContain('BIBLIOGRAF');
+        expect(nivelDe(conBiblio, 'BIBLIOGRAFÍA')).toBe('Heading1');
+        const run = conBiblio.slice(conBiblio.lastIndexOf('<w:r>', conBiblio.indexOf('BIBLIOGRAFÍA')), conBiblio.indexOf('BIBLIOGRAFÍA'));
+        expect(run).toMatch(/<w:b w:val="(false|0)"\/>/);
+    });
+
+    it('REGRESIÓN B68d: con portada, el cuerpo empieza en «Introducción» y no repite el título del trabajo', async () => {
+        const conPortada = { ...ensamblado(), cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda', place: 'Chiguayante', date: 'Octubre 2026' } } as ExegeticalPaper;
+        const doc = await xmlOf(conPortada, 'word/document.xml');
+        const titulos = [...doc.matchAll(/<w:pStyle w:val="(Heading\d)"\/>[\s\S]*?<\/w:p>/g)].map(m => m[0].replace(/<[^>]+>/g, ''));
+        expect(titulos[0]).toBe('Introducción');
+        expect(titulos.some(t => t.includes('Análisis sintáctico y léxico'))).toBe(false);
+        // El título sigue en la portada.
+        expect(doc).toContain('ANÁLISIS SINTÁCTICO Y LÉXICO');
+        // Sin portada, el título se queda: si no, el documento no diría qué es.
+        expect(nivelDe(await xmlOf(ensamblado(), 'word/document.xml'), 'Análisis sintáctico y léxico')).toBe('Heading1');
+    });
+
+    it('REVISIÓN: con portada, un ensamble editado que abre con «# Introducción» no pierde esa sección', async () => {
+        const editado = { ...ensamblado(), cover: { institution: 'TMS', author: 'R', place: 'X', date: 'Y' }, assembledMarkdown: '# Introducción\n\nTexto.\n\n## Conclusión\n\nFin.' } as ExegeticalPaper;
+        expect(nivelDe(await xmlOf(editado, 'word/document.xml'), 'Introducción')).toBe('Heading1');
+    });
+
+    it('`####` es nivel tres y nada pasa del tres', () => {
+        expect([1, 2, 3, 4, 5].map(nivelDeWord)).toEqual([1, 1, 2, 3, 3]);
+    });
+});
+
+describe('exportPaperToDocx — CONTENIDO y numeración por secciones (guía, hojas 3, 6 y 17)', () => {
+    const COVER = { institution: "The Master's Seminary", author: 'Ricardo Cerda', place: 'Chiguayante', date: 'Octubre 2026' };
+    const conIndice = (tableOfContents: boolean) => paper({
+        cover: COVER,
+        rubric: { ...DEFAULT_TMS_EXEGETICAL_RUBRIC, formatting: { lineSpacing: 'double', citationForm: 'footnote', blankLineBetweenParagraphs: false, ...(tableOfContents ? { tableOfContents } : {}) } },
+    } as Partial<ExegeticalPaper>);
+    /** Las propiedades de cada sección, en orden: el `sectPr` de cada una. */
+    const secciones = (doc: string) => doc.match(/<w:sectPr[\s\S]*?<\/w:sectPr>/g) ?? [];
+
+    it('con CONTENIDO pedido: portada, índice en romanos desde «i», cuerpo desde 1, bibliografía siguiendo', async () => {
+        const doc = await xmlOf(conIndice(true), 'word/document.xml');
+        const [portada, indice, cuerpo, biblio] = secciones(doc);
+        expect(secciones(doc)).toHaveLength(4);
+        // La portada no se numera ni reinicia nada (docx escribe un `<w:pgNumType/>` vacío).
+        expect(portada).not.toMatch(/w:pgNumType [^>]*w:(start|fmt)=/);
+        expect(indice).toMatch(/<w:pgNumType w:start="1" w:fmt="lowerRoman"\/>/);
+        expect(cuerpo).toMatch(/<w:pgNumType w:start="1" w:fmt="decimal"\/>/);
+        expect(cuerpo).toContain('<w:titlePg/>');
+        // La bibliografía sigue la numeración del cuerpo y su primera página
+        // lleva el número abajo al centro (hoja 17): primera página propia.
+        expect(biblio).not.toMatch(/w:start=/);
+        expect(biblio).toContain('<w:titlePg/>');
+    });
+
+    it('el índice es un campo de tres niveles que Word arma al abrir, y «CONTENIDO» no se lista a sí mismo', async () => {
+        const p = conIndice(true);
+        const doc = await xmlOf(p, 'word/document.xml');
+        expect(doc).toMatch(/TOC \\h \\o &quot;1-3&quot;/);
+        const titulo = doc.slice(doc.lastIndexOf('<w:p', doc.indexOf('>CONTENIDO<')), doc.indexOf('>CONTENIDO<'));
+        expect(titulo).not.toMatch(/w:pStyle w:val="Heading/);
+        expect(await xmlOf(p, 'word/settings.xml')).toMatch(/<w:updateFields(?: w:val="(?:true|1)")?\/>/);
+    });
+
+    it('sin CONTENIDO pedido no hay índice ni se le pide a Word actualizar campos', async () => {
+        const p = conIndice(false);
+        const doc = await xmlOf(p, 'word/document.xml');
+        expect(secciones(doc)).toHaveLength(3);
+        expect(doc).not.toContain('>CONTENIDO<');
+        expect(await xmlOf(p, 'word/settings.xml')).not.toContain('updateFields');
+    });
+
+    it('los niveles del índice como la guía: 12 pt sin negrita, puntos hasta el número, sangría y espaciado por nivel', async () => {
+        const styles = await xmlOf(conIndice(true), 'word/styles.xml');
+        const estilo = (id: string) => styles.slice(styles.indexOf(`w:styleId="${id}"`), styles.indexOf('</w:style>', styles.indexOf(`w:styleId="${id}"`)));
+        for (const [id, sangria, linea] of [['TOC1', '0', '480'], ['TOC2', '720', '360'], ['TOC3', '1440', '240']] as const) {
+            const e = estilo(id);
+            expect(e).toMatch(/w:leader="dot"/);
+            expect(e).toMatch(/<w:tab w:val="right"[^>]*w:pos="9360"/);
+            expect(e).toMatch(new RegExp(`w:left="${sangria}"`));
+            expect(e).toMatch(new RegExp(`w:line="${linea}"`));
+            expect(e).toMatch(/<w:b w:val="(false|0)"\/>/);
+        }
+    });
+
+    it('una entrada de la bibliografía no se parte entre dos páginas', async () => {
+        const doc = await xmlOf(conIndice(false), 'word/document.xml');
+        const biblio = doc.slice(doc.indexOf('BIBLIOGRAF'));
+        expect(biblio).toContain('<w:keepLines/>');
+    });
+});
+
+describe('exportPaperToDocx — el texto del versículo bajo su título, como el TI #1 (B68c)', () => {
+    const PSA = (v: number) => ({ bookId: 'PSA' as const, chapterStart: 23, chapterEnd: 23, verseStart: v, verseEnd: v });
+    const ANALISIS = { originalText: 'יְהוָ֥ה רֹ֝עִ֗/י לֹ֣א אֶחְסָֽר׃', initialTranslation: 'x', finalTranslation: 'El SEÑOR es mi pastor; nada me falta.' };
+    const conVersiculo = (titulo: string) => paper({
+        passage: PSA(1),
+        steps: [{ id: 'v1', kind: 'verse', order: 1, verseRef: PSA(1), accepted: { markdown: 'La prosa del versículo.', canonicalAnalysis: ANALISIS }, current: null }] as never,
+        assembledMarkdown: ['# Análisis de Salmo 23:1', '', '## Introducción', '', 'La introducción.', '', `## ${titulo}`, '', 'La prosa del versículo.', '', '## Conclusión', '', 'Fin.'].join('\n'),
+    });
+    const parrafos = (doc: string) => doc.split(/(?=<w:p[ >])/).filter(p => p.startsWith('<w:p'));
+    const texto = (p: string) => p.replace(/<[^>]+>/g, '');
+
+    it('debajo del título: el hebreo sin acentos, a la derecha y sangrado; después la traducción entre comillas', async () => {
+        const ps = parrafos(await xmlOf(conVersiculo('Salmo 23:1'), 'word/document.xml'));
+        const i = ps.findIndex(p => texto(p) === 'Salmo 23:1');
+        expect(ps[i]).toMatch(/w:pStyle w:val="Heading1"/);
+        const hebreo = ps[i + 1]!;
+        expect(texto(hebreo).replace(/\u00A0/g, ' ')).toBe('יְהוָה רֹעִי לֹא אֶחְסָר׃'.normalize('NFC'));
+        expect(hebreo).toMatch(/<w:jc w:val="(right|end)"\/>/);
+        expect(hebreo).toMatch(/<w:bidi\/>/);
+        expect(hebreo).toMatch(/w:left="720"/);
+        expect(hebreo).toMatch(/w:right="720"/);
+        expect(texto(ps[i + 2]!)).toBe('«El SEÑOR es mi pastor; nada me falta.»');
+        expect(ps[i + 2]).toMatch(/w:after="360"/);
+        expect(texto(ps[i + 3]!)).toBe('La prosa del versículo.');
+    });
+
+    it('REVISIÓN: un título con raya corta («Salmo 23:1–2», B44) encuentra su versículo', async () => {
+        const PSA12 = { bookId: 'PSA' as const, chapterStart: 23, chapterEnd: 23, verseStart: 1, verseEnd: 2 };
+        const p = paper({
+            passage: PSA12,
+            steps: [{ id: 'v', kind: 'verse', order: 1, verseRef: PSA12, accepted: { markdown: 'x', canonicalAnalysis: ANALISIS }, current: null }] as never,
+            assembledMarkdown: ['# T', '', '## Salmo 23:1–2', '', 'La prosa.'].join('\n'),
+        });
+        expect(await xmlOf(p, 'word/document.xml')).toContain('«El SEÑOR es mi pastor; nada me falta.»');
+    });
+
+    it('un ensamble guardado con «Salmos 23:1» también lo lleva', async () => {
+        const ps = parrafos(await xmlOf(conVersiculo('Salmos 23:1'), 'word/document.xml'));
+        const i = ps.findIndex(p => texto(p) === 'Salmos 23:1');
+        expect(texto(ps[i + 2]!)).toBe('«El SEÑOR es mi pastor; nada me falta.»');
+    });
+
+    it('una sección titulada con la pregunta del encuadre (TP) no lleva el texto; la introducción tampoco', async () => {
+        const doc = await xmlOf(conVersiculo('¿Qué tipo de oración es יְהוָה רֹעִי?'), 'word/document.xml');
+        expect(doc).not.toContain('«El SEÑOR es mi pastor');
+    });
+});
+
+describe('exportPaperToDocx — notas de léxicos y gramáticas como la guía (B66)', () => {
+    const WO = { author: 'Bruce K. Waltke y M. O’Connor', authorSorted: 'Waltke, Bruce K., y M. O’Connor', title: 'An Introduction to Biblical Hebrew Syntax', city: 'Winona Lake, IN', publisher: 'Eisenbrauns', year: '1990' };
+    const HALOT = { author: 'Ludwig Koehler y Walter Baumgartner', authorSorted: 'Koehler, Ludwig, y Walter Baumgartner', title: 'The Hebrew and Aramaic Lexicon of the Old Testament', city: 'Leiden', publisher: 'Brill', year: '1994' };
+    const ARTICULO = { author: 'Juan Pérez', title: 'El pastor en Salmo 23', city: 'x', publisher: 'y', year: '2000' };
+    const notas = async (texto: string) => {
+        const blob = await exportPaperToDocx(paper({
+            sources: [
+                { id: 'a', citationKey: 'Waltke', sourceType: 'grammar-syntax' },
+                { id: 'b', citationKey: 'Koehler', sourceType: 'lexicon-technical' },
+                { id: 'c', citationKey: 'Pérez', sourceType: 'journal-article' },
+                { id: 'd', citationKey: 'Ross', sourceType: 'commentary-expository' },
+            ] as never,
+            assembledMarkdown: ['## Versículo 4', '', texto].join('\n'),
+        }), {
+            exportedAt: new Date('2026-10-29'),
+            bibliography: [
+                { citationKey: 'Waltke', displayLabel: 'IBHS', text: 'x', missing: [], data: WO },
+                { citationKey: 'Koehler', displayLabel: 'HALOT', text: 'x', missing: [], data: HALOT },
+                { citationKey: 'Pérez', displayLabel: 'Pérez', text: 'x', missing: [], data: ARTICULO },
+                { citationKey: 'Ross', displayLabel: 'Ross', text: 'x', missing: [], data: { author: 'Allen P. Ross', authorSorted: 'Ross, Allen P.', title: 'A Commentary on the Psalms', city: 'Grand Rapids', publisher: 'Kregel', year: '2011' } },
+            ],
+        });
+        const xml = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string');
+        return { xml, texto: xml.replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '') };
+    };
+
+    it('REGRESIÓN TI #2: la nota siguiente de Waltke y O’Connor es «*IBHS*, 438.», con IBHS en cursiva', async () => {
+        const { xml, texto } = await notas('Uno (Waltke, p. 436). Dos (Ross, p. 5). Tres (Waltke, p. 438).');
+        expect(texto).toContain('Eisenbrauns, 1990), 436.');
+        expect(texto).toContain('IBHS, 438.');
+        expect(xml).toMatch(/<w:i\/>(?:(?!<\/w:r>).)*<w:t[^>]*>IBHS<\/w:t>/s);
+        expect(texto).not.toContain('Waltke y O’Connor, Introduction');
+    });
+
+    it('una gramática admite «Ibid.»', async () => {
+        const { texto } = await notas('Uno (Waltke, p. 436). Dos (Waltke, p. 438).');
+        expect(texto).toContain('Ibid., 438.');
+    });
+
+    it('nota 31: un léxico no lleva «Ibid.»; su nota siguiente va con la abreviatura', async () => {
+        // Como lo escribe la tubería: el título de la cita es el nombre de la
+        // obra (`displayLabel`), no la entrada.
+        const { texto } = await notas('Uno (Koehler, "HALOT", p. 457). Dos (Koehler, "The Hebrew and Aramaic Lexicon", p. 458).');
+        expect(texto).not.toContain('Ibid.');
+        expect(texto).toContain('HALOT, 458.');
+        // REVISIÓN: el nombre de la obra no sale entre comillas como si fuera la entrada.
+        expect(texto).not.toContain('«');
+    });
+
+    it('nota 31: un artículo tampoco lleva «Ibid.»', async () => {
+        const { texto } = await notas('Uno (Pérez, p. 10). Dos (Pérez, p. 11).');
+        expect(texto).not.toContain('Ibid.');
+        expect(texto).toContain('Pérez, El pastor en Salmo 23, 11.');
+    });
+
+    it('un comentario sigue igual: «Ibid.» y la forma abreviada de siempre', async () => {
+        const { texto } = await notas('Uno (Ross, p. 5). Dos (Ross, p. 6).');
+        expect(texto).toContain('Ibid., 6.');
+    });
+});

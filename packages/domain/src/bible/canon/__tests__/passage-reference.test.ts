@@ -324,7 +324,19 @@ describe('formatPassageReference', () => {
 
     it('formats whole chapter', () => {
         const ref = { bookId: 'PSA' as const, chapterStart: 23, chapterEnd: 23, verseStart: null, verseEnd: null };
-        expect(formatPassageReference(ref, 'es')).toBe('Salmos 23');
+        expect(formatPassageReference(ref, 'es')).toBe('Salmo 23');
+    });
+
+    it('REGRESIÓN TI #2 (B68a): un solo salmo va en singular; varios, en plural', () => {
+        const PSA = (cs: number, ce: number, vs: number | null, ve: number | null) =>
+            ({ bookId: 'PSA' as const, chapterStart: cs, chapterEnd: ce, verseStart: vs, verseEnd: ve });
+        expect(formatPassageReference(PSA(23, 23, 4, 6), 'es')).toBe('Salmo 23:4-6');
+        expect(formatPassageReference(PSA(23, 23, 4, 4), 'en')).toBe('Psalm 23:4');
+        expect(formatPassageReference(PSA(23, 24, null, null), 'es')).toBe('Salmos 23-24');
+        expect(formatPassageReference(PSA(23, 24, 6, 1), 'en')).toBe('Psalms 23:6-24:1');
+        // El singular vuelve a leerse como el mismo pasaje.
+        const leido = parsePassageReference('Salmo 23:4-6');
+        expect(leido.ok && leido.ref).toEqual(PSA(23, 23, 4, 6));
     });
 
     it('formats chapter range without verses', () => {

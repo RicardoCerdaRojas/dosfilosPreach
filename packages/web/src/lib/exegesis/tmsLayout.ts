@@ -1,7 +1,9 @@
 import { DEFAULT_PAPER_FORMATTING, type PaperFormatting } from '@dosfilos/domain';
 import {
     AlignmentType,
+    LeaderType,
     LineRuleType,
+    TabStopType,
     convertInchesToTwip,
     type IParagraphStylePropertiesOptions,
     type IRunStylePropertiesOptions,
@@ -116,17 +118,61 @@ export const HEADING3_PARAGRAPH: IParagraphStylePropertiesOptions = {
  */
 export const TITLE_HEADING_SPACING = { before: 240, after: 480 } as const;
 
+/**
+ * El texto del versículo bajo su título y su traducción, como el TI #1
+ * entregado (medido en su XML): espacio simple, sangrados 0,5" por los dos
+ * lados; 6 pt después del original y 18 pt después de la traducción.
+ */
+export const VERSE_ORIGINAL_PARAGRAPH = {
+    spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, before: 0, after: 120 },
+    indent: { left: TMS.blockIndent, right: TMS.blockIndent, firstLine: 0 },
+} as const;
+export const VERSE_TRANSLATION_PARAGRAPH = {
+    spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, before: 0, after: 360 },
+    indent: { left: TMS.blockIndent, right: TMS.blockIndent, firstLine: 0 },
+} as const;
+
 /** Cita en bloque: espacio simple, sangrada por los dos lados, sin sangría de primera línea. */
 export const BLOCK_QUOTE_PARAGRAPH = {
     spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 240 },
     indent: { left: TMS.blockIndent, right: TMS.blockIndent, firstLine: 0 },
 } as const;
 
-/** Entrada de bibliografía: sangría francesa, espacio simple. */
+/**
+ * Entrada de bibliografía (guía, hoja 17): sangría francesa de 0,5", espacio
+ * simple, 12 pt entre entradas, y una entrada no se parte entre dos páginas.
+ */
 export const BIBLIOGRAPHY_PARAGRAPH = {
     spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 240 },
     indent: { left: TMS.blockIndent, hanging: TMS.blockIndent },
+    keepLines: true,
 } as const;
+
+/**
+ * Los tres niveles del índice (guía, hoja 4): 12 pt sin negrita, el título a
+ * la izquierda y el número a la derecha unidos por una línea de puntos; nivel
+ * uno a doble espacio, nivel dos con sangría de 0,5" a 1,5, nivel tres con
+ * sangría de 1" a espacio simple. Los ids son los que Word usa para el campo
+ * TOC: con ellos, el índice que Word arma al abrir sale con este formato.
+ */
+const TOC_TAB = TMS.page.width - 2 * TMS.margin;
+const tocStyle = (level: 1 | 2 | 3, indent: number, line: number) => ({
+    id: `TOC${level}`,
+    name: `toc ${level}`,
+    basedOn: 'Normal',
+    next: 'Normal',
+    run: { font: TMS.font, size: TMS.bodyHalfPt, bold: false },
+    paragraph: {
+        indent: { left: indent, firstLine: 0 },
+        spacing: { line, lineRule: LineRuleType.AUTO, before: 0, after: 0 },
+        tabStops: [{ type: TabStopType.RIGHT, position: TOC_TAB, leader: LeaderType.DOT }],
+    },
+});
+export const TOC_STYLES = [
+    tocStyle(1, 0, TMS.doubleLine),
+    tocStyle(2, convertInchesToTwip(0.5), LINEA['one-and-a-half']),
+    tocStyle(3, convertInchesToTwip(1), TMS.singleLine),
+];
 
 /** Bloque hebreo continuo, con sus signos y separadores. */
 const HEBREW = /[֐-׿יִ-ﭏ]+(?:[ ־][֐-׿יִ-ﭏ]+)*/g;

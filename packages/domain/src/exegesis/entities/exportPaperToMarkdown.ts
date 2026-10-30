@@ -113,7 +113,9 @@ export function exportPaperToMarkdown(
 /** Si el cuerpo ya escribió su propia bibliografía, en cualquiera de los dos idiomas. */
 function yaTraeBibliografia(body: string): boolean {
     return body.split('\n').some(linea => {
-        const m = linea.match(/^#{1,3}\s+(.*)$/);
+        // Hasta `####`, como el lector de títulos del Word (`parseMarkdownBlocks`):
+        // si uno ve un título que el otro no, la bibliografía sale dos veces.
+        const m = linea.match(/^#{1,4}\s+(.*)$/);
         return m ? esEncabezadoDeBibliografia(m[1]!) : false;
     });
 }

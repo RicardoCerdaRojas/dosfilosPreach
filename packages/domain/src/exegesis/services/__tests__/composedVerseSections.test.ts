@@ -35,6 +35,13 @@ describe('replaceVerseSection — recomponer un verso sin tocar los demás', () 
         expect(replaceVerseSection(paper, 'Salmos 23:2', '   ')).toBeNull();
     });
 
+    it('REGRESIÓN B68a: un ensamble guardado con «Salmos 23:2» se encuentra con la clave nueva «Salmo 23:2»', () => {
+        const out = replaceVerseSection(paper, 'Salmo 23:2', 'Prosa nueva.');
+        expect(out).toContain('Prosa nueva.');
+        expect(out).not.toContain('Ficha mecánica');
+        expect(out).toContain('El polel de שׁוב.');
+    });
+
     it('la misma prosa deja el documento intacto', () => {
         expect(replaceVerseSection(paper, 'Salmos 23:2', 'Ficha mecánica.')).toBe(paper);
     });
