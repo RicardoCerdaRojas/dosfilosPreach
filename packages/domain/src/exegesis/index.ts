@@ -144,6 +144,7 @@ export * from './services/verseAnalysisCoverage';
 export * from './services/renderVerseAnalysisProse';
 export * from './services/composedVerseSections';
 export * from './services/verseTextUnderHeading';
+export * from './services/referenceWorks';
 export * from './services/enforceAnalysisCoverage';
 export * from './services/buildPaperStudyContext';
 export * from './services/paperStudyReference';

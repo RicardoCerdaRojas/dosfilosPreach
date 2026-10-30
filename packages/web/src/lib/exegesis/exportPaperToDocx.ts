@@ -28,6 +28,10 @@ import {
     type CoverStyle,
     type IbidRules,
     resolvesToCitedSource,
+    referenceAbbreviationOf,
+    referenceKindOfSourceType,
+    formatReferenceShortNote,
+    sourceTypeWithoutIbid,
     sectionHeadingKey,
     verseTextBlocks,
     type BibliographyEntry,
@@ -134,6 +138,8 @@ export async function exportPaperToDocx(
      */
     const yaCitadas = new Set<string>();
     const ibid = options.ibid ?? { enabled: true, label: 'Ibid.', allowPageOverride: true };
+    /** El tipo de cada fuente, por su clave: decide la forma de un léxico o una gramática. */
+    const tipoDeFuente = new Map((paper.sources ?? []).filter(s => s.citationKey).map(s => [s.citationKey!, s.sourceType]));
     const rotuloIbid = ibid.label.trim() || 'Ibid.';
     /** La obra de la nota anterior: con la misma, «Ibid.». */
     let ultimaClave: string | null = null;
@@ -265,11 +271,19 @@ export async function exportPaperToDocx(
      * se ve. El aviso de fichas cojas al descargar ya nombra a los libros que
      * están en este caso.
      */
-    function textoDeLaNota(author: string, pages: string | null, crudo: string, sinIbid = false): string {
+    function textoDeLaNota(cita: CitaDeNota, sinIbid = false): string {
+        const { author, pages, raw: crudo } = cita;
         const clave = [...fichas.keys()].find(k => resolvesToCitedSource(author, [k]));
         const ficha = clave ? fichas.get(clave)! : null;
         // Una nota sin ficha corta la racha: el «Ibid.» siguiente sería ambiguo.
         if (!ficha || !clave) { ultimaClave = null; return crudo; }
+        // Léxicos y gramáticas de referencia (guía, «Léxicos y gramáticas»):
+        // la nota siguiente va con la abreviatura, y un léxico, un diccionario
+        // o un artículo nunca lleva «Ibid.» (nota 31).
+        const tipo = tipoDeFuente.get(clave);
+        const referencia = referenceAbbreviationOf(ficha);
+        const clase = referencia?.kind ?? referenceKindOfSourceType(tipo);
+        const sinIbidPorTipo = sourceTypeWithoutIbid(tipo) || clase === 'lexicon';
         const primera = !yaCitadas.has(clave);
         yaCitadas.add(clave);
         // La misma obra que la nota inmediatamente anterior: «Ibid.», como
@@ -277,7 +291,7 @@ export async function exportPaperToDocx(
         // Sin página detrás de una nota con página, «Ibid.» solo diría «la
         // misma página»: va la abreviada. Y lo que la guía no admite, tampoco.
         const pagina = pages?.trim() || null;
-        const repetida = ibid.enabled && !sinIbid && !primera && ultimaClave === clave
+        const repetida = ibid.enabled && !sinIbid && !sinIbidPorTipo && !primera && ultimaClave === clave
             && !(pagina === null && ultimaPagina !== null)
             && (pagina === ultimaPagina || ibid.allowPageOverride);
         // Turabian: la misma página que la nota anterior, «Ibid.» solo.
@@ -289,20 +303,22 @@ export async function exportPaperToDocx(
             : repetida
                 // En cursiva, como el ejemplo de la guía de TMS (hoja 22): «² *Ibid.*, 12».
                 ? (pagina && !mismaPagina ? `*${rotuloIbid}*, ${pagina}` : `*${rotuloIbid}*`)
-                : formatShortNote(ficha, pages ?? undefined);
+                : referencia && clase
+                    ? formatReferenceShortNote(referencia, clase, clase === 'lexicon' ? entradaDelLexico(cita, ficha, referencia.abbreviation) : null, pagina)
+                    : formatShortNote(ficha, pages ?? undefined);
         // Turabian cierra la nota con punto; las dos funciones devuelven la
         // referencia sin él porque también sirven en pantalla.
         // «*Ibid.*» ya termina en punto, aunque detrás venga el cierre de la cursiva.
         return /\.\*?$/.test(nota) ? nota : `${nota}.`;
     }
 
-    function registerFootnote(citas: ReadonlyArray<{ author: string; pages: string | null; raw: string }>): number {
+    function registerFootnote(citas: ReadonlyArray<CitaDeNota>): number {
         // «(A, 638; B, 59)» es UNA nota con dos obras separadas por punto y
         // coma, como en Turabian; dos llamadas seguidas no lo son. Dentro de
         // ella no hay «Ibid.», y después tampoco: no diría a cuál de las dos.
         const citationText = citas.length === 1
-            ? textoDeLaNota(citas[0]!.author, citas[0]!.pages, citas[0]!.raw)
-            : `${citas.map(c => textoDeLaNota(c.author, c.pages, c.raw, true).replace(/\.$/, '')).join('; ')}.`;
+            ? textoDeLaNota(citas[0]!)
+            : `${citas.map(c => textoDeLaNota(c, true).replace(/\.$/, '')).join('; ')}.`;
         if (citas.length > 1) ultimaClave = null;
         footnoteCounter += 1;
         footnotes[footnoteCounter] = {
@@ -434,6 +450,32 @@ export function typographicQuotes(text: string): string {
         .replace(/(^|[\s([«“])'(?=\p{L})/gu, '$1\u2018')
         // El resto —entre letras, al final de una palabra— es apóstrofo o cierre.
         .replace(/'/g, '\u2019');
+}
+
+/** Una cita del cuerpo que va a nota: lo que hace falta para buscar su ficha. */
+interface CitaDeNota {
+    author: string;
+    pages: string | null;
+    raw: string;
+    /** El título entre comillas de la cita; en un léxico, la entrada. */
+    title?: string;
+}
+
+/**
+ * La entrada de un léxico, cuando la cita la trae: el título entre comillas
+ * que no es el de la obra —«(HALOT, "כָּבוֹד", p. 457)»— o un «s.v. σοφία».
+ */
+function entradaDelLexico(cita: CitaDeNota, ficha: { title?: string; shortTitle?: string }, abreviatura: string): string | null {
+    const sv = cita.raw.match(/s\.\s?v\.\s*([^,;)]+)/i)?.[1]?.trim();
+    if (sv) return sv;
+    const titulo = (cita.title ?? '').trim();
+    if (!titulo) return null;
+    const comparable = (t: string) => t.normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    const esLaObra = [ficha.title, ficha.shortTitle, abreviatura].some(t => {
+        const c = comparable(t ?? '');
+        return c.length > 0 && (comparable(titulo).includes(c) || c.includes(comparable(titulo)));
+    });
+    return esLaObra ? null : titulo;
 }
 
 /**
@@ -667,7 +709,7 @@ const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
  */
 function buildInlineRuns(
     paragraphText: string,
-    registerFootnote: (citas: ReadonlyArray<{ author: string; pages: string | null; raw: string }>) => number,
+    registerFootnote: (citas: ReadonlyArray<CitaDeNota>) => number,
     /**
      * `'parenthetical'` deja la cita donde está, tal como se escribió.
      *
@@ -704,7 +746,7 @@ function buildInlineRuns(
         author?: string;
         pages?: string | null;
         /** Las obras de una cita combinada «(A, 638; B, 59)», en orden. */
-        parts?: Array<{ author: string; pages: string | null; raw: string }>;
+        parts?: CitaDeNota[];
     }
     const markers: Marker[] = [];
 
@@ -721,9 +763,10 @@ function buildInlineRuns(
             // es la única señal que la separa de un pie de imprenta o de una
             // referencia bíblica.
             if (!cita.title && !resolvesToCitedSource(cita.author, citationKeys)) continue;
-            const part = {
+            const part: CitaDeNota = {
                 author: cita.author,
                 pages: cita.pages,
+                title: cita.title,
                 raw: cita.raw.replace(/^[(;]\s*/, '').replace(/\s*[);]$/, ''),
             };
             // «; B, 59» pegado a la cita anterior es la segunda obra del mismo

@@ -996,3 +996,60 @@ describe('exportPaperToDocx — el texto del versículo bajo su título, como el
         expect(doc).not.toContain('«El SEÑOR es mi pastor');
     });
 });
+
+describe('exportPaperToDocx — notas de léxicos y gramáticas como la guía (B66)', () => {
+    const WO = { author: 'Bruce K. Waltke y M. O’Connor', authorSorted: 'Waltke, Bruce K., y M. O’Connor', title: 'An Introduction to Biblical Hebrew Syntax', city: 'Winona Lake, IN', publisher: 'Eisenbrauns', year: '1990' };
+    const HALOT = { author: 'Ludwig Koehler y Walter Baumgartner', authorSorted: 'Koehler, Ludwig, y Walter Baumgartner', title: 'The Hebrew and Aramaic Lexicon of the Old Testament', city: 'Leiden', publisher: 'Brill', year: '1994' };
+    const ARTICULO = { author: 'Juan Pérez', title: 'El pastor en Salmo 23', city: 'x', publisher: 'y', year: '2000' };
+    const notas = async (texto: string) => {
+        const blob = await exportPaperToDocx(paper({
+            sources: [
+                { id: 'a', citationKey: 'Waltke', sourceType: 'grammar-syntax' },
+                { id: 'b', citationKey: 'Koehler', sourceType: 'lexicon-technical' },
+                { id: 'c', citationKey: 'Pérez', sourceType: 'journal-article' },
+                { id: 'd', citationKey: 'Ross', sourceType: 'commentary-expository' },
+            ] as never,
+            assembledMarkdown: ['## Versículo 4', '', texto].join('\n'),
+        }), {
+            exportedAt: new Date('2026-10-29'),
+            bibliography: [
+                { citationKey: 'Waltke', displayLabel: 'IBHS', text: 'x', missing: [], data: WO },
+                { citationKey: 'Koehler', displayLabel: 'HALOT', text: 'x', missing: [], data: HALOT },
+                { citationKey: 'Pérez', displayLabel: 'Pérez', text: 'x', missing: [], data: ARTICULO },
+                { citationKey: 'Ross', displayLabel: 'Ross', text: 'x', missing: [], data: { author: 'Allen P. Ross', authorSorted: 'Ross, Allen P.', title: 'A Commentary on the Psalms', city: 'Grand Rapids', publisher: 'Kregel', year: '2011' } },
+            ],
+        });
+        const xml = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string');
+        return { xml, texto: xml.replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '') };
+    };
+
+    it('REGRESIÓN TI #2: la nota siguiente de Waltke y O’Connor es «*IBHS*, 438.», con IBHS en cursiva', async () => {
+        const { xml, texto } = await notas('Uno (Waltke, p. 436). Dos (Ross, p. 5). Tres (Waltke, p. 438).');
+        expect(texto).toContain('Eisenbrauns, 1990), 436.');
+        expect(texto).toContain('IBHS, 438.');
+        expect(xml).toMatch(/<w:i\/>(?:(?!<\/w:r>).)*<w:t[^>]*>IBHS<\/w:t>/s);
+        expect(texto).not.toContain('Waltke y O’Connor, Introduction');
+    });
+
+    it('una gramática admite «Ibid.»', async () => {
+        const { texto } = await notas('Uno (Waltke, p. 436). Dos (Waltke, p. 438).');
+        expect(texto).toContain('Ibid., 438.');
+    });
+
+    it('nota 31: un léxico no lleva «Ibid.»; su nota siguiente trae la entrada entre comillas', async () => {
+        const { texto } = await notas('Uno (Koehler, "כָּבוֹד", p. 457). Dos (Koehler, "כָּבוֹד", p. 458).');
+        expect(texto).not.toContain('Ibid.');
+        expect(texto).toContain('«כָּבוֹד», HALOT, 458.');
+    });
+
+    it('nota 31: un artículo tampoco lleva «Ibid.»', async () => {
+        const { texto } = await notas('Uno (Pérez, p. 10). Dos (Pérez, p. 11).');
+        expect(texto).not.toContain('Ibid.');
+        expect(texto).toContain('Pérez, El pastor en Salmo 23, 11.');
+    });
+
+    it('un comentario sigue igual: «Ibid.» y la forma abreviada de siempre', async () => {
+        const { texto } = await notas('Uno (Ross, p. 5). Dos (Ross, p. 6).');
+        expect(texto).toContain('Ibid., 6.');
+    });
+});

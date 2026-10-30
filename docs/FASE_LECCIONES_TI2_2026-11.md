@@ -298,6 +298,7 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
    - Campo `abbreviation` en la ficha (*IBHS*), y `sourceType` en `BibliographyEntry`.
    - Léxico: la entrada entre comillas en la forma corta y sin «Ibid.».
    - *Dónde:* `bibliography.ts:16`, `paperBibliography.ts:25`, `exportPaperToDocx.ts:228`.
+   - **Hecho (2026-10-30).** Leído en la guía («Léxicos y gramáticas», hoja 50, y nota 31) y medido en su PDF: las ocho obras de su tabla (BDAG, BDB, BDF, *BHRG*, GKC, *HALOT*, *IBHS*, Joüon) se reconocen por el título, con su cursiva (las de título en cursiva, las de autor en redonda). La nota siguiente de un léxico es «"entrada", *HALOT*, 2:457»; la de una gramática, «GKC §18» (sin coma) o «*IBHS*, 436». Léxicos, diccionarios y artículos no llevan «Ibid.» (nota 31). La ficha tiene un campo nuevo, «Abreviatura», para otra obra. La entrada del léxico sale del título entre comillas de la cita o de «s.v.». **Supuesto:** que la ficha de Waltke-O’Connor del TI #2 diga «An Introduction to Biblical Hebrew Syntax»; si no, basta escribir «IBHS» en su abreviatura.
 7. **Rangos de páginas abreviados**, si la guía lo confirma («567–68»).
    - *Dónde:* `appendPages` (`bibliography.ts`).
    - *Mide:* lectura de la guía primero (supuesto hoy).
