@@ -125,3 +125,12 @@ describe('la revisión antes de exportar en el mismo diálogo (fase «Lecciones 
         expect(screen.getByText('detail.exportReview.title')).toBeInTheDocument();
     });
 });
+
+describe('REVISIÓN: mientras se guarda una corrección no se exporta', () => {
+    it('«Exportar igual» queda deshabilitado con una corrección en camino', () => {
+        filas = [];
+        const r = { findings: [{ kind: 'accent' as const, offset: 0, find: 'aqui', replace: 'aquí', context: 'aqui' }], mechanicalCount: 1, blockedBy: null, isApplying: true, apply: vi.fn(), applyMechanical: vi.fn() };
+        render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} review={r} />);
+        expect(screen.getByText('detail.bibliography.gate.exportAnyway').closest('button')).toBeDisabled();
+    });
+});

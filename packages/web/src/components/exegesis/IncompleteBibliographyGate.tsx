@@ -143,7 +143,8 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
                     {review && <ExportTextReview review={review} />}
                     <DialogFooter>
                         <Button type="button" variant="ghost" onClick={onCancel}>{t('detail.bibliography.gate.cancel')}</Button>
-                        <Button type="button" variant={algoPendiente ? 'outline' : 'default'} onClick={onExport}>
+                        {/* Mientras se guarda una corrección, exportar bajaría el texto sin ella. */}
+                        <Button type="button" variant={algoPendiente ? 'outline' : 'default'} onClick={onExport} disabled={review?.isApplying}>
                             {algoPendiente ? t('detail.bibliography.gate.exportAnyway') : t('detail.bibliography.gate.export')}
                         </Button>
                     </DialogFooter>

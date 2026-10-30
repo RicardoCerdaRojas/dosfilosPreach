@@ -359,6 +359,22 @@ Queda para etapas siguientes:
 - **Unidad 2:** «Aplicar» no corrige sobre un ensamble regenerado sin aceptar, porque pisaría la versión nueva.
 - **Unidad 3:** la página que da `lastRenderedPageBreak` coincide con la del PDF en las 34 notas del TI #2 (14 páginas físicas, contada la portada). El TI #2 no tiene ningún «Ibid.» que abra página. **El TI #1 sí: la nota 40, «Ibid., 437.», abre la página 12** (confirmado en su PDF). Ese «Ibid.» remitía además a un léxico (Ortiz), que la nota 31 excluye del «Ibid.». El profesor no lo marcó.
 
+**Revisión adversarial de la etapa 2 (2026-10-30).** Corregido antes del PR:
+- **Una carrera perdía correcciones.** Si se aplicaban dos seguidas, la segunda partía del texto viejo. «Exportar igual» bajaba el Word sin la corrección. Ahora no se aplica otra ni se exporta hasta que el trabajo vuelve con el texto guardado.
+- **Glosa al revés.** «El perfecto (qatal)» se marcaba y quedaba «el perfecto (perfecto)».
+- **«Ibid.» encadenados.** Tomaban la página de la obra y no la de la nota anterior.
+- **Ficha equivocada.** Un título corto de otra obra le ganaba a la ficha correcta.
+- **URLs dañadas.** «Aplicar las automáticas» corregía dentro de una dirección web.
+- **Falsos avisos de tilde.** «Version», la preposición griega «dia», la revista *Biblica* y los títulos en cursiva.
+- **«Idem».** No se reconocía.
+
+Al volver a medir se encontró una regresión de un arreglo propio: «(v. 1)» contaba como paréntesis sin cerrar. Quedó corregida y probada. Los TI #1 y TI #2 vuelven a dar 1 y 7 avisos.
+
+Queda como posible:
+- en una tabla partida entre páginas, cada celda puede traer su propia marca de página y la página mostrada sale de más. Los avisos no cambian; los TI no tienen tablas;
+- «página N» cuenta desde la portada, no el número impreso al pie;
+- con un ensamble largo, contar las correcciones automáticas tarda unos 80 ms en cada lectura del trabajo (medido por la revisión).
+
 ### Etapa 3 · La tesis y la forma del argumento (L)
 **Por qué:** la introducción tomó la última oración como tesis; la tesis precisa la trajo una indicación; los títulos temáticos dependen de la tesis y de las decisiones.
 

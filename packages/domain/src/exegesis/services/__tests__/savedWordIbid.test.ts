@@ -15,7 +15,7 @@ describe('reviewSavedWordIbid — el «Ibid.» que abre página (guía, hoja 22)
         const doc = `<w:body><w:p>${llamada(1)}</w:p><w:p>${SALTO}${llamada(2)}</w:p></w:body>`;
         const r = reviewSavedWordIbid(doc, notas(ROSS, 'Ibid., 566.'));
         expect(r).toMatchObject({ paginated: true, pages: 2, notes: 2 });
-        expect(r.findings).toEqual([{ note: 2, page: 2, text: 'Ibid., 566.', previousNote: 1, workNote: ROSS }]);
+        expect(r.findings).toEqual([{ note: 2, page: 2, text: 'Ibid., 566.', previousNote: 1, workNote: ROSS, previousPage: '565' }]);
     });
 
     it('«Ibid.» en la misma página no se marca (el TI #2: sus tres «Ibid.» caen con su nota anterior)', () => {
@@ -28,7 +28,8 @@ describe('reviewSavedWordIbid — el «Ibid.» que abre página (guía, hoja 22)
     it('la obra es la de la última nota que la nombra, aunque haya un «Ibid.» en medio', () => {
         const doc = `<w:body><w:p>${llamada(1)}${llamada(2)}</w:p><w:p>${SALTO}${llamada(3)}</w:p></w:body>`;
         const [f] = reviewSavedWordIbid(doc, notas(ROSS, 'Ibid., 566.', 'Ibid.')).findings;
-        expect(f).toMatchObject({ note: 3, previousNote: 2, workNote: ROSS });
+        // REVISIÓN: «Ibid.» solo repite la página de la nota ANTERIOR (566), no la de la obra (565).
+        expect(f).toMatchObject({ note: 3, previousNote: 2, workNote: ROSS, previousPage: '566' });
     });
 
     it('un Word sin marcas de página (no lo guardó Word) no se da por bueno: lo dice', () => {
@@ -36,6 +37,11 @@ describe('reviewSavedWordIbid — el «Ibid.» que abre página (guía, hoja 22)
         const r = reviewSavedWordIbid(doc, notas(ROSS, 'Ibid., 566.'));
         expect(r.paginated).toBe(false);
         expect(r.findings).toEqual([]);
+    });
+
+    it('REVISIÓN: una guía con «Idem» como rótulo también se revisa', () => {
+        const doc = `<w:body><w:p>${llamada(1)}</w:p><w:p>${SALTO}${llamada(2)}</w:p></w:body>`;
+        expect(reviewSavedWordIbid(doc, notas(ROSS, 'Idem, 566.')).findings).toHaveLength(1);
     });
 
     it('«Ibíd.» con tilde y entidades del XML se leen igual', () => {
@@ -49,14 +55,23 @@ describe('shortFormForIbid — la forma abreviada que va en lugar del «Ibid.»'
     const FICHA_ROSS = { author: 'Allen P. Ross', authorSorted: 'Ross, Allen P.', title: 'A Commentary on the Psalms', shortTitle: 'Commentary on the Psalms' };
 
     it('con la página del «Ibid.»', () => {
-        expect(shortFormForIbid({ text: 'Ibid., 566.', workNote: ROSS }, [FICHA_ROSS])).toBe('Ross, *Commentary on the Psalms*, 566.');
+        expect(shortFormForIbid({ text: 'Ibid., 566.', workNote: ROSS, previousPage: '565' }, [FICHA_ROSS])).toBe('Ross, *Commentary on the Psalms*, 566.');
     });
 
-    it('«Ibid.» solo repite la página de la nota de la obra', () => {
-        expect(shortFormForIbid({ text: 'Ibid.', workNote: ROSS }, [FICHA_ROSS])).toBe('Ross, *Commentary on the Psalms*, 565.');
+    it('«Ibid.» solo repite la página de la nota anterior', () => {
+        expect(shortFormForIbid({ text: 'Ibid.', workNote: ROSS, previousPage: '566' }, [FICHA_ROSS])).toBe('Ross, *Commentary on the Psalms*, 566.');
+    });
+
+    it('REVISIÓN: una página con puntos («45 n. 3», «s.v.») se conserva', () => {
+        expect(shortFormForIbid({ text: 'Ibid., 45 n. 3.', workNote: ROSS, previousPage: '565' }, [FICHA_ROSS])).toBe('Ross, *Commentary on the Psalms*, 45 n. 3.');
+    });
+
+    it('REVISIÓN: un título corto de otra obra («Psalms») no gana a la ficha que nombra al autor', () => {
+        const craigie = { author: 'Peter C. Craigie', authorSorted: 'Craigie, Peter C.', title: 'Psalms' };
+        expect(shortFormForIbid({ text: 'Ibid., 566.', workNote: ROSS, previousPage: '565' }, [craigie, FICHA_ROSS])).toBe('Ross, *Commentary on the Psalms*, 566.');
     });
 
     it('si la obra no está en las fichas, no inventa', () => {
-        expect(shortFormForIbid({ text: 'Ibid., 3.', workNote: 'Otro autor, Otro libro, 2.' }, [FICHA_ROSS])).toBeNull();
+        expect(shortFormForIbid({ text: 'Ibid., 3.', workNote: 'Otro autor, Otro libro, 2.', previousPage: '2' }, [FICHA_ROSS])).toBeNull();
     });
 });

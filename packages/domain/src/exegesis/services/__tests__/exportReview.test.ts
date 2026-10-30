@@ -103,3 +103,48 @@ describe('applyMechanicalExportFindings', () => {
         expect(reviewBeforeExport(r.markdown).map(f => f.kind)).toEqual(['nomenclature']);
     });
 });
+
+describe('REVISIÓN adversarial de la etapa 2', () => {
+    const conPerfecto = (s: string) => `El perfecto y el imperfecto. ${s}`;
+
+    it('la glosa al revés —«el perfecto (qatal)»— ya dice el término del trabajo', () => {
+        expect(kinds(conPerfecto('Aquí el perfecto (qatal) y el imperfecto (yiqtol) marcan aspecto.'))).toEqual([]);
+    });
+
+    it('la notación de Niccacci «x-qatal» no es una mezcla; la sigla en cursiva sí se marca', () => {
+        expect(kinds(conPerfecto('La construcción x-qatal y la w-x-qatal.'))).toEqual([]);
+        expect(kinds(conPerfecto('El *wayyiqtol* narra.')).map(k => k[0])).toEqual(['nomenclature']);
+    });
+
+    it('no marca palabras que existen así en otra lengua: «English Standard Version», «dia», *Biblica*', () => {
+        expect(kinds('Según la English Standard Version, dia con genitivo, en Biblica 12.')).toEqual([]);
+    });
+
+    it('un título en cursiva va como se publicó', () => {
+        expect(kinds('Ver *Analisis del texto hebreo* de otro autor.')).toEqual([]);
+    });
+
+    it('«Aplicar las automáticas» no toca una dirección web', () => {
+        const t = 'Ver https://example.org/sal-23-4-6 y los vv. 4-6 del salmo.';
+        expect(applyMechanicalExportFindings(t).markdown).toBe('Ver https://example.org/sal-23-4-6 y los vv. 4–6 del salmo.');
+        expect(applyMechanicalExportFindings('El [texto](https://x.org/analisis) dice aqui.').markdown).toBe('El [texto](https://x.org/analisis) dice aquí.');
+    });
+
+    it('las marcas de una enumeración «a)», «b)» no son paréntesis sin cerrar', () => {
+        expect(kinds('Hay dos lecturas: a) la masorética y b) la de la LXX.')).toEqual([]);
+    });
+
+    it('«Waltke-O\'Connor» con apóstrofo recto junto a «Waltke y O’Connor» curvo también se marca', () => {
+        expect(kinds("Waltke y O’Connor explican. Luego Waltke-O'Connor clasifica.").map(k => k[0])).toEqual(['author-form']);
+    });
+});
+
+describe('REVISIÓN: paréntesis de verdad y marcas de enumeración', () => {
+    it('«(v. 1)» cierra su paréntesis: no es una marca de enumeración', () => {
+        expect(kinds('El SEÑOR es mi pastor (v. 1)\n\nEl pastor que guía (v. 3) y sigue.')).toEqual([]);
+    });
+    it('un «)» de más sí se marca; un «(» sin cerrar también', () => {
+        expect(kinds('Esto sobra) en medio de la frase.').map(k => k[0])).toEqual(['unbalanced-paren']);
+        expect(kinds('Esto (abre y no cierra.').map(k => k[0])).toEqual(['unbalanced-paren']);
+    });
+});

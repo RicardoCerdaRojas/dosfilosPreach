@@ -2861,7 +2861,7 @@
     },
     "exportReview": {
       "title": "Revisión antes de exportar",
-      "description": "Corrige aquí lo que haga falta: queda en el trabajo y no hay que retocar el Word. Puedes exportar igual.",
+      "description": "Corrige aquí lo que haga falta: queda en el trabajo y no hay que retocar el Word. Cada corrección es una edición del ensamble, y el ensamble queda como editado a mano. Puedes exportar igual.",
       "textHeading_one": "En el texto: 1 aviso",
       "textHeading_other": "En el texto: {{count}} avisos",
       "applyMechanical_one": "Aplicar la corrección automática",

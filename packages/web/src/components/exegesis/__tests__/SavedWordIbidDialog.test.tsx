@@ -17,7 +17,7 @@ beforeEach(() => cleanup());
 describe('SavedWordIbidDialog', () => {
     it('REGRESIÓN TI #1: la nota 40 «Ibid., 437.» abre la página 12; propone la forma abreviada de la obra', async () => {
         resultado = Promise.resolve({ paginated: true, pages: 15, notes: 49, findings: [
-            { note: 40, page: 12, text: 'Ibid., 437.', previousNote: 39, workNote: 'Ross, Commentary on the Psalms, 436.' },
+            { note: 40, page: 12, text: 'Ibid., 437.', previousNote: 39, workNote: 'Ross, Commentary on the Psalms, 436.', previousPage: '436' },
         ] });
         render(<SavedWordIbidDialog file={archivo} fichas={[ROSS]} onClose={vi.fn()} />);
         expect(await screen.findByText(/detail\.savedWord\.finding .*"note":40.*"page":12/)).toBeInTheDocument();
@@ -27,7 +27,7 @@ describe('SavedWordIbidDialog', () => {
 
     it('si la obra no está en las fichas, dice de qué nota sacar la forma', async () => {
         resultado = Promise.resolve({ paginated: true, pages: 3, notes: 2, findings: [
-            { note: 2, page: 2, text: 'Ibid., 9.', previousNote: 1, workNote: 'Otro, Libro, 8.' },
+            { note: 2, page: 2, text: 'Ibid., 9.', previousNote: 1, workNote: 'Otro, Libro, 8.', previousPage: '8' },
         ] });
         render(<SavedWordIbidDialog file={archivo} fichas={[ROSS]} onClose={vi.fn()} />);
         expect(await screen.findByText(/detail\.savedWord\.noForm .*"previousNote":1/)).toBeInTheDocument();

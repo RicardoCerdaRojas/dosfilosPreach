@@ -44,7 +44,10 @@ export interface ExportFinding {
  * Palabras que sin tilde NO existen en español: corregirlas nunca cambia el
  * sentido. Quedan fuera «mas», «solo», «esta», «aun» y también formas
  * verbales que sí existen sin tilde: «titulo», «pagina», «numero»,
- * «critica», «termino», «articulo», «genero», «practica», «ultimo».
+ * «critica», «termino», «articulo», «genero», «practica», «ultimo». Y las
+ * que aparecen escritas así en otra lengua: «version» (English Standard
+ * Version), «dia» (la preposición griega transliterada), «biblica» (la
+ * revista *Biblica*, el italiano) (revisión adversarial).
  * Medido: en los Word entregados marca «lexico» (TI #1), «aqui» y
  * «versiculo» (TI #2), y nada más.
  */
@@ -54,15 +57,15 @@ const SIN_TILDE: Readonly<Record<string, string>> = {
     versiculo: 'versículo', versiculos: 'versículos', investigacion: 'investigación', analisis: 'análisis',
     traduccion: 'traducción', oracion: 'oración', construccion: 'construcción',
     interpretacion: 'interpretación', conclusion: 'conclusión', introduccion: 'introducción', funcion: 'función',
-    relacion: 'relación', accion: 'acción', razon: 'razón', expresion: 'expresión', version: 'versión',
+    relacion: 'relación', accion: 'acción', razon: 'razón', expresion: 'expresión',
     preposicion: 'preposición', vocalizacion: 'vocalización', sintactico: 'sintáctico', sintactica: 'sintáctica',
     sintacticos: 'sintácticos', sintacticas: 'sintácticas', lexico: 'léxico', lexica: 'léxica', lexicos: 'léxicos',
-    lexicas: 'léxicas', biblico: 'bíblico', biblica: 'bíblica', teologico: 'teológico', teologica: 'teológica',
+    lexicas: 'léxicas', teologico: 'teológico', teologica: 'teológica',
     semantico: 'semántico', semantica: 'semántica', gramatica: 'gramática', gramaticas: 'gramáticas',
     metafora: 'metáfora', proposito: 'propósito', enfasis: 'énfasis', tecnico: 'técnico', tecnica: 'técnica',
     unico: 'único', unica: 'única', dificil: 'difícil', facil: 'fácil', util: 'útil', logico: 'lógico',
     analogia: 'analogía', categoria: 'categoría', teologia: 'teología', metodologia: 'metodología', poesia: 'poesía',
-    hipotesis: 'hipótesis', parentesis: 'paréntesis', simbolo: 'símbolo', proximo: 'próximo', dia: 'día',
+    hipotesis: 'hipótesis', parentesis: 'paréntesis', simbolo: 'símbolo', proximo: 'próximo',
 };
 
 /** El término de la nomenclatura del trabajo para cada sigla (regla 22). */
@@ -80,17 +83,22 @@ export function reviewBeforeExport(
     const texto = markdown ?? '';
     if (!texto.trim()) return [];
     // Lo que está dentro de una cita lo maqueta el exportador (páginas,
-    // títulos de obras tal como se publicaron): no se marca.
+    // títulos de obras tal como se publicaron), y una dirección web no se
+    // toca: no se marca. Un título en cursiva va como se publicó: sin tildes
+    // que corregir.
     const citas = findInlineCitations(texto, options.citationKeys ?? []).map(c => [c.offset, c.end] as const);
-    const enCita = (i: number) => citas.some(([a, b]) => i >= a && i < b);
+    const enlaces = [...texto.matchAll(/\bhttps?:\/\/\S+|\]\([^)\s]*\)/g)].map(m => [m.index!, m.index! + m[0].length] as const);
+    const cursivas = [...texto.matchAll(/(?<!\*)\*[^*\n]+\*(?!\*)/g)].map(m => [m.index!, m.index! + m[0].length] as const);
+    const dentro = (tramos: ReadonlyArray<readonly [number, number]>, i: number) => tramos.some(([a, b]) => i >= a && i < b);
     const out: ExportFinding[] = [
-        ...acentos(texto),
+        ...acentos(texto).filter(f => !dentro(cursivas, f.offset)),
         ...doblesPuntos(texto),
         ...parentesis(texto),
+        // La sigla en cursiva (*wayyiqtol*) sigue siendo la sigla: no se exime.
         ...nomenclatura(texto),
         ...formasDeAutor(texto),
-        ...mecanicos(texto),
-    ].filter(f => f.kind === 'unbalanced-paren' || !enCita(f.offset));
+        ...mecanicos(texto, enlaces),
+    ].filter(f => f.kind === 'unbalanced-paren' || (!dentro(citas, f.offset) && !dentro(enlaces, f.offset)));
     return out.sort((a, b) => a.offset - b.offset);
 }
 
@@ -168,15 +176,33 @@ function parentesis(texto: string): ExportFinding[] {
     const out: ExportFinding[] = [];
     let inicio = 0;
     for (const parrafo of texto.split(/\n\s*\n/)) {
-        const abre = (parrafo.match(/\(/g) ?? []).length;
-        const cierra = (parrafo.match(/\)/g) ?? []).length;
         const offset = texto.indexOf(parrafo, inicio);
-        if (abre !== cierra && parrafo.trim()) {
+        if (!parentesisEquilibrados(parrafo) && parrafo.trim()) {
             out.push({ kind: 'unbalanced-paren', offset, find: parrafo.trim().slice(0, 60), replace: null, context: parrafo.trim().slice(0, 140) });
         }
         inicio = offset + parrafo.length;
     }
     return out;
+}
+
+/**
+ * Cada «)» cierra un «(» abierto. Un «)» sin ninguno abierto que va detrás de
+ * una o dos letras o cifras sueltas es la marca de una enumeración —«a) …
+ * b) …»— y no cuenta. «(v. 1)» sí cierra su paréntesis: la marca solo se
+ * reconoce cuando no hay nada abierto (revisión de la etapa 2: la primera
+ * versión borraba el «1)» de «(v. 1)»).
+ */
+function parentesisEquilibrados(parrafo: string): boolean {
+    let abiertos = 0;
+    for (let i = 0; i < parrafo.length; i++) {
+        const c = parrafo[i];
+        if (c === '(') abiertos++;
+        else if (c === ')') {
+            if (abiertos > 0) abiertos--;
+            else if (!/(?:^|\s)[a-z0-9]{1,2}$/i.test(parrafo.slice(0, i))) return false;
+        }
+    }
+    return abiertos === 0;
 }
 
 /**
@@ -188,10 +214,15 @@ function parentesis(texto: string): ExportFinding[] {
 function nomenclatura(texto: string): ExportFinding[] {
     if (!/\b(?:im)?perfectos?\b/i.test(texto)) return [];
     const out: ExportFinding[] = [];
-    for (const m of texto.matchAll(/\b(qatal|yiqtol|weqatal|wayyiqtol)\b/gi)) {
+    // «x-qatal», «w-x-qatal»: la notación de Niccacci, un término de la
+    // fuente citada, no una mezcla.
+    for (const m of texto.matchAll(/(?<![-‐])\b(qatal|yiqtol|weqatal|wayyiqtol)\b/gi)) {
         const despues = texto.slice(m.index! + m[0].length, m.index! + m[0].length + 60);
         const glosa = despues.match(/^[^.;\n]{0,40}?\(([^)]*)\)/)?.[1] ?? '';
         if (/(?:im)?perfecto/i.test(glosa)) continue;
+        // La glosa al revés: «el perfecto (qatal)» ya dice el término del trabajo.
+        const antes = texto.slice(Math.max(0, m.index! - 60), m.index!);
+        if (/(?:im)?perfecto[^.;\n()]{0,40}\(\s*[^()]*$/i.test(antes)) continue;
         // «el weqatal consecutivo» → «el perfecto consecutivo», no «perfecto consecutivo consecutivo».
         const termino = /^\s+consecutiv[oa]s?\b/i.test(despues)
             ? NOMENCLATURA[m[0].toLowerCase()]!.replace(/\s+consecutivo$/, '')
@@ -205,18 +236,27 @@ function nomenclatura(texto: string): ExportFinding[] {
 function formasDeAutor(texto: string): ExportFinding[] {
     const out: ExportFinding[] = [];
     for (const m of texto.matchAll(/(?<![\p{L}-])(\p{Lu}[\p{L}’']+)-(\p{Lu}[\p{L}’']+)(?![\p{L}-])/gu)) {
-        const conY = [`${m[1]} y ${m[2]}`, `${m[1]} and ${m[2]}`].find(f => texto.includes(f));
+        // El apóstrofo recto y el curvo son el mismo: el Word muestra los dos curvos.
+        const curvo = (t: string) => t.replace(/'/g, '’');
+        const conY = [`${m[1]} y ${m[2]}`, `${m[1]} and ${m[2]}`].find(f => curvo(texto).includes(curvo(f)));
         if (conY) out.push(aviso(texto, 'author-form', m.index!, m[0], conY));
     }
     return out;
 }
 
-/** Los mecánicos de la revisión de cada versículo, ubicados en el documento. */
-function mecanicos(texto: string): ExportFinding[] {
+/**
+ * Los mecánicos de la revisión de cada versículo, ubicados en el documento.
+ * El control de rangos lee el texto con las direcciones web tapadas: la
+ * ubicación salta las que caen dentro de una (revisión adversarial: «Aplicar»
+ * corrompía `…/sal-23-4-6`).
+ */
+function mecanicos(texto: string, enlaces: ReadonlyArray<readonly [number, number]>): ExportFinding[] {
     const out: ExportFinding[] = [];
     const desde = new Map<string, number>();
+    const enEnlace = (i: number) => enlaces.some(([a, b]) => i >= a && i < b);
     for (const f of mechanicalProseFindings(texto)) {
-        const i = texto.indexOf(f.excerpt, desde.get(f.excerpt) ?? 0);
+        let i = texto.indexOf(f.excerpt, desde.get(f.excerpt) ?? 0);
+        while (i >= 0 && enEnlace(i)) i = texto.indexOf(f.excerpt, i + 1);
         if (i < 0) continue;
         desde.set(f.excerpt, i + f.excerpt.length);
         out.push(aviso(texto, f.kind as ExportReviewKind, i, f.excerpt, f.replacement ?? null));

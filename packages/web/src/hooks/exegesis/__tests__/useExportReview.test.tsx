@@ -69,3 +69,28 @@ describe('useExportReview', () => {
         expect(result.current.findings).toEqual([]);
     });
 });
+
+describe('REVISIÓN: la corrección no se pierde mientras el trabajo vuelve a leerse', () => {
+    it('después de guardar, no aplica otra hasta que el trabajo trae el texto corregido', async () => {
+        mutateAsync.mockResolvedValue(undefined);
+        const { result, rerender } = renderHook(({ p }) => useExportReview(p), { initialProps: { p: conEnsamble(TEXTO) } });
+        await act(() => result.current.apply(result.current.findings[0]!));
+        expect(result.current.isApplying).toBe(true);
+        // Una segunda corrección sobre el texto viejo borraría la primera: se ignora.
+        await act(() => result.current.apply(result.current.findings[1]!));
+        expect(mutateAsync).toHaveBeenCalledTimes(1);
+        // El trabajo vuelve con el texto guardado: se puede seguir.
+        const guardado = mutateAsync.mock.calls[0]![0].markdown as string;
+        const releido = { ...conEnsamble(guardado), assembledMarkdown: guardado } as ExegeticalPaper;
+        rerender({ p: releido });
+        expect(result.current.isApplying).toBe(false);
+        expect(result.current.findings.map(f => f.find)).toEqual(['aqui']);
+    });
+
+    it('si guardar falla, no queda trabado', async () => {
+        mutateAsync.mockRejectedValueOnce(new Error('red'));
+        const { result } = renderHook(() => useExportReview(conEnsamble(TEXTO)));
+        await act(async () => { await expect(result.current.apply(result.current.findings[0]!)).rejects.toThrow('red'); });
+        expect(result.current.isApplying).toBe(false);
+    });
+});

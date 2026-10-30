@@ -2861,7 +2861,7 @@
     },
     "exportReview": {
       "title": "Review before exporting",
-      "description": "Fix what's needed here: it stays in the paper and the Word file needs no touch-ups. You can export anyway.",
+      "description": "Fix what's needed here: it stays in the paper and the Word file needs no touch-ups. Each fix is an edit of the assembly, which then shows as edited by hand. You can export anyway.",
       "textHeading_one": "In the text: 1 warning",
       "textHeading_other": "In the text: {{count}} warnings",
       "applyMechanical_one": "Apply the automatic fix",
