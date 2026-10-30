@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatReferenceShortNote, referenceAbbreviationOf, referenceKindOfSourceType, sourceTypeWithoutIbid } from '../referenceWorks';
+import { formatReferenceShortNote, lexiconEntryOf, referenceAbbreviationOf, referenceKindOfSourceType, sourceTypeWithoutIbid } from '../referenceWorks';
 
 /** Guía de TMS 2024–2025, «Léxicos y gramáticas» (hoja 50) y nota 31. Cursivas medidas en su PDF. */
 describe('referenceAbbreviationOf — las ocho obras de la guía, por el título', () => {
@@ -9,11 +9,18 @@ describe('referenceAbbreviationOf — las ocho obras de la guía, por el título
     });
 
     it('cursiva las de título (HALOT, BHRG); redonda las de autor (BDAG, BDB, GKC)', () => {
-        expect(referenceAbbreviationOf({ title: 'The Hebrew and Aramaic Lexicon of the Old Testament' })).toEqual({ abbreviation: 'HALOT', italic: true, kind: 'lexicon' });
-        expect(referenceAbbreviationOf({ title: 'A Biblical Hebrew Reference Grammar' })!.italic).toBe(true);
-        expect(referenceAbbreviationOf({ title: 'A Greek-English Lexicon of the New Testament and Other Early Christian Literature' })).toEqual({ abbreviation: 'BDAG', italic: false, kind: 'lexicon' });
-        expect(referenceAbbreviationOf({ title: 'The New Brown, Driver, and Briggs Hebrew and English Lexicon of the Old Testament' })!.abbreviation).toBe('BDB');
-        expect(referenceAbbreviationOf({ title: 'Gesenius’ Hebrew Grammar' })).toEqual({ abbreviation: 'GKC', italic: false, kind: 'grammar' });
+        expect(referenceAbbreviationOf({ author: 'Ludwig Koehler y Walter Baumgartner', title: 'The Hebrew and Aramaic Lexicon of the Old Testament' })).toEqual({ abbreviation: 'HALOT', italic: true, kind: 'lexicon' });
+        expect(referenceAbbreviationOf({ author: 'Christo H. J. van der Merwe', title: 'A Biblical Hebrew Reference Grammar' })!.italic).toBe(true);
+        expect(referenceAbbreviationOf({ author: 'Walter Bauer', title: 'A Greek-English Lexicon of the New Testament and Other Early Christian Literature' })).toEqual({ abbreviation: 'BDAG', italic: false, kind: 'lexicon' });
+        expect(referenceAbbreviationOf({ author: 'Francis Brown, S. R. Driver y Charles A. Briggs', title: 'The New Brown, Driver, and Briggs Hebrew and English Lexicon of the Old Testament' })!.abbreviation).toBe('BDB');
+        expect(referenceAbbreviationOf({ author: 'Wilhelm Gesenius', title: 'Gesenius’ Hebrew Grammar' })).toEqual({ abbreviation: 'GKC', italic: false, kind: 'grammar' });
+        expect(referenceAbbreviationOf({ author: 'Wilhelm Gesenius', title: "Gesenius's Hebrew Grammar" })!.abbreviation).toBe('GKC');
+    });
+
+    it('REVISIÓN: obras con el mismo título y otro autor no se confunden (Louw–Nida, Thayer, Holladay)', () => {
+        expect(referenceAbbreviationOf({ author: 'Johannes P. Louw y Eugene A. Nida', title: 'Greek-English Lexicon of the New Testament: Based on Semantic Domains' })).toBeNull();
+        expect(referenceAbbreviationOf({ author: 'Joseph Henry Thayer', title: 'A Greek-English Lexicon of the New Testament' })).toBeNull();
+        expect(referenceAbbreviationOf({ author: 'William L. Holladay', title: 'A Concise Hebrew and Aramaic Lexicon of the Old Testament' })).toBeNull();
     });
 
     it('«A Grammar of Biblical Hebrew» es Joüon solo si el autor lo es', () => {
@@ -24,7 +31,10 @@ describe('referenceAbbreviationOf — las ocho obras de la guía, por el título
     it('un comentario no es obra de referencia; la abreviatura escrita manda', () => {
         expect(referenceAbbreviationOf({ title: 'A Commentary on the Psalms' })).toBeNull();
         expect(referenceAbbreviationOf({ title: 'Lo que sea', abbreviation: 'ibhs' })).toEqual({ abbreviation: 'IBHS', italic: true, kind: 'grammar' });
-        expect(referenceAbbreviationOf({ title: 'Theological Wordbook', abbreviation: 'TWOT' })).toEqual({ abbreviation: 'TWOT', italic: false, kind: null });
+        expect(referenceAbbreviationOf({ title: 'Theological Wordbook', abbreviation: 'BDAG' })).toEqual({ abbreviation: 'BDAG', italic: false, kind: 'lexicon' });
+        // Fuera de la tabla, la cursiva la decide quien la escribe: entre asteriscos.
+        expect(referenceAbbreviationOf({ title: 'Theological Wordbook', abbreviation: '*TWOT*' })).toEqual({ abbreviation: 'TWOT', italic: true, kind: null });
+        expect(referenceAbbreviationOf({ title: 'Otra', abbreviation: 'ABC' })!.italic).toBe(false);
     });
 });
 
@@ -51,5 +61,15 @@ describe('el tipo de fuente', () => {
         expect(sourceTypeWithoutIbid('commentary-critical')).toBe(false);
         expect(referenceKindOfSourceType('grammar-syntax')).toBe('grammar');
         expect(referenceKindOfSourceType('commentary-critical')).toBeNull();
+    });
+});
+
+describe('lexiconEntryOf — la entrada solo cuando la cita la dice con «s.v.»', () => {
+    it('lee la entrada, con o sin comillas', () => {
+        expect(lexiconEntryOf('BDAG, s.v. σοφία')).toBe('σοφία');
+        expect(lexiconEntryOf('Koehler, s.v. "רעה", p. 1258')).toBe('רעה');
+    });
+    it('REVISIÓN: el título de la cita (el nombre de la obra) no es una entrada', () => {
+        expect(lexiconEntryOf('Brown, "Brown-Driver-Briggs Hebrew Lexicon", p. 945')).toBeNull();
     });
 });

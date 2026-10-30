@@ -2768,7 +2768,7 @@
         "title": "Full title, without the subtitle",
         "subtitle": "What follows the colon",
         "shortTitle": "For the later notes",
-        "abbreviation": "Lexicon or grammar: IBHS, HALOT, GKC…",
+        "abbreviation": "Lexicon or grammar: GKC, BDAG… In asterisks if italic: *TWOT*",
         "volume": "Volume number",
         "volumeTitle": "If the volume has its own title",
         "series": "Name of the series",

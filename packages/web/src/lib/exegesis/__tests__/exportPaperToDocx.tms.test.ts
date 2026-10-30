@@ -901,6 +901,11 @@ describe('exportPaperToDocx — niveles de encabezado de la guía de TMS (hoja 1
         expect(nivelDe(await xmlOf(ensamblado(), 'word/document.xml'), 'Análisis sintáctico y léxico')).toBe('Heading1');
     });
 
+    it('REVISIÓN: con portada, un ensamble editado que abre con «# Introducción» no pierde esa sección', async () => {
+        const editado = { ...ensamblado(), cover: { institution: 'TMS', author: 'R', place: 'X', date: 'Y' }, assembledMarkdown: '# Introducción\n\nTexto.\n\n## Conclusión\n\nFin.' } as ExegeticalPaper;
+        expect(nivelDe(await xmlOf(editado, 'word/document.xml'), 'Introducción')).toBe('Heading1');
+    });
+
     it('`####` es nivel tres y nada pasa del tres', () => {
         expect([1, 2, 3, 4, 5].map(nivelDeWord)).toEqual([1, 1, 2, 3, 3]);
     });
@@ -993,6 +998,16 @@ describe('exportPaperToDocx — el texto del versículo bajo su título, como el
         expect(texto(ps[i + 3]!)).toBe('La prosa del versículo.');
     });
 
+    it('REVISIÓN: un título con raya corta («Salmo 23:1–2», B44) encuentra su versículo', async () => {
+        const PSA12 = { bookId: 'PSA' as const, chapterStart: 23, chapterEnd: 23, verseStart: 1, verseEnd: 2 };
+        const p = paper({
+            passage: PSA12,
+            steps: [{ id: 'v', kind: 'verse', order: 1, verseRef: PSA12, accepted: { markdown: 'x', canonicalAnalysis: ANALISIS }, current: null }] as never,
+            assembledMarkdown: ['# T', '', '## Salmo 23:1–2', '', 'La prosa.'].join('\n'),
+        });
+        expect(await xmlOf(p, 'word/document.xml')).toContain('«El SEÑOR es mi pastor; nada me falta.»');
+    });
+
     it('un ensamble guardado con «Salmos 23:1» también lo lleva', async () => {
         const ps = parrafos(await xmlOf(conVersiculo('Salmos 23:1'), 'word/document.xml'));
         const i = ps.findIndex(p => texto(p) === 'Salmos 23:1');
@@ -1044,10 +1059,14 @@ describe('exportPaperToDocx — notas de léxicos y gramáticas como la guía (B
         expect(texto).toContain('Ibid., 438.');
     });
 
-    it('nota 31: un léxico no lleva «Ibid.»; su nota siguiente trae la entrada entre comillas', async () => {
-        const { texto } = await notas('Uno (Koehler, "כָּבוֹד", p. 457). Dos (Koehler, "כָּבוֹד", p. 458).');
+    it('nota 31: un léxico no lleva «Ibid.»; su nota siguiente va con la abreviatura', async () => {
+        // Como lo escribe la tubería: el título de la cita es el nombre de la
+        // obra (`displayLabel`), no la entrada.
+        const { texto } = await notas('Uno (Koehler, "HALOT", p. 457). Dos (Koehler, "The Hebrew and Aramaic Lexicon", p. 458).');
         expect(texto).not.toContain('Ibid.');
-        expect(texto).toContain('«כָּבוֹד», HALOT, 458.');
+        expect(texto).toContain('HALOT, 458.');
+        // REVISIÓN: el nombre de la obra no sale entre comillas como si fuera la entrada.
+        expect(texto).not.toContain('«');
     });
 
     it('nota 31: un artículo tampoco lleva «Ibid.»', async () => {

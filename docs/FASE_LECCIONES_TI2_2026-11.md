@@ -304,6 +304,26 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
    - *Mide:* lectura de la guía primero (supuesto hoy).
    - **Hecho (2026-10-30).** Confirmado en la guía («Números», leído): raya corta; si el primer número es menor que 100, el segundo entero (92–137); si es 100 o más, al menos dos cifras (162–75, 2156–89) y sin cero inicial (103–6). Un múltiplo de 100 va entero (100–104), como Turabian y Chicago. `paginasAbreviadas` se aplica en todas las notas (completa, abreviada, *Ibid.* y obras de referencia, también con tomo: «2:457–58»).
 
+**Revisión adversarial de la etapa 1 (2026-10-30).** Corregido antes del PR (seis defectos reproducidos y uno de concordancia):
+- títulos de la tabla de la guía demasiado amplios: Louw–Nida y Thayer salían BDAG, y Holladay salía *HALOT*. Ahora se exige también el autor;
+- la «entrada» de un léxico salía del título de la cita, que en la tubería real es el nombre de la obra. Ahora solo sale de «s.v.»;
+- un rango de cuatro cifras con tres que cambian iba abreviado (1496–504). Ahora va entero;
+- con portada se quitaba cualquier `#` inicial. Ahora solo el título del trabajo;
+- un título con raya corta no encontraba su versículo;
+- una abreviatura escrita a mano salía siempre en redonda. Ahora va en cursiva si se escribe entre asteriscos;
+- `yaTraeBibliografia` leía hasta `###` y el Word hasta `####`.
+
+Queda para etapas siguientes:
+- **Etapa 2:**
+  - el hebreo bajo el título es la copia del analizador (`originalText`), no el WLC: verificar contra el WLC;
+  - el índice sin entradas guardadas sale vacío fuera de Word (Google Docs, Pages): avisar;
+  - Word para Windows preguntaría si actualizar campos (supuesto).
+- **Etapa 4:**
+  - la tubería no lleva la entrada del léxico a la cita: hace falta para la forma «"entrada", *HALOT*, 2:457»;
+  - la nota siguiente de un léxico pierde el tomo que solo está en la ficha;
+  - en las notas, los artículos se arman como libros (ya pasaba antes).
+- **Etapa 3:** el compositor del trabajo entero titula los versículos con `###` y el respaldo sin ensamble con «Versículo N». En esos dos casos no sale el hebreo.
+
 ### Etapa 2 · «Revisar el Word antes de entregar» (M) — nuevo, B65 + B70
 **Por qué:** el «Ibid.» de página nueva solo se sabe en el Word guardado por Word, y las ediciones a mano metieron 9 errores en el Word final (medido).
 

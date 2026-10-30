@@ -29,6 +29,9 @@ export function rangosConRaya(texto: string): string {
  * - Un múltiplo de 100 va entero (100–104, 1100–1113), como Turabian y
  *   Chicago, de los que sale la regla de la guía: «100–4» sería ambiguo.
  * - Si el segundo es menor o tiene otra cantidad de cifras (987–1002), entero.
+ * - Con cuatro cifras, si cambian tres o más, entero (1496–1504, no
+ *   1496–504): la regla de Chicago (9.64) y Turabian. HALOT y BDAG pasan
+ *   de mil páginas.
  *
  * Solo para PÁGINAS, también con tomo («2:457–58», como HALOT en la guía);
  * no se aplica a citas bíblicas («Sal 119:105–112»). El TI #1 los abrevió a
@@ -41,6 +44,7 @@ export function paginasAbreviadas(texto: string): string {
         let i = 0;
         while (a[i] === b[i]) i++;
         let resto = b.slice(i);
+        if (a.length === 4 && resto.length >= 3) return todo;
         if (resto.length < 2) resto = b.slice(-2);
         if (resto.length > 1 && resto.startsWith('0')) resto = resto.slice(1);
         return `${a}–${resto}`;

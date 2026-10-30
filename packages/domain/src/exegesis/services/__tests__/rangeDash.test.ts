@@ -65,9 +65,27 @@ describe('paginasAbreviadas — rangos de páginas como la guía', () => {
         expect(paginasAbreviadas('xiv')).toBe('xiv');
     });
 
+    it('REVISIÓN: con cuatro cifras, si cambian tres o más, entero (Chicago 9.64)', () => {
+        expect(paginasAbreviadas('1496-1504')).toBe('1496–1504');
+        expect(paginasAbreviadas('2787-2816')).toBe('2787–2816');
+        expect(paginasAbreviadas('1087-1089')).toBe('1087–89');
+    });
+
     it('múltiplo de 100, otra cantidad de cifras o un segundo menor: entero', () => {
         expect(paginasAbreviadas('100-104')).toBe('100–104');
         expect(paginasAbreviadas('987-1002')).toBe('987–1002');
         expect(paginasAbreviadas('512-498')).toBe('512–498');
+    });
+});
+
+describe('exportPaperToMarkdown — una sola bibliografía', () => {
+    it('REVISIÓN: un cuerpo con «#### Bibliografía» no recibe otra (el Word lee hasta ####)', () => {
+        const paper = {
+            title: 'T', displayLanguage: 'es', assignmentBrief: '', steps: [],
+            passage: { bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: 1, verseEnd: 3 },
+            assembledMarkdown: '## Introducción\n\nTexto.\n\n#### Bibliografía\n\n- Ross. *Psalms*.',
+        } as unknown as ExegeticalPaper;
+        const md = exportPaperToMarkdown(paper, { bibliography: [{ citationKey: 'Ross', displayLabel: 'Ross', text: 'Ross, Allen P. *Psalms*.', missing: [], data: null }] });
+        expect(md.match(/Bibliograf/gi)).toHaveLength(1);
     });
 });

@@ -30,19 +30,23 @@ interface GuideEntry {
     kind: ReferenceKind;
     /** El título de la guía, sin artículo y normalizado. */
     title: RegExp;
-    /** Para un título que comparten varias obras. */
-    author?: RegExp;
+    /**
+     * El autor o editor: varias obras comparten título —Louw–Nida y Thayer
+     * también son «Greek-English Lexicon of the New Testament»; Holladay,
+     * «A Concise Hebrew and Aramaic Lexicon…»— y sin él se confunden.
+     */
+    author: RegExp;
 }
 
-/** La tabla de la guía, en su orden. */
+/** La tabla de la guía, en su orden: título y autor de cada obra. */
 const GUIDE: ReadonlyArray<GuideEntry> = [
-    { abbreviation: 'BDAG', italic: false, kind: 'lexicon', title: /greek-english lexicon of the new testament/ },
-    { abbreviation: 'BDB', italic: false, kind: 'lexicon', title: /hebrew and english lexicon of the old testament/ },
-    { abbreviation: 'BDF', italic: false, kind: 'grammar', title: /greek grammar of the new testament/ },
-    { abbreviation: 'BHRG', italic: true, kind: 'grammar', title: /biblical hebrew reference grammar/ },
-    { abbreviation: 'GKC', italic: false, kind: 'grammar', title: /gesenius'? hebrew grammar/ },
-    { abbreviation: 'HALOT', italic: true, kind: 'lexicon', title: /hebrew and aramaic lexicon of the old testament/ },
-    { abbreviation: 'IBHS', italic: true, kind: 'grammar', title: /introduction to biblical hebrew syntax/ },
+    { abbreviation: 'BDAG', italic: false, kind: 'lexicon', title: /greek-english lexicon of the new testament/, author: /bauer|danker|arndt|gingrich/ },
+    { abbreviation: 'BDB', italic: false, kind: 'lexicon', title: /hebrew and english lexicon of the old testament/, author: /brown|driver|briggs/ },
+    { abbreviation: 'BDF', italic: false, kind: 'grammar', title: /greek grammar of the new testament/, author: /blass|debrunner|funk/ },
+    { abbreviation: 'BHRG', italic: true, kind: 'grammar', title: /biblical hebrew reference grammar/, author: /merwe|naud[eé]|kroeze/ },
+    { abbreviation: 'GKC', italic: false, kind: 'grammar', title: /gesenius(?:'s?)? hebrew grammar/, author: /gesenius|kautzsch|cowley/ },
+    { abbreviation: 'HALOT', italic: true, kind: 'lexicon', title: /hebrew and aramaic lexicon of the old testament/, author: /k[oö]e?hler|baumgartner|stamm/ },
+    { abbreviation: 'IBHS', italic: true, kind: 'grammar', title: /introduction to biblical hebrew syntax/, author: /waltke|o'connor/ },
     { abbreviation: 'Joüon', italic: false, kind: 'grammar', title: /grammar of biblical hebrew/, author: /jo[uü]on|muraoka/ },
 ];
 
@@ -58,16 +62,32 @@ export function referenceAbbreviationOf(data: BibliographicData): ReferenceAbbre
     const escrita = data.abbreviation?.trim();
     const titulo = normalizado([data.title, data.subtitle].filter(Boolean).join(' '));
     const autor = normalizado(data.author ?? '');
-    const porTitulo = GUIDE.find(g => g.title.test(titulo) && (!g.author || g.author.test(autor)));
+    const porTitulo = GUIDE.find(g => g.title.test(titulo) && g.author.test(autor));
     if (escrita) {
-        const deLaGuia = GUIDE.find(g => g.abbreviation.toLowerCase() === escrita.toLowerCase());
+        // Escrita entre asteriscos, va en cursiva: las abreviaturas de un
+        // título (*TWOT*, *NIDOTTE*) lo van y las de autor no, y fuera de la
+        // tabla de la guía solo quien la escribe sabe cuál es.
+        const enCursiva = /^\*[^*]+\*$/.test(escrita);
+        const limpia = enCursiva ? escrita.slice(1, -1).trim() : escrita;
+        const deLaGuia = GUIDE.find(g => g.abbreviation.toLowerCase() === limpia.toLowerCase());
         return {
-            abbreviation: deLaGuia?.abbreviation ?? escrita,
-            italic: deLaGuia?.italic ?? false,
+            abbreviation: deLaGuia?.abbreviation ?? limpia,
+            italic: deLaGuia?.italic ?? enCursiva,
             kind: deLaGuia?.kind ?? porTitulo?.kind ?? null,
         };
     }
     return porTitulo ? { abbreviation: porTitulo.abbreviation, italic: porTitulo.italic, kind: porTitulo.kind } : null;
+}
+
+/**
+ * La entrada de un léxico, cuando la cita la dice con «s.v.»: «(BDAG, s.v.
+ * σοφία)». El título entre comillas de una cita NO es la entrada: en la
+ * tubería real es el nombre de la obra (`displayLabel`), y tomarlo por
+ * entrada imprimía «"Brown-Driver-Briggs Hebrew Lexicon", BDB, 945».
+ */
+export function lexiconEntryOf(rawCitation: string): string | null {
+    const m = rawCitation.match(/s\.\s?v\.\s*["“«]?([^,;)"”»]+)/i);
+    return m?.[1]?.trim() || null;
 }
 
 /** Léxico o gramática según el tipo de fuente del corpus. */

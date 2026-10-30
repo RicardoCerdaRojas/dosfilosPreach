@@ -32,6 +32,7 @@ import {
     referenceAbbreviationOf,
     referenceKindOfSourceType,
     formatReferenceShortNote,
+    lexiconEntryOf,
     sourceTypeWithoutIbid,
     sectionHeadingKey,
     verseTextBlocks,
@@ -149,8 +150,13 @@ export async function exportPaperToDocx(
     // portada, y el cuerpo empieza en «Introducción», nivel uno (decisión del
     // fundador, 2026-10-29, B68d). El ensamble lo escribe como `#` en la
     // primera línea; sin portada se queda, o el documento no diría qué es.
+    // Solo si ES el título: un ensamble editado que abre con «# Introducción»
+    // no pierde su primera sección.
     const parsed = parseMarkdownBlocks(markdown);
-    const blocks = cover && parsed[0]?.type === 'heading' && parsed[0].level === 1 ? parsed.slice(1) : parsed;
+    const primero = parsed[0];
+    const abreConElTitulo = primero?.type === 'heading' && primero.level === 1
+        && sectionHeadingKey(primero.text) === sectionHeadingKey(rangosConRaya(titleDisplay));
+    const blocks = cover && abreConElTitulo ? parsed.slice(1) : parsed;
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
 
@@ -283,7 +289,9 @@ export async function exportPaperToDocx(
         // o un artículo nunca lleva «Ibid.» (nota 31).
         const tipo = tipoDeFuente.get(clave);
         const referencia = referenceAbbreviationOf(ficha);
-        const clase = referencia?.kind ?? referenceKindOfSourceType(tipo);
+        // Una abreviatura escrita en la ficha sin tipo de referencia va como
+        // gramática («TWOT, 123»): quien la escribió la quiere en la nota.
+        const clase = referencia?.kind ?? referenceKindOfSourceType(tipo) ?? (referencia ? 'grammar' : null);
         const sinIbidPorTipo = sourceTypeWithoutIbid(tipo) || clase === 'lexicon';
         const primera = !yaCitadas.has(clave);
         yaCitadas.add(clave);
@@ -306,7 +314,7 @@ export async function exportPaperToDocx(
                 // En cursiva, como el ejemplo de la guía de TMS (hoja 22): «² *Ibid.*, 12».
                 ? (pagina && !mismaPagina ? `*${rotuloIbid}*, ${pagina}` : `*${rotuloIbid}*`)
                 : referencia && clase
-                    ? formatReferenceShortNote(referencia, clase, clase === 'lexicon' ? entradaDelLexico(cita, ficha, referencia.abbreviation) : null, pagina)
+                    ? formatReferenceShortNote(referencia, clase, clase === 'lexicon' ? lexiconEntryOf(cita.raw) : null, pagina)
                     : formatShortNote(ficha, pages ?? undefined);
         // Turabian cierra la nota con punto; las dos funciones devuelven la
         // referencia sin él porque también sirven en pantalla.
@@ -459,25 +467,6 @@ interface CitaDeNota {
     author: string;
     pages: string | null;
     raw: string;
-    /** El título entre comillas de la cita; en un léxico, la entrada. */
-    title?: string;
-}
-
-/**
- * La entrada de un léxico, cuando la cita la trae: el título entre comillas
- * que no es el de la obra —«(HALOT, "כָּבוֹד", p. 457)»— o un «s.v. σοφία».
- */
-function entradaDelLexico(cita: CitaDeNota, ficha: { title?: string; shortTitle?: string }, abreviatura: string): string | null {
-    const sv = cita.raw.match(/s\.\s?v\.\s*([^,;)]+)/i)?.[1]?.trim();
-    if (sv) return sv;
-    const titulo = (cita.title ?? '').trim();
-    if (!titulo) return null;
-    const comparable = (t: string) => t.normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-    const esLaObra = [ficha.title, ficha.shortTitle, abreviatura].some(t => {
-        const c = comparable(t ?? '');
-        return c.length > 0 && (comparable(titulo).includes(c) || c.includes(comparable(titulo)));
-    });
-    return esLaObra ? null : titulo;
 }
 
 /**
@@ -768,7 +757,6 @@ function buildInlineRuns(
             const part: CitaDeNota = {
                 author: cita.author,
                 pages: cita.pages,
-                title: cita.title,
                 raw: cita.raw.replace(/^[(;]\s*/, '').replace(/\s*[);]$/, ''),
             };
             // «; B, 59» pegado a la cita anterior es la segunda obra del mismo
