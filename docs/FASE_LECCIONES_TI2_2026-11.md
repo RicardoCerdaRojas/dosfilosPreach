@@ -302,6 +302,7 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
 7. **Rangos de páginas abreviados**, si la guía lo confirma («567–68»).
    - *Dónde:* `appendPages` (`bibliography.ts`).
    - *Mide:* lectura de la guía primero (supuesto hoy).
+   - **Hecho (2026-10-30).** Confirmado en la guía («Números», leído): raya corta; si el primer número es menor que 100, el segundo entero (92–137); si es 100 o más, al menos dos cifras (162–75, 2156–89) y sin cero inicial (103–6). Un múltiplo de 100 va entero (100–104), como Turabian y Chicago. `paginasAbreviadas` se aplica en todas las notas (completa, abreviada, *Ibid.* y obras de referencia, también con tomo: «2:457–58»).
 
 ### Etapa 2 · «Revisar el Word antes de entregar» (M) — nuevo, B65 + B70
 **Por qué:** el «Ibid.» de página nueva solo se sabe en el Word guardado por Word, y las ediciones a mano metieron 9 errores en el Word final (medido).

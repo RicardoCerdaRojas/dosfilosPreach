@@ -328,6 +328,14 @@ describe('la nota al pie sale en Turabian, desde la ficha del libro', () => {
         expect(notas).toContain('Ross, Commentary on the Psalms, 60.');
     });
 
+    it('REGRESIÓN TI #2: los rangos de página van abreviados, en la nota completa y en «Ibid.»', async () => {
+        const { notas } = await exportarConDos('Uno (Ross, pp. 567-568). Dos (Ross, p. 570-571). Tres (Craigie, p. 206). Cuatro (Ross, p. 572-575).');
+        expect(notas).toContain('2011), 567–68.');
+        expect(notas).toContain('Ibid., 570–71.');
+        expect(notas).toContain('Commentary on the Psalms, 572–75.');
+        expect(notas).not.toMatch(/\d{3}[-–]\d{3}/);
+    });
+
     it('Turabian: la misma página que la nota anterior es «Ibid.» solo', async () => {
         const { notas } = await exportarConDos('Uno (Ross, p. 565). Dos (Ross, p. 565). Tres (Ross, p. 566).');
         expect(notas).toMatch(/2011\), 565\.\s*Ibid\.\s*Ibid\., 566\./);

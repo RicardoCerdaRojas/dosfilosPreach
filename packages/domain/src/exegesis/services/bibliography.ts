@@ -1,3 +1,5 @@
+import { paginasAbreviadas } from './rangeDash';
+
 /**
  * Los datos con que se cita un libro, y cómo se escriben.
  *
@@ -321,7 +323,8 @@ function formatImprint(data: BibliographicData): string {
 }
 
 function appendPages(text: string, pages?: string): string {
-    const p = (pages ?? '').trim();
+    // Rangos con raya y abreviados como la guía: «567–68», no «567-568».
+    const p = paginasAbreviadas((pages ?? '').trim());
     if (!text) return p;
     return p ? `${text}, ${p}` : text;
 }

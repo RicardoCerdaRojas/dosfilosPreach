@@ -22,6 +22,7 @@ import {
     formatFirstNote,
     formatPassageReference,
     rangosConRaya,
+    paginasAbreviadas,
     formatShortNote,
     hasCover,
     TMS_COVER_STYLE,
@@ -290,7 +291,8 @@ export async function exportPaperToDocx(
         // admite la guía de TMS (y como salió el TI #1, notas 24, 40 y 44).
         // Sin página detrás de una nota con página, «Ibid.» solo diría «la
         // misma página»: va la abreviada. Y lo que la guía no admite, tampoco.
-        const pagina = pages?.trim() || null;
+        // La página con el rango abreviado de la guía («567–68»), también en «Ibid.».
+        const pagina = pages?.trim() ? paginasAbreviadas(pages.trim()) : null;
         const repetida = ibid.enabled && !sinIbid && !sinIbidPorTipo && !primera && ultimaClave === clave
             && !(pagina === null && ultimaPagina !== null)
             && (pagina === ultimaPagina || ibid.allowPageOverride);
