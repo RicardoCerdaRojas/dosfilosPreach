@@ -354,6 +354,11 @@ Queda para etapas siguientes:
 - la unidad 1, con los textos del TI #1 y el TI #2: debe dar los casos de arriba y ninguno más;
 - la unidad 3, con el Word del TI #2: 34 notas en 13 páginas.
 
+**Hecho (2026-10-30).**
+- **Unidad 1:** medida sobre los textos completos. El TI #1 da 1 aviso y el TI #2 da 7: los de arriba, sin falsas alarmas.
+- **Unidad 2:** «Aplicar» no corrige sobre un ensamble regenerado sin aceptar, porque pisaría la versión nueva.
+- **Unidad 3:** la página que da `lastRenderedPageBreak` coincide con la del PDF en las 34 notas del TI #2 (14 páginas físicas, contada la portada). El TI #2 no tiene ningún «Ibid.» que abra página. **El TI #1 sí: la nota 40, «Ibid., 437.», abre la página 12** (confirmado en su PDF). Ese «Ibid.» remitía además a un léxico (Ortiz), que la nota 31 excluye del «Ibid.». El profesor no lo marcó.
+
 ### Etapa 3 · La tesis y la forma del argumento (L)
 **Por qué:** la introducción tomó la última oración como tesis; la tesis precisa la trajo una indicación; los títulos temáticos dependen de la tesis y de las decisiones.
 

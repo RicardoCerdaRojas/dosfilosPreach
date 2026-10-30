@@ -4,7 +4,7 @@ import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProv
 import { abrirFuente } from '@/components/exegesis/citation/destinosDelVisor';
 import { SeriesCorpusOffer } from '@/components/exegesis/SeriesCorpusOffer';
 import { rubricLabel } from '@/components/exegesis/setup/rubricLabel';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -61,6 +61,7 @@ import { PaperLengthCard } from '@/components/exegesis/PaperLengthCard';
 import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
 import { IncompleteBibliographyGate } from '@/components/exegesis/IncompleteBibliographyGate';
 import { useExportReview } from '@/hooks/exegesis/useExportReview';
+import { SavedWordIbidDialog } from '@/components/exegesis/SavedWordIbidDialog';
 import { GlossaryCheckCard } from '@/components/exegesis/GlossaryCheckCard';
 import { CorpusCoverageReport } from '@/components/exegesis/corpus-plan/CorpusCoverageReport';
 import { PaperFacultyDrawer } from '@/components/exegesis/PaperFacultyDrawer';
@@ -149,6 +150,9 @@ export function ExegesisPaperPage() {
     const [exportPendiente, setExportPendiente] = useState<'docx' | 'md' | null>(null);
     /** La revisión del texto antes de exportar (fase «Lecciones del TI #2», etapa 2). */
     const revisionDelTexto = useExportReview(paper ?? null);
+    /** El Word guardado desde Word, para revisar el «Ibid.» que abre página (etapa 2.3). */
+    const [wordGuardado, setWordGuardado] = useState<File | null>(null);
+    const entradaWordGuardado = useRef<HTMLInputElement>(null);
     const { guide: guiaDelTrabajo } = useEffectiveStyleGuide(paper);
 
     const [facultyDrawerOpen, setFacultyDrawerOpen] = useState(false);
@@ -500,6 +504,9 @@ export function ExegesisPaperPage() {
                                         <DropdownMenuItem onClick={() => pedirExport('docx')}>
                                             {t('detail.exportDocx.cta')}
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => entradaWordGuardado.current?.click()}>
+                                            {t('detail.savedWord.cta')}
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             );
@@ -666,6 +673,19 @@ export function ExegesisPaperPage() {
                 paper={paper}
             />
             {/* Fuera de la columna lateral: con ella oculta, el diálogo igual aparece. */}
+            <input
+                ref={entradaWordGuardado}
+                type="file"
+                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                className="hidden"
+                aria-label={t('detail.savedWord.cta')}
+                onChange={e => { setWordGuardado(e.target.files?.[0] ?? null); e.target.value = ''; }}
+            />
+            <SavedWordIbidDialog
+                file={wordGuardado}
+                fichas={bibliography.flatMap(e => (e.data ? [e.data] : []))}
+                onClose={() => setWordGuardado(null)}
+            />
             {exportPendiente && (
                 <IncompleteBibliographyGate
                     paper={paper}

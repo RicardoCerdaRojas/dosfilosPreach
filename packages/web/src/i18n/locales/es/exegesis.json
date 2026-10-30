@@ -2881,6 +2881,19 @@
         "greek-grave": "Acento grave del griego",
         "punctuation": "Puntuación"
       }
+    },
+    "savedWord": {
+      "cta": "Revisar el Word guardado…",
+      "title": "Revisar el Word guardado",
+      "description": "Revisa lo único que no se puede saber antes de exportar: un «Ibid.» al comienzo de una página, que la guía de TMS pide evitar (hoja 22). El archivo se lee aquí y no se sube a ningún lado.",
+      "reading": "Leyendo el archivo…",
+      "failed": "No se pudo leer el archivo. Elige el .docx que guardaste desde Word.",
+      "notPaginated": "Este archivo no trae las páginas: ábrelo en Word, guárdalo y vuelve a elegirlo.",
+      "clean": "Ningún «Ibid.» abre página ({{notes}} notas en {{pages}} páginas).",
+      "finding": "Nota {{note}}, página {{page}}: «{{text}}» abre la página.",
+      "replaceWith": "En el Word, cámbiala por: «{{form}}» (el título, en cursiva).",
+      "noForm": "En el Word, escribe la forma abreviada de la obra de la nota {{previousNote}}.",
+      "close": "Cerrar"
     }
   },
   "sourceViewer": {
