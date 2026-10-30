@@ -138,7 +138,12 @@ export async function exportPaperToDocx(
     /** La obra de la nota anterior: con la misma, «Ibid.». */
     let ultimaClave: string | null = null;
     let ultimaPagina: string | null = null;
-    const blocks = parseMarkdownBlocks(markdown);
+    // Con portada, el cuerpo no repite el título del trabajo: ya está en la
+    // portada, y el cuerpo empieza en «Introducción», nivel uno (decisión del
+    // fundador, 2026-10-29, B68d). El ensamble lo escribe como `#` en la
+    // primera línea; sin portada se queda, o el documento no diría qué es.
+    const parsed = parseMarkdownBlocks(markdown);
+    const blocks = cover && parsed[0]?.type === 'heading' && parsed[0].level === 1 ? parsed.slice(1) : parsed;
     const footnotes: Record<number, { children: Paragraph[] }> = {};
     let footnoteCounter = 0;
 

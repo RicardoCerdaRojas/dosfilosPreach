@@ -291,7 +291,8 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
 4. **Hebreo y traducción bajo el título del versículo (B68c).** De `originalText` del análisis (`CanonicalVerseAnalysis.ts:56`) y de la traducción final, sin acentos (como el TI #1).
    - **Hecho (2026-10-29).** Medido contra el TI #1: el WLC de Sal 23:1–3 sin te'amim (U+0591–U+05AF) ni meteg (U+05BD) es idéntico, en NFC, a lo entregado. El paseq (׀, Sal 23:5–6) también se quita: es del sistema de acentos; **decisión, no medida** (el TI #1 no lo tenía). Formato del TI #1: espacio simple, sangría de 0,5" a los dos lados, el hebreo a la derecha con 6 pt después y la traducción entre comillas con 18 pt después. Va solo bajo un título de sección cuyo rótulo es el del versículo: un TP titulado con las preguntas no lo lleva. El análisis se lee de la versión del paso (`accepted ?? current`), como el compositor de la prosa.
    - **Para la etapa 3:** los títulos temáticos ya no dirán «Salmo 23:4». El vínculo título → versículo tendrá que salir del paso, no del texto del título.
-5. **La introducción bajo el título del trabajo, sin el rótulo «Introducción» (B68d).**
+5. **~~La introducción bajo el título del trabajo, sin el rótulo «Introducción»~~ (B68d). Corregido por el fundador (2026-10-29): al revés. Con portada, el cuerpo NO repite el título del trabajo (ya está en la portada) y empieza en «Introducción», nivel uno.**
+   - **Hecho (2026-10-29).** El exportador quita el `#` del título cuando hay portada. Sin portada se queda. Queda anotado, fuera de esta unidad: sin portada el Word trae el título dos veces (la cabecera de trabajo y el del ensamble).
    - *Dónde:* `assemblyContents.ts:240-246`, prompt de `GeminiIntroductionComposer.ts:215`.
 6. **Notas por tipo de obra (B66).**
    - Campo `abbreviation` en la ficha (*IBHS*), y `sourceType` en `BibliographyEntry`.

@@ -881,6 +881,18 @@ describe('exportPaperToDocx — niveles de encabezado de la guía de TMS (hoja 1
         expect(run).toMatch(/<w:b w:val="(false|0)"\/>/);
     });
 
+    it('REGRESIÓN B68d: con portada, el cuerpo empieza en «Introducción» y no repite el título del trabajo', async () => {
+        const conPortada = { ...ensamblado(), cover: { institution: "The Master's Seminary", author: 'Ricardo Cerda', place: 'Chiguayante', date: 'Octubre 2026' } } as ExegeticalPaper;
+        const doc = await xmlOf(conPortada, 'word/document.xml');
+        const titulos = [...doc.matchAll(/<w:pStyle w:val="(Heading\d)"\/>[\s\S]*?<\/w:p>/g)].map(m => m[0].replace(/<[^>]+>/g, ''));
+        expect(titulos[0]).toBe('Introducción');
+        expect(titulos.some(t => t.includes('Análisis sintáctico y léxico'))).toBe(false);
+        // El título sigue en la portada.
+        expect(doc).toContain('ANÁLISIS SINTÁCTICO Y LÉXICO');
+        // Sin portada, el título se queda: si no, el documento no diría qué es.
+        expect(nivelDe(await xmlOf(ensamblado(), 'word/document.xml'), 'Análisis sintáctico y léxico')).toBe('Heading1');
+    });
+
     it('`####` es nivel tres y nada pasa del tres', () => {
         expect([1, 2, 3, 4, 5].map(nivelDeWord)).toEqual([1, 1, 2, 3, 3]);
     });
