@@ -21,12 +21,20 @@ describe('formattingFromDraft', () => {
     });
 
     it('la configuración del TP semanal de TMS se guarda entera', () => {
-        expect(formattingFromDraft({ lineSpacing: 'single', citationForm: 'parenthetical', blankLine: true, pageLabel: 'bare' }))
+        expect(formattingFromDraft({ lineSpacing: 'single', citationForm: 'parenthetical', blankLine: true, pageLabel: 'bare', tableOfContents: false }))
             .toEqual({ lineSpacing: 'single', citationForm: 'parenthetical', blankLineBetweenParagraphs: true, pageLabel: 'bare' });
     });
 
     it('el rótulo sin «p.» no se guarda con nota al pie', () => {
         expect(formattingFromDraft({ ...casa, lineSpacing: 'single', pageLabel: 'bare' })).not.toHaveProperty('pageLabel');
+    });
+
+    it('CONTENIDO se guarda solo si se pide, y vuelve al formulario igual', () => {
+        expect(draftFromFormatting(null).tableOfContents).toBe(false);
+        const ti = formattingFromDraft({ ...casa, tableOfContents: true })!;
+        expect(ti.tableOfContents).toBe(true);
+        expect(draftFromFormatting(ti).tableOfContents).toBe(true);
+        expect(formattingFromDraft({ ...casa, citationForm: 'parenthetical' })).not.toHaveProperty('tableOfContents');
     });
 
     it('ida y vuelta: lo guardado vuelve al formulario igual', () => {

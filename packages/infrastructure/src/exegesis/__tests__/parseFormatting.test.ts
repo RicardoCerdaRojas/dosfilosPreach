@@ -70,3 +70,12 @@ describe('parseFormatting — lo dicho sin interlineado', () => {
         expect(parseFormatting({ lineSpacing: 'single' })).not.toHaveProperty('pageLabel');
     });
 });
+
+describe('parseFormatting — CONTENIDO', () => {
+    it('solo un «true» del sílabo pide el índice; aunque calle lo demás, se guarda', () => {
+        expect(parseFormatting({ tableOfContents: true }))
+            .toEqual({ lineSpacing: 'double', lineSpacingFromHouse: true, blankLineBetweenParagraphs: false, citationForm: 'footnote', tableOfContents: true });
+        expect(parseFormatting({ lineSpacing: 'single', tableOfContents: 'sí' })).not.toHaveProperty('tableOfContents');
+        expect(parseFormatting({ tableOfContents: false })).toBeNull();
+    });
+});

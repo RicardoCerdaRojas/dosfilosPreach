@@ -160,7 +160,7 @@ function buildUserMessageEN(rawText: string, typeList: string, source: 'document
         `  "description": string | null,`,
         `  "citationStandard": string | null,                              // e.g. "TMS / Turabian", "SBL Handbook"`,
         `  "expectedLength": { "unit": "pages" | "words", "min": number | null, "max": number | null } | null,`,
-        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical", "pageLabel": "labelled" | "bare" } | null,   // ONLY when the syllabus states it. null = not stated. pageLabel "bare" = the syllabus cites the page without "p." — e.g. "(Carballosa, 208)".`,
+        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical", "pageLabel": "labelled" | "bare", "tableOfContents": boolean } | null,   // ONLY when the syllabus states it. null = not stated. pageLabel "bare" = the syllabus cites the page without "p." — e.g. "(Carballosa, 208)". tableOfContents true ONLY when the syllabus asks for a table of contents ("CONTENIDO", "índice", "table of contents").`,
         `  "sourceRequirements": [                                          // one entry per source type the rubric requires`,
         `    {`,
         `      "sourceType": <one of: ${typeList}>,`,
@@ -240,7 +240,7 @@ function buildUserMessageES(rawText: string, typeList: string, source: 'document
         `  "description": string | null,`,
         `  "citationStandard": string | null,                              // ej. "TMS / Turabian", "SBL Handbook"`,
         `  "expectedLength": { "unit": "pages" | "words", "min": number | null, "max": number | null } | null,`,
-        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical", "pageLabel": "labelled" | "bare" } | null,   // SÓLO si el sílabo lo dice. null = no lo dice. pageLabel "bare" = el sílabo cita la página sin «p.» — p. ej. «(Carballosa, 208)».`,
+        `  "formatting": { "lineSpacing": "single" | "one-and-a-half" | "double", "blankLineBetweenParagraphs": boolean, "citationForm": "footnote" | "parenthetical", "pageLabel": "labelled" | "bare", "tableOfContents": boolean } | null,   // SÓLO si el sílabo lo dice. null = no lo dice. pageLabel "bare" = el sílabo cita la página sin «p.» — p. ej. «(Carballosa, 208)». tableOfContents true SÓLO si el sílabo pide tabla de contenido («CONTENIDO», «índice»).`,
         `  "sourceRequirements": [                                          // un entry por tipo de fuente que la rúbrica requiere`,
         `    {`,
         `      "sourceType": <uno de: ${typeList}>,`,
@@ -521,7 +521,7 @@ function parseCourseBibliography(raw: unknown): CourseBibliographyEntry[] {
  */
 export function parseFormatting(raw: unknown): PaperFormatting | null {
     if (!raw || typeof raw !== 'object') return null;
-    const f = raw as { lineSpacing?: unknown; blankLineBetweenParagraphs?: unknown; citationForm?: unknown; pageLabel?: unknown };
+    const f = raw as { lineSpacing?: unknown; blankLineBetweenParagraphs?: unknown; citationForm?: unknown; pageLabel?: unknown; tableOfContents?: unknown };
     const spacing = f.lineSpacing;
     const spacingValido = spacing === 'single' || spacing === 'one-and-a-half' || spacing === 'double';
     // Sólo la palabra exacta cambia cada campo. Cualquier otra cosa deja lo
@@ -529,10 +529,11 @@ export function parseFormatting(raw: unknown): PaperFormatting | null {
     const citationForm = f.citationForm === 'parenthetical' ? 'parenthetical' : 'footnote';
     const blankLine = f.blankLineBetweenParagraphs === true;
     const pageLabel = f.pageLabel === 'bare' ? 'bare' : 'labelled';
+    const tableOfContents = f.tableOfContents === true;
     // Un sílabo que dice la forma de cita y calla el interlineado sigue
     // diciendo algo: descartar todo por el interlineado perdía la cita
     // parentética del TP semanal. Sin nada dicho, `null`.
-    const dijoAlgo = spacingValido || citationForm !== 'footnote' || blankLine || pageLabel !== 'labelled';
+    const dijoAlgo = spacingValido || citationForm !== 'footnote' || blankLine || pageLabel !== 'labelled' || tableOfContents;
     if (!dijoAlgo) return null;
     return {
         lineSpacing: spacingValido ? spacing : DEFAULT_PAPER_FORMATTING.lineSpacing,
@@ -540,5 +541,6 @@ export function parseFormatting(raw: unknown): PaperFormatting | null {
         blankLineBetweenParagraphs: blankLine,
         citationForm,
         ...(pageLabel === 'bare' ? { pageLabel } : {}),
+        ...(tableOfContents ? { tableOfContents } : {}),
     };
 }

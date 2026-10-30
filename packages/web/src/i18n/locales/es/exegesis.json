@@ -690,7 +690,8 @@
           "citationFormAria": "Forma de cita",
           "pageLabelAria": "Rótulo de página en la cita",
           "pageLabelLabelled": "Página con «p.»: (Mayor, p. 77)",
-          "pageLabelBare": "Página sin «p.»: (Carballosa, 208)"
+          "pageLabelBare": "Página sin «p.»: (Carballosa, 208)",
+          "tableOfContentsLabel": "Con CONTENIDO (índice en página «i»)"
         },
         "requirements": {
           "title": "Requisitos del corpus",

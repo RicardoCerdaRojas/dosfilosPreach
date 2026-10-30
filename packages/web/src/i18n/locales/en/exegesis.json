@@ -690,7 +690,8 @@
           "citationFormAria": "Citation form",
           "pageLabelAria": "Page label in the citation",
           "pageLabelLabelled": "Page with “p.”: (Mayor, p. 77)",
-          "pageLabelBare": "Page without “p.”: (Carballosa, 208)"
+          "pageLabelBare": "Page without “p.”: (Carballosa, 208)",
+          "tableOfContentsLabel": "With table of contents (page “i”)"
         },
         "requirements": {
           "title": "Corpus requirements",

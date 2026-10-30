@@ -218,6 +218,16 @@ export interface PaperFormatting {
      * fijar «doble» la próxima vez que se abra.
      */
     lineSpacingFromHouse?: boolean;
+    /**
+     * Si el Word lleva «CONTENIDO»: el índice automático, en su propia
+     * página después de la portada y con número romano «i».
+     *
+     * La guía de TMS (2024–2025, hoja 3) lo deja a la tarea: «puede
+     * requerirse que los documentos en el nivel de MDiv y MMB contengan una
+     * tabla de contenido … para tareas específicas». El TI #1 lo llevó; un TP
+     * de dos páginas, no. Ausente equivale a sin índice.
+     */
+    tableOfContents?: boolean;
 }
 
 export type PageLabelStyle = 'labelled' | 'bare';

@@ -286,6 +286,8 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
    - comprobar que el índice trae las páginas reales.
 
    **Supuesto:** que Word para Mac actualice el campo al abrir. Si no lo hace, el índice va con las entradas guardadas y un aviso «Actualizar tabla».
+
+   **Hecho (2026-10-29).** Medido en Word para Mac: el campo se arma solo al abrir, con las páginas correctas (el supuesto se cumple). Exportado con el exportador real y pasado a PDF por Word: portada sin número; CONTENIDO «i» abajo al centro; cuerpo «1» abajo al centro y 2–5 arriba a la derecha; BIBLIOGRAFÍA «6» abajo al centro y «7» arriba a la derecha; ninguna entrada partida entre páginas. La guía deja el índice a la tarea (hoja 3: «puede requerirse … para tareas específicas»), así que es un campo de la rúbrica, `formatting.tableOfContents` («Con CONTENIDO» en el editor del formato), que el extractor del sílabo marca si lo pide. Para el TI #3 hay que marcarlo en su rúbrica.
 4. **Hebreo y traducción bajo el título del versículo (B68c).** De `originalText` del análisis (`CanonicalVerseAnalysis.ts:56`) y de la traducción final, sin acentos (como el TI #1).
 5. **La introducción bajo el título del trabajo, sin el rótulo «Introducción» (B68d).**
    - *Dónde:* `assemblyContents.ts:240-246`, prompt de `GeminiIntroductionComposer.ts:215`.

@@ -65,6 +65,15 @@ export function RubricFormattingFields({ value, onChange }: {
                     />
                     {t('paperSetup.subSteps.rubric.metadata.blankLineLabel')}
                 </label>
+                <label className="inline-flex items-center gap-1.5 text-xs text-foreground">
+                    <input
+                        type="checkbox"
+                        checked={value.tableOfContents}
+                        onChange={(e) => set('tableOfContents', e.target.checked)}
+                        className="rounded border-border"
+                    />
+                    {t('paperSetup.subSteps.rubric.metadata.tableOfContentsLabel')}
+                </label>
             </div>
             <p className="text-[11px] text-muted-foreground mt-1 italic">
                 {t('paperSetup.subSteps.rubric.metadata.formattingHint')}

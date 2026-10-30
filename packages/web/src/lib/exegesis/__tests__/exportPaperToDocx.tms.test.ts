@@ -605,12 +605,13 @@ describe('exportPaperToDocx — formato de la guía', () => {
 
     it('la bibliografía empieza en página nueva y va con sangría francesa', async () => {
         const doc = await xmlOf(paper(), 'word/document.xml');
-        // El título de la bibliografía empieza la hoja por sí mismo: sin un
-        // salto de página DENTRO del título, que dejaba un renglón de título
-        // vacío al pie de la hoja anterior.
-        const titulo = doc.slice(doc.lastIndexOf('<w:p>', doc.indexOf('BIBLIOGRAF')) , doc.indexOf('BIBLIOGRAF'));
-        expect(titulo).toContain('<w:pageBreakBefore/>');
-        expect(titulo).not.toContain('<w:br w:type="page"/>');
+        // La bibliografía empieza la hoja con su propia sección (un salto de
+        // sección justo antes), no con un salto de página DENTRO del título,
+        // que dejaba un renglón de título vacío al pie de la hoja anterior.
+        const i = doc.indexOf('BIBLIOGRAF');
+        const antes = doc.slice(doc.lastIndexOf('</w:p>', doc.lastIndexOf('</w:p>', i) - 1), i);
+        expect(antes).toContain('<w:sectPr');
+        expect(doc.slice(doc.lastIndexOf('<w:p', i), i)).not.toContain('<w:br w:type="page"/>');
         expect(doc).toMatch(/w:hanging="720"/);
     });
 
@@ -629,8 +630,10 @@ describe('exportPaperToDocx — formato de la guía', () => {
         expect(doc).toContain('RICARDO CERDA');
         expect(doc).toContain('POR');
         expect(doc.indexOf('THE MASTER’S SEMINARY')).toBeLessThan(doc.indexOf('Introducción'));
-        // Dos secciones: la portada y el cuerpo.
-        expect(doc.match(/<w:sectPr/g)?.length).toBe(2);
+        // Tres secciones: la portada, el cuerpo y la bibliografía. Sin
+        // CONTENIDO pedido, no hay sección de índice.
+        expect(doc.match(/<w:sectPr/g)?.length).toBe(3);
+        expect(doc).not.toContain('instrText xml:space="preserve">TOC');
     });
 
     it('el título del trabajo va ENCIMA del pasaje, que es como lo nombra el profesor', async () => {
@@ -880,5 +883,66 @@ describe('exportPaperToDocx — niveles de encabezado de la guía de TMS (hoja 1
 
     it('`####` es nivel tres y nada pasa del tres', () => {
         expect([1, 2, 3, 4, 5].map(nivelDeWord)).toEqual([1, 1, 2, 3, 3]);
+    });
+});
+
+describe('exportPaperToDocx — CONTENIDO y numeración por secciones (guía, hojas 3, 6 y 17)', () => {
+    const COVER = { institution: "The Master's Seminary", author: 'Ricardo Cerda', place: 'Chiguayante', date: 'Octubre 2026' };
+    const conIndice = (tableOfContents: boolean) => paper({
+        cover: COVER,
+        rubric: { ...DEFAULT_TMS_EXEGETICAL_RUBRIC, formatting: { lineSpacing: 'double', citationForm: 'footnote', blankLineBetweenParagraphs: false, ...(tableOfContents ? { tableOfContents } : {}) } },
+    } as Partial<ExegeticalPaper>);
+    /** Las propiedades de cada sección, en orden: el `sectPr` de cada una. */
+    const secciones = (doc: string) => doc.match(/<w:sectPr[\s\S]*?<\/w:sectPr>/g) ?? [];
+
+    it('con CONTENIDO pedido: portada, índice en romanos desde «i», cuerpo desde 1, bibliografía siguiendo', async () => {
+        const doc = await xmlOf(conIndice(true), 'word/document.xml');
+        const [portada, indice, cuerpo, biblio] = secciones(doc);
+        expect(secciones(doc)).toHaveLength(4);
+        // La portada no se numera ni reinicia nada (docx escribe un `<w:pgNumType/>` vacío).
+        expect(portada).not.toMatch(/w:pgNumType [^>]*w:(start|fmt)=/);
+        expect(indice).toMatch(/<w:pgNumType w:start="1" w:fmt="lowerRoman"\/>/);
+        expect(cuerpo).toMatch(/<w:pgNumType w:start="1" w:fmt="decimal"\/>/);
+        expect(cuerpo).toContain('<w:titlePg/>');
+        // La bibliografía sigue la numeración del cuerpo y su primera página
+        // lleva el número abajo al centro (hoja 17): primera página propia.
+        expect(biblio).not.toMatch(/w:start=/);
+        expect(biblio).toContain('<w:titlePg/>');
+    });
+
+    it('el índice es un campo de tres niveles que Word arma al abrir, y «CONTENIDO» no se lista a sí mismo', async () => {
+        const p = conIndice(true);
+        const doc = await xmlOf(p, 'word/document.xml');
+        expect(doc).toMatch(/TOC \\h \\o &quot;1-3&quot;/);
+        const titulo = doc.slice(doc.lastIndexOf('<w:p', doc.indexOf('>CONTENIDO<')), doc.indexOf('>CONTENIDO<'));
+        expect(titulo).not.toMatch(/w:pStyle w:val="Heading/);
+        expect(await xmlOf(p, 'word/settings.xml')).toMatch(/<w:updateFields(?: w:val="(?:true|1)")?\/>/);
+    });
+
+    it('sin CONTENIDO pedido no hay índice ni se le pide a Word actualizar campos', async () => {
+        const p = conIndice(false);
+        const doc = await xmlOf(p, 'word/document.xml');
+        expect(secciones(doc)).toHaveLength(3);
+        expect(doc).not.toContain('>CONTENIDO<');
+        expect(await xmlOf(p, 'word/settings.xml')).not.toContain('updateFields');
+    });
+
+    it('los niveles del índice como la guía: 12 pt sin negrita, puntos hasta el número, sangría y espaciado por nivel', async () => {
+        const styles = await xmlOf(conIndice(true), 'word/styles.xml');
+        const estilo = (id: string) => styles.slice(styles.indexOf(`w:styleId="${id}"`), styles.indexOf('</w:style>', styles.indexOf(`w:styleId="${id}"`)));
+        for (const [id, sangria, linea] of [['TOC1', '0', '480'], ['TOC2', '720', '360'], ['TOC3', '1440', '240']] as const) {
+            const e = estilo(id);
+            expect(e).toMatch(/w:leader="dot"/);
+            expect(e).toMatch(/<w:tab w:val="right"[^>]*w:pos="9360"/);
+            expect(e).toMatch(new RegExp(`w:left="${sangria}"`));
+            expect(e).toMatch(new RegExp(`w:line="${linea}"`));
+            expect(e).toMatch(/<w:b w:val="(false|0)"\/>/);
+        }
+    });
+
+    it('una entrada de la bibliografía no se parte entre dos páginas', async () => {
+        const doc = await xmlOf(conIndice(false), 'word/document.xml');
+        const biblio = doc.slice(doc.indexOf('BIBLIOGRAF'));
+        expect(biblio).toContain('<w:keepLines/>');
     });
 });

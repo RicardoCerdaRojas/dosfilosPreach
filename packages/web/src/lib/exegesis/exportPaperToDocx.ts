@@ -10,6 +10,8 @@ import {
     PageNumber,
     Packer,
     Paragraph,
+    SectionType,
+    TableOfContents,
     TextRun,
 } from 'docx';
 import {
@@ -40,6 +42,7 @@ import {
     HEADING_PARAGRAPH,
     HEADING3_PARAGRAPH,
     TITLE_HEADING_SPACING,
+    TOC_STYLES,
     isMostlyHebrew,
     splitHebrew,
     TMS,
@@ -142,16 +145,15 @@ export async function exportPaperToDocx(
     );
 
     const paragraphs: Paragraph[] = [];
+    /** Dónde empieza la bibliografía entre los párrafos: va en su propia sección. */
+    let bibliographyParagraphAt = -1;
     blocks.forEach((block, index) => {
         const inBibliography = bibliographyAt >= 0 && index >= bibliographyAt;
         switch (block.type) {
             case 'heading':
+                if (index === bibliographyAt) bibliographyParagraphAt = paragraphs.length;
                 paragraphs.push(new Paragraph({
                     heading: HEADING_LEVELS[nivelDeWord(block.level)],
-                    // «Salto de página antes» del párrafo, no un salto DENTRO
-                    // del título: con el salto adentro, Word deja un renglón
-                    // vacío con estilo de título al pie de la hoja anterior.
-                    ...(index === bibliographyAt ? { pageBreakBefore: true } : {}),
                     // La bibliografía es un encabezado de título (guía, hoja 11):
                     // en mayúsculas y con dos líneas en blanco después.
                     ...(index === bibliographyAt ? { spacing: TITLE_HEADING_SPACING } : {}),
@@ -199,33 +201,28 @@ export async function exportPaperToDocx(
     });
 
 
+    // La guía arma el documento en secciones, cada una con su numeración
+    // (hojas 3, 6 y 17; medido en Word): portada sin número, CONTENIDO en
+    // romanos, cuerpo desde 1 y bibliografía siguiendo al cuerpo con su
+    // primera página abajo al centro, «como si comenzara un nuevo capítulo».
+    // Dentro de la sección del cuerpo, la bibliografía salía arriba a la
+    // derecha, como en el TI #1.
+    const conIndice = paper.rubric?.formatting?.tableOfContents === true;
+    const cuerpo = bibliographyParagraphAt >= 0 ? paragraphs.slice(0, bibliographyParagraphAt) : paragraphs;
+    const bibliografia = bibliographyParagraphAt >= 0 ? paragraphs.slice(bibliographyParagraphAt) : [];
     const doc = new Document({
         title: titleDisplay,
         creator: paper.cover?.author?.trim() || 'Dosfilos · Exegesis',
         styles: documentStyles(paper.rubric?.formatting ?? null),
+        // El índice es un campo: Word lo arma al abrir el archivo (medido en
+        // Word para Mac: entradas y páginas correctas, sin preguntar).
+        ...(conIndice ? { features: { updateFields: true } } : {}),
         footnotes,
         sections: [
             ...(cover ? [cover] : []),
-            {
-                properties: {
-                    page: {
-                        size: TMS.page,
-                        margin: { top: TMS.margin, right: TMS.margin, bottom: TMS.margin, left: TMS.margin, header: TMS.headerFooterDistance, footer: TMS.headerFooterDistance },
-                        pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL },
-                    },
-                    // La primera página del cuerpo lleva el número abajo al
-                    // centro y las siguientes arriba a la derecha: es la
-                    // regla de la guía y la razón de tener primera página
-                    // distinta.
-                    titlePage: true,
-                },
-                headers: { default: new Header({ children: [pageNumberParagraph(AlignmentType.RIGHT)] }) },
-                footers: {
-                    first: new Footer({ children: [pageNumberParagraph(AlignmentType.CENTER)] }),
-                    default: new Footer({ children: [new Paragraph({ children: [] })] }),
-                },
-                children: paragraphs,
-            },
+            ...(conIndice ? [indexSection(paper.displayLanguage)] : []),
+            numberedSection(cuerpo, true),
+            ...(bibliografia.length > 0 ? [numberedSection(bibliografia, false)] : []),
         ],
     });
 
@@ -327,7 +324,59 @@ function documentStyles(formatting: PaperFormatting | null) {
             paragraph: HEADING3_PARAGRAPH,
         },
     },
-    } as const;
+    paragraphStyles: TOC_STYLES,
+    };
+}
+
+const PAGE = {
+    size: TMS.page,
+    margin: { top: TMS.margin, right: TMS.margin, bottom: TMS.margin, left: TMS.margin, header: TMS.headerFooterDistance, footer: TMS.headerFooterDistance },
+};
+const emptyParagraph = () => new Paragraph({ children: [] });
+
+/**
+ * El cuerpo, o la bibliografía: la primera página con el número abajo al
+ * centro y las siguientes arriba a la derecha. El cuerpo empieza en 1; la
+ * bibliografía sigue su numeración.
+ */
+function numberedSection(children: Paragraph[], startsAtOne: boolean) {
+    return {
+        properties: {
+            type: SectionType.NEXT_PAGE,
+            page: { ...PAGE, ...(startsAtOne ? { pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL } } : {}) },
+            titlePage: true,
+        },
+        headers: { default: new Header({ children: [pageNumberParagraph(AlignmentType.RIGHT)] }), first: new Header({ children: [emptyParagraph()] }) },
+        footers: { first: new Footer({ children: [pageNumberParagraph(AlignmentType.CENTER)] }), default: new Footer({ children: [emptyParagraph()] }) },
+        children,
+    };
+}
+
+/**
+ * CONTENIDO (guía, hoja 3): «parte de la portada», con número romano abajo al
+ * centro desde «i». El título es un encabezado de título —centrado, en
+ * mayúsculas, sin negrita y con dos líneas en blanco después— pero NO un
+ * estilo de título: el índice no se lista a sí mismo.
+ */
+function indexSection(language: 'es' | 'en') {
+    const titulo = language === 'en' ? 'CONTENTS' : 'CONTENIDO';
+    return {
+        properties: {
+            type: SectionType.NEXT_PAGE,
+            page: { ...PAGE, pageNumbers: { start: 1, formatType: NumberFormat.LOWER_ROMAN } },
+        },
+        headers: { default: new Header({ children: [emptyParagraph()] }) },
+        footers: { default: new Footer({ children: [pageNumberParagraph(AlignmentType.CENTER)] }) },
+        children: [
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                indent: { firstLine: 0 },
+                spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, before: 0, after: TITLE_HEADING_SPACING.after },
+                children: textRuns(titulo),
+            }),
+            new TableOfContents(titulo, { hyperlink: true, headingStyleRange: '1-3' }),
+        ],
+    };
 }
 
 /** Número de página como campo, para que Word lo actualice solo. */

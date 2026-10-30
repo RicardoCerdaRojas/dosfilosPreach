@@ -21,6 +21,7 @@ export interface FormattingDraft {
     citationForm: CitationForm;
     blankLine: boolean;
     pageLabel: PageLabelStyle;
+    tableOfContents: boolean;
 }
 
 export function draftFromFormatting(f: PaperFormatting | null | undefined): FormattingDraft {
@@ -29,6 +30,7 @@ export function draftFromFormatting(f: PaperFormatting | null | undefined): Form
         citationForm: f?.citationForm ?? DEFAULT_PAPER_FORMATTING.citationForm,
         blankLine: f?.blankLineBetweenParagraphs ?? DEFAULT_PAPER_FORMATTING.blankLineBetweenParagraphs,
         pageLabel: f?.pageLabel ?? 'labelled',
+        tableOfContents: f?.tableOfContents ?? false,
     };
 }
 
@@ -41,7 +43,8 @@ export function formattingFromDraft(d: FormattingDraft): PaperFormatting | null 
     const comoLaCasa = d.lineSpacing === 'default'
         && d.citationForm === DEFAULT_PAPER_FORMATTING.citationForm
         && d.blankLine === DEFAULT_PAPER_FORMATTING.blankLineBetweenParagraphs
-        && d.pageLabel === 'labelled';
+        && d.pageLabel === 'labelled'
+        && !d.tableOfContents;
     if (comoLaCasa) return null;
     return {
         lineSpacing: d.lineSpacing === 'default' ? DEFAULT_PAPER_FORMATTING.lineSpacing : d.lineSpacing,
@@ -51,5 +54,6 @@ export function formattingFromDraft(d: FormattingDraft): PaperFormatting | null 
         // El rótulo sólo se aplica a la cita entre paréntesis
         // (`applyPageLabelStyle`); guardarlo con nota al pie no haría nada.
         ...(d.citationForm === 'parenthetical' && d.pageLabel === 'bare' ? { pageLabel: 'bare' as const } : {}),
+        ...(d.tableOfContents ? { tableOfContents: true } : {}),
     };
 }

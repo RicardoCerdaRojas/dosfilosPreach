@@ -37,6 +37,7 @@ export function RubricFormattingSummary({ paper, rubric }: { paper: ExegeticalPa
             k(f.citationForm === 'parenthetical' ? 'metadata.citationParenthetical' : 'metadata.citationFootnote'),
             ...(f.citationForm === 'parenthetical' ? [k(f.pageLabel === 'bare' ? 'metadata.pageLabelBare' : 'metadata.pageLabelLabelled')] : []),
             ...(f.blankLineBetweenParagraphs ? [k('metadata.blankLineLabel')] : []),
+            ...(f.tableOfContents ? [k('metadata.tableOfContentsLabel')] : []),
         ].join(' · ');
 
     return (
