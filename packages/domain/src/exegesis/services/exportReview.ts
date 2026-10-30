@@ -104,6 +104,36 @@ export function applyExportFinding(markdown: string, finding: ExportFinding): st
     return markdown.slice(0, finding.offset) + finding.replace + markdown.slice(finding.offset + finding.find.length);
 }
 
+/**
+ * Las clases que se corrigen sin decidir nada: una tilde, un punto de más,
+ * una raya corta, una coma, la grave del griego. La nomenclatura y la forma
+ * de autor proponen, pero las aplica el estudiante una por una.
+ */
+export const MECHANICAL_EXPORT_KINDS: ReadonlySet<ExportReviewKind> = new Set([
+    'accent', 'double-period', 'hyphen-range', 'punctuation', 'greek-grave',
+]);
+
+/**
+ * Aplica todos los avisos mecánicos. Revisa de nuevo después de cada uno: una
+ * corrección cambia las posiciones de los que siguen.
+ */
+export function applyMechanicalExportFindings(
+    markdown: string,
+    options: { citationKeys?: ReadonlyArray<string> } = {},
+): { markdown: string; applied: number } {
+    let texto = markdown;
+    let applied = 0;
+    // Tope por las dudas: cada vuelta corrige uno y nunca agrega avisos.
+    for (let vuelta = 0; vuelta < 500; vuelta++) {
+        const siguiente = reviewBeforeExport(texto, options).find(f => MECHANICAL_EXPORT_KINDS.has(f.kind) && f.replace !== null);
+        const nuevo = siguiente ? applyExportFinding(texto, siguiente) : null;
+        if (!nuevo || nuevo === texto) break;
+        texto = nuevo;
+        applied++;
+    }
+    return { markdown: texto, applied };
+}
+
 function contexto(texto: string, offset: number, largo: number): string {
     const desde = Math.max(0, offset - 40);
     const hasta = Math.min(texto.length, offset + largo + 40);

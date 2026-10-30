@@ -1258,7 +1258,14 @@
           "and": "y",
           "dialecticalRubric": "Para este trabajo, apunta a al menos {{detail}}.",
           "dialecticalStrategy": "Un trabajo riguroso suele tener {{anchorMin}}-{{anchorMax}} anclas, {{contrastMin}}-{{contrastMax}} contrastes y {{technicalMin}}-{{technicalMax}} técnicas.",
-          "roleCount": {"anchor_one": "1 ancla", "anchor_other": "{{count}} anclas", "contrast_one": "1 contraste", "contrast_other": "{{count}} contrastes", "technical_one": "1 técnica", "technical_other": "{{count}} técnicas"},
+          "roleCount": {
+            "anchor_one": "1 ancla",
+            "anchor_other": "{{count}} anclas",
+            "contrast_one": "1 contraste",
+            "contrast_other": "{{count}} contrastes",
+            "technical_one": "1 técnica",
+            "technical_other": "{{count}} técnicas"
+          },
           "recommended": "Recomendado",
           "suggestedCount": "fuentes recomendadas para un paper riguroso",
           "dialecticalAlt": "O bien:",
@@ -2851,6 +2858,29 @@
       "title_one": "1 fuente no tiene páginas elegidas ni fragmentos: el análisis busca en el libro entero. Elegir sus páginas es más preciso.",
       "title_other": "{{count}} fuentes no tienen páginas elegidas ni fragmentos: el análisis busca en cada libro entero. Elegir sus páginas es más preciso.",
       "choose": "Elegir páginas de {{label}}"
+    },
+    "exportReview": {
+      "title": "Revisión antes de exportar",
+      "description": "Corrige aquí lo que haga falta: queda en el trabajo y no hay que retocar el Word. Puedes exportar igual.",
+      "textHeading_one": "En el texto: 1 aviso",
+      "textHeading_other": "En el texto: {{count}} avisos",
+      "applyMechanical_one": "Aplicar la corrección automática",
+      "applyMechanical_other": "Aplicar las {{count}} correcciones automáticas",
+      "apply": "Aplicar",
+      "applyFailed": "No se pudo guardar la corrección. Intenta de nuevo.",
+      "proposal": "«{{find}}» → «{{replace}}»",
+      "blockedStale": "Hay un ensamble nuevo sin aceptar: acéptalo o descártalo para corregir aquí. Mientras tanto, solo se avisa.",
+      "blockedNoAssembly": "El trabajo no tiene ensamble: ensámblalo para corregir aquí. Mientras tanto, solo se avisa.",
+      "kinds": {
+        "accent": "Palabra sin tilde",
+        "double-period": "Punto repetido",
+        "unbalanced-paren": "Paréntesis sin cerrar en este párrafo",
+        "nomenclature": "Nomenclatura mezclada: el trabajo dice perfecto/imperfecto (regla 22)",
+        "author-form": "El mismo autor escrito de dos formas",
+        "hyphen-range": "Rango con guion en vez de raya corta",
+        "greek-grave": "Acento grave del griego",
+        "punctuation": "Puntuación"
+      }
     }
   },
   "sourceViewer": {

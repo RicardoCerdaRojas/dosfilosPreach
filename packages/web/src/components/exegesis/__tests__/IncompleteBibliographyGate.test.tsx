@@ -87,3 +87,41 @@ describe('las fichas incompletas antes de exportar', () => {
         expect(screen.getByText('Moo').closest('button')).toBeDisabled();
     });
 });
+
+describe('la revisión antes de exportar en el mismo diálogo (fase «Lecciones del TI #2», etapa 2)', () => {
+    const aviso = { kind: 'accent' as const, offset: 3, find: 'aqui', replace: 'aquí', context: 'el aqui no' };
+    const revision = (over: Record<string, unknown> = {}) => ({
+        findings: [aviso, { kind: 'unbalanced-paren' as const, offset: 20, find: 'Uno (dos', replace: null, context: 'Uno (dos' }],
+        mechanicalCount: 1, blockedBy: null, isApplying: false,
+        apply: vi.fn().mockResolvedValue(undefined), applyMechanical: vi.fn().mockResolvedValue(undefined),
+        ...over,
+    });
+
+    it('lista los avisos del texto; «Aplicar» corrige el que tiene reemplazo y el que no, no lo ofrece', () => {
+        filas = [];
+        const r = revision();
+        render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} review={r} />);
+        expect(screen.getByText('detail.exportReview.title')).toBeInTheDocument();
+        expect(screen.getAllByText('detail.exportReview.apply')).toHaveLength(1);
+        fireEvent.click(screen.getByText('detail.exportReview.apply'));
+        expect(r.apply).toHaveBeenCalledWith(aviso);
+        fireEvent.click(screen.getByText(/detail\.exportReview\.applyMechanical/));
+        expect(r.applyMechanical).toHaveBeenCalled();
+        // Con avisos, el botón dice «Exportar igual».
+        expect(screen.getByText('detail.bibliography.gate.exportAnyway')).toBeInTheDocument();
+    });
+
+    it('con el ensamble sin aceptar, explica por qué no corrige y no ofrece «Aplicar»', () => {
+        filas = [];
+        render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} review={revision({ blockedBy: 'difiere', mechanicalCount: 0 })} />);
+        expect(screen.getByText('detail.exportReview.blockedStale')).toBeInTheDocument();
+        expect(screen.queryByText('detail.exportReview.apply')).not.toBeInTheDocument();
+    });
+
+    it('los avisos que antes llegaban después de bajar (ensamble, portada) se ven antes', () => {
+        filas = [];
+        render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} warnings={['El Word saldrá sin portada']} />);
+        expect(screen.getByText('El Word saldrá sin portada')).toBeInTheDocument();
+        expect(screen.getByText('detail.exportReview.title')).toBeInTheDocument();
+    });
+});

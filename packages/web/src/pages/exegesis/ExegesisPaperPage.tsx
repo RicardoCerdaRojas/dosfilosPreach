@@ -60,6 +60,7 @@ import { StepCard } from '@/components/exegesis/StepCard';
 import { PaperLengthCard } from '@/components/exegesis/PaperLengthCard';
 import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
 import { IncompleteBibliographyGate } from '@/components/exegesis/IncompleteBibliographyGate';
+import { useExportReview } from '@/hooks/exegesis/useExportReview';
 import { GlossaryCheckCard } from '@/components/exegesis/GlossaryCheckCard';
 import { CorpusCoverageReport } from '@/components/exegesis/corpus-plan/CorpusCoverageReport';
 import { PaperFacultyDrawer } from '@/components/exegesis/PaperFacultyDrawer';
@@ -146,6 +147,8 @@ export function ExegesisPaperPage() {
     const bibliography = usePaperBibliographyEntries(paper);
     /** Exportación en espera de las fichas incompletas (TP #6): ver `pedirExport`. */
     const [exportPendiente, setExportPendiente] = useState<'docx' | 'md' | null>(null);
+    /** La revisión del texto antes de exportar (fase «Lecciones del TI #2», etapa 2). */
+    const revisionDelTexto = useExportReview(paper ?? null);
     const { guide: guiaDelTrabajo } = useEffectiveStyleGuide(paper);
 
     const [facultyDrawerOpen, setFacultyDrawerOpen] = useState(false);
@@ -290,35 +293,11 @@ export function ExegesisPaperPage() {
         }));
     };
 
-    /**
-     * Avisa cuando lo que acaba de bajar no es lo que el autor está viendo.
-     *
-     * Los dos exportadores leen `paper.assembledMarkdown`, que NO se escribe al
-     * regenerar el ensamble. Un ensamble regenerado y sin aceptar es
-     * invisible: la pantalla muestra el texto nuevo y el archivo trae el
-     * anterior. Medido en Santiago 2:1-13, el archivo habría traído los nueve
-     * versículos que el autor excluyó y ninguno de los cuatro de su trabajo.
-     *
-     * El aviso va DESPUÉS de la descarga, como el de las fichas incompletas y
-     * por el mismo motivo: quien descarga suele mandar el archivo sin abrirlo,
-     * y el único momento en que se lo puede alcanzar es ése. Quién decide si
-     * vale la pena volver a bajarlo es él, con los dos tamaños a la vista.
-     */
-    const avisarEnsambleDesfasado = () => {
-        const entrega = assemblyDelivery(paper);
-        if (entrega.state !== 'difiere') return;
-        toast.warning(t('detail.length.stale.toast', {
-            delivered: entrega.deliveredWords,
-            onScreen: entrega.onScreenWords,
-        }));
-    };
-
     const handleExportMarkdown = () => {
         const markdown = exportPaperToMarkdown(paper, { bibliography });
         const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
         triggerDownload(blob, buildSafeFilename('md'));
         toast.success(t('detail.exportMarkdown.toast.exported'));
-        avisarEnsambleDesfasado();
         avisarFichasIncompletas();
     };
 
@@ -334,9 +313,8 @@ export function ExegesisPaperPage() {
             });
             triggerDownload(blob, buildSafeFilename('docx'));
             toast.success(t('detail.exportDocx.toast.exported'));
-            // Sin datos de portada el Word sale sin portada, y nada lo decía.
-            if (!hasCover(paper.cover) && paperIsDelivered(paper)) toast.warning(t('detail.exportDocx.toast.noCover'));
-            avisarEnsambleDesfasado();
+            // El ensamble sin aceptar y la falta de portada se avisan ANTES,
+            // en la revisión de `pedirExport`.
             avisarFichasIncompletas();
         } catch (err) {
             console.error('[exegesis] export docx failed:', err);
@@ -345,11 +323,33 @@ export function ExegesisPaperPage() {
     };
 
     /**
-     * Exportar pasa primero por las fichas: con alguna incompleta, se abre el
-     * diálogo que deja completarlas ANTES de bajar el archivo (TP #6).
+     * Los avisos que antes llegaban después de bajar el archivo, y ahora se
+     * ven antes (fase «Lecciones del TI #2», etapa 2).
+     *
+     * El ensamble sin aceptar: los exportadores leen `assembledMarkdown`, que
+     * NO se escribe al regenerar. Un ensamble regenerado y sin aceptar es
+     * invisible: la pantalla muestra el texto nuevo y el archivo trae el
+     * anterior (Santiago 2:1-13: habría bajado los nueve versículos que el
+     * autor excluyó). Y el Word sin portada, que nada decía.
+     */
+    const avisosAntesDeExportar = (formato: 'docx' | 'md'): string[] => {
+        const entrega = assemblyDelivery(paper);
+        return [
+            ...(entrega.state === 'difiere'
+                ? [t('detail.length.stale.toast', { delivered: entrega.deliveredWords, onScreen: entrega.onScreenWords })]
+                : []),
+            ...(formato === 'docx' && !hasCover(paper.cover) && paperIsDelivered(paper) ? [t('detail.exportDocx.toast.noCover')] : []),
+        ];
+    };
+
+    /**
+     * Exportar pasa primero por la revisión: fichas incompletas (TP #6),
+     * requisitos de la rúbrica, avisos del texto y los dos de arriba. Con
+     * algo pendiente se abre el diálogo, que deja corregir ANTES de bajar.
      */
     const pedirExport = (formato: 'docx' | 'md') => {
-        if (bibliography.some(e => !e.text) || uncitedRubricRequirements(paper).length > 0) {
+        if (bibliography.some(e => !e.text) || uncitedRubricRequirements(paper).length > 0
+            || revisionDelTexto.findings.length > 0 || avisosAntesDeExportar(formato).length > 0) {
             setExportPendiente(formato);
             return;
         }
@@ -671,6 +671,8 @@ export function ExegesisPaperPage() {
                     paper={paper}
                     entries={bibliography}
                     open={!!exportPendiente}
+                    review={revisionDelTexto}
+                    warnings={avisosAntesDeExportar(exportPendiente)}
                     onCancel={() => setExportPendiente(null)}
                     onExport={() => {
                         const formato = exportPendiente;

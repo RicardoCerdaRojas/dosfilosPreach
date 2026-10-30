@@ -1258,7 +1258,14 @@
           "and": "and",
           "dialecticalRubric": "For this paper, aim for at least {{detail}}.",
           "dialecticalStrategy": "A rigorous paper usually has {{anchorMin}}-{{anchorMax}} anchors, {{contrastMin}}-{{contrastMax}} contrasts and {{technicalMin}}-{{technicalMax}} technical.",
-          "roleCount": {"anchor_one": "1 anchor", "anchor_other": "{{count}} anchors", "contrast_one": "1 contrast", "contrast_other": "{{count}} contrasts", "technical_one": "1 technical source", "technical_other": "{{count}} technical sources"},
+          "roleCount": {
+            "anchor_one": "1 anchor",
+            "anchor_other": "{{count}} anchors",
+            "contrast_one": "1 contrast",
+            "contrast_other": "{{count}} contrasts",
+            "technical_one": "1 technical source",
+            "technical_other": "{{count}} technical sources"
+          },
           "recommended": "Recommended",
           "suggestedCount": "sources recommended for a rigorous paper",
           "dialecticalAlt": "Or:",
@@ -2851,6 +2858,29 @@
       "title_one": "1 source has no chosen pages or excerpts: the analysis searches the whole book. Choosing its pages is more precise.",
       "title_other": "{{count}} sources have no chosen pages or excerpts: the analysis searches each whole book. Choosing their pages is more precise.",
       "choose": "Choose pages of {{label}}"
+    },
+    "exportReview": {
+      "title": "Review before exporting",
+      "description": "Fix what's needed here: it stays in the paper and the Word file needs no touch-ups. You can export anyway.",
+      "textHeading_one": "In the text: 1 warning",
+      "textHeading_other": "In the text: {{count}} warnings",
+      "applyMechanical_one": "Apply the automatic fix",
+      "applyMechanical_other": "Apply the {{count}} automatic fixes",
+      "apply": "Apply",
+      "applyFailed": "The fix could not be saved. Try again.",
+      "proposal": "“{{find}}” → “{{replace}}”",
+      "blockedStale": "There is a new assembly not yet accepted: accept or discard it to fix here. Until then, warnings only.",
+      "blockedNoAssembly": "The paper has no assembly: assemble it to fix here. Until then, warnings only.",
+      "kinds": {
+        "accent": "Word missing its accent",
+        "double-period": "Repeated period",
+        "unbalanced-paren": "Unclosed parenthesis in this paragraph",
+        "nomenclature": "Mixed nomenclature: the paper says perfect/imperfect (rule 22)",
+        "author-form": "The same author written two ways",
+        "hyphen-range": "Range with a hyphen instead of an en dash",
+        "greek-grave": "Greek grave accent",
+        "punctuation": "Punctuation"
+      }
     }
   },
   "sourceViewer": {

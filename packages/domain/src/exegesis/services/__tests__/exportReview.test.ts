@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyExportFinding, reviewBeforeExport } from '../exportReview';
+import { applyExportFinding, applyMechanicalExportFindings, reviewBeforeExport } from '../exportReview';
 
 /**
  * Los casos son tramos reales de los Word entregados: medido sobre el texto
@@ -90,5 +90,16 @@ describe('applyExportFinding', () => {
     it('un aviso sin reemplazo no se aplica', () => {
         const [f] = reviewBeforeExport('Uno (dos.');
         expect(applyExportFinding('Uno (dos.', f!)).toBeNull();
+    });
+});
+
+describe('applyMechanicalExportFindings', () => {
+    it('corrige todas las mecánicas y deja las que decide el estudiante', () => {
+        const t = 'El perfecto y el qatal. El lexico dice aqui que 208.. y en Salmo 23:4-6 sigue.';
+        const r = applyMechanicalExportFindings(t);
+        expect(r.markdown).toBe('El perfecto y el qatal. El léxico dice aquí que 208. y en Salmo 23:4–6 sigue.');
+        expect(r.applied).toBe(4);
+        // La nomenclatura queda para el estudiante.
+        expect(reviewBeforeExport(r.markdown).map(f => f.kind)).toEqual(['nomenclature']);
     });
 });
