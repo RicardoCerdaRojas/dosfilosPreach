@@ -1258,7 +1258,14 @@
           "and": "y",
           "dialecticalRubric": "Para este trabajo, apunta a al menos {{detail}}.",
           "dialecticalStrategy": "Un trabajo riguroso suele tener {{anchorMin}}-{{anchorMax}} anclas, {{contrastMin}}-{{contrastMax}} contrastes y {{technicalMin}}-{{technicalMax}} técnicas.",
-          "roleCount": {"anchor_one": "1 ancla", "anchor_other": "{{count}} anclas", "contrast_one": "1 contraste", "contrast_other": "{{count}} contrastes", "technical_one": "1 técnica", "technical_other": "{{count}} técnicas"},
+          "roleCount": {
+            "anchor_one": "1 ancla",
+            "anchor_other": "{{count}} anclas",
+            "contrast_one": "1 contraste",
+            "contrast_other": "{{count}} contrastes",
+            "technical_one": "1 técnica",
+            "technical_other": "{{count}} técnicas"
+          },
           "recommended": "Recomendado",
           "suggestedCount": "fuentes recomendadas para un paper riguroso",
           "dialecticalAlt": "O bien:",
@@ -1961,12 +1968,16 @@
       "conclusion": {
         "title": "Aún no puedes componer la conclusión",
         "subtitle": "La conclusión se redacta a partir de los análisis canónicos aceptados de cada versículo.",
-        "hint": "Tip: usa el botón \"Aceptar\" en cada versículo para guardar la versión que prefieras. Recién entonces se podrá componer la conclusión."
+        "hint": "Tip: usa el botón \"Aceptar\" en cada versículo para guardar la versión que prefieras. Recién entonces se podrá componer la conclusión.",
+        "softTitle": "Hay versículos sin aceptar",
+        "softSubtitle": "La conclusión sintetiza lo que establecieron los análisis aceptados. Si la compones ahora, los versículos de abajo quedan fuera."
       },
       "introduction": {
         "title": "Aún no puedes componer la introducción",
         "subtitle": "La introducción va al final: necesita los análisis aceptados y la conclusión aceptada.",
-        "hint": "Tip: primero acepta los versículos pendientes, luego compón y acepta la conclusión, y al final compón la introducción."
+        "hint": "Tip: primero acepta los versículos pendientes, luego compón y acepta la conclusión, y al final compón la introducción.",
+        "softTitle": "Hay versículos sin aceptar",
+        "softSubtitle": "La introducción presenta lo que demostraron los análisis aceptados y la conclusión. Si la compones ahora, los versículos de abajo quedan fuera."
       },
       "awaitingReviewTitle_one": "{{count}} versículo listo para aceptar",
       "awaitingReviewTitle_other": "{{count}} versículos listos para aceptar",
@@ -1976,7 +1987,10 @@
       "conclusionMissingBody": "Antes de componer la introducción, compón la conclusión y acéptala.",
       "acceptCta": "Ir a aceptar",
       "analyzeCta": "Ir a analizar",
-      "close": "Entendido"
+      "close": "Entendido",
+      "order": "Orden del trabajo: primero los versículos, luego la conclusión, después la tesis y al final la introducción.",
+      "goBack": "Volver a los versículos",
+      "proceedAnyway": "Componer igual"
     },
     "view": {
       "prose": "Vista de prosa",

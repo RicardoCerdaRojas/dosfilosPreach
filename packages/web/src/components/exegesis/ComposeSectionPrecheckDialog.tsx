@@ -21,6 +21,13 @@ export interface ComposeSectionPrecheckMissing {
     noAnalysis: ReadonlyArray<ExegeticalStep>;
     /** Only meaningful when section='introduction'. True when conclusion is not yet accepted. */
     conclusionMissing: boolean;
+    /**
+     * `true` cuando el compositor rechazaría la composición (ningún versículo
+     * aceptado, o la introducción sin conclusión). `false` es el aviso suave
+     * (B60): hay versículos sin aceptar, que quedarían fuera, y se puede
+     * componer igual.
+     */
+    blocking: boolean;
 }
 
 interface ComposeSectionPrecheckDialogProps {
@@ -29,6 +36,8 @@ interface ComposeSectionPrecheckDialogProps {
     section: 'conclusion' | 'introduction';
     missing: ComposeSectionPrecheckMissing;
     language: SupportedLanguage;
+    /** «Componer igual»: solo con el aviso suave. */
+    onProceed?: () => void;
 }
 
 /**
@@ -45,7 +54,9 @@ export function ComposeSectionPrecheckDialog({
     section,
     missing,
     language,
+    onProceed,
 }: ComposeSectionPrecheckDialogProps) {
+    const suave = !missing.blocking;
     const { t } = useTranslation('exegesis');
 
     const handleJump = (stepId: string) => {
@@ -66,10 +77,10 @@ export function ComposeSectionPrecheckDialog({
                 <DialogHeader>
                     <DialogTitle className="inline-flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-amber-500" aria-hidden />
-                        {t(`canonical.precheck.${section}.title`)}
+                        {t(suave ? `canonical.precheck.${section}.softTitle` : `canonical.precheck.${section}.title`)}
                     </DialogTitle>
                     <DialogDescription>
-                        {t(`canonical.precheck.${section}.subtitle`)}
+                        {t(suave ? `canonical.precheck.${section}.softSubtitle` : `canonical.precheck.${section}.subtitle`)}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -145,15 +156,26 @@ export function ComposeSectionPrecheckDialog({
                         </section>
                     )}
 
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 italic leading-relaxed">
-                        {t(`canonical.precheck.${section}.hint`)}
+                    {/* El orden del trabajo, a la vista (B60): antes eran solo tooltips. */}
+                    <p className="rounded-md bg-info-subtle px-3 py-2 text-xs text-info-subtle-foreground leading-relaxed">
+                        {t('canonical.precheck.order')}
                     </p>
+                    {!suave && (
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 italic leading-relaxed">
+                            {t(`canonical.precheck.${section}.hint`)}
+                        </p>
+                    )}
                 </div>
 
-                <div className="flex justify-end mt-2">
+                <div className="flex justify-end gap-2 mt-2">
                     <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-                        {t('canonical.precheck.close')}
+                        {t(suave ? 'canonical.precheck.goBack' : 'canonical.precheck.close')}
                     </Button>
+                    {suave && onProceed && (
+                        <Button size="sm" onClick={() => { onOpenChange(false); onProceed(); }}>
+                            {t('canonical.precheck.proceedAnyway')}
+                        </Button>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

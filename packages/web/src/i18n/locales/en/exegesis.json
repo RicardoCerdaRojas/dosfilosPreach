@@ -1258,7 +1258,14 @@
           "and": "and",
           "dialecticalRubric": "For this paper, aim for at least {{detail}}.",
           "dialecticalStrategy": "A rigorous paper usually has {{anchorMin}}-{{anchorMax}} anchors, {{contrastMin}}-{{contrastMax}} contrasts and {{technicalMin}}-{{technicalMax}} technical.",
-          "roleCount": {"anchor_one": "1 anchor", "anchor_other": "{{count}} anchors", "contrast_one": "1 contrast", "contrast_other": "{{count}} contrasts", "technical_one": "1 technical source", "technical_other": "{{count}} technical sources"},
+          "roleCount": {
+            "anchor_one": "1 anchor",
+            "anchor_other": "{{count}} anchors",
+            "contrast_one": "1 contrast",
+            "contrast_other": "{{count}} contrasts",
+            "technical_one": "1 technical source",
+            "technical_other": "{{count}} technical sources"
+          },
           "recommended": "Recommended",
           "suggestedCount": "sources recommended for a rigorous paper",
           "dialecticalAlt": "Or:",
@@ -1961,12 +1968,16 @@
       "conclusion": {
         "title": "Conclusion not ready to compose",
         "subtitle": "The conclusion is composed from the accepted canonical analyses of each verse.",
-        "hint": "Tip: click \"Accept\" on each verse to lock in the version you want. Then you can compose the conclusion."
+        "hint": "Tip: click \"Accept\" on each verse to lock in the version you want. Then you can compose the conclusion.",
+        "softTitle": "Some verses are not accepted yet",
+        "softSubtitle": "The conclusion synthesizes what the accepted analyses established. If you compose it now, the verses below are left out."
       },
       "introduction": {
         "title": "Introduction not ready to compose",
         "subtitle": "The introduction comes last: it needs the accepted analyses plus the accepted conclusion.",
-        "hint": "Tip: accept the pending verses first, then compose and accept the conclusion, and finally compose the introduction."
+        "hint": "Tip: accept the pending verses first, then compose and accept the conclusion, and finally compose the introduction.",
+        "softTitle": "Some verses are not accepted yet",
+        "softSubtitle": "The introduction presents what the accepted analyses and the conclusion demonstrated. If you compose it now, the verses below are left out."
       },
       "awaitingReviewTitle_one": "{{count}} verse ready to accept",
       "awaitingReviewTitle_other": "{{count}} verses ready to accept",
@@ -1976,7 +1987,10 @@
       "conclusionMissingBody": "Before composing the introduction, compose and accept the conclusion.",
       "acceptCta": "Go accept",
       "analyzeCta": "Go analyze",
-      "close": "Got it"
+      "close": "Got it",
+      "order": "Order of the paper: first the verses, then the conclusion, then the thesis, and the introduction last.",
+      "goBack": "Back to the verses",
+      "proceedAnyway": "Compose anyway"
     },
     "view": {
       "prose": "Prose view",
