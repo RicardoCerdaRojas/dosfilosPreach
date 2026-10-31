@@ -2445,7 +2445,8 @@
       "classifySourceType": "Clasificar tipo de fuente",
       "generateStep": "Generar paso (legacy)",
       "proposeThesis": "Proponer tesis",
-      "reviewThesis": "Revisar la tesis"
+      "reviewThesis": "Revisar la tesis",
+      "proposeHeadings": "Proponer títulos"
     }
   },
   "detail": {
@@ -3024,5 +3025,16 @@
     "noCredits": "No tienes saldo de procesamiento para esto. Recarga tu saldo y vuelve a intentarlo.",
     "proposeFailed": "No se pudieron proponer tesis. Intenta de nuevo.",
     "reviewFailed": "No se pudo revisar la tesis. Intenta de nuevo."
+  },
+  "sectionTitles": {
+    "title": "Títulos de los versículos",
+    "subtitle": "Un título temático por versículo, como «El pastor que restaura y guía (v. 3)». El Word los imprime en lugar de la referencia.",
+    "placeholder": "Título temático para {{label}}",
+    "propose": "Proponer títulos",
+    "proposing": "Proponiendo…",
+    "save": "Guardar títulos",
+    "savedToast": "Títulos guardados: el Word los usará.",
+    "saveFailed": "No se pudieron guardar los títulos. Intenta de nuevo.",
+    "proposeFailed": "No se pudieron proponer títulos. Intenta de nuevo."
   }
 }

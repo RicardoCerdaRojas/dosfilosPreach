@@ -1008,6 +1008,15 @@ describe('exportPaperToDocx — el texto del versículo bajo su título, como el
         expect(await xmlOf(p, 'word/document.xml')).toContain('«El SEÑOR es mi pastor; nada me falta.»');
     });
 
+    it('REGRESIÓN 3.4: el título aprobado se imprime en lugar de la referencia, y el hebreo sigue debajo', async () => {
+        const conTitulo = { ...conVersiculo('Salmo 23:1'), sectionTitles: { v1: 'El SEÑOR es mi pastor (v. 1)' } } as ExegeticalPaper;
+        const ps = parrafos(await xmlOf(conTitulo, 'word/document.xml'));
+        expect(ps.some(p => texto(p) === 'Salmo 23:1')).toBe(false);
+        const i = ps.findIndex(p => texto(p) === 'El SEÑOR es mi pastor (v. 1)');
+        expect(ps[i]).toMatch(/w:pStyle w:val="Heading1"/);
+        expect(texto(ps[i + 2]!)).toBe('«El SEÑOR es mi pastor; nada me falta.»');
+    });
+
     it('un ensamble guardado con «Salmos 23:1» también lo lleva', async () => {
         const ps = parrafos(await xmlOf(conVersiculo('Salmos 23:1'), 'word/document.xml'));
         const i = ps.findIndex(p => texto(p) === 'Salmos 23:1');

@@ -128,6 +128,7 @@ export const PROXY_FEATURES = [
     // Proponer y revisar la tesis del trabajo (fase «Lecciones del TI #2», 3.3).
     'exegesis.proposeThesis',
     'exegesis.reviewThesis',
+    'exegesis.proposeHeadings',
     'exegesis.composeIntroduction',
     'exegesis.composeConclusion',
     'exegesis.composeSermon',

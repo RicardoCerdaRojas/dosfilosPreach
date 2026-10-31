@@ -61,6 +61,7 @@ import { PaperLengthCard } from '@/components/exegesis/PaperLengthCard';
 import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
 import { IncompleteBibliographyGate } from '@/components/exegesis/IncompleteBibliographyGate';
 import { ThesisPanel } from '@/components/exegesis/ThesisPanel';
+import { SectionTitlesPanel } from '@/components/exegesis/SectionTitlesPanel';
 import { GlossaryCheckCard } from '@/components/exegesis/GlossaryCheckCard';
 import { CorpusCoverageReport } from '@/components/exegesis/corpus-plan/CorpusCoverageReport';
 import { PaperFacultyDrawer } from '@/components/exegesis/PaperFacultyDrawer';
@@ -859,7 +860,7 @@ function StepsPanel({
                         // La tesis va después de la conclusión y antes de la
                         // introducción: su lugar en el orden del trabajo (etapa 3.2).
                         step.kind === 'conclusion' && pedidos.some(s => s.kind === 'introduction')
-                            ? <Fragment key={step.id}>{renderStep(step)}<ThesisPanel paper={paper} /></Fragment>
+                            ? <Fragment key={step.id}>{renderStep(step)}<ThesisPanel paper={paper} /><SectionTitlesPanel paper={paper} /></Fragment>
                             : renderStep(step)
                     ))}
                     {/* Lo que el encargo no pide, plegado al final (TP #9, B22). */}

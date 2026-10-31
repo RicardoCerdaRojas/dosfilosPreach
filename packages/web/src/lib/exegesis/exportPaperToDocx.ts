@@ -36,6 +36,7 @@ import {
     sourceTypeWithoutIbid,
     sectionHeadingKey,
     verseTextBlocks,
+    approvedSectionTitles,
     type BibliographyEntry,
     type ExegeticalPaper,
     type PaperCover,
@@ -171,6 +172,8 @@ export async function exportPaperToDocx(
     let bibliographyParagraphAt = -1;
     /** El original y la traducción de cada versículo, para ponerlos bajo su título (B68c). */
     const textosDeVersiculo = verseTextBlocks(paper);
+    /** Los títulos temáticos aprobados (etapa 3.4): el Word los imprime donde el ensamble dice la referencia. */
+    const titulosAprobados = approvedSectionTitles(paper);
     blocks.forEach((block, index) => {
         const inBibliography = bibliographyAt >= 0 && index >= bibliographyAt;
         switch (block.type) {
@@ -187,7 +190,7 @@ export async function exportPaperToDocx(
                     // guía (BIBLIOGRAFÍA y CONTENIDO en redonda, medido en su PDF).
                     children: index === bibliographyAt
                         ? textRuns(block.text.toLocaleUpperCase('es'), { bold: false })
-                        : textRuns(block.text),
+                        : textRuns(block.level === 2 ? titulosAprobados.get(sectionHeadingKey(block.text)) ?? block.text : block.text),
                 }));
                 {
                     // Bajo el título de un versículo, su texto y la traducción

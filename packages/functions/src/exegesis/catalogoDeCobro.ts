@@ -44,6 +44,8 @@ export const CATALOGO_DE_COBRO: Readonly<Record<string, OperacionCobrada>> = {
     // La tesis (fase «Lecciones del TI #2», 3.3): costo medido 0,027–0,045 USD por llamada.
     proposeThesis: { costoUsd: 0.05, etiquetas: ['exegesis.proposeThesis'], maxLlamadas: UNA },
     reviewThesis: { costoUsd: 0.04, etiquetas: ['exegesis.reviewThesis'], maxLlamadas: UNA },
+    // Títulos temáticos (3.4): medido 0,021–0,030 USD por llamada.
+    proposeHeadings: { costoUsd: 0.03, etiquetas: ['exegesis.proposeHeadings'], maxLlamadas: UNA },
     runCoherencePass: { costoUsd: 0.12, etiquetas: ['exegesis.reviewCoherence'], maxLlamadas: UNA },
     extractRubricFromText: { costoUsd: 0.02, etiquetas: ['exegesis.extractRubric'], maxLlamadas: UNA },
     extractRubricFromDocument: { costoUsd: 0.03, etiquetas: ['exegesis.extractRubric'], maxLlamadas: UNA },

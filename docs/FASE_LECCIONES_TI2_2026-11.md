@@ -370,6 +370,7 @@ Y marca, sin modelo:
    - Un título por versículo y uno por cuestión, sacados de las preguntas, de las decisiones y de la tesis.
    - El estudiante los acepta o los cambia.
    - *Dónde:* `sectionHeadings` (`assemblyContents.ts:223`) y `canonicalizeQuestionHeadings` (`composedVerseSections.ts:224`).
+   - **Hecho (2026-10-31), por versículo.** Medido: la propuesta sin modelo, que tomaba la primera cláusula de la traducción, daba «Salmo de David (v. 1)» o el versículo entero, así que no sirve. Con el modelo y la tesis aprobada, los títulos son temáticos, de 7–9 palabras, en progresión y con «(v. N)»; para el TI #1 propuso «El pastor restaura y guía conforme a su carácter (v. 3)» frente al entregado «El pastor que restaura y guía (v. 3)». Costo medido 0,021–0,030 USD: se cobran 0,03. Los títulos aprobados son una capa (`sectionTitles`): el ensamble sigue diciendo «Salmo 23:3» y el Word imprime el título, con el hebreo debajo. **Los subtítulos por cuestión quedan para la etapa 4**, porque viven dentro de la prosa del versículo y los escribe su compositor.
 4. **Nota metodológica (nuevo):** el texto base, que las traducciones son propias y qué papel tiene cada fuente, como la nota 2 del TI #1, que el profesor llamó «ejemplar». La propone el compositor de la introducción.
 5. **Aviso del orden (B60):** «Primero la conclusión; luego la tesis; al final la introducción».
    - Hoy la conclusión solo se bloquea con 0 versículos aceptados (`StepCard.tsx:425`), así que se genera con versículos pendientes y sin aviso.

@@ -43,5 +43,13 @@ export interface ThesisAdvisorInput {
 
 export interface IThesisAdvisor {
     propose(input: ThesisAdvisorInput): Promise<{ proposals: ThesisProposal[]; modelId: string; tokensUsed: number | null }>;
+    /**
+     * Un título temático por versículo (etapa 3.4): devuelve el título por la
+     * clave de cada versículo pedido.
+     */
+    proposeHeadings(input: Omit<ThesisAdvisorInput, 'assignmentBrief' | 'previousUnitThesis'> & {
+        thesis: string | null;
+        verses: ReadonlyArray<{ key: string; label: string }>;
+    }): Promise<{ headings: Record<string, string>; modelId: string; tokensUsed: number | null }>;
     review(input: ThesisAdvisorInput & { thesis: string }): Promise<ThesisReview & { modelId: string; tokensUsed: number | null }>;
 }

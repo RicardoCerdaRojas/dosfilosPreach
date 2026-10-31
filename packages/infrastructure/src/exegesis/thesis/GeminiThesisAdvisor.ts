@@ -9,6 +9,7 @@ import {
     parseThesisProposals,
     parseThesisReview,
 } from './thesisPrompt';
+import { HEADINGS_SCHEMA, buildHeadingsPrompt, parseHeadings } from './headingsPrompt';
 
 /**
  * Proponer y revisar la tesis (fase «Lecciones del TI #2», etapa 3.3). El
@@ -40,6 +41,25 @@ export class GeminiThesisAdvisor implements IThesisAdvisor {
             { contextLabel: 'GeminiThesisAdvisor.propose' },
         );
         return { proposals: parseThesisProposals(text), tokensUsed: tokensUsed ?? null, modelId: model ?? this.modelName };
+    }
+
+    async proposeHeadings(input: Parameters<IThesisAdvisor['proposeHeadings']>[0]): Promise<{ headings: Record<string, string>; modelId: string; tokensUsed: number | null }> {
+        const { system, user } = buildHeadingsPrompt(input);
+        const { text, tokensUsed, model } = await withGeminiRetry(
+            () => runLlmPromptWithUsage({
+                feature: 'exegesis.proposeHeadings',
+                model: this.modelName,
+                system,
+                prompt: user,
+                responseMimeType: 'application/json',
+                responseSchema: HEADINGS_SCHEMA as never,
+                temperature: 0.3,
+                topP: 0.9,
+                maxOutputTokens: 2048,
+            }),
+            { contextLabel: 'GeminiThesisAdvisor.proposeHeadings' },
+        );
+        return { headings: parseHeadings(text, input.verses.map(v => v.key)), tokensUsed: tokensUsed ?? null, modelId: model ?? this.modelName };
     }
 
     async review(input: ThesisAdvisorInput & { thesis: string }): Promise<ThesisReview & { modelId: string; tokensUsed: number | null }> {

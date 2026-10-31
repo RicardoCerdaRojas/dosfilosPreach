@@ -92,3 +92,52 @@ export class ReviewThesisUseCase {
         }
     }
 }
+
+/**
+ * Un título temático por versículo aceptado (etapa 3.4), desde la tesis
+ * aprobada y los análisis. Devuelve los títulos por id del paso, sin
+ * guardar: el estudiante los edita y los aprueba (`SetSectionTitlesUseCase`).
+ */
+export class ProposeHeadingsUseCase {
+    constructor(private paperRepository: IExegeticalPaperRepository, private advisor: IThesisAdvisor) { }
+
+    async execute(input: { ownerId: string; paperId: string }): Promise<{ headings: Record<string, string> }> {
+        const paper = await loadPaper(this.paperRepository, input.ownerId, input.paperId);
+        const lang = paper.displayLanguage;
+        const versos = paper.steps
+            .filter(s => s.kind === 'verse' && s.verseRef && s.accepted?.canonicalAnalysis)
+            .sort((a, b) => a.order - b.order);
+        if (versos.length === 0) throw new Error('ProposeHeadings: no hay versículos aceptados que titular');
+        const reservation = await ExegesisCreditReservation.open(input.ownerId, 'proposeHeadings');
+        try {
+            reservation.markLlmContacted();
+            const { headings } = await this.advisor.proposeHeadings({
+                passageLabel: formatPassageReference(paper.passage, lang),
+                language: lang,
+                briefings: versos.map(s => serializeAnalysis(s.accepted!.canonicalAnalysis!, lang)).join('\n\n'),
+                thesis: approvedThesisOf(paper),
+                verses: versos.map(s => ({ key: s.id, label: formatPassageReference(s.verseRef!, lang) })),
+            });
+            return { headings };
+        } catch (err) {
+            await reservation.refundIfPreLlm();
+            throw err;
+        }
+    }
+}
+
+/** Guarda los títulos aprobados: los vacíos se quitan; solo de pasos de versículo del trabajo. */
+export class SetSectionTitlesUseCase {
+    constructor(private paperRepository: IExegeticalPaperRepository) { }
+
+    async execute(input: { ownerId: string; paperId: string; titles: Record<string, string> }): Promise<ExegeticalPaper> {
+        const paper = await loadPaper(this.paperRepository, input.ownerId, input.paperId);
+        const versos = new Set(paper.steps.filter(s => s.kind === 'verse').map(s => s.id));
+        const limpios = Object.fromEntries(
+            Object.entries(input.titles)
+                .map(([id, t]) => [id, (t ?? '').trim().slice(0, 160)] as const)
+                .filter(([id, t]) => versos.has(id) && t.length > 0),
+        );
+        return this.paperRepository.updatePaper(input.ownerId, input.paperId, { sectionTitles: Object.keys(limpios).length > 0 ? limpios : null });
+    }
+}

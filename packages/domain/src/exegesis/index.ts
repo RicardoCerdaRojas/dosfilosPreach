@@ -146,6 +146,7 @@ export * from './services/renderVerseAnalysisProse';
 export * from './services/composedVerseSections';
 export * from './services/verseTextUnderHeading';
 export * from './services/previousUnit';
+export * from './services/sectionTitles';
 export * from './services/referenceWorks';
 export * from './services/enforceAnalysisCoverage';
 export * from './services/buildPaperStudyContext';

@@ -78,6 +78,8 @@ import {
     SetPaperThesisUseCase,
     ProposeThesisUseCase,
     ReviewThesisUseCase,
+    ProposeHeadingsUseCase,
+    SetSectionTitlesUseCase,
     RenameCitationKeyUseCase,
     SaveAssembledPaperUseCase,
     UpdateStepPlanUseCase,
@@ -178,6 +180,8 @@ class ExegesisService {
     public setPaperThesis: SetPaperThesisUseCase;
     public proposeThesis: ProposeThesisUseCase;
     public reviewThesis: ReviewThesisUseCase;
+    public proposeHeadings: ProposeHeadingsUseCase;
+    public setSectionTitles: SetSectionTitlesUseCase;
     public renameCitationKey: RenameCitationKeyUseCase;
     /**
      * Adjunta una guía de estilo al trabajo COPIÁNDOLA. Volver a
@@ -737,6 +741,8 @@ class ExegesisService {
         const thesisAdvisor = new GeminiThesisAdvisor(exegesisModelId);
         this.proposeThesis = new ProposeThesisUseCase(paperRepository, thesisAdvisor);
         this.reviewThesis = new ReviewThesisUseCase(paperRepository, thesisAdvisor);
+        this.proposeHeadings = new ProposeHeadingsUseCase(paperRepository, thesisAdvisor);
+        this.setSectionTitles = new SetSectionTitlesUseCase(paperRepository);
 
         // Ministry composers (sermon / devotional / study guide).
         // Each uses the canonical verse analyses + theologicalHooks

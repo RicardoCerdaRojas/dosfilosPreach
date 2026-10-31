@@ -125,6 +125,15 @@ export interface ExegeticalPaper {
     thesis?: PaperThesis | null;
 
     /**
+     * Los títulos temáticos aprobados, por id del paso de versículo (fase
+     * «Lecciones del TI #2», etapa 3.4; B68e): «El pastor que restaura y guía
+     * (v. 3)». Son una capa sobre el ensamble: el ensamble sigue diciendo
+     * «Salmo 23:3», que es la clave con la que se busca cada sección, y el
+     * Word imprime el título aprobado.
+     */
+    sectionTitles?: Record<string, string> | null;
+
+    /**
      * Reference to the user-level style guide active for this paper. The
      * guide is uploaded once per user and reused across papers; we store
      * the id (not a snapshot) so seminary updates flow through automatically

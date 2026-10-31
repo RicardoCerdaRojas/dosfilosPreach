@@ -2445,7 +2445,8 @@
       "classifySourceType": "Classify source type",
       "generateStep": "Generate step (legacy)",
       "proposeThesis": "Propose a thesis",
-      "reviewThesis": "Review the thesis"
+      "reviewThesis": "Review the thesis",
+      "proposeHeadings": "Propose headings"
     }
   },
   "detail": {
@@ -3024,5 +3025,16 @@
     "noCredits": "You don't have processing balance for this. Top up and try again.",
     "proposeFailed": "Theses could not be proposed. Try again.",
     "reviewFailed": "The thesis could not be reviewed. Try again."
+  },
+  "sectionTitles": {
+    "title": "Verse headings",
+    "subtitle": "A thematic heading per verse, such as “The shepherd who restores and guides (v. 3)”. The Word file prints them instead of the reference.",
+    "placeholder": "Thematic heading for {{label}}",
+    "propose": "Propose headings",
+    "proposing": "Proposing…",
+    "save": "Save headings",
+    "savedToast": "Headings saved: the Word file will use them.",
+    "saveFailed": "The headings could not be saved. Try again.",
+    "proposeFailed": "Headings could not be proposed. Try again."
   }
 }

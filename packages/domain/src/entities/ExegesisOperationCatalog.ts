@@ -49,6 +49,8 @@ export type ExegesisOperationKey =
     // 0,027–0,045 USD por llamada con gpt-6.1-sol (decisión del fundador).
     | 'proposeThesis'
     | 'reviewThesis'
+    // Un título temático por versículo (3.4): medido 0,021–0,030 USD.
+    | 'proposeHeadings'
     | 'runCoherencePass'
     | 'extractRubricFromText'
     | 'extractRubricFromDocument'
@@ -170,6 +172,12 @@ export const EXEGESIS_OPERATION_CATALOG: Readonly<Record<ExegesisOperationKey, E
         estimatedCostUsd: 0.04,
         requiresPreConfirm: false,
         displayKeyI18n: 'studies.operations.reviewThesis',
+    },
+    proposeHeadings: {
+        key: 'proposeHeadings',
+        estimatedCostUsd: 0.03,
+        requiresPreConfirm: false,
+        displayKeyI18n: 'studies.operations.proposeHeadings',
     },
     runCoherencePass: {
         key: 'runCoherencePass',

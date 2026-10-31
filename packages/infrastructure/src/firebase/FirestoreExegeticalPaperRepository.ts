@@ -217,7 +217,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
     async updatePaper(
         ownerId: string,
         paperId: string,
-        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod' | 'thesis'>>
+        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod' | 'thesis' | 'sectionTitles'>>
     ): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
         // Strip undefined — Firestore rejects undefined values; null is fine.
@@ -974,6 +974,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
     if (paper.linkedProjectIds !== undefined) data.linkedProjectIds = paper.linkedProjectIds;
     if (paper.projectWorkTypeId !== undefined) data.projectWorkTypeId = paper.projectWorkTypeId;
     if (paper.thesis !== undefined) data.thesis = paper.thesis;
+    if (paper.sectionTitles !== undefined) data.sectionTitles = paper.sectionTitles;
     return data;
 }
 
@@ -993,6 +994,7 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         title: data.title,
         assignmentBrief: data.assignmentBrief ?? null,
         thesis: deserializeThesis(data.thesis),
+        sectionTitles: deserializeSectionTitles(data.sectionTitles),
         cover: data.cover ?? null,
         excludedSources: Array.isArray(data.excludedSources) ? data.excludedSources : null,
         styleGuideId: data.styleGuideId ?? null,
@@ -1574,4 +1576,13 @@ export function deserializeThesis(raw: any): ExegeticalPaper['thesis'] {
         approvedAt: toDateOrNull(raw.approvedAt),
         updatedAt: toDateOrNull(raw.updatedAt) ?? new Date(),
     };
+}
+
+/** Los títulos temáticos: solo textos no vacíos, por id del paso. */
+export function deserializeSectionTitles(raw: any): Record<string, string> | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const out = Object.fromEntries(
+        Object.entries(raw).filter(([, v]) => typeof v === 'string' && v.trim()).map(([k, v]) => [k, (v as string).trim()]),
+    );
+    return Object.keys(out).length > 0 ? out : null;
 }

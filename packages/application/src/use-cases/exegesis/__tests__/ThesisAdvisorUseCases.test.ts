@@ -4,7 +4,7 @@ import { buildEmptyCanonicalVerseAnalysis, type PassageReference } from '@dosfil
 const reserva = { markLlmContacted: vi.fn(), refundIfPreLlm: vi.fn().mockResolvedValue(undefined) };
 const open = vi.fn().mockResolvedValue(reserva);
 vi.mock('../../../services/ExegesisCreditReservation', () => ({ ExegesisCreditReservation: { open: (...a: unknown[]) => open(...a) } }));
-const { ProposeThesisUseCase, ReviewThesisUseCase } = await import('../ThesisAdvisorUseCases');
+const { ProposeThesisUseCase, ReviewThesisUseCase, ProposeHeadingsUseCase, SetSectionTitlesUseCase } = await import('../ThesisAdvisorUseCases');
 
 /** Etapa 3.3: proponer y revisar la tesis cobran, leen los análisis aceptados y la unidad anterior. */
 const PSA = (vs: number, ve: number) => ({ bookId: 'PSA', chapterStart: 23, chapterEnd: 23, verseStart: vs, verseEnd: ve }) as PassageReference;
@@ -51,5 +51,36 @@ describe('ReviewThesisUseCase', () => {
         const advisor = { propose: vi.fn(), review: vi.fn() };
         await expect(new ReviewThesisUseCase(repo(TI2) as never, advisor as never).execute({ ownerId: 'u', paperId: 'ti2', thesis: '  ' })).rejects.toThrow();
         expect(open).not.toHaveBeenCalled();
+    });
+});
+
+describe('ProposeHeadingsUseCase (3.4)', () => {
+    it('cobra «proposeHeadings», pide un título por versículo aceptado (clave = id del paso) y pasa la tesis aprobada', async () => {
+        const advisor = { propose: vi.fn(), review: vi.fn(), proposeHeadings: vi.fn(async (_i: unknown) => ({ headings: { v4: 'T4 (v. 4)' }, modelId: 'm', tokensUsed: 1 })) };
+        const conTesis = { ...TI2, thesis: { text: 'La tesis.', origin: 'student', approvedAt: new Date(), updatedAt: new Date() } };
+        const r = await new ProposeHeadingsUseCase(repo(conTesis) as never, advisor as never).execute({ ownerId: 'u', paperId: 'ti2' });
+        expect(open).toHaveBeenCalledWith('u', 'proposeHeadings');
+        const datos = advisor.proposeHeadings.mock.calls[0]![0] as { verses: Array<{ key: string }>; thesis: string };
+        expect(datos.verses.map(v => v.key)).toEqual(['v4', 'v5']);
+        expect(datos.thesis).toBe('La tesis.');
+        expect(r.headings).toEqual({ v4: 'T4 (v. 4)' });
+    });
+    it('sin versículos aceptados no cobra', async () => {
+        const advisor = { propose: vi.fn(), review: vi.fn(), proposeHeadings: vi.fn() };
+        await expect(new ProposeHeadingsUseCase(repo({ ...TI2, steps: [] }) as never, advisor as never).execute({ ownerId: 'u', paperId: 'ti2' })).rejects.toThrow();
+        expect(open).not.toHaveBeenCalled();
+    });
+});
+
+describe('SetSectionTitlesUseCase (3.4)', () => {
+    it('guarda solo títulos de versículos del trabajo, sin vacíos', async () => {
+        const updatePaper = vi.fn(async () => ({}));
+        await new SetSectionTitlesUseCase({ getPaper: vi.fn(async () => TI2), updatePaper } as never).execute({ ownerId: 'u', paperId: 'ti2', titles: { v4: ' T4 (v. 4) ', v5: '  ', otro: 'X' } });
+        expect(updatePaper).toHaveBeenCalledWith('u', 'ti2', { sectionTitles: { v4: 'T4 (v. 4)' } });
+    });
+    it('todo vacío quita los títulos', async () => {
+        const updatePaper = vi.fn(async () => ({}));
+        await new SetSectionTitlesUseCase({ getPaper: vi.fn(async () => TI2), updatePaper } as never).execute({ ownerId: 'u', paperId: 'ti2', titles: { v4: '' } });
+        expect(updatePaper).toHaveBeenCalledWith('u', 'ti2', { sectionTitles: null });
     });
 });
