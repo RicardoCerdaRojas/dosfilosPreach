@@ -5,10 +5,13 @@ import type { ExegeticalPaper } from '@dosfilos/domain';
 
 /** Etapa 3.2 (B63): la tesis se escribe, se aprueba y la leen los compositores. */
 const execute = vi.fn().mockResolvedValue({});
-vi.mock('@dosfilos/application', () => ({ exegesisService: { setPaperThesis: { execute } } }));
+const proponer = vi.fn();
+const revisar = vi.fn();
+vi.mock('@dosfilos/application', () => ({ exegesisService: { setPaperThesis: { execute }, proposeThesis: { execute: proponer }, reviewThesis: { execute: revisar } } }));
 vi.mock('@/context/firebase-context', () => ({ useFirebase: () => ({ user: { uid: 'u1' } }) }));
 vi.mock('@/i18n', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o?.count !== undefined ? `${k}:${o.count}` : k) }) }));
-vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+const toastError = vi.fn();
+vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: vi.fn() } }));
 const { ThesisPanel } = await import('../ThesisPanel');
 
 const conQuery = (ui: React.ReactNode) => render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
@@ -56,5 +59,54 @@ describe('ThesisPanel', () => {
     it('vacía no se puede aprobar', () => {
         conQuery(<ThesisPanel paper={paper()} />);
         expect(screen.getByText('thesis.approve').closest('button')).toBeDisabled();
+    });
+});
+
+describe('ThesisPanel — proponer y revisar con el modelo (etapa 3.3)', () => {
+    it('propone, se elige una, y al aprobarla queda como «proposed»', async () => {
+        proponer.mockResolvedValue({ proposals: [{ thesis: 'Propuesta A.', support: [{ verse: 'Salmo 23:4', evidence: 'cláusula sin verbo' }] }, { thesis: 'Propuesta B.', support: [] }] });
+        conQuery(<ThesisPanel paper={paper()} />);
+        fireEvent.click(screen.getByText('thesis.propose'));
+        expect(await screen.findByText('Propuesta A.')).toBeInTheDocument();
+        fireEvent.click(screen.getAllByText('thesis.useProposal')[0]!);
+        expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Propuesta A.');
+        fireEvent.click(screen.getByText('thesis.approve'));
+        await waitFor(() => expect(execute).toHaveBeenCalledWith(expect.objectContaining({ text: 'Propuesta A.', approve: true, origin: 'proposed' })));
+    });
+
+    it('una propuesta retocada se guarda como «edited»', async () => {
+        proponer.mockResolvedValue({ proposals: [{ thesis: 'Propuesta A.', support: [] }] });
+        conQuery(<ThesisPanel paper={paper()} />);
+        fireEvent.click(screen.getByText('thesis.propose'));
+        fireEvent.click(await screen.findByText('thesis.useProposal'));
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Propuesta A, retocada.' } });
+        fireEvent.click(screen.getByText('thesis.approve'));
+        await waitFor(() => expect(execute).toHaveBeenCalledWith(expect.objectContaining({ origin: 'edited' })));
+    });
+
+    it('revisar muestra cada criterio y la tesis corregida, que se puede usar', async () => {
+        revisar.mockResolvedValue({ criteria: [
+            { criterion: 'interpretive', verdict: 'cumple', reason: 'Es interpretativa.' },
+            { criterion: 'connects', verdict: 'no-cumple', reason: 'No retoma 1–3.' },
+        ], suggestion: 'La corregida.' });
+        conQuery(<ThesisPanel paper={paper()} />);
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Mi tesis.' } });
+        fireEvent.click(screen.getByText('thesis.review'));
+        expect(await screen.findByText('No retoma 1–3.')).toBeInTheDocument();
+        expect(revisar).toHaveBeenCalledWith({ ownerId: 'u1', paperId: 'ti2', thesis: 'Mi tesis.' });
+        fireEvent.click(screen.getByText('thesis.useSuggestion'));
+        expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('La corregida.');
+    });
+
+    it('sin versículos aceptados no se puede proponer ni revisar', () => {
+        conQuery(<ThesisPanel paper={paper({ steps: [verso('v4', false)] as never })} />);
+        expect(screen.getByText('thesis.propose').closest('button')).toBeDisabled();
+    });
+
+    it('sin saldo lo dice así, no como un fallo cualquiera', async () => {
+        proponer.mockRejectedValue(Object.assign(new Error('sin saldo'), { code: 'insufficient-exegesis-credits' }));
+        conQuery(<ThesisPanel paper={paper()} />);
+        fireEvent.click(screen.getByText('thesis.propose'));
+        await waitFor(() => expect(toastError).toHaveBeenCalledWith('thesis.noCredits'));
     });
 });

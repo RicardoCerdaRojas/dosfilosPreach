@@ -165,6 +165,16 @@
       "model": "gpt-6.1-sol",
       "reasoning": "low"
     },
+    "exegesis.proposeThesis": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
+    },
+    "exegesis.reviewThesis": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "reasoning": "low"
+    },
     "exegesis.composeIntroduction": {
       "provider": "openai",
       "model": "gpt-6.1-sol",

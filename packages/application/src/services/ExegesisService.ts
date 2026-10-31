@@ -21,6 +21,7 @@ import {
     GeminiVerseAcademicComposer,
     GeminiIdeaPlacer,
     GeminiProseReviewer,
+    GeminiThesisAdvisor,
     GeminiExegesisOrchestrator,
     GeminiSermonComposer,
     GeminiStudyGuideComposer,
@@ -75,6 +76,8 @@ import {
     UpdatePaperMethodUseCase,
     UpdateStepStudentReadingUseCase,
     SetPaperThesisUseCase,
+    ProposeThesisUseCase,
+    ReviewThesisUseCase,
     RenameCitationKeyUseCase,
     SaveAssembledPaperUseCase,
     UpdateStepPlanUseCase,
@@ -173,6 +176,8 @@ class ExegesisService {
     public updatePaperMethod: UpdatePaperMethodUseCase;
     public updateStepStudentReading: UpdateStepStudentReadingUseCase;
     public setPaperThesis: SetPaperThesisUseCase;
+    public proposeThesis: ProposeThesisUseCase;
+    public reviewThesis: ReviewThesisUseCase;
     public renameCitationKey: RenameCitationKeyUseCase;
     /**
      * Adjunta una guía de estilo al trabajo COPIÁNDOLA. Volver a
@@ -728,6 +733,10 @@ class ExegesisService {
             styleGuideRepository,
             new GeminiProseReviewer(exegesisModelId),
         );
+        // La tesis con modelo (etapa 3.3): el ruteo la manda a gpt-6.1-sol.
+        const thesisAdvisor = new GeminiThesisAdvisor(exegesisModelId);
+        this.proposeThesis = new ProposeThesisUseCase(paperRepository, thesisAdvisor);
+        this.reviewThesis = new ReviewThesisUseCase(paperRepository, thesisAdvisor);
 
         // Ministry composers (sermon / devotional / study guide).
         // Each uses the canonical verse analyses + theologicalHooks

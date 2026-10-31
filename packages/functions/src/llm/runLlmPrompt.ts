@@ -125,6 +125,9 @@ export const PROXY_FEATURES = [
     // «Revisión antes de entregar»: la prosa de un versículo contra los
     // criterios del curso. Solo avisa (TP #8, 8b, E3).
     'exegesis.reviewProse',
+    // Proponer y revisar la tesis del trabajo (fase «Lecciones del TI #2», 3.3).
+    'exegesis.proposeThesis',
+    'exegesis.reviewThesis',
     'exegesis.composeIntroduction',
     'exegesis.composeConclusion',
     'exegesis.composeSermon',

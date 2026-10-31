@@ -358,6 +358,12 @@ Y marca, sin modelo:
      5. se conecta con la unidad anterior;
      6. responde al enunciado.
    - *Mide antes de construir:* con el TI #1, que debe aprobar la tesis entregada, y con el TI #2, que debe aprobar la tesis acordada y marcar la de la v4 por no conectarse con los vv. 1–3. Gasto de API: se pide antes (prepago).
+   - **Medido (2026-10-31), con el TI #1 y el TI #2 leídos de producción y `gpt-6.1-sol`, razonamiento bajo.**
+     - **Primera ronda:** la revisión distinguía, porque marcó la v4 y la tesis descriptiva, pero era demasiado estricta. Reprobó la tesis del TI #1 (98/100) en 4 criterios y la acordada del TI #2 en 2, porque leía «cubre» y «distingue» como si la tesis tuviera que enumerar cada versículo. Sus correcciones eran tesis largas.
+     - **Calibración:** una tesis tiene una o dos oraciones. «Cubre» quiere decir que cada versículo la desarrolla. «Distingue» solo falla si la tesis contradice una decisión del análisis.
+     - **Segunda ronda:** el TI #1 cumple todo (conexión: no aplica) y el TI #2 acordado cumple todo. La v4 falla solo en «se conecta con 1–3», con una corrección breve. La descriptiva falla en «interpretativa».
+     - **Propuestas:** primero eran temáticas; con la regla de nombrar la construcción decisiva, ya dicen qué muestra la sintaxis (la cláusula causal sin verbo, el perfecto consecutivo, el Polel frente al Hifil), con 50–58 palabras y sin errores de sujeto.
+     - **Costo real:** de 0,027 a 0,045 USD por llamada, 6–22 s. Por eso el fundador fijó el cobro en 0,04 USD por revisar y 0,05 por proponer, no 0,02. La medición costó unos 0,51 USD.
 2. **La introducción y la conclusión leen `thesis`**, no la adivinan. La introducción termina con ella y la conclusión la retoma.
    - *Dónde:* `GeminiIntroductionComposer.ts:146,189-206` y `GeminiConclusionComposer.ts:120,153`.
 3. **Títulos temáticos y subtítulos propuestos (B68e).**

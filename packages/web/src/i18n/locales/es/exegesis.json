@@ -2443,7 +2443,9 @@
       "extractStyleGuideManifest": "Extraer manifest de guía de estilo",
       "extractProjectBibliography": "Leer la bibliografía del curso",
       "classifySourceType": "Clasificar tipo de fuente",
-      "generateStep": "Generar paso (legacy)"
+      "generateStep": "Generar paso (legacy)",
+      "proposeThesis": "Proponer tesis",
+      "reviewThesis": "Revisar la tesis"
     }
   },
   "detail": {
@@ -3003,6 +3005,24 @@
     "approvedToast": "Tesis aprobada: la conclusión y la introducción la usarán.",
     "savedToast": "Borrador de la tesis guardado.",
     "saveFailed": "No se pudo guardar la tesis. Intenta de nuevo.",
-    "regenerateNote": "La conclusión o la introducción ya estaban aceptadas: regenéralas para que retomen esta tesis."
+    "regenerateNote": "La conclusión o la introducción ya estaban aceptadas: regenéralas para que retomen esta tesis.",
+    "propose": "Proponer tesis",
+    "proposing": "Proponiendo…",
+    "review": "Revisar mi tesis",
+    "reviewing": "Revisando…",
+    "proposalsTitle": "Tesis propuestas",
+    "support": "Respaldo versículo por versículo",
+    "useProposal": "Usar esta tesis",
+    "reviewTitle": "Revisión con los criterios del curso",
+    "verdict": {
+      "cumple": "Cumple",
+      "no-cumple": "No cumple",
+      "no-aplica": "No aplica"
+    },
+    "suggestion": "Una tesis corregida:",
+    "useSuggestion": "Usar la corregida",
+    "noCredits": "No tienes saldo de procesamiento para esto. Recarga tu saldo y vuelve a intentarlo.",
+    "proposeFailed": "No se pudieron proponer tesis. Intenta de nuevo.",
+    "reviewFailed": "No se pudo revisar la tesis. Intenta de nuevo."
   }
 }

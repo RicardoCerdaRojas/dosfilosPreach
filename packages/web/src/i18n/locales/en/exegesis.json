@@ -2443,7 +2443,9 @@
       "extractStyleGuideManifest": "Extract style-guide manifest",
       "extractProjectBibliography": "Read the course bibliography",
       "classifySourceType": "Classify source type",
-      "generateStep": "Generate step (legacy)"
+      "generateStep": "Generate step (legacy)",
+      "proposeThesis": "Propose a thesis",
+      "reviewThesis": "Review the thesis"
     }
   },
   "detail": {
@@ -3003,6 +3005,24 @@
     "approvedToast": "Thesis approved: the conclusion and the introduction will use it.",
     "savedToast": "Thesis draft saved.",
     "saveFailed": "The thesis could not be saved. Try again.",
-    "regenerateNote": "The conclusion or the introduction was already accepted: regenerate them so they return to this thesis."
+    "regenerateNote": "The conclusion or the introduction was already accepted: regenerate them so they return to this thesis.",
+    "propose": "Propose a thesis",
+    "proposing": "Proposing…",
+    "review": "Review my thesis",
+    "reviewing": "Reviewing…",
+    "proposalsTitle": "Proposed theses",
+    "support": "Verse-by-verse support",
+    "useProposal": "Use this thesis",
+    "reviewTitle": "Review against the course's criteria",
+    "verdict": {
+      "cumple": "Meets",
+      "no-cumple": "Does not meet",
+      "no-aplica": "Not applicable"
+    },
+    "suggestion": "A corrected thesis:",
+    "useSuggestion": "Use the corrected one",
+    "noCredits": "You don't have processing balance for this. Top up and try again.",
+    "proposeFailed": "Theses could not be proposed. Try again.",
+    "reviewFailed": "The thesis could not be reviewed. Try again."
   }
 }
