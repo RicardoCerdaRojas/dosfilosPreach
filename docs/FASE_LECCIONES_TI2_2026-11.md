@@ -372,7 +372,14 @@ Y marca, sin modelo:
    - *Dónde:* `sectionHeadings` (`assemblyContents.ts:223`) y `canonicalizeQuestionHeadings` (`composedVerseSections.ts:224`).
    - **Hecho (2026-10-31), por versículo.** Medido: la propuesta sin modelo, que tomaba la primera cláusula de la traducción, daba «Salmo de David (v. 1)» o el versículo entero, así que no sirve. Con el modelo y la tesis aprobada, los títulos son temáticos, de 7–9 palabras, en progresión y con «(v. N)»; para el TI #1 propuso «El pastor restaura y guía conforme a su carácter (v. 3)» frente al entregado «El pastor que restaura y guía (v. 3)». Costo medido 0,021–0,030 USD: se cobran 0,03. Los títulos aprobados son una capa (`sectionTitles`): el ensamble sigue diciendo «Salmo 23:3» y el Word imprime el título, con el hebreo debajo. **Los subtítulos por cuestión quedan para la etapa 4**, porque viven dentro de la prosa del versículo y los escribe su compositor.
 4. **Nota metodológica (nuevo):** el texto base, que las traducciones son propias y qué papel tiene cada fuente, como la nota 2 del TI #1, que el profesor llamó «ejemplar». La propone el compositor de la introducción.
-5. **Aviso del orden (B60):** «Primero la conclusión; luego la tesis; al final la introducción».
+   - **Hecho (2026-10-31).**
+     - La nota que no es cita se escribe con la sintaxis de Pandoc `^[…]` y el Word la pone al pie.
+     - Lo que haya adentro no se vuelve otra nota.
+     - Corta la racha del «Ibid.».
+     - La introducción la propone solo cuando el trabajo cita en nota al pie.
+     - **Supuesto:** que el compositor la escriba bien. No se midió con el modelo; se ve al regenerar la introducción.
+     - En pantalla, la prosa muestra `^[…]` tal cual.
+5. **Aviso del orden (B60):** **hecho (3.1).** «Primero la conclusión; luego la tesis; al final la introducción».
    - Hoy la conclusión solo se bloquea con 0 versículos aceptados (`StepCard.tsx:425`), así que se genera con versículos pendientes y sin aviso.
    - Las pistas son solo tooltips (`:862, 881, 945, 964`).
    - Se agrega una advertencia suave si hay versículos sin aceptar.

@@ -90,6 +90,10 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
     // verdad. El exportador ya sabe armar la nota Turabian desde la ficha: lo
     // que necesita del compositor es la cita marcada, no la nota escrita.
     const citationBlock = buildCitationFormBlock(input.citationForm ?? null, lang);
+    // La nota metodológica (etapa 3.5), como la nota 2 del TI #1 que el
+    // profesor llamó «ejemplar». Solo con notas al pie: un TP con cita entre
+    // paréntesis no lleva notas.
+    const notaMetodologica = (input.citationForm ?? 'footnote') !== 'parenthetical';
 
     const system = lang === 'en'
         ? [
@@ -115,6 +119,7 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             `- End the introduction with the thesis: the passage, the methodology and the direction of the argument come BEFORE it.`,
             `- NEVER write "Ibid." or "Id.": every citation names its author key.`,
             `- Briefly state methodology: morphological, syntactic, lexical, intertextual, theological — only those actually used in the body.`,
+            ...(notaMetodologica ? [`- Add ONE methodological footnote at the end of the sentence that states the method, written as ^[note text]: the base text and its apparatus (BHS for the OT, NA28 for the NT), that the translations are the author's own, and what role each source in the registry plays (commentaries for…, grammars for…, lexicons for…). No parenthetical citations inside that note.`] : []),
             `- Sketch the direction of the argument: what the paper builds toward.`,
             `- 2-3 paragraphs. Continuous academic prose. No bullets.`,
             `- DO NOT promise topics the body did not develop. The introduction must be HONEST about what the paper delivers.`,
@@ -149,6 +154,7 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             `- Termina la introducción con la tesis: el pasaje, la metodología y la dirección del argumento van ANTES.`,
             `- NUNCA escribas «Ibid.» ni «Id.»: toda cita nombra la clave de su autor.`,
             `- Declara brevemente la metodología: morfológica, sintáctica, léxica, intertextual, teológica — solo las efectivamente usadas en el cuerpo.`,
+            ...(notaMetodologica ? [`- Agrega UNA nota metodológica al pie al final de la oración que declara el método, escrita como ^[texto de la nota]: el texto base y su aparato (BHS para el AT, NA28 para el NT), que las traducciones son propias del autor, y qué papel cumple cada fuente del registro (comentarios para…, gramáticas para…, léxicos para…). Dentro de esa nota no van citas entre paréntesis.`] : []),
             `- Esboza la dirección del argumento: hacia dónde construye el paper.`,
             `- 2-3 párrafos. Prosa académica continua. Sin viñetas.`,
             `- NO prometas temas que el cuerpo no desarrolló. La introducción debe ser HONESTA sobre lo que el paper entrega.`,

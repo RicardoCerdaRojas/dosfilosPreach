@@ -213,13 +213,13 @@ export async function exportPaperToDocx(
                 break;
             case 'paragraph':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys, registerNote),
                     ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : {}),
                 }));
                 break;
             case 'list-item':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys, registerNote),
                     // En la bibliografía, cada entrada es un párrafo con
                     // sangría francesa: una viñeta delante la desarma.
                     ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : { bullet: { level: 0 }, indent: { firstLine: 0 } }),
@@ -227,7 +227,7 @@ export async function exportPaperToDocx(
                 break;
             case 'blockquote':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys, registerNote),
                     ...BLOCK_QUOTE_PARAGRAPH,
                     // Una cita hebrea se lee de derecha a izquierda y se
                     // alinea a ese lado; sin esto Word la deja colgando a
@@ -343,6 +343,27 @@ export async function exportPaperToDocx(
                     spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 120 },
                     indent: { firstLine: TMS.firstLineIndent },
                     children: noteRuns(citationText),
+                }),
+            ],
+        };
+        return footnoteCounter;
+    }
+
+    /**
+     * Una nota que no es cita (`^[…]`), como la nota metodológica del TI #1
+     * que el profesor llamó «ejemplar». Corta la racha del «Ibid.»: el
+     * siguiente remitiría a esta nota, no a la obra.
+     */
+    function registerNote(texto: string): number {
+        ultimaClave = null;
+        footnoteCounter += 1;
+        const conPunto = /[.!?]\*?$/.test(texto) ? texto : `${texto}.`;
+        footnotes[footnoteCounter] = {
+            children: [
+                new Paragraph({
+                    spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 120 },
+                    indent: { firstLine: TMS.firstLineIndent },
+                    children: noteRuns(conPunto),
                 }),
             ],
         };
@@ -730,9 +751,11 @@ function buildInlineRuns(
      * de imprenta y referencias bíblicas.
      */
     citationKeys: ReadonlyArray<string | null | undefined> = [],
+    /** Una nota que no es cita (`^[…]`), como la nota metodológica (etapa 3.5). */
+    registerNote?: (text: string) => number,
 ): Array<TextRun | FootnoteReferenceRun> {
     interface Marker {
-        kind: 'citation' | 'bold' | 'italic';
+        kind: 'citation' | 'bold' | 'italic' | 'note';
         start: number;
         end: number;
         body: string;
@@ -745,6 +768,14 @@ function buildInlineRuns(
     const markers: Marker[] = [];
 
     let m: RegExpExecArray | null;
+    // La nota que no es cita, con la sintaxis de Pandoc `^[…]`: va al pie tal
+    // cual, y lo que haya adentro (una cita, una cursiva) no se vuelve otra
+    // nota. Antes que las citas, para que estas no se metan en ella.
+    if (citationForm === 'footnote' && registerNote) {
+        for (const n of paragraphText.matchAll(/\^\[([^\]]+)\]/g)) {
+            markers.push({ kind: 'note', start: n.index!, end: n.index! + n[0].length, body: n[1]!.trim() });
+        }
+    }
     if (citationForm === 'footnote') {
         // Las claves viajan al reconocedor porque hay una forma —título sin
         // comillas— que sin el corpus no se puede distinguir de un pie de
@@ -757,6 +788,8 @@ function buildInlineRuns(
             // es la única señal que la separa de un pie de imprenta o de una
             // referencia bíblica.
             if (!cita.title && !resolvesToCitedSource(cita.author, citationKeys)) continue;
+            // Dentro de una nota metodológica no hay otra nota.
+            if (overlapsExisting(cita.offset, cita.end, markers.filter(mk => mk.kind === 'note'))) continue;
             const part: CitaDeNota = {
                 author: cita.author,
                 pages: cita.pages,
@@ -812,9 +845,11 @@ function buildInlineRuns(
             // derecha a izquierda o Word lo reordena al abrir.
             // La llamada de nota va pegada a la palabra: «ellos¹.», no «ellos ¹.».
             const antes = paragraphText.slice(cursor, mk.start);
-            runs.push(...textRuns(mk.kind === 'citation' && paragraphText[mk.start] === '(' ? antes.trimEnd() : antes));
+            runs.push(...textRuns((mk.kind === 'citation' && paragraphText[mk.start] === '(') || mk.kind === 'note' ? antes.trimEnd() : antes));
         }
-        if (mk.kind === 'citation') {
+        if (mk.kind === 'note') {
+            runs.push(new FootnoteReferenceRun(registerNote!(mk.body)));
+        } else if (mk.kind === 'citation') {
             const id = registerFootnote(mk.parts ?? [{ author: mk.author ?? '', pages: mk.pages ?? null, raw: mk.body }]);
             runs.push(new FootnoteReferenceRun(id));
         } else if (mk.kind === 'bold') {

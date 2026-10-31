@@ -1089,3 +1089,34 @@ describe('exportPaperToDocx — notas de léxicos y gramáticas como la guía (B
         expect(texto).toContain('Ibid., 6.');
     });
 });
+
+describe('exportPaperToDocx — la nota que no es cita, como la nota metodológica (etapa 3.5)', () => {
+    const ROSS_N = { author: 'Allen P. Ross', authorSorted: 'Ross, Allen P.', title: 'A Commentary on the Psalms', shortTitle: 'Commentary on the Psalms', city: 'Grand Rapids', publisher: 'Kregel', year: '2011' };
+    const exportar = async (texto: string) => {
+        const blob = await exportPaperToDocx(paper({ sources: [{ id: 's1', citationKey: 'Ross' }] as never, assembledMarkdown: ['## Introducción', '', texto].join('\n') }),
+            { exportedAt: new Date('2026-10-31'), bibliography: [{ citationKey: 'Ross', displayLabel: 'Ross', text: 'x', missing: [], data: ROSS_N }] });
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const plano = (x: string) => x.replace(/<w:footnoteReference w:id="(\d+)"\/>/g, '[^$1]').replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+        return { notas: plano(await zip.file('word/footnotes.xml')!.async('string')), cuerpo: plano(await zip.file('word/document.xml')!.async('string')) };
+    };
+
+    it('`^[…]` va al pie con su texto, con la llamada pegada a la palabra', async () => {
+        const { notas, cuerpo } = await exportar('Se analiza cada versículo sobre el texto hebreo ^[El texto base es la BHS; las traducciones son propias] y en diálogo con Ross.');
+        expect(cuerpo).toContain('sobre el texto hebreo[^1] y en diálogo');
+        expect(notas).toContain('El texto base es la BHS; las traducciones son propias.');
+        expect(cuerpo).not.toContain('^[');
+    });
+
+    it('una cita dentro de la nota no se vuelve otra nota', async () => {
+        const { notas, cuerpo } = await exportar('Método.^[Para la sintaxis se sigue a Ross (Ross, p. 12) y a otros] Sigue.');
+        expect(notas).toContain('(Ross, p. 12)');
+        // Una sola llamada en el cuerpo: la de la nota.
+        expect(cuerpo.match(/\[\^\d+\]/g)).toEqual(['[^1]']);
+    });
+
+    it('corta la racha del «Ibid.»: después de la nota, la obra va abreviada', async () => {
+        const { notas } = await exportar('Uno (Ross, p. 5). Método.^[Una nota de método] Dos (Ross, p. 6).');
+        expect(notas).not.toContain('Ibid.');
+        expect(notas).toContain('Ross, Commentary on the Psalms, 6.');
+    });
+});

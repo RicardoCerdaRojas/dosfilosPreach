@@ -48,3 +48,16 @@ describe('la tesis aprobada en el mensaje de la conclusión y de la introducció
         expect(m).toContain('Enuncia la tesis que el cuerpo y la conclusión efectivamente demostraron');
     });
 });
+
+describe('la nota metodológica (etapa 3.5)', () => {
+    const sistema = (citationForm?: 'footnote' | 'parenthetical') =>
+        buildIntroductionPrompt({ ...base('es', null), acceptedConclusionMarkdown: 'x', ...(citationForm ? { citationForm } : {}) } as unknown as ComposeIntroductionInput).systemInstruction;
+    it('con notas al pie, la introducción propone UNA nota metodológica con ^[…]', () => {
+        expect(sistema('footnote')).toContain('Agrega UNA nota metodológica');
+        expect(sistema('footnote')).toContain('^[texto de la nota]');
+        expect(sistema()).toContain('Agrega UNA nota metodológica');
+    });
+    it('con cita entre paréntesis (TP), no', () => {
+        expect(sistema('parenthetical')).not.toContain('nota metodológica');
+    });
+});
