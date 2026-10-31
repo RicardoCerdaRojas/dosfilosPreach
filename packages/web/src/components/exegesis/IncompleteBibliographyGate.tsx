@@ -4,6 +4,8 @@ import { uncitedRubricRequirements, type BibliographyEntry, type ExegeticalPaper
 import { useTranslation } from '@/i18n';
 import { usePaperBibliography, type PaperBibliographyRow } from '@/hooks/exegesis/usePaperBibliography';
 import { BibliographyEditDialog } from './BibliographyEditDialog';
+import { ExportTextReview } from './ExportTextReview';
+import type { ExportReview } from '@/hooks/exegesis/useExportReview';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -23,8 +25,13 @@ import {
  * completa la ficha sin salir, y se exporta igual sólo si se decide. El
  * documento sigue imprimiendo el marcador —omitir la obra sería peor (ver
  * `renderBibliography`)—, pero ya no por descuido.
+ *
+ * Es también la revisión antes de exportar (fase «Lecciones del TI #2»,
+ * etapa 2): los avisos del texto, que se corrigen aquí, y los dos que antes
+ * llegaban DESPUÉS de bajar el archivo —ensamble sin aceptar y Word sin
+ * portada—. Cada error se corrige donde nace, no en el Word.
  */
-export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onExport }: {
+export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onExport, review, warnings = [] }: {
     paper: ExegeticalPaper;
     /**
      * La bibliografía que va a salir: sólo lo CITADO. Es lo que decide; las
@@ -34,6 +41,10 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
     open: boolean;
     onCancel: () => void;
     onExport: () => void;
+    /** Los avisos del texto (`useExportReview`). */
+    review?: ExportReview;
+    /** Avisos sueltos ya traducidos: ensamble sin aceptar, falta de portada. */
+    warnings?: ReadonlyArray<string>;
 }) {
     const { t } = useTranslation('exegesis');
     const rows = usePaperBibliography(paper);
@@ -45,7 +56,8 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
     // La bibliografía lista sólo lo citado: un requisito de la rúbrica cuya
     // fuente el documento no cita sale de la bibliografía (TP #7, #30).
     const faltasDeRubrica = useMemo(() => uncitedRubricRequirements(paper), [paper]);
-    const algoPendiente = pendientes > 0 || faltasDeRubrica.length > 0;
+    const avisosDelTexto = review?.findings.length ?? 0;
+    const algoPendiente = pendientes > 0 || faltasDeRubrica.length > 0 || avisosDelTexto > 0 || warnings.length > 0;
     const visibles = shown.map(key => {
         const entry = entries.find(e => e.citationKey === key);
         // Una cita a un libro que ya no está en el corpus no tiene ficha que
@@ -57,21 +69,36 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
     return (
         <>
             <Dialog open={open && !editing} onOpenChange={o => { if (!o) onCancel(); }}>
-                <DialogContent className="sm:max-w-md">
+                {/* Con avisos del texto, ancho y alto: se leen frases enteras con el cambio en su lugar. */}
+                <DialogContent className={avisosDelTexto > 0 ? 'flex max-h-[88vh] flex-col sm:max-w-3xl' : 'sm:max-w-lg'}>
                     <DialogHeader>
                         <DialogTitle>
                             {pendientes > 0
                                 ? t('detail.bibliography.gate.title', { count: pendientes })
                                 : faltasDeRubrica.length > 0
                                     ? t('detail.bibliography.gate.rubricTitle')
-                                    : t('detail.bibliography.gate.allComplete')}
+                                    : avisosDelTexto > 0 || warnings.length > 0
+                                        ? t('detail.exportReview.title')
+                                        // Con la revisión a la vista y todo aplicado: listo para exportar.
+                                        : review ? t('detail.exportReview.ready') : t('detail.bibliography.gate.allComplete')}
                         </DialogTitle>
                         <DialogDescription>
-                            {pendientes > 0 || faltasDeRubrica.length === 0
+                            {pendientes > 0
                                 ? t('detail.bibliography.gate.description')
-                                : t('detail.bibliography.gate.rubricDescription')}
+                                : faltasDeRubrica.length > 0
+                                    ? t('detail.bibliography.gate.rubricDescription')
+                                    : avisosDelTexto > 0 || warnings.length > 0
+                                        ? t('detail.exportReview.description')
+                                        : t('detail.bibliography.gate.description')}
                         </DialogDescription>
                     </DialogHeader>
+                    {warnings.length > 0 && (
+                        <ul className="space-y-1.5 rounded-lg border border-warning/30 bg-warning-subtle/40 px-3 py-2">
+                            {warnings.map(w => (
+                                <li key={w} className="text-xs text-warning-subtle-foreground">{w}</li>
+                            ))}
+                        </ul>
+                    )}
                     {faltasDeRubrica.length > 0 && (
                         <ul className="space-y-1.5 rounded-lg border border-warning/30 bg-warning-subtle/40 px-3 py-2">
                             {faltasDeRubrica.map(f => (
@@ -115,10 +142,14 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
                             </li>
                         ))}
                     </ul>
+                    {review && <ExportTextReview review={review} />}
                     <DialogFooter>
                         <Button type="button" variant="ghost" onClick={onCancel}>{t('detail.bibliography.gate.cancel')}</Button>
-                        <Button type="button" variant={algoPendiente ? 'outline' : 'default'} onClick={onExport}>
-                            {algoPendiente ? t('detail.bibliography.gate.exportAnyway') : t('detail.bibliography.gate.export')}
+                        {/* Mientras se guarda una corrección, exportar bajaría el texto sin ella. */}
+                        <Button type="button" variant={algoPendiente ? 'outline' : 'default'} onClick={onExport} disabled={review?.isSaving}>
+                            {review?.isSaving
+                                ? t('detail.exportReview.waitSaving')
+                                : algoPendiente ? t('detail.bibliography.gate.exportAnyway') : t('detail.bibliography.gate.export')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

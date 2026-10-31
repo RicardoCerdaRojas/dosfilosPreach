@@ -87,3 +87,77 @@ describe('las fichas incompletas antes de exportar', () => {
         expect(screen.getByText('Moo').closest('button')).toBeDisabled();
     });
 });
+
+describe('la revisión antes de exportar en el mismo diálogo (fase «Lecciones del TI #2», etapa 2)', () => {
+    const aviso = { kind: 'accent' as const, offset: 3, find: 'aqui', replace: 'aquí', context: 'el aqui no' };
+    const revision = (over: Record<string, unknown> = {}) => ({
+        findings: [aviso, { kind: 'unbalanced-paren' as const, offset: 20, find: 'Uno (dos', replace: null, context: 'Uno (dos' }],
+        mechanicalCount: 1, blockedBy: null, isSaving: false,
+        apply: vi.fn().mockResolvedValue(undefined), applyMechanical: vi.fn().mockResolvedValue(undefined),
+        ...over,
+    });
+
+    it('lista los avisos del texto; «Aplicar» corrige el que tiene reemplazo y el que no, no lo ofrece', () => {
+        filas = [];
+        const r = revision();
+        render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} review={r} />);
+        expect(screen.getByText('detail.exportReview.title')).toBeInTheDocument();
+        expect(screen.getAllByText('detail.exportReview.apply')).toHaveLength(1);
+        fireEvent.click(screen.getByText('detail.exportReview.apply'));
+        expect(r.apply).toHaveBeenCalledWith(aviso);
+        fireEvent.click(screen.getByText(/detail\.exportReview\.applyMechanical/));
+        expect(r.applyMechanical).toHaveBeenCalled();
+        // Con avisos, el botón dice «Exportar igual».
+        expect(screen.getByText('detail.bibliography.gate.exportAnyway')).toBeInTheDocument();
+    });
+
+    it('con el ensamble sin aceptar, explica por qué no corrige y no ofrece «Aplicar»', () => {
+        filas = [];
+        render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} review={revision({ blockedBy: 'difiere', mechanicalCount: 0 })} />);
+        expect(screen.getByText('detail.exportReview.blockedStale')).toBeInTheDocument();
+        expect(screen.queryByText('detail.exportReview.apply')).not.toBeInTheDocument();
+    });
+
+    it('los avisos que antes llegaban después de bajar (ensamble, portada) se ven antes', () => {
+        filas = [];
+        render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} warnings={['El Word saldrá sin portada']} />);
+        expect(screen.getByText('El Word saldrá sin portada')).toBeInTheDocument();
+        expect(screen.getByText('detail.exportReview.title')).toBeInTheDocument();
+    });
+});
+
+describe('REVISIÓN: mientras se guarda una corrección no se exporta', () => {
+    it('«Exportar igual» queda deshabilitado con una corrección en camino', () => {
+        filas = [];
+        const r = { findings: [{ kind: 'accent' as const, offset: 0, find: 'aqui', replace: 'aquí', context: 'aqui' }], mechanicalCount: 1, blockedBy: null, isSaving: true, apply: vi.fn(), applyMechanical: vi.fn() };
+        render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} review={r} />);
+        // El botón dice que espera, y se puede seguir aplicando.
+        expect(screen.getByText('detail.exportReview.waitSaving').closest('button')).toBeDisabled();
+        expect(screen.getByText('detail.exportReview.apply').closest('button')).not.toBeDisabled();
+        expect(screen.getAllByText('detail.exportReview.saving').length).toBeGreaterThan(0);
+    });
+});
+
+describe('cada aviso es la frase con el cambio en su lugar (pedido del fundador, 2026-10-30)', () => {
+    it('lo que sale tachado, lo que entra resaltado, y sin el markdown a la vista', () => {
+        filas = [];
+        const f = { kind: 'nomenclature' as const, offset: 0, find: 'weqatal', replace: 'perfecto consecutivo', context: '…el retorno esperado (el weqatal וְשַׁבְתִּי). --- ## Salmos 23:4 El aparato…' };
+        const r = { findings: [f], mechanicalCount: 0, blockedBy: null, isSaving: false, apply: vi.fn(), applyMechanical: vi.fn() };
+        const { container } = render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} review={r} />);
+        const dialogo = container.ownerDocument.body;
+        expect(dialogo.querySelector('del')?.textContent).toBe('weqatal');
+        expect(dialogo.querySelector('ins')?.textContent).toBe('perfecto consecutivo');
+        expect(dialogo.textContent).not.toContain('##');
+        expect(dialogo.textContent).not.toContain('---');
+        expect(dialogo.textContent).toContain('Salmos 23:4 El aparato');
+    });
+
+    it('sin reemplazo, el tramo marcado y sin «Aplicar»', () => {
+        filas = [];
+        const f = { kind: 'unbalanced-paren' as const, offset: 0, find: 'Uno (dos', replace: null, context: 'Uno (dos tres.' };
+        const r = { findings: [f], mechanicalCount: 0, blockedBy: null, isSaving: false, apply: vi.fn(), applyMechanical: vi.fn() };
+        const { container } = render(<IncompleteBibliographyGate paper={paper} entries={[]} open onCancel={vi.fn()} onExport={vi.fn()} review={r} />);
+        expect(container.ownerDocument.body.querySelector('mark')?.textContent).toBe('Uno (dos');
+        expect(screen.queryByText('detail.exportReview.apply')).not.toBeInTheDocument();
+    });
+});
