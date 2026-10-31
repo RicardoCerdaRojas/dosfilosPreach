@@ -1,3 +1,4 @@
+import { approvedThesisBlock } from './approvedThesisBlock';
 import { buildStyleRulesBlock } from '../styleRulesBlock';
 import {
     buildCitationFormBlock,
@@ -196,6 +197,8 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
     const renderUser = (sourcesBlock: string) => [
         userPrefix,
         ``,
+        approvedThesisBlock(input.approvedThesis, 'introduction', lang),
+        ``,
         pinnedBlock,
         briefingsHeading,
         ``,
@@ -210,9 +213,13 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
         sourcesBlock,
         hint,
         ``,
-        lang === 'en'
-            ? `Now produce the introduction. 2-3 paragraphs of continuous academic prose, opening with "## Introduction". State the thesis the body and conclusion actually demonstrated, not the original aspiration.`
-            : `Ahora produce la introducción. 2-3 párrafos de prosa académica continua, abriendo con "## Introducción". Enuncia la tesis que el cuerpo y la conclusión efectivamente demostraron, no la aspiración original.`,
+        input.approvedThesis?.trim()
+            ? (lang === 'en'
+                ? `Now produce the introduction. 2-3 paragraphs of continuous academic prose, opening with "## Introduction". End it with the approved thesis above.`
+                : `Ahora produce la introducción. 2-3 párrafos de prosa académica continua, abriendo con "## Introducción". Termina con la tesis aprobada de arriba.`)
+            : lang === 'en'
+                ? `Now produce the introduction. 2-3 paragraphs of continuous academic prose, opening with "## Introduction". State the thesis the body and conclusion actually demonstrated, not the original aspiration.`
+                : `Ahora produce la introducción. 2-3 párrafos de prosa académica continua, abriendo con "## Introducción". Enuncia la tesis que el cuerpo y la conclusión efectivamente demostraron, no la aspiración original.`,
     ].filter(Boolean).join('\n');
 
     // El contenido de las fuentes asignadas es lo único que se recorta: los

@@ -2979,5 +2979,30 @@
       "saved": "Added to your reading's log.",
       "failed": "Couldn't save the note. Try again."
     }
+  },
+  "thesis": {
+    "title": "Thesis",
+    "subtitle": "Formulated after accepting the analyses. Once approved, the conclusion returns to it and the introduction ends with it.",
+    "placeholder": "An interpretive, concrete and verifiable claim about what the text does…",
+    "pendingVerses_one": "1 verse is not accepted yet: the thesis is formulated on the accepted analyses.",
+    "pendingVerses_other": "{{count}} verses are not accepted yet: the thesis is formulated on the accepted analyses.",
+    "criteriaTitle": "The course's criteria for a thesis",
+    "criteria": {
+      "interpretive": "It is an interpretive claim, not a description of the paper.",
+      "covers": "It covers every verse of the passage.",
+      "supported": "Each part is supported by an accepted analysis.",
+      "distinguishes": "It distinguishes between possible readings.",
+      "connects": "It connects with the previous unit.",
+      "answers": "It answers what the assignment asks."
+    },
+    "saveDraft": "Save draft",
+    "approve": "Approve thesis",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "approvedBadge": "Approved",
+    "approvedToast": "Thesis approved: the conclusion and the introduction will use it.",
+    "savedToast": "Thesis draft saved.",
+    "saveFailed": "The thesis could not be saved. Try again.",
+    "regenerateNote": "The conclusion or the introduction was already accepted: regenerate them so they return to this thesis."
   }
 }

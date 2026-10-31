@@ -20,6 +20,7 @@ import type {
     StyleGuideSnapshot,
 } from '@dosfilos/domain';
 import {
+    approvedThesisOf,
     EMPTY_VERIFICATION_SUMMARY,
     documentSections,
     sectionBudgets,
@@ -161,6 +162,8 @@ export class ComposeIntroductionFromAnalysesUseCase {
                     ? { citationForm: paper.rubric.formatting.citationForm }
                     : {}),
                 regenerationHint: input.regenerationHint ?? null,
+                // La tesis aprobada: el compositor la retoma en vez de adivinarla.
+                approvedThesis: approvedThesisOf(paper),
             };
 
             reservation.markLlmContacted();

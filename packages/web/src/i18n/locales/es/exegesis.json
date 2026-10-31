@@ -2979,5 +2979,30 @@
       "saved": "Anotado en el registro de tu lectura.",
       "failed": "No se pudo anotar. Inténtalo de nuevo."
     }
+  },
+  "thesis": {
+    "title": "Tesis",
+    "subtitle": "Se formula después de aceptar los análisis. Aprobada, la conclusión la retoma y la introducción termina con ella.",
+    "placeholder": "Una afirmación interpretativa, concreta y verificable sobre lo que hace el texto…",
+    "pendingVerses_one": "Falta aceptar 1 versículo: la tesis se formula sobre los análisis aceptados.",
+    "pendingVerses_other": "Faltan aceptar {{count}} versículos: la tesis se formula sobre los análisis aceptados.",
+    "criteriaTitle": "Los criterios del curso para una tesis",
+    "criteria": {
+      "interpretive": "Es una afirmación interpretativa, no una descripción del trabajo.",
+      "covers": "Cubre todos los versículos del pasaje.",
+      "supported": "Cada parte tiene respaldo en un análisis aceptado.",
+      "distinguishes": "Distingue entre lecturas posibles.",
+      "connects": "Se conecta con la unidad anterior.",
+      "answers": "Responde a lo que pide el enunciado."
+    },
+    "saveDraft": "Guardar borrador",
+    "approve": "Aprobar tesis",
+    "edit": "Editar",
+    "cancel": "Cancelar",
+    "approvedBadge": "Aprobada",
+    "approvedToast": "Tesis aprobada: la conclusión y la introducción la usarán.",
+    "savedToast": "Borrador de la tesis guardado.",
+    "saveFailed": "No se pudo guardar la tesis. Intenta de nuevo.",
+    "regenerateNote": "La conclusión o la introducción ya estaban aceptadas: regenéralas para que retomen esta tesis."
   }
 }

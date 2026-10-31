@@ -109,6 +109,13 @@ export interface ComposeIntroductionInput {
 
     /** Optional regeneration hint. */
     regenerationHint: string | null;
+
+    /**
+     * La tesis que el estudiante aprobó (`approvedThesisOf`), o `null`. Con
+     * ella el compositor no adivina la tesis: la conclusión la retoma y la
+     * introducción termina con ella (fase «Lecciones del TI #2», etapa 3.2).
+     */
+    approvedThesis?: string | null;
 }
 
 export interface ComposeIntroductionOutput {

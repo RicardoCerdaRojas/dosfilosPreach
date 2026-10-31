@@ -4,7 +4,7 @@ import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProv
 import { abrirFuente } from '@/components/exegesis/citation/destinosDelVisor';
 import { SeriesCorpusOffer } from '@/components/exegesis/SeriesCorpusOffer';
 import { rubricLabel } from '@/components/exegesis/setup/rubricLabel';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -60,6 +60,7 @@ import { StepCard } from '@/components/exegesis/StepCard';
 import { PaperLengthCard } from '@/components/exegesis/PaperLengthCard';
 import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
 import { IncompleteBibliographyGate } from '@/components/exegesis/IncompleteBibliographyGate';
+import { ThesisPanel } from '@/components/exegesis/ThesisPanel';
 import { GlossaryCheckCard } from '@/components/exegesis/GlossaryCheckCard';
 import { CorpusCoverageReport } from '@/components/exegesis/corpus-plan/CorpusCoverageReport';
 import { PaperFacultyDrawer } from '@/components/exegesis/PaperFacultyDrawer';
@@ -854,7 +855,13 @@ function StepsPanel({
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {pedidos.map(renderStep)}
+                    {pedidos.map(step => (
+                        // La tesis va después de la conclusión y antes de la
+                        // introducción: su lugar en el orden del trabajo (etapa 3.2).
+                        step.kind === 'conclusion' && pedidos.some(s => s.kind === 'introduction')
+                            ? <Fragment key={step.id}>{renderStep(step)}<ThesisPanel paper={paper} /></Fragment>
+                            : renderStep(step)
+                    ))}
                     {/* Lo que el encargo no pide, plegado al final (TP #9, B22). */}
                     <NotRequestedSteps
                         steps={noPedidos}

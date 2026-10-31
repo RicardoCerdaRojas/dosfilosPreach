@@ -9,6 +9,8 @@ export type { UpdatePaperCoverInput } from './UpdatePaperCoverUseCase';
 export { UpdatePaperExcludedSourcesUseCase, normalizeExcludedSources } from './UpdatePaperExcludedSourcesUseCase';
 export { UpdatePaperMethodUseCase } from './UpdatePaperMethodUseCase';
 export { UpdateStepStudentReadingUseCase, MAX_STUDENT_READING_CHARS } from './UpdateStepStudentReadingUseCase';
+export { SetPaperThesisUseCase, MAX_THESIS_CHARS } from './SetPaperThesisUseCase';
+export type { SetPaperThesisInput } from './SetPaperThesisUseCase';
 export type { UpdatePaperMethodInput } from './UpdatePaperMethodUseCase';
 export { RenameCitationKeyUseCase } from './RenameCitationKeyUseCase';
 export type { RenameCitationKeyInput } from './RenameCitationKeyUseCase';

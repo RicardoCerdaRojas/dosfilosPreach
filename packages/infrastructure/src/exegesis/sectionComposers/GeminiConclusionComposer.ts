@@ -1,3 +1,4 @@
+import { approvedThesisBlock } from './approvedThesisBlock';
 import { buildStyleRulesBlock } from '../styleRulesBlock';
 import {
     buildCitationFormBlock,
@@ -201,6 +202,8 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
 
     const renderUser = (sourcesBlock: string) => [
         userPrefix,
+        ``,
+        approvedThesisBlock(input.approvedThesis, 'conclusion', lang),
         ``,
         pinnedBlock,
         briefingsHeading,

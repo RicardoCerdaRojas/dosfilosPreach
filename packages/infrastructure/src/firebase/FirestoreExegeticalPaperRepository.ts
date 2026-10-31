@@ -217,7 +217,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
     async updatePaper(
         ownerId: string,
         paperId: string,
-        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod'>>
+        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod' | 'thesis'>>
     ): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
         // Strip undefined — Firestore rejects undefined values; null is fine.
@@ -973,6 +973,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
     if (paper.projectId !== undefined) data.projectId = paper.projectId;
     if (paper.linkedProjectIds !== undefined) data.linkedProjectIds = paper.linkedProjectIds;
     if (paper.projectWorkTypeId !== undefined) data.projectWorkTypeId = paper.projectWorkTypeId;
+    if (paper.thesis !== undefined) data.thesis = paper.thesis;
     return data;
 }
 
@@ -991,6 +992,7 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         exegeticalMethod: resolveExegeticalMethod(data.exegeticalMethod),
         title: data.title,
         assignmentBrief: data.assignmentBrief ?? null,
+        thesis: deserializeThesis(data.thesis),
         cover: data.cover ?? null,
         excludedSources: Array.isArray(data.excludedSources) ? data.excludedSources : null,
         styleGuideId: data.styleGuideId ?? null,
@@ -1562,3 +1564,14 @@ export function buildManualEditVersion(
 
 /** Para probar el mapeo del documento sin Firestore. */
 export { serialize as serializePaperForTest, deserialize as deserializePaperForTest };
+
+/** La tesis: las fechas viajan como Timestamp. Sin texto, no hay tesis. */
+export function deserializeThesis(raw: any): ExegeticalPaper['thesis'] {
+    if (!raw || typeof raw.text !== 'string' || !raw.text.trim()) return null;
+    return {
+        text: raw.text,
+        origin: raw.origin === 'proposed' || raw.origin === 'edited' ? raw.origin : 'student',
+        approvedAt: toDateOrNull(raw.approvedAt),
+        updatedAt: toDateOrNull(raw.updatedAt) ?? new Date(),
+    };
+}
