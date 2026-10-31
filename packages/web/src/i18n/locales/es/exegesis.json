@@ -2868,7 +2868,6 @@
       "applyMechanical_other": "Aplicar las {{count}} correcciones automáticas",
       "apply": "Aplicar",
       "applyFailed": "No se pudo guardar la corrección. Intenta de nuevo.",
-      "proposal": "«{{find}}» → «{{replace}}»",
       "blockedStale": "Hay un ensamble nuevo sin aceptar: acéptalo o descártalo para corregir aquí. Mientras tanto, solo se avisa.",
       "blockedNoAssembly": "El trabajo no tiene ensamble: ensámblalo para corregir aquí. Mientras tanto, solo se avisa.",
       "kinds": {
@@ -2880,7 +2879,12 @@
         "hyphen-range": "Rango con guion en vez de raya corta",
         "greek-grave": "Acento grave del griego",
         "punctuation": "Puntuación"
-      }
+      },
+      "removed": "Se quita:",
+      "added": "Se pone:",
+      "saving": "Guardando las correcciones…",
+      "waitSaving": "Guardando…",
+      "ready": "Todo corregido: listo para exportar"
     },
     "savedWord": {
       "cta": "Revisar el Word guardado…",

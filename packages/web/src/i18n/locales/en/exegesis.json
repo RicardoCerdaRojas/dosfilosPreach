@@ -2868,7 +2868,6 @@
       "applyMechanical_other": "Apply the {{count}} automatic fixes",
       "apply": "Apply",
       "applyFailed": "The fix could not be saved. Try again.",
-      "proposal": "“{{find}}” → “{{replace}}”",
       "blockedStale": "There is a new assembly not yet accepted: accept or discard it to fix here. Until then, warnings only.",
       "blockedNoAssembly": "The paper has no assembly: assemble it to fix here. Until then, warnings only.",
       "kinds": {
@@ -2880,7 +2879,12 @@
         "hyphen-range": "Range with a hyphen instead of an en dash",
         "greek-grave": "Greek grave accent",
         "punctuation": "Punctuation"
-      }
+      },
+      "removed": "Removed:",
+      "added": "Added:",
+      "saving": "Saving the fixes…",
+      "waitSaving": "Saving…",
+      "ready": "All fixed: ready to export"
     },
     "savedWord": {
       "cta": "Check the saved Word file…",

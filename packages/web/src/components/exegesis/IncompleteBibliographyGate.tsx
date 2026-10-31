@@ -69,7 +69,8 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
     return (
         <>
             <Dialog open={open && !editing} onOpenChange={o => { if (!o) onCancel(); }}>
-                <DialogContent className="sm:max-w-lg">
+                {/* Con avisos del texto, ancho y alto: se leen frases enteras con el cambio en su lugar. */}
+                <DialogContent className={avisosDelTexto > 0 ? 'flex max-h-[88vh] flex-col sm:max-w-3xl' : 'sm:max-w-lg'}>
                     <DialogHeader>
                         <DialogTitle>
                             {pendientes > 0
@@ -78,7 +79,8 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
                                     ? t('detail.bibliography.gate.rubricTitle')
                                     : avisosDelTexto > 0 || warnings.length > 0
                                         ? t('detail.exportReview.title')
-                                        : t('detail.bibliography.gate.allComplete')}
+                                        // Con la revisión a la vista y todo aplicado: listo para exportar.
+                                        : review ? t('detail.exportReview.ready') : t('detail.bibliography.gate.allComplete')}
                         </DialogTitle>
                         <DialogDescription>
                             {pendientes > 0
@@ -144,8 +146,10 @@ export function IncompleteBibliographyGate({ paper, entries, open, onCancel, onE
                     <DialogFooter>
                         <Button type="button" variant="ghost" onClick={onCancel}>{t('detail.bibliography.gate.cancel')}</Button>
                         {/* Mientras se guarda una corrección, exportar bajaría el texto sin ella. */}
-                        <Button type="button" variant={algoPendiente ? 'outline' : 'default'} onClick={onExport} disabled={review?.isApplying}>
-                            {algoPendiente ? t('detail.bibliography.gate.exportAnyway') : t('detail.bibliography.gate.export')}
+                        <Button type="button" variant={algoPendiente ? 'outline' : 'default'} onClick={onExport} disabled={review?.isSaving}>
+                            {review?.isSaving
+                                ? t('detail.exportReview.waitSaving')
+                                : algoPendiente ? t('detail.bibliography.gate.exportAnyway') : t('detail.bibliography.gate.export')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

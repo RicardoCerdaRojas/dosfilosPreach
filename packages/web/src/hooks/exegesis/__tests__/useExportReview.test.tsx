@@ -70,27 +70,49 @@ describe('useExportReview', () => {
     });
 });
 
-describe('REVISIÓN: la corrección no se pierde mientras el trabajo vuelve a leerse', () => {
-    it('después de guardar, no aplica otra hasta que el trabajo trae el texto corregido', async () => {
+describe('aplicar no traba: se ve al instante y se guarda por detrás (fundador, 2026-10-31)', () => {
+    it('el aviso desaparece al instante; exportar espera hasta que el trabajo trae lo guardado', async () => {
         mutateAsync.mockResolvedValue(undefined);
         const { result, rerender } = renderHook(({ p }) => useExportReview(p), { initialProps: { p: conEnsamble(TEXTO) } });
         await act(() => result.current.apply(result.current.findings[0]!));
-        expect(result.current.isApplying).toBe(true);
-        // Una segunda corrección sobre el texto viejo borraría la primera: se ignora.
-        await act(() => result.current.apply(result.current.findings[1]!));
-        expect(mutateAsync).toHaveBeenCalledTimes(1);
-        // El trabajo vuelve con el texto guardado: se puede seguir.
+        expect(result.current.findings.map(f => f.find)).toEqual(['aqui']);
+        expect(result.current.isSaving).toBe(true);
         const guardado = mutateAsync.mock.calls[0]![0].markdown as string;
-        const releido = { ...conEnsamble(guardado), assembledMarkdown: guardado } as ExegeticalPaper;
-        rerender({ p: releido });
-        expect(result.current.isApplying).toBe(false);
+        rerender({ p: { ...conEnsamble(guardado), assembledMarkdown: guardado } as ExegeticalPaper });
+        expect(result.current.isSaving).toBe(false);
         expect(result.current.findings.map(f => f.find)).toEqual(['aqui']);
     });
 
-    it('si guardar falla, no queda trabado', async () => {
+    it('REVISIÓN: dos correcciones seguidas, mientras la primera se guarda, terminan las dos guardadas', async () => {
+        let soltar: () => void = () => {};
+        mutateAsync.mockImplementationOnce(() => new Promise<void>(r => { soltar = r; })).mockResolvedValue(undefined);
+        const { result } = renderHook(() => useExportReview(conEnsamble(TEXTO)));
+        let primera: Promise<void> = Promise.resolve();
+        act(() => { primera = result.current.apply(result.current.findings[0]!); });
+        // La segunda no espera: se aplica sobre el texto que ya trae la primera.
+        await act(() => result.current.apply(result.current.findings[0]!));
+        expect(result.current.findings).toEqual([]);
+        await act(async () => { soltar(); await primera; });
+        const ultima = mutateAsync.mock.calls.at(-1)![0].markdown as string;
+        expect(ultima).toBe('## Salmo 23:4\n\nEl léxico dice aquí que el valle es oscuro.');
+    });
+
+    it('dos clics en el mismo instante (sin repintar entre medio) no se pisan', async () => {
+        mutateAsync.mockResolvedValue(undefined);
+        const { result } = renderHook(() => useExportReview(conEnsamble(TEXTO)));
+        await act(async () => {
+            const mismo = result.current;
+            await Promise.all([mismo.apply(mismo.findings[0]!), mismo.apply(mismo.findings[1]!)]);
+        });
+        const ultima = mutateAsync.mock.calls.at(-1)![0].markdown as string;
+        expect(ultima).toBe('## Salmo 23:4\n\nEl léxico dice aquí que el valle es oscuro.');
+    });
+
+    it('si guardar falla, descarta lo no guardado y no queda trabado', async () => {
         mutateAsync.mockRejectedValueOnce(new Error('red'));
         const { result } = renderHook(() => useExportReview(conEnsamble(TEXTO)));
         await act(async () => { await expect(result.current.apply(result.current.findings[0]!)).rejects.toThrow('red'); });
-        expect(result.current.isApplying).toBe(false);
+        expect(result.current.isSaving).toBe(false);
+        expect(result.current.findings.map(f => f.find)).toEqual(['lexico', 'aqui']);
     });
 });

@@ -143,8 +143,9 @@ export function applyMechanicalExportFindings(
 }
 
 function contexto(texto: string, offset: number, largo: number): string {
-    const desde = Math.max(0, offset - 40);
-    const hasta = Math.min(texto.length, offset + largo + 40);
+    // Lo suficiente para leer la frase: el aviso se juzga en su oración.
+    const desde = Math.max(0, offset - 80);
+    const hasta = Math.min(texto.length, offset + largo + 80);
     return `${desde > 0 ? '…' : ''}${texto.slice(desde, hasta).replace(/\s+/g, ' ').trim()}${hasta < texto.length ? '…' : ''}`;
 }
 
