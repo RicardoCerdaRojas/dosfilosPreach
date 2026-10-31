@@ -49,6 +49,26 @@ describe('la tesis aprobada en el mensaje de la conclusión y de la introducció
     });
 });
 
+describe('una sola fuente de tesis en las instrucciones (revisión adversarial)', () => {
+    const sisConclusion = (lang: 'es' | 'en', t: string | null) => buildConclusionPrompt(base(lang, t) as unknown as ComposeConclusionInput).systemInstruction;
+    const sisIntro = (lang: 'es' | 'en', t: string | null) =>
+        buildIntroductionPrompt({ ...base(lang, t), acceptedConclusionMarkdown: 'x' } as unknown as ComposeIntroductionInput).systemInstruction;
+
+    it('con tesis aprobada, la introducción no manda a usar la tesis de la conclusión', () => {
+        expect(sisIntro('es', TESIS)).not.toContain('Si la conclusión aceptada reformula una tesis');
+        expect(sisIntro('es', TESIS)).toContain('La tesis es la TESIS APROBADA');
+        expect(sisIntro('en', TESIS)).not.toContain('If the accepted conclusion restates a thesis');
+        expect(sisIntro('es', null)).toContain('Si la conclusión aceptada reformula una tesis, usa ESA tesis');
+    });
+
+    it('con tesis aprobada, la conclusión no toma la de la indicación de regeneración', () => {
+        expect(sisConclusion('es', TESIS)).not.toContain('Si la indicación de regeneración enuncia la tesis, ESA es la tesis');
+        expect(sisConclusion('es', TESIS)).toContain('prevalece sobre lo que la indicación de regeneración diga');
+        expect(sisConclusion('en', TESIS)).toContain('it prevails over anything the regeneration hint says');
+        expect(sisConclusion('es', null)).toContain('Si la indicación de regeneración enuncia la tesis, ESA es la tesis');
+    });
+});
+
 describe('la nota metodológica (etapa 3.5)', () => {
     const sistema = (citationForm?: 'footnote' | 'parenthetical') =>
         buildIntroductionPrompt({ ...base('es', null), acceptedConclusionMarkdown: 'x', ...(citationForm ? { citationForm } : {}) } as unknown as ComposeIntroductionInput).systemInstruction;

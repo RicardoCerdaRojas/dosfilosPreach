@@ -441,6 +441,15 @@ export const PAPER_COVER_FIELDS: ReadonlyArray<PaperCoverField> = (
 export const PAPER_COVER_FIELDS_POR_ENTREGA: ReadonlyArray<PaperCoverField> = ['assignmentTitle'];
 
 /** La tesis del trabajo: el texto, de dónde salió y si el estudiante la aprobó. */
+/**
+ * Tope de la tesis: una o dos oraciones, no un párrafo. Lo leen el caso de
+ * uso que la guarda y el campo de la pantalla: uno solo, para que no se
+ * separen (revisión adversarial de la etapa 3).
+ */
+export const MAX_THESIS_CHARS = 800;
+/** Tope de un título de sección aprobado, en el servidor y en la pantalla. */
+export const MAX_SECTION_TITLE_CHARS = 160;
+
 export interface PaperThesis {
     text: string;
     /** `student`: la escribió el estudiante; `proposed`: la propuso el sistema; `edited`: propuesta y retocada. */

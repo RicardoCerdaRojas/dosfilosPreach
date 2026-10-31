@@ -1092,8 +1092,12 @@ describe('exportPaperToDocx — notas de léxicos y gramáticas como la guía (B
 
 describe('exportPaperToDocx — la nota que no es cita, como la nota metodológica (etapa 3.5)', () => {
     const ROSS_N = { author: 'Allen P. Ross', authorSorted: 'Ross, Allen P.', title: 'A Commentary on the Psalms', shortTitle: 'Commentary on the Psalms', city: 'Grand Rapids', publisher: 'Kregel', year: '2011' };
-    const exportar = async (texto: string) => {
-        const blob = await exportPaperToDocx(paper({ sources: [{ id: 's1', citationKey: 'Ross' }] as never, assembledMarkdown: ['## Introducción', '', texto].join('\n') }),
+    const exportar = async (texto: string, citationForm?: 'parenthetical') => {
+        const blob = await exportPaperToDocx(paper({
+            sources: [{ id: 's1', citationKey: 'Ross' }] as never,
+            assembledMarkdown: ['## Introducción', '', texto].join('\n'),
+            ...(citationForm ? { rubric: { formatting: { lineSpacing: 'single', blankLineBetweenParagraphs: true, citationForm } } as never } : {}),
+        }),
             { exportedAt: new Date('2026-10-31'), bibliography: [{ citationKey: 'Ross', displayLabel: 'Ross', text: 'x', missing: [], data: ROSS_N }] });
         const zip = await JSZip.loadAsync(await blob.arrayBuffer());
         const plano = (x: string) => x.replace(/<w:footnoteReference w:id="(\d+)"\/>/g, '[^$1]').replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
@@ -1112,6 +1116,27 @@ describe('exportPaperToDocx — la nota que no es cita, como la nota metodológi
         expect(notas).toContain('(Ross, p. 12)');
         // Una sola llamada en el cuerpo: la de la nota.
         expect(cuerpo.match(/\[\^\d+\]/g)).toEqual(['[^1]']);
+    });
+
+    it('REVISIÓN: un corchete dentro de la nota no la corta', async () => {
+        const { notas, cuerpo } = await exportar('Método.^[El texto base es la BHS [ed. 1997]; las traducciones son propias] Sigue.');
+        expect(notas).toContain('El texto base es la BHS [ed. 1997]; las traducciones son propias.');
+        expect(cuerpo).toContain('Método.[^1] Sigue.');
+        expect(cuerpo).not.toContain('propias]');
+    });
+
+    it('REVISIÓN: la negrita de la nota sale en negrita, sin asteriscos', async () => {
+        const blob = await exportPaperToDocx(paper({ assembledMarkdown: '## Introducción\n\nMétodo.^[Se sigue el **texto masorético** y *BHS*] Sigue.' }), { exportedAt: new Date('2026-10-31') });
+        const xml = await (await JSZip.loadAsync(await blob.arrayBuffer())).file('word/footnotes.xml')!.async('string');
+        expect(xml).not.toContain('**');
+        expect(xml).toMatch(/<w:b\/>(?:(?!<\/w:r>).)*<w:t[^>]*>texto masorético<\/w:t>/s);
+        expect(xml).toMatch(/<w:i\/>(?:(?!<\/w:r>).)*<w:t[^>]*>BHS<\/w:t>/s);
+    });
+
+    it('REVISIÓN: citando entre paréntesis, la nota queda en el texto entre paréntesis, sin «^[»', async () => {
+        const { cuerpo } = await exportar('Método ^[El texto base es la BHS [ed. 1997]] sigue.', 'parenthetical');
+        expect(cuerpo).toContain('Método (El texto base es la BHS [ed. 1997]) sigue.');
+        expect(cuerpo).not.toContain('^[');
     });
 
     it('corta la racha del «Ibid.»: después de la nota, la obra va abreviada', async () => {

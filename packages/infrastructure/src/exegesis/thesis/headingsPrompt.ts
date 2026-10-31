@@ -49,12 +49,10 @@ export const HEADINGS_SCHEMA = {
                 type: 'object',
                 properties: { key: { type: 'string' }, title: { type: 'string' } },
                 required: ['key', 'title'],
-                additionalProperties: false,
             },
         },
     },
     required: ['headings'],
-    additionalProperties: false,
 } as const;
 
 /** Un título por clave pedida; los que no vienen o vienen vacíos, fuera. */

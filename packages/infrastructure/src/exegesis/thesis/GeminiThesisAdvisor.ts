@@ -6,6 +6,7 @@ import {
     THESIS_REVIEW_SCHEMA,
     buildThesisProposalPrompt,
     buildThesisReviewPrompt,
+    fitThesisPrompt,
     parseThesisProposals,
     parseThesisReview,
 } from './thesisPrompt';
@@ -25,7 +26,7 @@ export class GeminiThesisAdvisor implements IThesisAdvisor {
     }
 
     async propose(input: ThesisAdvisorInput): Promise<{ proposals: ThesisProposal[]; modelId: string; tokensUsed: number | null }> {
-        const { system, user } = buildThesisProposalPrompt(input);
+        const { system, user } = fitThesisPrompt(input, buildThesisProposalPrompt, 'GeminiThesisAdvisor.propose');
         const { text, tokensUsed, model } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.proposeThesis',
@@ -44,7 +45,7 @@ export class GeminiThesisAdvisor implements IThesisAdvisor {
     }
 
     async proposeHeadings(input: Parameters<IThesisAdvisor['proposeHeadings']>[0]): Promise<{ headings: Record<string, string>; modelId: string; tokensUsed: number | null }> {
-        const { system, user } = buildHeadingsPrompt(input);
+        const { system, user } = fitThesisPrompt(input, buildHeadingsPrompt, 'GeminiThesisAdvisor.proposeHeadings');
         const { text, tokensUsed, model } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.proposeHeadings',
@@ -63,7 +64,7 @@ export class GeminiThesisAdvisor implements IThesisAdvisor {
     }
 
     async review(input: ThesisAdvisorInput & { thesis: string }): Promise<ThesisReview & { modelId: string; tokensUsed: number | null }> {
-        const { system, user } = buildThesisReviewPrompt(input);
+        const { system, user } = fitThesisPrompt(input, buildThesisReviewPrompt, 'GeminiThesisAdvisor.review');
         const { text, tokensUsed, model } = await withGeminiRetry(
             () => runLlmPromptWithUsage({
                 feature: 'exegesis.reviewThesis',

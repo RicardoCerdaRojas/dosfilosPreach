@@ -2,6 +2,7 @@ import {
     approvedThesisOf,
     briefWithExclusions,
     formatPassageReference,
+    MAX_SECTION_TITLE_CHARS,
     previousUnitOf,
     previousUnitStatement,
     serializeAnalysis,
@@ -135,7 +136,7 @@ export class SetSectionTitlesUseCase {
         const versos = new Set(paper.steps.filter(s => s.kind === 'verse').map(s => s.id));
         const limpios = Object.fromEntries(
             Object.entries(input.titles)
-                .map(([id, t]) => [id, (t ?? '').trim().slice(0, 160)] as const)
+                .map(([id, t]) => [id, (t ?? '').trim().slice(0, MAX_SECTION_TITLE_CHARS)] as const)
                 .filter(([id, t]) => versos.has(id) && t.length > 0),
         );
         return this.paperRepository.updatePaper(input.ownerId, input.paperId, { sectionTitles: Object.keys(limpios).length > 0 ? limpios : null });

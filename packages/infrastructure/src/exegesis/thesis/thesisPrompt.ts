@@ -11,6 +11,7 @@
  * por sujeto. Por eso cada parte de la tesis se coteja con los análisis.
  */
 
+import { fitPromptToCap } from '../../llm/promptBudget';
 import {
     THESIS_CRITERIA,
     type ThesisAdvisorInput,
@@ -76,7 +77,31 @@ export function buildThesisProposalPrompt(input: ThesisAdvisorInput): { system: 
     return { system, user: contexto(input) };
 }
 
-/** Esquemas JSON para el modo estricto. */
+/**
+ * El mensaje dentro del tope del servidor (`MAX_PROMPT_CHARS`): si pasa, se
+ * recortan los análisis aceptados —el único bloque que crece con el pasaje—
+ * y nunca las instrucciones ni la tesis a revisar. Un trabajo de muchos
+ * versículos moría con `invalid-argument` (revisión adversarial).
+ */
+export function fitThesisPrompt<I extends { briefings: string }>(
+    input: I,
+    build: (input: I) => { system: string; user: string },
+    label: string,
+): { system: string; user: string } {
+    const { system } = build(input);
+    const user = fitPromptToCap(
+        bloque => build({ ...input, briefings: bloque }).user,
+        presupuesto => input.briefings.slice(0, presupuesto),
+        input.briefings.length,
+        label,
+    );
+    return { system, user };
+}
+
+/**
+ * Esquemas JSON en la forma de la casa (`nullable`, sin `additionalProperties`):
+ * el servidor los pasa al modo estricto con `esquemaEstricto`, y Gemini los lee tal cual.
+ */
 export const THESIS_REVIEW_SCHEMA = {
     type: 'object',
     properties: {
@@ -90,13 +115,11 @@ export const THESIS_REVIEW_SCHEMA = {
                     reason: { type: 'string' },
                 },
                 required: ['criterion', 'verdict', 'reason'],
-                additionalProperties: false,
             },
         },
-        suggestion: { type: ['string', 'null'] },
+        suggestion: { type: 'string', nullable: true },
     },
     required: ['criteria', 'suggestion'],
-    additionalProperties: false,
 } as const;
 
 export const THESIS_PROPOSAL_SCHEMA = {
@@ -114,17 +137,14 @@ export const THESIS_PROPOSAL_SCHEMA = {
                             type: 'object',
                             properties: { verse: { type: 'string' }, evidence: { type: 'string' } },
                             required: ['verse', 'evidence'],
-                            additionalProperties: false,
                         },
                     },
                 },
                 required: ['thesis', 'support'],
-                additionalProperties: false,
             },
         },
     },
     required: ['proposals'],
-    additionalProperties: false,
 } as const;
 
 /** La revisión, validada: los seis criterios en orden, uno por criterio. */

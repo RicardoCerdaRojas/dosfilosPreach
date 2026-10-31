@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Heading, Lightbulb, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { exegesisService } from '@dosfilos/application';
-import { formatPassageReference, type ExegeticalPaper } from '@dosfilos/domain';
+import { formatPassageReference, MAX_SECTION_TITLE_CHARS, type ExegeticalPaper } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
 import { useTranslation } from '@/i18n';
 import { Button } from '@/components/ui/button';
@@ -85,7 +85,7 @@ export function SectionTitlesPanel({ paper }: { paper: ExegeticalPaper }) {
                                 id={`title-${s.id}`}
                                 value={borrador[s.id] ?? ''}
                                 onChange={e => setBorrador(b => ({ ...b, [s.id]: e.target.value }))}
-                                maxLength={160}
+                                maxLength={MAX_SECTION_TITLE_CHARS}
                                 placeholder={t('sectionTitles.placeholder', { label: etiqueta })}
                                 className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                             />

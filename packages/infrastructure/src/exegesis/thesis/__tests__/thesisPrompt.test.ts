@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildThesisProposalPrompt, buildThesisReviewPrompt, parseThesisProposals, parseThesisReview } from '../thesisPrompt';
+import { MAX_PROMPT_CHARS } from '../../../llm/promptBudget';
+import { THESIS_PROPOSAL_SCHEMA, THESIS_REVIEW_SCHEMA, buildThesisProposalPrompt, buildThesisReviewPrompt, fitThesisPrompt, parseThesisProposals, parseThesisReview } from '../thesisPrompt';
+import { HEADINGS_SCHEMA } from '../headingsPrompt';
 
 const BASE = { passageLabel: 'Salmo 23:4–6', language: 'es' as const, assignmentBrief: 'Análisis sintáctico y léxico.', briefings: 'v4 …', previousUnitThesis: 'La suficiencia es consecuencia de quién es el SEÑOR.' };
 
@@ -43,5 +45,24 @@ describe('parseThesisProposals', () => {
         ] }));
         expect(p.map(x => x.thesis)).toEqual(['A', 'B', 'C']);
         expect(p[0]!.support).toEqual([{ verse: 'v4', evidence: 'e' }]);
+    });
+});
+
+describe('revisión adversarial de la etapa 3', () => {
+    it('los esquemas van en la forma de la casa: `nullable` y sin `additionalProperties` (los lee también Gemini)', () => {
+        for (const esquema of [THESIS_REVIEW_SCHEMA, THESIS_PROPOSAL_SCHEMA, HEADINGS_SCHEMA]) {
+            expect(JSON.stringify(esquema)).not.toContain('additionalProperties');
+            expect(JSON.stringify(esquema)).not.toContain('"null"');
+        }
+        expect(THESIS_REVIEW_SCHEMA.properties.suggestion).toEqual({ type: 'string', nullable: true });
+    });
+
+    it('un pasaje largo no pasa el tope del servidor: se recortan los análisis, no la tesis', () => {
+        const largo = { ...BASE, briefings: 'v. '.repeat(120_000), thesis: 'Mi tesis.' };
+        const { user } = fitThesisPrompt(largo, buildThesisReviewPrompt, 'prueba');
+        expect(user.length).toBeLessThanOrEqual(MAX_PROMPT_CHARS);
+        expect(user).toContain('## Tesis a revisar\nMi tesis.');
+        // Uno corto pasa entero.
+        expect(fitThesisPrompt({ ...BASE, thesis: 'T.' }, buildThesisReviewPrompt, 'prueba').user).toBe(buildThesisReviewPrompt({ ...BASE, thesis: 'T.' }).user);
     });
 });

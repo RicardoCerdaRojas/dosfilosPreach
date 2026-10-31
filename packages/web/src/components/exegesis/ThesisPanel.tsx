@@ -3,13 +3,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, CircleSlash, Lightbulb, Loader2, Pencil, SearchCheck, Target, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { exegesisService } from '@dosfilos/application';
-import { approvedThesisOf, type ExegeticalPaper, type PaperThesis, type ThesisProposal, type ThesisReview } from '@dosfilos/domain';
+import { approvedThesisOf, MAX_THESIS_CHARS, THESIS_CRITERIA, type ExegeticalPaper, type PaperThesis, type ThesisProposal, type ThesisReview } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
 import { useTranslation } from '@/i18n';
 import { Button } from '@/components/ui/button';
-
-/** Los criterios del curso para una tesis (bitácora del TI #2, §2). */
-const CRITERIOS = ['interpretive', 'covers', 'supported', 'distinguishes', 'connects', 'answers'] as const;
 
 /**
  * La tesis del trabajo (fase «Lecciones del TI #2», etapa 3.2; B63).
@@ -166,7 +163,7 @@ export function ThesisPanel({ paper }: { paper: ExegeticalPaper }) {
                         value={texto}
                         onChange={e => { setTexto(e.target.value); if (origen === 'proposed') setOrigen('edited'); }}
                         rows={3}
-                        maxLength={800}
+                        maxLength={MAX_THESIS_CHARS}
                         placeholder={t('thesis.placeholder')}
                         className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     />
@@ -202,7 +199,7 @@ export function ThesisPanel({ paper }: { paper: ExegeticalPaper }) {
                     <details className="text-xs text-muted-foreground">
                         <summary className="cursor-pointer select-none">{t('thesis.criteriaTitle')}</summary>
                         <ol className="mt-1.5 list-decimal space-y-0.5 pl-5">
-                            {CRITERIOS.map(c => <li key={c}>{t(`thesis.criteria.${c}`)}</li>)}
+                            {THESIS_CRITERIA.map(c => <li key={c}>{t(`thesis.criteria.${c}`)}</li>)}
                         </ol>
                     </details>
                     <div className="flex flex-wrap justify-end gap-2">

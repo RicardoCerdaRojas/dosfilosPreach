@@ -1,4 +1,4 @@
-import type { ExegeticalPaper, IExegeticalPaperRepository, PaperThesis } from '@dosfilos/domain';
+import { MAX_THESIS_CHARS, type ExegeticalPaper, type IExegeticalPaperRepository, type PaperThesis } from '@dosfilos/domain';
 
 export interface SetPaperThesisInput {
     ownerId: string;
@@ -10,9 +10,6 @@ export interface SetPaperThesisInput {
     /** De dónde salió. Por omisión, del estudiante. */
     origin?: PaperThesis['origin'];
 }
-
-/** Tope de la tesis: una o dos oraciones, no un párrafo. */
-export const MAX_THESIS_CHARS = 800;
 
 /**
  * Guarda la tesis del trabajo (fase «Lecciones del TI #2», etapa 3.2).

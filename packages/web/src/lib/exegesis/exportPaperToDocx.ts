@@ -58,6 +58,7 @@ import {
     splitHebrew,
     TMS,
 } from './tmsLayout';
+import { findPandocNotes, pandocNotesAsParentheses } from './notasPandoc';
 
 /**
  * Renders an `ExegeticalPaper` to a Word `.docx` Blob with NATIVE
@@ -496,15 +497,18 @@ interface CitaDeNota {
 /**
  * El texto de una nota, con el título de la obra en cursiva. La nota
  * Turabian llega con el título entre asteriscos (`*Psalms 1-50*`, igual que
- * en pantalla); un run plano los dejaba impresos en el Word.
+ * en pantalla); un run plano los dejaba impresos en el Word. La nota
+ * metodológica puede traer también negrita (`**…**`).
  */
+const NOTE_EMPHASIS = /\*\*([^*]+)\*\*|(?<!\*)\*([^*]+)\*(?!\*)/g;
+
 function noteRuns(text: string): TextRun[] {
     const size = TMS.footnoteHalfPt;
     const runs: TextRun[] = [];
     let cursor = 0;
-    for (const m of text.matchAll(ITALIC_PATTERN)) {
+    for (const m of text.matchAll(NOTE_EMPHASIS)) {
         if (m.index > cursor) runs.push(...textRuns(text.slice(cursor, m.index), { size }));
-        runs.push(...textRuns(m[1] ?? '', { size, italics: true }));
+        runs.push(...(m[1] !== undefined ? textRuns(m[1], { size, bold: true }) : textRuns(m[2] ?? '', { size, italics: true })));
         cursor = m.index + m[0].length;
     }
     if (cursor < text.length) runs.push(...textRuns(text.slice(cursor), { size }));
@@ -723,7 +727,7 @@ const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
  * matcher is enough — we don't need a full markdown AST.
  */
 function buildInlineRuns(
-    paragraphText: string,
+    textoDelParrafo: string,
     registerFootnote: (citas: ReadonlyArray<CitaDeNota>) => number,
     /**
      * `'parenthetical'` deja la cita donde está, tal como se escribió.
@@ -766,14 +770,18 @@ function buildInlineRuns(
         parts?: CitaDeNota[];
     }
     const markers: Marker[] = [];
+    // Sin notas al pie, la nota que no es cita queda entre paréntesis en el
+    // texto: `^[…]` crudo no puede llegar al Word.
+    const conNotas = citationForm === 'footnote' && !!registerNote;
+    const paragraphText = conNotas ? textoDelParrafo : pandocNotesAsParentheses(textoDelParrafo);
 
     let m: RegExpExecArray | null;
     // La nota que no es cita, con la sintaxis de Pandoc `^[…]`: va al pie tal
     // cual, y lo que haya adentro (una cita, una cursiva) no se vuelve otra
     // nota. Antes que las citas, para que estas no se metan en ella.
-    if (citationForm === 'footnote' && registerNote) {
-        for (const n of paragraphText.matchAll(/\^\[([^\]]+)\]/g)) {
-            markers.push({ kind: 'note', start: n.index!, end: n.index! + n[0].length, body: n[1]!.trim() });
+    if (conNotas) {
+        for (const n of findPandocNotes(paragraphText)) {
+            markers.push({ kind: 'note', start: n.start, end: n.end, body: n.body });
         }
     }
     if (citationForm === 'footnote') {

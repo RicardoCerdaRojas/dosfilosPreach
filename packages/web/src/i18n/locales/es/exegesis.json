@@ -2502,6 +2502,7 @@
         "insertFailed": "No se pudo guardar la sección. Intenta de nuevo."
       },
       "openCitation": "Ver en el libro",
+      "footnotes": "Notas al pie",
       "startCta": "Iniciar generación",
       "generating": "Generando...",
       "regenerating": "Regenerando…",
@@ -3003,7 +3004,7 @@
     "edit": "Editar",
     "cancel": "Cancelar",
     "approvedBadge": "Aprobada",
-    "approvedToast": "Tesis aprobada: la conclusión y la introducción la usarán.",
+    "approvedToast": "Tesis aprobada. La conclusión y la introducción la usarán cuando las vuelvas a componer.",
     "savedToast": "Borrador de la tesis guardado.",
     "saveFailed": "No se pudo guardar la tesis. Intenta de nuevo.",
     "regenerateNote": "La conclusión o la introducción ya estaban aceptadas: regenéralas para que retomen esta tesis.",

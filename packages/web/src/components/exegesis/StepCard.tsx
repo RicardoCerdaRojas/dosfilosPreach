@@ -489,14 +489,16 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         [sourceViewer, paperId],
     );
     const tituloCita = t('detail.steps.openCitation');
+    const etiquetaNotas = t('detail.steps.footnotes');
     const markdownRenderizado = useMemo(() => (
         <ProsaConCitas
             markdown={prosaEntregada}
             claves={clavesDelTrabajo}
             onOpenCita={abrirCitaDeLaProsa}
             tituloCita={tituloCita}
+            etiquetaNotas={etiquetaNotas}
         />
-    ), [prosaEntregada, clavesDelTrabajo, abrirCitaDeLaProsa, tituloCita]);
+    ), [prosaEntregada, clavesDelTrabajo, abrirCitaDeLaProsa, tituloCita, etiquetaNotas]);
 
     const anyPipelinePending =
         generateStep.isPending

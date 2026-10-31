@@ -94,6 +94,10 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
     // profesor llamó «ejemplar». Solo con notas al pie: un TP con cita entre
     // paréntesis no lleva notas.
     const notaMetodologica = (input.citationForm ?? 'footnote') !== 'parenthetical';
+    // Con tesis aprobada, la regla «usa la tesis que reformula la conclusión»
+    // competía con el bloque de la tesis aprobada: dos fuentes de tesis para
+    // la misma introducción (revisión adversarial de la etapa 3).
+    const conTesis = !!input.approvedThesis?.trim();
 
     const system = lang === 'en'
         ? [
@@ -114,7 +118,9 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             ``,
             `## Hard rules for the introduction`,
             `- Present the passage and its importance within its book (1 paragraph).`,
-            `- State a precise thesis DERIVED FROM what the body and conclusion actually demonstrated. NOT the thesis the original assignment brief hoped for — the thesis the analysis established. If the accepted conclusion restates a thesis, use THAT thesis, so introduction and conclusion argue the same claim.`,
+            conTesis
+                ? `- The thesis is the APPROVED THESIS given in the message: the author wrote it after the analyses. Use it, not one derived from the conclusion or the assignment brief, so introduction and conclusion argue the same claim.`
+                : `- State a precise thesis DERIVED FROM what the body and conclusion actually demonstrated. NOT the thesis the original assignment brief hoped for — the thesis the analysis established. If the accepted conclusion restates a thesis, use THAT thesis, so introduction and conclusion argue the same claim.`,
             `- The thesis is an interpretive, concrete and verifiable claim about what the text does — never a description of the paper ("this paper analyzes…").`,
             `- End the introduction with the thesis: the passage, the methodology and the direction of the argument come BEFORE it.`,
             `- NEVER write "Ibid." or "Id.": every citation names its author key.`,
@@ -149,7 +155,9 @@ export function buildIntroductionPrompt(input: ComposeIntroductionInput): { syst
             ``,
             `## Reglas duras para la introducción`,
             `- Presenta el pasaje y su importancia dentro del libro (1 párrafo).`,
-            `- Enuncia una tesis precisa DERIVADA de lo que el cuerpo y la conclusión efectivamente demostraron. NO la tesis que el encuadre original del paper esperaba — la tesis que el análisis estableció. Si la conclusión aceptada reformula una tesis, usa ESA tesis, para que introducción y conclusión defiendan la misma afirmación.`,
+            conTesis
+                ? `- La tesis es la TESIS APROBADA que viene en el mensaje: el autor la escribió después de los análisis. Usa esa, no una derivada de la conclusión ni del encuadre, para que introducción y conclusión defiendan la misma afirmación.`
+                : `- Enuncia una tesis precisa DERIVADA de lo que el cuerpo y la conclusión efectivamente demostraron. NO la tesis que el encuadre original del paper esperaba — la tesis que el análisis estableció. Si la conclusión aceptada reformula una tesis, usa ESA tesis, para que introducción y conclusión defiendan la misma afirmación.`,
             `- La tesis es una afirmación interpretativa, concreta y verificable sobre lo que el texto hace — nunca una descripción del trabajo («este trabajo analiza…»).`,
             `- Termina la introducción con la tesis: el pasaje, la metodología y la dirección del argumento van ANTES.`,
             `- NUNCA escribas «Ibid.» ni «Id.»: toda cita nombra la clave de su autor.`,

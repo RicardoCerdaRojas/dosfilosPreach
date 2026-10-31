@@ -24,6 +24,11 @@ describe('composePrecheck', () => {
         expect(r.noAnalysis.map(s => s.id)).toEqual(['6']);
     });
 
+    it('un versículo aceptado y vuelto a analizar no se avisa: el compositor lee la versión aceptada', () => {
+        const reanalizado = { ...verso('5', 'en-revision'), accepted: { canonicalAnalysis: ANALISIS } } as unknown as ExegeticalStep;
+        expect(composePrecheck([verso('4', 'aceptado'), reanalizado], 'conclusion')).toBeNull();
+    });
+
     it('ningún versículo aceptado: bloquea (el compositor lo rechazaría)', () => {
         expect(composePrecheck([verso('4', 'en-revision')], 'conclusion')!.blocking).toBe(true);
     });

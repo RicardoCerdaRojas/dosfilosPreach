@@ -18,8 +18,10 @@ export function composePrecheck(
     const acceptedCount = verses.filter(s => s.accepted?.canonicalAnalysis).length;
     const conclusionMissing = section === 'introduction'
         && !(allSteps.find(s => s.kind === 'conclusion')?.accepted?.markdown?.trim());
+    // Un versículo aceptado y vuelto a analizar no falta: el compositor lee
+    // la versión aceptada. Avisar que «queda fuera» sería falso.
     const awaitingReview = verses.filter(
-        s => s.state === 'awaiting-review' && s.current?.canonicalAnalysis,
+        s => s.state === 'awaiting-review' && s.current?.canonicalAnalysis && !s.accepted?.canonicalAnalysis,
     );
     const awaitingReviewIds = new Set(awaitingReview.map(s => s.id));
     const noAnalysis = verses.filter(
