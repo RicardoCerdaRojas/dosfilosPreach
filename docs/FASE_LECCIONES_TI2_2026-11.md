@@ -19,7 +19,7 @@
 | PR #817 (devolución desde PDF, escritorio sin esperas, Word TMS) | **Mergeado y desplegado** el 2026-10-29 09:01 (`57117c4a`, «Deploy Production» success). Durante la sesión se dijo dos veces que no lo estaba: error del asistente. |
 | 4 commits de código posteriores, **solo en local** (rama `feat/devolucion-desde-pdf`) | `5cd73a2c`: reglas del curso, tesis y sin «Ibid.» en la introducción y la conclusión. `1d3743e1`: notas Turabian. `6cde1ecb`: «Ibid.» en cursiva. `4e6efe20`: «)» suelto. **No están en producción.** El TI #2 se exportó desde local, así que los tiene. |
 | 3 commits de documentación | `68696b2a`, `b0143c22`, `0c8a69a1` (bitácora) |
-| Escrituras en producción hechas con OK | Fichas de 7 obras (la de Niccacci es **supuesto**: falta verificarla con la portada). 14 patrones de la devolución renombrados. Análisis del v. 6 corregido (qal, «el SEÑOR» ×16). Regla 22 en «Guia Test 2026». |
+| Escrituras en producción hechas con OK | Fichas de 7 obras (la de Niccacci, verificada con la portada por el fundador el 2026-10-30). 14 patrones de la devolución renombrados. Análisis del v. 6 corregido (qal, «el SEÑOR» ×16). Regla 22 en «Guia Test 2026». |
 | Word entregado del TI #2 (16:51) | Sin índice, sin subtítulos temáticos y con «Salmos» (decisión del fundador: «no avanzaremos con esto»). Quedaron detalles de las ediciones a mano: nota 17 «208..», nota 34 «Psalms., 566», espacio antes de las llamadas ¹¹ y ²⁸, «aqui» y «versiculo». |
 
 **Lo primero de la fase nueva:** una rama desde `origin/main` fresco, con los 4 commits de código y los 3 de documentación por *cherry-pick*, y un PR. Sin eso, nada de §3.1 rige en producción.
@@ -219,7 +219,7 @@ Orden por dependencias y por impacto en el próximo trabajo. Cada etapa es un PR
 1. PR con los 4 commits de código y los 3 de documentación, en una rama desde `origin/main` fresco, por *cherry-pick*.
 2. `CHOKIDAR_USEPOLLING=1` en el script `dev` de la web: las recargas espurias por Spotlight y Time Machine.
 3. Confirmar las 3 entradas de byblos que quedaron «propuestas».
-4. Verificar la ficha de Niccacci contra la portada del PDF.
+4. ~~Verificar la ficha de Niccacci contra la portada del PDF.~~ Verificada por el fundador (2026-10-30).
 5. Decisiones del fundador (§5).
 
 **Hallado en la revisión adversarial de la etapa 0 (2026-10-29).** Se corrigió en el mismo PR lo que el diff introducía: el «Ibid.» ignoraba `footnotes.ibid` de la guía; una nota sin página tras una con página salía «Ibid.» solo; `shortAuthor` partía «Ramón y Cajal, Santiago», entidades con «y», tres autores y coautores con «Jr.»; el prompt de la conclusión daba por tesis la del encuadre. Queda para la etapa 1, porque ya estaba antes (leído con sondas sobre el exportador):
@@ -324,26 +324,56 @@ Queda para etapas siguientes:
   - en las notas, los artículos se arman como libros (ya pasaba antes).
 - **Etapa 3:** el compositor del trabajo entero titula los versículos con `###` y el respaldo sin ensamble con «Versículo N». En esos dos casos no sale el hebreo.
 
-### Etapa 2 · «Revisar el Word antes de entregar» (M) — nuevo, B65 + B70
-**Por qué:** el «Ibid.» de página nueva solo se sabe en el Word guardado por Word, y las ediciones a mano metieron 9 errores en el Word final (medido).
+### Etapa 2 · «Revisión antes de exportar» (M) — rediseñada por el fundador (2026-10-30)
+**Por qué:** los 9 errores del Word final del TI #2 salieron de ediciones hechas a mano en Word **después** de exportar. Esas ediciones se hicieron porque el Word salía incompleto, y eso lo resolvió la etapa 1. El fundador: «¿no deberían resolverse antes de la exportación?». Regla: cada error se corrige donde nace.
+- **Lo que produce el sistema** (vocabulario, nomenclatura, paréntesis) se corrige al generar. Es la etapa 4.
+- **Lo que entra al editar** se corrige en la app, y una revisión lo marca **antes** de exportar.
+- **Sobre el Word guardado** solo se revisa lo que no se puede saber antes: el «Ibid.» que cae al comienzo de una página.
 
-El estudiante sube el .docx que guardó en Word. El sistema lee:
-- `w:lastRenderedPageBreak` y la página de cada nota;
-- el texto de las notas;
-- el cuerpo.
+**Medido** sobre los Word entregados (TI #1 y TI #2), con las reglas de abajo. Todo lo marcado es un error real según la guía, y no hubo ninguna falsa alarma:
+- TI #1: «El lexico registra», sin tilde (el profesor no lo marcó).
+- TI #2:
+  - «aqui» y «versiculo»;
+  - «208..»;
+  - «Waltke-O’Connor» junto a «Waltke y O’Connor»;
+  - «weqatal» dos veces y «qatal» una, sin glosa, en un trabajo que dice perfecto/imperfecto 21 veces.
+- No se marca «sujeto–yiqtol (sujeto seguido de imperfecto)»: está glosado, como permite la regla 22.
 
-Y marca, sin modelo:
-- «Ibid.» al abrir página, con la forma abreviada propuesta;
-- «Ibid.» que no remite a la nota anterior: la nota 21 remitía a Ross;
-- nota con la página repetida o con «..»;
-- toda la nota en cursiva;
-- espacio antes de la llamada (regla 2);
-- «)» o «(» sueltos;
-- palabras frecuentes sin tilde («aqui», «versiculo», «INVESTIGACION»; una lista cerrada y medida, no un corrector general);
-- mezcla de nomenclatura (qatal o yiqtol junto a perfecto o imperfecto, regla 22);
-- formas de autor mezcladas («Waltke-O’Connor» y «Waltke y O’Connor»).
+**Unidades:**
+1. **Revisión del documento, sin modelo** (dominio, `exportReview.ts`). Revisa el texto que va al Word (`assembledMarkdown`). Cada aviso trae el tramo exacto, su posición y, cuando la corrección es mecánica, el reemplazo:
+   - palabras sin tilde, de una **lista cerrada y medida**: solo palabras cuya forma sin tilde no existe en español («aqui», «versiculo», «lexico»…; no «mas», «solo» ni «esta»);
+   - «..» que no es puntos suspensivos;
+   - paréntesis sin cerrar en un párrafo (aviso, sin reemplazo);
+   - nomenclatura mezclada (regla 22): qatal, yiqtol, wayyiqtol o weqatal sin glosa en un trabajo que usa perfecto o imperfecto. Propone el término del trabajo; lo aplica el estudiante;
+   - formas de autor mezcladas: «X-Y» cuando el trabajo también escribe «X y Y»;
+   - los controles mecánicos que ya existen para cada versículo (`proseReview.ts`: rango con guion, coma doble, grave del griego), ahora sobre todo el documento.
+2. **Un solo diálogo antes de exportar.** Junta lo que hoy son avisos sueltos después de descargar (fichas incompletas, ensamble desactualizado, falta de portada) con los avisos del texto. Cada aviso con reemplazo tiene «Aplicar»: corrige el ensamble en la app (`saveStepEdit` sobre el paso de ensamble, con `restoreStoredPageLabels`) y vuelve a revisar. Botones: «Exportar» y «Exportar igual». Si el trabajo no tiene ensamble, solo avisa.
+3. **«Revisar el Word guardado»**, solo para el «Ibid.». El estudiante sube el .docx que guardó en Word, y se lee en el navegador con JSZip (sin subirlo a ningún servidor). Con `lastRenderedPageBreak` se sabe la página de cada nota. Marca la nota que abre página con «Ibid.» y propone la forma abreviada de la obra.
 
-*Dónde:* nuevo servicio de dominio puro sobre el XML, y JSZip como dependencia directa de la web. *Mide:* con el Word del TI #2 de las 16:51, debe marcar los 9 casos medidos y nada más.
+*Mide:*
+- la unidad 1, con los textos del TI #1 y el TI #2: debe dar los casos de arriba y ninguno más;
+- la unidad 3, con el Word del TI #2: 34 notas en 13 páginas.
+
+**Hecho (2026-10-30).**
+- **Unidad 1:** medida sobre los textos completos. El TI #1 da 1 aviso y el TI #2 da 7: los de arriba, sin falsas alarmas.
+- **Unidad 2:** «Aplicar» no corrige sobre un ensamble regenerado sin aceptar, porque pisaría la versión nueva.
+- **Unidad 3:** la página que da `lastRenderedPageBreak` coincide con la del PDF en las 34 notas del TI #2 (14 páginas físicas, contada la portada). El TI #2 no tiene ningún «Ibid.» que abra página. **El TI #1 sí: la nota 40, «Ibid., 437.», abre la página 12** (confirmado en su PDF). Ese «Ibid.» remitía además a un léxico (Ortiz), que la nota 31 excluye del «Ibid.». El profesor no lo marcó.
+
+**Revisión adversarial de la etapa 2 (2026-10-30).** Corregido antes del PR:
+- **Una carrera perdía correcciones.** Si se aplicaban dos seguidas, la segunda partía del texto viejo. «Exportar igual» bajaba el Word sin la corrección. Ahora no se aplica otra ni se exporta hasta que el trabajo vuelve con el texto guardado.
+- **Glosa al revés.** «El perfecto (qatal)» se marcaba y quedaba «el perfecto (perfecto)».
+- **«Ibid.» encadenados.** Tomaban la página de la obra y no la de la nota anterior.
+- **Ficha equivocada.** Un título corto de otra obra le ganaba a la ficha correcta.
+- **URLs dañadas.** «Aplicar las automáticas» corregía dentro de una dirección web.
+- **Falsos avisos de tilde.** «Version», la preposición griega «dia», la revista *Biblica* y los títulos en cursiva.
+- **«Idem».** No se reconocía.
+
+Al volver a medir se encontró una regresión de un arreglo propio: «(v. 1)» contaba como paréntesis sin cerrar. Quedó corregida y probada. Los TI #1 y TI #2 vuelven a dar 1 y 7 avisos.
+
+Queda como posible:
+- en una tabla partida entre páginas, cada celda puede traer su propia marca de página y la página mostrada sale de más. Los avisos no cambian; los TI no tienen tablas;
+- «página N» cuenta desde la portada, no el número impreso al pie;
+- con un ensamble largo, contar las correcciones automáticas tarda unos 80 ms en cada lectura del trabajo (medido por la revisión).
 
 ### Etapa 3 · La tesis y la forma del argumento (L)
 **Por qué:** la introducción tomó la última oración como tesis; la tesis precisa la trajo una indicación; los títulos temáticos dependen de la tesis y de las decisiones.

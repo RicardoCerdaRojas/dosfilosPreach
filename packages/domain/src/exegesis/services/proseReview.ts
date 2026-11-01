@@ -223,6 +223,15 @@ function doubleClosings(parrafos: ReadonlyArray<string>): ProseFinding[] {
 
 // ── 5 · Raya corta, acentos griegos, puntuación ──────────────────────────
 
+/**
+ * Los controles mecánicos —rango con guion, grave del griego, coma doble—,
+ * que corrigen sin leer el argumento. Los usa también la revisión antes de
+ * exportar (`exportReview.ts`) sobre todo el documento.
+ */
+export function mechanicalProseFindings(prose: string): ProseFinding[] {
+    return [...hyphenRanges(prose), ...greekGraves(prose), ...punctuation(prose)];
+}
+
 const RANGO_CON_GUION = /(?<![\p{L}\p{N}/.-])(\d+(?::\d+)?)\s?[-‐‑]\s?(\d+(?::\d+)?)(?![\p{L}\p{N}/-])/gu;
 
 function hyphenRanges(prose: string): ProseFinding[] {
