@@ -4,7 +4,7 @@ import { useSourceViewer } from '@/components/exegesis/citation/SourceViewerProv
 import { abrirFuente } from '@/components/exegesis/citation/destinosDelVisor';
 import { SeriesCorpusOffer } from '@/components/exegesis/SeriesCorpusOffer';
 import { rubricLabel } from '@/components/exegesis/setup/rubricLabel';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Fragment } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -60,6 +60,8 @@ import { StepCard } from '@/components/exegesis/StepCard';
 import { PaperLengthCard } from '@/components/exegesis/PaperLengthCard';
 import { PaperBibliographyCard } from '@/components/exegesis/PaperBibliographyCard';
 import { IncompleteBibliographyGate } from '@/components/exegesis/IncompleteBibliographyGate';
+import { ThesisPanel } from '@/components/exegesis/ThesisPanel';
+import { SectionTitlesPanel } from '@/components/exegesis/SectionTitlesPanel';
 import { useExportReview } from '@/hooks/exegesis/useExportReview';
 import { SavedWordIbidDialog } from '@/components/exegesis/SavedWordIbidDialog';
 import { GlossaryCheckCard } from '@/components/exegesis/GlossaryCheckCard';
@@ -876,7 +878,13 @@ function StepsPanel({
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {pedidos.map(renderStep)}
+                    {pedidos.map(step => (
+                        // La tesis va después de la conclusión y antes de la
+                        // introducción: su lugar en el orden del trabajo (etapa 3.2).
+                        step.kind === 'conclusion' && pedidos.some(s => s.kind === 'introduction')
+                            ? <Fragment key={step.id}>{renderStep(step)}<ThesisPanel paper={paper} /><SectionTitlesPanel paper={paper} /></Fragment>
+                            : renderStep(step)
+                    ))}
                     {/* Lo que el encargo no pide, plegado al final (TP #9, B22). */}
                     <NotRequestedSteps
                         steps={noPedidos}

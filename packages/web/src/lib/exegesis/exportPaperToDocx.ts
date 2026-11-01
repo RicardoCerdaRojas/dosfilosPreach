@@ -36,6 +36,7 @@ import {
     sourceTypeWithoutIbid,
     sectionHeadingKey,
     verseTextBlocks,
+    approvedSectionTitles,
     type BibliographyEntry,
     type ExegeticalPaper,
     type PaperCover,
@@ -57,6 +58,7 @@ import {
     splitHebrew,
     TMS,
 } from './tmsLayout';
+import { findPandocNotes, pandocNotesAsParentheses } from './notasPandoc';
 
 /**
  * Renders an `ExegeticalPaper` to a Word `.docx` Blob with NATIVE
@@ -171,6 +173,8 @@ export async function exportPaperToDocx(
     let bibliographyParagraphAt = -1;
     /** El original y la traducción de cada versículo, para ponerlos bajo su título (B68c). */
     const textosDeVersiculo = verseTextBlocks(paper);
+    /** Los títulos temáticos aprobados (etapa 3.4): el Word los imprime donde el ensamble dice la referencia. */
+    const titulosAprobados = approvedSectionTitles(paper);
     blocks.forEach((block, index) => {
         const inBibliography = bibliographyAt >= 0 && index >= bibliographyAt;
         switch (block.type) {
@@ -187,7 +191,7 @@ export async function exportPaperToDocx(
                     // guía (BIBLIOGRAFÍA y CONTENIDO en redonda, medido en su PDF).
                     children: index === bibliographyAt
                         ? textRuns(block.text.toLocaleUpperCase('es'), { bold: false })
-                        : textRuns(block.text),
+                        : textRuns(block.level === 2 ? titulosAprobados.get(sectionHeadingKey(block.text)) ?? block.text : block.text),
                 }));
                 {
                     // Bajo el título de un versículo, su texto y la traducción
@@ -210,13 +214,13 @@ export async function exportPaperToDocx(
                 break;
             case 'paragraph':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys, registerNote),
                     ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : {}),
                 }));
                 break;
             case 'list-item':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys, registerNote),
                     // En la bibliografía, cada entrada es un párrafo con
                     // sangría francesa: una viñeta delante la desarma.
                     ...(inBibliography ? BIBLIOGRAPHY_PARAGRAPH : { bullet: { level: 0 }, indent: { firstLine: 0 } }),
@@ -224,7 +228,7 @@ export async function exportPaperToDocx(
                 break;
             case 'blockquote':
                 paragraphs.push(new Paragraph({
-                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys),
+                    children: buildInlineRuns(block.text, registerFootnote, citationForm, citationKeys, registerNote),
                     ...BLOCK_QUOTE_PARAGRAPH,
                     // Una cita hebrea se lee de derecha a izquierda y se
                     // alinea a ese lado; sin esto Word la deja colgando a
@@ -340,6 +344,27 @@ export async function exportPaperToDocx(
                     spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 120 },
                     indent: { firstLine: TMS.firstLineIndent },
                     children: noteRuns(citationText),
+                }),
+            ],
+        };
+        return footnoteCounter;
+    }
+
+    /**
+     * Una nota que no es cita (`^[…]`), como la nota metodológica del TI #1
+     * que el profesor llamó «ejemplar». Corta la racha del «Ibid.»: el
+     * siguiente remitiría a esta nota, no a la obra.
+     */
+    function registerNote(texto: string): number {
+        ultimaClave = null;
+        footnoteCounter += 1;
+        const conPunto = /[.!?]\*?$/.test(texto) ? texto : `${texto}.`;
+        footnotes[footnoteCounter] = {
+            children: [
+                new Paragraph({
+                    spacing: { line: TMS.singleLine, lineRule: LineRuleType.AUTO, after: 120 },
+                    indent: { firstLine: TMS.firstLineIndent },
+                    children: noteRuns(conPunto),
                 }),
             ],
         };
@@ -472,15 +497,18 @@ interface CitaDeNota {
 /**
  * El texto de una nota, con el título de la obra en cursiva. La nota
  * Turabian llega con el título entre asteriscos (`*Psalms 1-50*`, igual que
- * en pantalla); un run plano los dejaba impresos en el Word.
+ * en pantalla); un run plano los dejaba impresos en el Word. La nota
+ * metodológica puede traer también negrita (`**…**`).
  */
+const NOTE_EMPHASIS = /\*\*([^*]+)\*\*|(?<!\*)\*([^*]+)\*(?!\*)/g;
+
 function noteRuns(text: string): TextRun[] {
     const size = TMS.footnoteHalfPt;
     const runs: TextRun[] = [];
     let cursor = 0;
-    for (const m of text.matchAll(ITALIC_PATTERN)) {
+    for (const m of text.matchAll(NOTE_EMPHASIS)) {
         if (m.index > cursor) runs.push(...textRuns(text.slice(cursor, m.index), { size }));
-        runs.push(...textRuns(m[1] ?? '', { size, italics: true }));
+        runs.push(...(m[1] !== undefined ? textRuns(m[1], { size, bold: true }) : textRuns(m[2] ?? '', { size, italics: true })));
         cursor = m.index + m[0].length;
     }
     if (cursor < text.length) runs.push(...textRuns(text.slice(cursor), { size }));
@@ -699,7 +727,7 @@ const ITALIC_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
  * matcher is enough — we don't need a full markdown AST.
  */
 function buildInlineRuns(
-    paragraphText: string,
+    textoDelParrafo: string,
     registerFootnote: (citas: ReadonlyArray<CitaDeNota>) => number,
     /**
      * `'parenthetical'` deja la cita donde está, tal como se escribió.
@@ -727,9 +755,11 @@ function buildInlineRuns(
      * de imprenta y referencias bíblicas.
      */
     citationKeys: ReadonlyArray<string | null | undefined> = [],
+    /** Una nota que no es cita (`^[…]`), como la nota metodológica (etapa 3.5). */
+    registerNote?: (text: string) => number,
 ): Array<TextRun | FootnoteReferenceRun> {
     interface Marker {
-        kind: 'citation' | 'bold' | 'italic';
+        kind: 'citation' | 'bold' | 'italic' | 'note';
         start: number;
         end: number;
         body: string;
@@ -740,8 +770,20 @@ function buildInlineRuns(
         parts?: CitaDeNota[];
     }
     const markers: Marker[] = [];
+    // Sin notas al pie, la nota que no es cita queda entre paréntesis en el
+    // texto: `^[…]` crudo no puede llegar al Word.
+    const conNotas = citationForm === 'footnote' && !!registerNote;
+    const paragraphText = conNotas ? textoDelParrafo : pandocNotesAsParentheses(textoDelParrafo);
 
     let m: RegExpExecArray | null;
+    // La nota que no es cita, con la sintaxis de Pandoc `^[…]`: va al pie tal
+    // cual, y lo que haya adentro (una cita, una cursiva) no se vuelve otra
+    // nota. Antes que las citas, para que estas no se metan en ella.
+    if (conNotas) {
+        for (const n of findPandocNotes(paragraphText)) {
+            markers.push({ kind: 'note', start: n.start, end: n.end, body: n.body });
+        }
+    }
     if (citationForm === 'footnote') {
         // Las claves viajan al reconocedor porque hay una forma —título sin
         // comillas— que sin el corpus no se puede distinguir de un pie de
@@ -754,6 +796,8 @@ function buildInlineRuns(
             // es la única señal que la separa de un pie de imprenta o de una
             // referencia bíblica.
             if (!cita.title && !resolvesToCitedSource(cita.author, citationKeys)) continue;
+            // Dentro de una nota metodológica no hay otra nota.
+            if (overlapsExisting(cita.offset, cita.end, markers.filter(mk => mk.kind === 'note'))) continue;
             const part: CitaDeNota = {
                 author: cita.author,
                 pages: cita.pages,
@@ -809,9 +853,11 @@ function buildInlineRuns(
             // derecha a izquierda o Word lo reordena al abrir.
             // La llamada de nota va pegada a la palabra: «ellos¹.», no «ellos ¹.».
             const antes = paragraphText.slice(cursor, mk.start);
-            runs.push(...textRuns(mk.kind === 'citation' && paragraphText[mk.start] === '(' ? antes.trimEnd() : antes));
+            runs.push(...textRuns((mk.kind === 'citation' && paragraphText[mk.start] === '(') || mk.kind === 'note' ? antes.trimEnd() : antes));
         }
-        if (mk.kind === 'citation') {
+        if (mk.kind === 'note') {
+            runs.push(new FootnoteReferenceRun(registerNote!(mk.body)));
+        } else if (mk.kind === 'citation') {
             const id = registerFootnote(mk.parts ?? [{ author: mk.author ?? '', pages: mk.pages ?? null, raw: mk.body }]);
             runs.push(new FootnoteReferenceRun(id));
         } else if (mk.kind === 'bold') {

@@ -111,6 +111,29 @@ export interface ExegeticalPaper {
     assignmentBrief: string | null;
 
     /**
+     * La tesis del trabajo (fase «Lecciones del TI #2», etapa 3; B63).
+     *
+     * Se formula DESPUÉS de aceptar los análisis, no antes: el método va de la
+     * observación al análisis y de ahí a la síntesis, y una tesis previa
+     * invita a la eiségesis (decisión del fundador). La escribe o la elige el
+     * estudiante; aprobada, la conclusión la retoma y la introducción termina
+     * con ella, en vez de adivinarla —en el TI #2 la introducción tomó la
+     * última oración de la conclusión como tesis, y estaba en la primera—.
+     *
+     * Ausente en los trabajos anteriores: los compositores siguen como antes.
+     */
+    thesis?: PaperThesis | null;
+
+    /**
+     * Los títulos temáticos aprobados, por id del paso de versículo (fase
+     * «Lecciones del TI #2», etapa 3.4; B68e): «El pastor que restaura y guía
+     * (v. 3)». Son una capa sobre el ensamble: el ensamble sigue diciendo
+     * «Salmo 23:3», que es la clave con la que se busca cada sección, y el
+     * Word imprime el título aprobado.
+     */
+    sectionTitles?: Record<string, string> | null;
+
+    /**
      * Reference to the user-level style guide active for this paper. The
      * guide is uploaded once per user and reused across papers; we store
      * the id (not a snapshot) so seminary updates flow through automatically
@@ -416,3 +439,28 @@ export const PAPER_COVER_FIELDS: ReadonlyArray<PaperCoverField> = (
  * nuevo nacería llamándose como el anterior.
  */
 export const PAPER_COVER_FIELDS_POR_ENTREGA: ReadonlyArray<PaperCoverField> = ['assignmentTitle'];
+
+/** La tesis del trabajo: el texto, de dónde salió y si el estudiante la aprobó. */
+/**
+ * Tope de la tesis: una o dos oraciones, no un párrafo. Lo leen el caso de
+ * uso que la guarda y el campo de la pantalla: uno solo, para que no se
+ * separen (revisión adversarial de la etapa 3).
+ */
+export const MAX_THESIS_CHARS = 800;
+/** Tope de un título de sección aprobado, en el servidor y en la pantalla. */
+export const MAX_SECTION_TITLE_CHARS = 160;
+
+export interface PaperThesis {
+    text: string;
+    /** `student`: la escribió el estudiante; `proposed`: la propuso el sistema; `edited`: propuesta y retocada. */
+    origin: 'student' | 'proposed' | 'edited';
+    /** `null` mientras es un borrador: solo una tesis aprobada llega a los compositores. */
+    approvedAt: Date | null;
+    updatedAt: Date;
+}
+
+/** La tesis aprobada, la única que leen la introducción y la conclusión. */
+export function approvedThesisOf(paper: Pick<ExegeticalPaper, 'thesis'>): string | null {
+    const tesis = paper.thesis;
+    return tesis?.approvedAt && tesis.text.trim() ? tesis.text.trim() : null;
+}

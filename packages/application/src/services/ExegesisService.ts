@@ -21,6 +21,7 @@ import {
     GeminiVerseAcademicComposer,
     GeminiIdeaPlacer,
     GeminiProseReviewer,
+    GeminiThesisAdvisor,
     GeminiExegesisOrchestrator,
     GeminiSermonComposer,
     GeminiStudyGuideComposer,
@@ -74,6 +75,11 @@ import {
     UpdatePaperExcludedSourcesUseCase,
     UpdatePaperMethodUseCase,
     UpdateStepStudentReadingUseCase,
+    SetPaperThesisUseCase,
+    ProposeThesisUseCase,
+    ReviewThesisUseCase,
+    ProposeHeadingsUseCase,
+    SetSectionTitlesUseCase,
     RenameCitationKeyUseCase,
     SaveAssembledPaperUseCase,
     UpdateStepPlanUseCase,
@@ -171,6 +177,11 @@ class ExegesisService {
     public updatePaperExcludedSources: UpdatePaperExcludedSourcesUseCase;
     public updatePaperMethod: UpdatePaperMethodUseCase;
     public updateStepStudentReading: UpdateStepStudentReadingUseCase;
+    public setPaperThesis: SetPaperThesisUseCase;
+    public proposeThesis: ProposeThesisUseCase;
+    public reviewThesis: ReviewThesisUseCase;
+    public proposeHeadings: ProposeHeadingsUseCase;
+    public setSectionTitles: SetSectionTitlesUseCase;
     public renameCitationKey: RenameCitationKeyUseCase;
     /**
      * Adjunta una guía de estilo al trabajo COPIÁNDOLA. Volver a
@@ -391,6 +402,7 @@ class ExegesisService {
         this.updatePaperExcludedSources = new UpdatePaperExcludedSourcesUseCase(paperRepository);
         this.updatePaperMethod = new UpdatePaperMethodUseCase(paperRepository);
         this.updateStepStudentReading = new UpdateStepStudentReadingUseCase(paperRepository);
+        this.setPaperThesis = new SetPaperThesisUseCase(paperRepository);
         this.renameCitationKey = new RenameCitationKeyUseCase(paperRepository);
         this.setPaperStyleGuide = new SetPaperStyleGuideUseCase(paperRepository, styleGuideRepository);
         // Guardar NO compone: la composición ya está hecha y revisada.
@@ -725,6 +737,12 @@ class ExegesisService {
             styleGuideRepository,
             new GeminiProseReviewer(exegesisModelId),
         );
+        // La tesis con modelo (etapa 3.3): el ruteo la manda a gpt-6.1-sol.
+        const thesisAdvisor = new GeminiThesisAdvisor(exegesisModelId);
+        this.proposeThesis = new ProposeThesisUseCase(paperRepository, thesisAdvisor);
+        this.reviewThesis = new ReviewThesisUseCase(paperRepository, thesisAdvisor);
+        this.proposeHeadings = new ProposeHeadingsUseCase(paperRepository, thesisAdvisor);
+        this.setSectionTitles = new SetSectionTitlesUseCase(paperRepository);
 
         // Ministry composers (sermon / devotional / study guide).
         // Each uses the canonical verse analyses + theologicalHooks

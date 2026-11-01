@@ -1,3 +1,4 @@
+import { approvedThesisBlock } from './approvedThesisBlock';
 import { buildStyleRulesBlock } from '../styleRulesBlock';
 import {
     buildCitationFormBlock,
@@ -97,6 +98,9 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
     // verdad. El exportador ya sabe armar la nota Turabian desde la ficha: lo
     // que necesita del compositor es la cita marcada, no la nota escrita.
     const citationBlock = buildCitationFormBlock(input.citationForm ?? null, lang);
+    // Con tesis aprobada, ella es la tesis: la indicación de regeneración ya
+    // no la define (dos fuentes de tesis competían; revisión adversarial).
+    const conTesis = !!input.approvedThesis?.trim();
 
     const system = lang === 'en'
         ? [
@@ -117,7 +121,7 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
             ``,
             `## Hard rules for the conclusion`,
             `- Synthesize what the body's verse analyses ACTUALLY ESTABLISHED. Do NOT introduce new arguments, new sources, or new lines of inquiry.`,
-            `- Restate the paper's thesis in the form the body demonstrated it — not the form the author originally hoped for. If the regeneration hint states the thesis, that IS the thesis: the author wrote it after the analysis. A thesis in the assignment brief is a hypothesis: restate it only as far as the body demonstrated it.`,
+            `- Restate the paper's thesis in the form the body demonstrated it — not the form the author originally hoped for. ${conTesis ? 'The APPROVED THESIS given in the message IS the thesis: the author wrote it after the analysis, and it prevails over anything the regeneration hint says about the thesis.' : 'If the regeneration hint states the thesis, that IS the thesis: the author wrote it after the analysis.'} A thesis in the assignment brief is a hypothesis: restate it only as far as the body demonstrated it.`,
             `- Return EXPLICITLY to that thesis and sustain it verse by verse with what the grammar, syntax and lexicon showed (verbal conjugations, clauses, constructions). Do NOT list the translations chosen; say what they demonstrate for the thesis.`,
             `- End with a sentence that returns to the thesis.`,
             `- NEVER write "Ibid." or "Id.": every citation names its author key; the exporter builds the shortened notes.`,
@@ -150,7 +154,7 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
             ``,
             `## Reglas duras para la conclusión`,
             `- Sintetiza lo que los análisis verso por verso EFECTIVAMENTE ESTABLECIERON. NO introduzcas argumentos nuevos, fuentes nuevas, ni líneas de indagación nuevas.`,
-            `- Reformula la tesis del paper en la forma que el cuerpo demostró — no la forma que el autor inicialmente esperaba. Si la indicación de regeneración enuncia la tesis, ESA es la tesis: el autor la escribió después del análisis. Una tesis del encuadre es una hipótesis: reformúlala solo hasta donde el cuerpo la demostró.`,
+            `- Reformula la tesis del paper en la forma que el cuerpo demostró — no la forma que el autor inicialmente esperaba. ${conTesis ? 'La TESIS APROBADA que viene en el mensaje ES la tesis: el autor la escribió después del análisis, y prevalece sobre lo que la indicación de regeneración diga de la tesis.' : 'Si la indicación de regeneración enuncia la tesis, ESA es la tesis: el autor la escribió después del análisis.'} Una tesis del encuadre es una hipótesis: reformúlala solo hasta donde el cuerpo la demostró.`,
             `- Vuelve EXPLÍCITAMENTE a esa tesis y sostenla versículo por versículo con lo que la gramática, la sintaxis y el léxico demostraron (conjugaciones verbales, cláusulas, construcciones). NO enumeres las traducciones elegidas: di qué demuestran para la tesis.`,
             `- Termina con una oración que vuelva a la tesis.`,
             `- NUNCA escribas «Ibid.» ni «Id.»: toda cita nombra la clave de su autor; el exportador arma las notas abreviadas.`,
@@ -201,6 +205,8 @@ export function buildConclusionPrompt(input: ComposeConclusionInput): { systemIn
 
     const renderUser = (sourcesBlock: string) => [
         userPrefix,
+        ``,
+        approvedThesisBlock(input.approvedThesis, 'conclusion', lang),
         ``,
         pinnedBlock,
         briefingsHeading,

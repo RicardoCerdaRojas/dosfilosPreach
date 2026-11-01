@@ -1968,12 +1968,16 @@
       "conclusion": {
         "title": "Conclusion not ready to compose",
         "subtitle": "The conclusion is composed from the accepted canonical analyses of each verse.",
-        "hint": "Tip: click \"Accept\" on each verse to lock in the version you want. Then you can compose the conclusion."
+        "hint": "Tip: click \"Accept\" on each verse to lock in the version you want. Then you can compose the conclusion.",
+        "softTitle": "Some verses are not accepted yet",
+        "softSubtitle": "The conclusion synthesizes what the accepted analyses established. If you compose it now, the verses below are left out."
       },
       "introduction": {
         "title": "Introduction not ready to compose",
         "subtitle": "The introduction comes last: it needs the accepted analyses plus the accepted conclusion.",
-        "hint": "Tip: accept the pending verses first, then compose and accept the conclusion, and finally compose the introduction."
+        "hint": "Tip: accept the pending verses first, then compose and accept the conclusion, and finally compose the introduction.",
+        "softTitle": "Some verses are not accepted yet",
+        "softSubtitle": "The introduction presents what the accepted analyses and the conclusion demonstrated. If you compose it now, the verses below are left out."
       },
       "awaitingReviewTitle_one": "{{count}} verse ready to accept",
       "awaitingReviewTitle_other": "{{count}} verses ready to accept",
@@ -1983,7 +1987,10 @@
       "conclusionMissingBody": "Before composing the introduction, compose and accept the conclusion.",
       "acceptCta": "Go accept",
       "analyzeCta": "Go analyze",
-      "close": "Got it"
+      "close": "Got it",
+      "order": "Order of the paper: first the verses, then the conclusion, then the thesis, and the introduction last.",
+      "goBack": "Back to the verses",
+      "proceedAnyway": "Compose anyway"
     },
     "view": {
       "prose": "Prose view",
@@ -2436,7 +2443,10 @@
       "extractStyleGuideManifest": "Extract style-guide manifest",
       "extractProjectBibliography": "Read the course bibliography",
       "classifySourceType": "Classify source type",
-      "generateStep": "Generate step (legacy)"
+      "generateStep": "Generate step (legacy)",
+      "proposeThesis": "Propose a thesis",
+      "reviewThesis": "Review the thesis",
+      "proposeHeadings": "Propose headings"
     }
   },
   "detail": {
@@ -2492,6 +2502,7 @@
         "insertFailed": "Couldn't save the section. Try again."
       },
       "openCitation": "See it in the book",
+      "footnotes": "Footnotes",
       "startCta": "Start generation",
       "generating": "Generating...",
       "regenerating": "Regenerating…",
@@ -3012,5 +3023,59 @@
       "saved": "Added to your reading's log.",
       "failed": "Couldn't save the note. Try again."
     }
+  },
+  "thesis": {
+    "title": "Thesis",
+    "subtitle": "Formulated after accepting the analyses. Once approved, the conclusion returns to it and the introduction ends with it.",
+    "placeholder": "An interpretive, concrete and verifiable claim about what the text does…",
+    "pendingVerses_one": "1 verse is not accepted yet: the thesis is formulated on the accepted analyses.",
+    "pendingVerses_other": "{{count}} verses are not accepted yet: the thesis is formulated on the accepted analyses.",
+    "criteriaTitle": "The course's criteria for a thesis",
+    "criteria": {
+      "interpretive": "It is an interpretive claim, not a description of the paper.",
+      "covers": "It covers every verse of the passage.",
+      "supported": "Each part is supported by an accepted analysis.",
+      "distinguishes": "It distinguishes between possible readings.",
+      "connects": "It connects with the previous unit.",
+      "answers": "It answers what the assignment asks."
+    },
+    "saveDraft": "Save draft",
+    "approve": "Approve thesis",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "approvedBadge": "Approved",
+    "approvedToast": "Thesis approved. The conclusion and the introduction will use it the next time you compose them.",
+    "savedToast": "Thesis draft saved.",
+    "saveFailed": "The thesis could not be saved. Try again.",
+    "regenerateNote": "The conclusion or the introduction was already accepted: regenerate them so they return to this thesis.",
+    "propose": "Propose a thesis",
+    "proposing": "Proposing…",
+    "review": "Review my thesis",
+    "reviewing": "Reviewing…",
+    "proposalsTitle": "Proposed theses",
+    "support": "Verse-by-verse support",
+    "useProposal": "Use this thesis",
+    "reviewTitle": "Review against the course's criteria",
+    "verdict": {
+      "cumple": "Meets",
+      "no-cumple": "Does not meet",
+      "no-aplica": "Not applicable"
+    },
+    "suggestion": "A corrected thesis:",
+    "useSuggestion": "Use the corrected one",
+    "noCredits": "You don't have processing balance for this. Top up and try again.",
+    "proposeFailed": "Theses could not be proposed. Try again.",
+    "reviewFailed": "The thesis could not be reviewed. Try again."
+  },
+  "sectionTitles": {
+    "title": "Verse headings",
+    "subtitle": "A thematic heading per verse, such as “The shepherd who restores and guides (v. 3)”. The Word file prints them instead of the reference.",
+    "placeholder": "Thematic heading for {{label}}",
+    "propose": "Propose headings",
+    "proposing": "Proposing…",
+    "save": "Save headings",
+    "savedToast": "Headings saved: the Word file will use them.",
+    "saveFailed": "The headings could not be saved. Try again.",
+    "proposeFailed": "Headings could not be proposed. Try again."
   }
 }

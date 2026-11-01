@@ -388,14 +388,28 @@ Queda como posible:
      5. se conecta con la unidad anterior;
      6. responde al enunciado.
    - *Mide antes de construir:* con el TI #1, que debe aprobar la tesis entregada, y con el TI #2, que debe aprobar la tesis acordada y marcar la de la v4 por no conectarse con los vv. 1–3. Gasto de API: se pide antes (prepago).
+   - **Medido (2026-10-31), con el TI #1 y el TI #2 leídos de producción y `gpt-6.1-sol`, razonamiento bajo.**
+     - **Primera ronda:** la revisión distinguía, porque marcó la v4 y la tesis descriptiva, pero era demasiado estricta. Reprobó la tesis del TI #1 (98/100) en 4 criterios y la acordada del TI #2 en 2, porque leía «cubre» y «distingue» como si la tesis tuviera que enumerar cada versículo. Sus correcciones eran tesis largas.
+     - **Calibración:** una tesis tiene una o dos oraciones. «Cubre» quiere decir que cada versículo la desarrolla. «Distingue» solo falla si la tesis contradice una decisión del análisis.
+     - **Segunda ronda:** el TI #1 cumple todo (conexión: no aplica) y el TI #2 acordado cumple todo. La v4 falla solo en «se conecta con 1–3», con una corrección breve. La descriptiva falla en «interpretativa».
+     - **Propuestas:** primero eran temáticas; con la regla de nombrar la construcción decisiva, ya dicen qué muestra la sintaxis (la cláusula causal sin verbo, el perfecto consecutivo, el Polel frente al Hifil), con 50–58 palabras y sin errores de sujeto.
+     - **Costo real:** de 0,027 a 0,045 USD por llamada, 6–22 s. Por eso el fundador fijó el cobro en 0,04 USD por revisar y 0,05 por proponer, no 0,02. La medición costó unos 0,51 USD.
 2. **La introducción y la conclusión leen `thesis`**, no la adivinan. La introducción termina con ella y la conclusión la retoma.
    - *Dónde:* `GeminiIntroductionComposer.ts:146,189-206` y `GeminiConclusionComposer.ts:120,153`.
 3. **Títulos temáticos y subtítulos propuestos (B68e).**
    - Un título por versículo y uno por cuestión, sacados de las preguntas, de las decisiones y de la tesis.
    - El estudiante los acepta o los cambia.
    - *Dónde:* `sectionHeadings` (`assemblyContents.ts:223`) y `canonicalizeQuestionHeadings` (`composedVerseSections.ts:224`).
+   - **Hecho (2026-10-31), por versículo.** Medido: la propuesta sin modelo, que tomaba la primera cláusula de la traducción, daba «Salmo de David (v. 1)» o el versículo entero, así que no sirve. Con el modelo y la tesis aprobada, los títulos son temáticos, de 7–9 palabras, en progresión y con «(v. N)»; para el TI #1 propuso «El pastor restaura y guía conforme a su carácter (v. 3)» frente al entregado «El pastor que restaura y guía (v. 3)». Costo medido 0,021–0,030 USD: se cobran 0,03. Los títulos aprobados son una capa (`sectionTitles`): el ensamble sigue diciendo «Salmo 23:3» y el Word imprime el título, con el hebreo debajo. **Los subtítulos por cuestión quedan para la etapa 4**, porque viven dentro de la prosa del versículo y los escribe su compositor.
 4. **Nota metodológica (nuevo):** el texto base, que las traducciones son propias y qué papel tiene cada fuente, como la nota 2 del TI #1, que el profesor llamó «ejemplar». La propone el compositor de la introducción.
-5. **Aviso del orden (B60):** «Primero la conclusión; luego la tesis; al final la introducción».
+   - **Hecho (2026-10-31).**
+     - La nota que no es cita se escribe con la sintaxis de Pandoc `^[…]` y el Word la pone al pie.
+     - Lo que haya adentro no se vuelve otra nota.
+     - Corta la racha del «Ibid.».
+     - La introducción la propone solo cuando el trabajo cita en nota al pie.
+     - **Supuesto:** que el compositor la escriba bien. No se midió con el modelo; se ve al regenerar la introducción.
+     - En pantalla, la prosa muestra `^[…]` tal cual.
+5. **Aviso del orden (B60):** **hecho (3.1).** «Primero la conclusión; luego la tesis; al final la introducción».
    - Hoy la conclusión solo se bloquea con 0 versículos aceptados (`StepCard.tsx:425`), así que se genera con versículos pendientes y sin aviso.
    - Las pistas son solo tooltips (`:862, 881, 945, 964`).
    - Se agrega una advertencia suave si hay versículos sin aceptar.

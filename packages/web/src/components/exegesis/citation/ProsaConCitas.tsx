@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { pandocNotesAsGfmFootnotes } from '@/lib/exegesis/notasPandoc';
 import { enlazarCitas, PREFIJO_CITA, type CitaEnlazada } from './destinosDelVisor';
 
 /**
@@ -8,18 +9,27 @@ import { enlazarCitas, PREFIJO_CITA, type CitaEnlazada } from './destinosDelViso
  * p. N)» que nombra una fuente del trabajo abre el visor en esa página. El
  * resto del markdown se dibuja igual que antes.
  */
-export function ProsaConCitas({ markdown, claves, onOpenCita, tituloCita }: {
+export function ProsaConCitas({ markdown, claves, onOpenCita, tituloCita, etiquetaNotas }: {
     markdown: string;
     claves: ReadonlyArray<string | null | undefined>;
     onOpenCita: (cita: CitaEnlazada) => void;
     /** El aviso al pasar el mouse sobre una cita («Ver en el libro»). */
     tituloCita: string;
+    /**
+     * El rótulo, para lectores de pantalla, de las notas al pie: la nota
+     * metodológica `^[…]` de la introducción se dibuja como nota (etapa 3.5).
+     */
+    etiquetaNotas?: string;
 }) {
-    const { markdown: enlazado, citas } = useMemo(() => enlazarCitas(markdown, claves), [markdown, claves]);
+    const { markdown: enlazado, citas } = useMemo(
+        () => enlazarCitas(pandocNotesAsGfmFootnotes(markdown), claves),
+        [markdown, claves],
+    );
     return (
         <div className="prose prose-base dark:prose-invert max-w-none leading-relaxed">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                remarkRehypeOptions={etiquetaNotas ? { footnoteLabel: etiquetaNotas } : undefined}
                 components={{
                     a: ({ href, children, node: _node, ...rest }) => {
                         const cita = href?.startsWith(PREFIJO_CITA) ? citas[Number(href.slice(PREFIJO_CITA.length))] : undefined;

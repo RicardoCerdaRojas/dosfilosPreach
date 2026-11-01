@@ -50,6 +50,7 @@ import {
     ComposeSectionPrecheckDialog,
     type ComposeSectionPrecheckMissing,
 } from '@/components/exegesis/ComposeSectionPrecheckDialog';
+import { composePrecheck } from '@/lib/exegesis/composePrecheck';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -170,6 +171,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // before having any accepted verse analyses.
     const [precheckOpen, setPrecheckOpen] = useState(false);
     const [precheckMissing, setPrecheckMissing] = useState<ComposeSectionPrecheckMissing | null>(null);
+    /** La composición que espera el «Componer igual» del aviso suave (B60). */
+    const [precheckProceed, setPrecheckProceed] = useState<(() => void) | null>(null);
     // Collapse behavior:
     //   - Accepted steps default to COLLAPSED (the user already
     //     approved; detail is rarely re-read in the same session).
@@ -416,28 +419,19 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
     // toast.
     const buildPrecheckMissing = (
         section: 'conclusion' | 'introduction',
-    ): ComposeSectionPrecheckMissing | null => {
-        if (!allSteps) return null;
-        const verses = allSteps.filter(s => s.kind === 'verse');
-        const acceptedCount = verses.filter(s => s.accepted?.canonicalAnalysis).length;
-        const conclusionMissing = section === 'introduction'
-            && !(allSteps.find(s => s.kind === 'conclusion')?.accepted?.markdown?.trim());
-        if (acceptedCount > 0 && !conclusionMissing) return null;
-        const awaitingReview = verses.filter(
-            s => s.state === 'awaiting-review' && s.current?.canonicalAnalysis,
-        );
-        const awaitingReviewIds = new Set(awaitingReview.map(s => s.id));
-        const noAnalysis = verses.filter(
-            s => !s.accepted?.canonicalAnalysis && !awaitingReviewIds.has(s.id),
-        );
-        return { awaitingReview, noAnalysis, conclusionMissing };
+    ): ComposeSectionPrecheckMissing | null => (allSteps ? composePrecheck(allSteps, section) : null);
+
+    /** Abre el aviso; si no bloquea, «Componer igual» sigue con `proceed`. */
+    const openPrecheck = (missing: ComposeSectionPrecheckMissing, proceed: () => void) => {
+        setPrecheckMissing(missing);
+        setPrecheckProceed(() => (missing.blocking ? null : proceed));
+        setPrecheckOpen(true);
     };
 
-    const handleComposeConclusion = async (regenerationHint?: string) => {
-        const missing = buildPrecheckMissing('conclusion');
+    const handleComposeConclusion = async (regenerationHint?: string, skipPrecheck = false) => {
+        const missing = skipPrecheck ? null : buildPrecheckMissing('conclusion');
         if (missing) {
-            setPrecheckMissing(missing);
-            setPrecheckOpen(true);
+            openPrecheck(missing, () => void handleComposeConclusion(regenerationHint, true));
             return;
         }
         try {
@@ -450,11 +444,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             }));
         }
     };
-    const handleComposeIntroduction = async (regenerationHint?: string) => {
-        const missing = buildPrecheckMissing('introduction');
+    const handleComposeIntroduction = async (regenerationHint?: string, skipPrecheck = false) => {
+        const missing = skipPrecheck ? null : buildPrecheckMissing('introduction');
         if (missing) {
-            setPrecheckMissing(missing);
-            setPrecheckOpen(true);
+            openPrecheck(missing, () => void handleComposeIntroduction(regenerationHint, true));
             return;
         }
         try {
@@ -496,14 +489,16 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         [sourceViewer, paperId],
     );
     const tituloCita = t('detail.steps.openCitation');
+    const etiquetaNotas = t('detail.steps.footnotes');
     const markdownRenderizado = useMemo(() => (
         <ProsaConCitas
             markdown={prosaEntregada}
             claves={clavesDelTrabajo}
             onOpenCita={abrirCitaDeLaProsa}
             tituloCita={tituloCita}
+            etiquetaNotas={etiquetaNotas}
         />
-    ), [prosaEntregada, clavesDelTrabajo, abrirCitaDeLaProsa, tituloCita]);
+    ), [prosaEntregada, clavesDelTrabajo, abrirCitaDeLaProsa, tituloCita, etiquetaNotas]);
 
     const anyPipelinePending =
         generateStep.isPending
@@ -1444,10 +1439,11 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     open={precheckOpen}
                     onOpenChange={(open) => {
                         setPrecheckOpen(open);
-                        if (!open) setPrecheckMissing(null);
+                        if (!open) { setPrecheckMissing(null); setPrecheckProceed(null); }
                     }}
                     section={isConclusion ? 'conclusion' : 'introduction'}
                     missing={precheckMissing}
+                    onProceed={precheckProceed ?? undefined}
                     language={language}
                 />
             )}
