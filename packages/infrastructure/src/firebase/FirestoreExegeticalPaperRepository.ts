@@ -16,6 +16,7 @@ import {
 import { getFunctions,
     httpsCallable } from 'firebase/functions';
 import { db } from '../config/firebase';
+import { compactVersions, expandVersions, firestoreBytes, PAPER_BYTES_MAX, WRITE_COMPACT_VERSIONS } from './stepVersionStorage';
 import type {
     ExegeticalPaper,
     ExegeticalPaperDraft,
@@ -40,7 +41,7 @@ import type {
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
 import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, isProsePath, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy,
-    resolveExegeticalMethod, stepAfterVersionMove, stepPlanWithoutSource, swapPreviousProse, trimStepVersions, versionsToKeepOnAppend, versionUnderReview, withRecomposedProse } from '@dosfilos/domain';
+    resolveExegeticalMethod, stepAfterVersionMove, stepPlanWithoutSource, swapPreviousProse, trimStepVersions, versionsToKeepOnAppend, versionUnderReview, withoutOldestVersions, withRecomposedProse } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -945,10 +946,25 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             // El mutador trabaja sobre la forma de DOMINIO —con `current` y
             // `accepted` como objetos— y lo que se escribe es la forma
             // guardada, con esas dos por referencia.
-            const next = mutator(deserializeStep(steps[idx]!));
-            steps[idx] = serializeStep(next) as unknown as ExegeticalStep;
+            let next = mutator(deserializeStep(steps[idx]!));
+            const conEste = (paso: ExegeticalStep) => steps.map((p, i) => (i === idx ? serializeStep(paso) : p));
+            const pesa = (pasos: unknown[]) => firestoreBytes({ ...data, steps: pasos });
+            const cabe = (pasos: unknown[]) => pesa(pasos) <= PAPER_BYTES_MAX;
+            let escritos = conEste(next);
+
+            // No cabría, y una generación ya está pagada a estas alturas: se quita lo
+            // más viejo de este paso. Lo que casi no agrega peso no recorta nada: volver
+            // a serializar ya suma unos bytes, y moverse por el historial no borra. El
+            // cálculo es pesimista, así que nunca se rechaza aquí: la última palabra es
+            // de Firestore, y su rechazo se le explica al autor (`avisarSiDocumentoLleno`).
+            if (!cabe(escritos) && pesa(escritos) > pesa(steps) + 1024) {
+                const antes = new Map(deserializeStep(steps[idx]!).versions.map(v => [v.id, JSON.stringify(v)]));
+                const tocadas = next.versions.filter(v => antes.get(v.id) !== JSON.stringify(v)).map(v => v.id);
+                next = withoutOldestVersions(next, paso => cabe(conEste(paso)), tocadas);
+                escritos = conEste(next);
+            }
             updatedStep = next;
-            tx.update(ref, { steps, updatedAt: new Date() });
+            tx.update(ref, { steps: escritos, updatedAt: new Date() });
         });
 
         if (!updatedStep) throw new Error('Step mutation produced no result');
@@ -1460,7 +1476,7 @@ function deserializeStepVersion(raw: any): ExegeticalStepVersion {
 
 export function deserializeStep(raw: any): ExegeticalStep {
     const versions: ExegeticalStepVersion[] = Array.isArray(raw?.versions)
-        ? raw.versions.map(deserializeStepVersion)
+        ? expandVersions(raw.versions).map(deserializeStepVersion)
         : [];
     const porId = new Map(versions.map(v => [v.id, v]));
 
@@ -1519,9 +1535,10 @@ export function serializeStep(step: ExegeticalStep): Record<string, unknown> {
     asegura(step.accepted);
 
     const { current, accepted, ...resto } = step as ExegeticalStep & Record<string, unknown>;
+    const limpias = versions.map(v => sinIndefinidos(v as unknown as Record<string, unknown>) as Record<string, unknown> & { id: string });
     const out: Record<string, unknown> = {
         ...resto,
-        versions: versions.map(v => sinIndefinidos(v as unknown as Record<string, unknown>)),
+        versions: WRITE_COMPACT_VERSIONS ? compactVersions(limpias, [accepted?.id, step.lastAcceptedVersionId, current?.id]) : limpias,
         currentId: current?.id ?? null,
         acceptedId: accepted?.id ?? null,
     };

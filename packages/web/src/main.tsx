@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { ThemeProvider } from '@/components/theme-provider'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { avisarSiDocumentoLleno } from '@/lib/exegesis/avisoDocumentoLleno'
 
 // Un despliegue renombra los trozos de código que se cargan bajo demanda. Una
 // pestaña abierta desde antes pide nombres que ya no existen y recibe HTML
@@ -41,7 +42,10 @@ setExegesisPricingTracker((event, metadata) => {
 });
 
 // Create a client
-const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: QUERY_GC_TIME_MS, retry: queryRetry } } });
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { gcTime: QUERY_GC_TIME_MS, retry: queryRetry } },
+  mutationCache: new MutationCache({ onError: avisarSiDocumentoLleno }),
+});
 
 // Suppress known Excalidraw warning about controlled/uncontrolled inputs
 // This is a known issue in the Excalidraw library and doesn't affect functionality

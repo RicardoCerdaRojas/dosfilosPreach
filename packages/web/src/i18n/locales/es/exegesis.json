@@ -2417,6 +2417,7 @@
     }
   },
   "detail": {
+    "documentFull": "Este trabajo llegó al límite de tamaño y el último cambio no se guardó. Escríbenos para ayudarte a liberar espacio.",
     "back": "Volver al listado",
     "backToProject": "Volver al proyecto",
     "backToSeries": "Volver a la serie",
