@@ -563,6 +563,17 @@ export function useExegesisPapers() {
         },
     });
 
+    /** Deshacer o rehacer «Regenerar». Sin modelo y sin cobro. */
+    const undoStepChange = useMutation({
+        mutationFn: async ({ paperId, stepId, action, fromVersionId }: { paperId: string; stepId: string; action: 'undo' | 'redo'; fromVersionId: string }) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.undoStepChange.execute({ ownerId: user.uid, paperId, stepId, action, fromVersionId });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        },
+    });
+
     // Source-type auto-classification — single Gemini call over the
     // first ~5k chars of a resource's extracted text. Used by the
     // corpus-attach UI to pre-select the SourceType dropdown.
@@ -749,6 +760,7 @@ export function useExegesisPapers() {
         setStepInclusion,
         placeIdeaInSection,
         saveStepEdit,
+        undoStepChange,
         verifyStepCitations,
         reviewCitation,
         correctCitation,

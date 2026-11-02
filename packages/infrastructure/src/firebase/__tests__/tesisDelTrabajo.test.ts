@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { deserializeThesis } from '../FirestoreExegeticalPaperRepository';
+import { deserializeStep, deserializeThesis } from '../FirestoreExegeticalPaperRepository';
 
 /** Etapa 3.2: la tesis vuelve de Firestore con fechas (llegan como Timestamp) y sin basura. */
 const ts = (d: Date) => ({ toDate: () => d });
@@ -15,5 +15,14 @@ describe('deserializeThesis', () => {
     it('sin texto no hay tesis (trabajos anteriores)', () => {
         expect(deserializeThesis(undefined)).toBeNull();
         expect(deserializeThesis({ text: '   ' })).toBeNull();
+    });
+});
+
+describe('la prosa guardada para deshacer', () => {
+    it('vuelve de Firestore con las fechas de sus revisiones como Date', () => {
+        const fecha = new Date('2026-11-02T10:00:00Z');
+        const v = { id: 'v1', markdown: 'Nueva.', previousProse: { markdown: 'Antes.', undone: true, citationReviews: [{ path: 'prosa@5', note: 'n', reviewedAt: ts(fecha) }] } };
+        const paso = deserializeStep({ id: 's', versions: [v], currentId: 'v1', acceptedId: 'v1' });
+        expect(paso.accepted!.previousProse).toEqual({ markdown: 'Antes.', undone: true, citationReviews: [{ path: 'prosa@5', note: 'n', reviewedAt: fecha }] });
     });
 });

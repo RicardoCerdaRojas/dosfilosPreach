@@ -40,7 +40,7 @@ import type {
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
 import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, isProsePath, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy,
-    resolveExegeticalMethod, stepPlanWithoutSource, trimStepVersions, versionUnderReview } from '@dosfilos/domain';
+    resolveExegeticalMethod, stepAfterVersionMove, stepPlanWithoutSource, swapPreviousProse, trimStepVersions, versionsToKeepOnAppend, versionUnderReview, withRecomposedProse } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -688,7 +688,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             // imposible de escribir.
             step.versions = trimStepVersions(
                 [...step.versions, fullVersion],
-                [step.accepted?.id, fullVersion.id],
+                versionsToKeepOnAppend(step, fullVersion),
             );
             step.current = fullVersion;
             step.state = 'awaiting-review';
@@ -842,6 +842,46 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         return updatedVersion;
     }
 
+    async swapStepVersionProse(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        versionId: string,
+    ): Promise<ExegeticalStep> {
+        return this.mutateStep(ownerId, paperId, stepId, (step) => {
+            const idx = step.versions.findIndex(v => v.id === versionId);
+            if (idx === -1) throw new Error(`Version ${versionId} not found in step ${stepId}`);
+            const next = swapPreviousProse(step.versions[idx]!);
+            const versions = [...step.versions];
+            versions[idx] = { ...next, verifications: next.verifications ? sinConteosDeProsa(next.verifications) : next.verifications };
+            step.versions = versions;
+            if (step.current?.id === versionId) step.current = versions[idx]!;
+            if (step.accepted?.id === versionId) step.accepted = versions[idx]!;
+            step.updatedAt = new Date();
+            return step;
+        });
+    }
+
+    async moveToStepVersion(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        targetVersionId: string,
+        direction: 'undo' | 'redo',
+        canAccept: boolean,
+    ): Promise<ExegeticalStep> {
+        return this.mutateStep(ownerId, paperId, stepId, (step) => {
+            const target = step.versions.find(v => v.id === targetVersionId);
+            if (!target) throw new Error(`Version ${targetVersionId} not found in step ${stepId}`);
+            const next = stepAfterVersionMove(step, target, direction, canAccept);
+            step.current = next.current;
+            step.accepted = next.accepted;
+            step.state = next.state;
+            step.updatedAt = new Date();
+            return step;
+        });
+    }
+
     async setStepVersionMarkdown(
         ownerId: string,
         paperId: string,
@@ -859,16 +899,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             // Prosa nueva: lo verificado de la prosa anterior ya no aplica
             // (mismo criterio que `buildManualEditVersion`).
             const next: ExegeticalStepVersion = {
-                ...previa,
-                markdown,
-                ...(previa.citationVerdicts
-                    ? { citationVerdicts: previa.citationVerdicts.filter(v => v.origin !== 'prose') }
-                    : {}),
-                // Y sus revisiones a mano: van por posición en el texto
-                // (`prosa@N`) y se pegarían a otra cita (revisión de 8b).
-                ...(previa.citationReviews
-                    ? { citationReviews: previa.citationReviews.filter(r => !isProsePath(r.path)) }
-                    : {}),
+                ...withRecomposedProse(previa, markdown),
                 ...(previa.verifications ? { verifications: sinConteosDeProsa(previa.verifications) } : {}),
             };
             const versions = [...step.versions];
@@ -1406,6 +1437,18 @@ function deserializeStepVersion(raw: any): ExegeticalStepVersion {
                     note: String(r?.note ?? ''),
                     reviewedAt: toDateOrNull(r?.reviewedAt) ?? new Date(),
                 })),
+            }
+            : {}),
+        ...(Array.isArray(raw?.previousProse?.citationReviews)
+            ? {
+                previousProse: {
+                    ...raw.previousProse,
+                    citationReviews: raw.previousProse.citationReviews.map((r: any) => ({
+                        path: String(r?.path ?? ''),
+                        note: String(r?.note ?? ''),
+                        reviewedAt: toDateOrNull(r?.reviewedAt) ?? new Date(),
+                    })),
+                },
             }
             : {}),
     };

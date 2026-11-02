@@ -17,6 +17,8 @@ import {
     ShieldCheck,
     MoreVertical,
     Undo2,
+    Undo,
+    Redo,
     MessageSquarePlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -60,6 +62,7 @@ import { CreditPacksDialog } from '@/pages/library/components/CreditPacksDialog'
 import {
     formatPassageReference,
     isAbandonedGeneration,
+    stepHistoryMoves,
     stepTextForEditing,
     versionUnderReview,
     ABANDONED_GENERATION_AFTER_MS,
@@ -131,6 +134,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         generateStep,
         acceptStep,
         saveStepEdit,
+        undoStepChange,
         analyzeVerseCanonically,
         composeConclusionFromAnalyses,
         composeIntroductionFromAnalyses,
@@ -502,7 +506,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         || analyzeVerseCanonically.isPending
         || composeConclusionFromAnalyses.isPending
         || composeIntroductionFromAnalyses.isPending
-        || composeVerseAcademicProse.isPending;
+        || composeVerseAcademicProse.isPending
+        || undoStepChange.isPending;
 
     /**
      * La versión actual del paso está por cambiar: nada que trabaje sobre ella
@@ -625,6 +630,29 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         }
     };
 
+    /**
+     * Deshacer o rehacer «Regenerar» (decisión del fundador, 2026-11-02).
+     * Sin modelo y sin cobro: vuelve a lo que ya estaba guardado.
+     */
+    const movimientos = stepHistoryMoves(step);
+    const handleStepHistory = async (action: 'undo' | 'redo') => {
+        const move = movimientos[action];
+        if (!move) return;
+        try {
+            const r = await undoStepChange.mutateAsync({ paperId, stepId: step.id, action, fromVersionId: move.versionId });
+            // El versículo restaurado debía volver al documento: si su sección
+            // no apareció, el Word sigue con lo otro, y hay que decirlo.
+            if (isVerse && hasAssembly && !r.assemblyUpdated) {
+                toast.warning(t('canonical.recompose.toast.assemblyUntouched'));
+            } else {
+                toast.success(t(action === 'undo' ? 'detail.steps.toast.undone' : 'detail.steps.toast.redone'));
+            }
+        } catch (err) {
+            console.error('[exegesis] step history move failed:', err);
+            toast.error(t('detail.steps.toast.undoFailed'));
+        }
+    };
+
     const handleSaveEdit = async () => {
         try {
             // Se guarda en la forma interna: las citas que no tocó vuelven a
@@ -672,10 +700,15 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
      */
     const accionesDelEncabezado: StepHeaderAction[] = (() => {
         const ic = 'h-3.5 w-3.5';
+        const historial: StepHeaderAction[] = [
+            ...(movimientos.undo ? [{ key: 'undoChange', label: t('detail.steps.action.undoChange'), icon: <Undo className={ic} />, onClick: () => { void handleStepHistory('undo'); }, disabled: anyPipelinePending }] : []),
+            ...(movimientos.redo ? [{ key: 'redoChange', label: t('detail.steps.action.redoChange'), icon: <Redo className={ic} />, onClick: () => { void handleStepHistory('redo'); }, disabled: anyPipelinePending }] : []),
+        ];
         if (isReview && !editing) {
             return [
                 { key: 'regenerate', label: t('detail.steps.action.regenerate'), icon: <RotateCcw className={ic} />, onClick: () => setRegenerateOpen(true), disabled: versionEnVuelo, pending: anyPipelinePending },
                 { key: 'edit', label: t('detail.steps.action.editManual'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: versionEnVuelo },
+                ...historial,
 
                 // Las citas se revisan en su página, con o sin análisis: el
                 // diálogo sólo mostraba y se vaciaba al recargar (TP #7, #29;
@@ -686,6 +719,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         if (showAccepted && !editing) {
             const acciones: StepHeaderAction[] = [
                 { key: 'edit', label: t('detail.steps.action.editAccepted'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: anyPipelinePending },
+                ...historial,
                 ...(previewMarkdown.trim()
                     ? [{ key: 'idea', label: t('detail.steps.addIdea.action'), icon: <MessageSquarePlus className={ic} />, onClick: () => setIdeaOpen(true), disabled: anyPipelinePending }]
                     : []),
@@ -1179,6 +1213,18 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             <Pencil className="h-3.5 w-3.5 mr-1.5" />
                             {t('detail.steps.action.editManual')}
                         </Button>
+                        {movimientos.undo && (
+                            <Button size="sm" variant="ghost" onClick={() => void handleStepHistory('undo')} disabled={versionEnVuelo} title={t('detail.steps.action.undoChangeTooltip')}>
+                                <Undo className="h-3.5 w-3.5 mr-1.5" />
+                                {t('detail.steps.action.undoChange')}
+                            </Button>
+                        )}
+                        {movimientos.redo && (
+                            <Button size="sm" variant="ghost" onClick={() => void handleStepHistory('redo')} disabled={versionEnVuelo} title={t('detail.steps.action.redoChangeTooltip')}>
+                                <Redo className="h-3.5 w-3.5 mr-1.5" />
+                                {t('detail.steps.action.redoChange')}
+                            </Button>
+                        )}
 
                         {/* Migrate-to-canonical entry point also lives in
                             the awaiting-review footer for verse steps that
@@ -1266,6 +1312,30 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         >
                             <MessageSquarePlus className="h-3 w-3" />
                             {t('detail.steps.addIdea.action')}
+                        </button>
+                    )}
+                    {movimientos.undo && (
+                        <button
+                            type="button"
+                            onClick={() => void handleStepHistory('undo')}
+                            disabled={anyPipelinePending}
+                            title={t('detail.steps.action.undoChangeTooltip')}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-success disabled:opacity-50"
+                        >
+                            <Undo className="h-3 w-3" />
+                            {t('detail.steps.action.undoChange')}
+                        </button>
+                    )}
+                    {movimientos.redo && (
+                        <button
+                            type="button"
+                            onClick={() => void handleStepHistory('redo')}
+                            disabled={anyPipelinePending}
+                            title={t('detail.steps.action.redoChangeTooltip')}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-success disabled:opacity-50"
+                        >
+                            <Redo className="h-3 w-3" />
+                            {t('detail.steps.action.redoChange')}
                         </button>
                     )}
                     <button

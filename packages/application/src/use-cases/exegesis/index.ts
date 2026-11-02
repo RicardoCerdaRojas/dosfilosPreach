@@ -160,6 +160,8 @@ export {
 export { AcceptStepUseCase } from './AcceptStepUseCase';
 export { SetStepInclusionUseCase, type SetStepInclusionInput } from './SetStepInclusionUseCase';
 export { SaveStepEditUseCase } from './SaveStepEditUseCase';
+export { UndoStepChangeUseCase, STEP_HISTORY_STALE } from './UndoStepChangeUseCase';
+export type { UndoStepChangeInput, UndoStepChangeOutput } from './UndoStepChangeUseCase';
 export {
     VerifyStepCitationsUseCase,
     type VerifyStepCitationsInput,

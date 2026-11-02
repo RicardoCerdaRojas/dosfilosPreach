@@ -2299,14 +2299,14 @@
     },
     "recompose": {
       "title": "Recomponer {{verse}}",
-      "description": "Se vuelve a redactar la prosa de este verso y de ninguno más. El análisis, las citas y sus veredictos quedan como están.",
+      "description": "Se vuelve a redactar la prosa de este verso y de ninguno más. El análisis, sus citas y sus veredictos quedan como están.",
       "current": "Ahora tiene {{words}} palabras (≈ {{pages}} páginas).",
       "guidanceLabel": "Qué falta o qué corregir (opcional)",
       "guidancePlaceholder": "Ej.: «Salió como ficha: desarrolla la morfología de יְשׁוֹבֵב en prosa, explica el contraste polel/hifil y cierra con la decisión de traducción».",
       "targetLabel": "Palabras objetivo",
       "targetPlaceholder": "800",
       "targetHint": "Sugerido a partir de la extensión que pide la rúbrica. Puedes cambiarlo o dejarlo vacío.",
-      "safety": "No se toca el análisis: las citas verificadas y las revisiones que hiciste siguen igual. Si el trabajo ya está ensamblado, la prosa nueva entra en su sección.",
+      "safety": "No se toca el análisis. La prosa se reescribe entera, también lo que editaste a mano, y sus citas quedan sin verificar. Si no te convence, puedes volver a la prosa anterior con «Deshacer». Si el trabajo ya está ensamblado, la prosa nueva entra en su sección.",
       "cancel": "Cancelar",
       "submit": "Recomponer este verso",
       "toast": {
@@ -2539,7 +2539,11 @@
         "redoTooltip": "Devuelve el paso a revisión sin tocar el contenido: queda otra vez con los botones de aceptar y regenerar.",
         "saveEdit": "Guardar edición",
         "expand": "Expandir",
-        "collapse": "Colapsar"
+        "collapse": "Colapsar",
+        "undoChange": "Deshacer",
+        "undoChangeTooltip": "Vuelve a la versión anterior de este paso.",
+        "redoChange": "Rehacer",
+        "redoChangeTooltip": "Vuelve a la versión que deshiciste. Queda en revisión."
       },
       "gate": {
         "notInCorpus": "Citado en el trabajo, pero ya no está en el corpus: vuelve a agregarlo o quita sus citas.",
@@ -2554,7 +2558,10 @@
         "accepted": "Paso aceptado",
         "acceptFailed": "No se pudo aceptar el paso",
         "edited": "Edición guardada",
-        "editFailed": "No se pudo guardar la edición"
+        "editFailed": "No se pudo guardar la edición",
+        "undone": "Se restauró la versión anterior.",
+        "redone": "Se recuperó la versión que habías deshecho.",
+        "undoFailed": "No se pudo cambiar de versión. Recarga la página e intenta otra vez."
       },
       "assembly": {
         "manifestTitle": "Esto entra al documento · {{count}} palabras",

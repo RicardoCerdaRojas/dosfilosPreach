@@ -141,6 +141,7 @@ import {
     SaveWorkProfileFromPaperUseCase,
     ReviewCitationUseCase,
     SaveStepEditUseCase,
+    UndoStepChangeUseCase,
     VerifyStepCitationsUseCase,
     RunCoherencePassUseCase,
     ClassifySourceTypeUseCase,
@@ -250,6 +251,8 @@ class ExegesisService {
     public generateStep: GenerateStepUseCase;
     public acceptStep: AcceptStepUseCase;
     public saveStepEdit: SaveStepEditUseCase;
+    /** Deshacer o rehacer «Regenerar», sin modelo y sin cobro. */
+    public undoStepChange: UndoStepChangeUseCase;
     // Programmatic citation verification (v1.5 differentiator vs
     // NotebookLM). Runs over a step version's accepted markdown,
     // matches cited sources against the paper's project-source list,
@@ -545,6 +548,7 @@ class ExegesisService {
         this.reviewCitation = new ReviewCitationUseCase(paperRepository);
         this.reopenStep = new ReopenStepUseCase(paperRepository);
         this.saveStepEdit = new SaveStepEditUseCase(paperRepository);
+        this.undoStepChange = new UndoStepChangeUseCase(paperRepository);
 
         // Citation verifier — defaults to the LLM-based adapter so
         // cross-language papers (Spanish prose paraphrasing English

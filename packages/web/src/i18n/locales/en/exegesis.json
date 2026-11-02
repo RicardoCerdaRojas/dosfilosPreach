@@ -2299,14 +2299,14 @@
     },
     "recompose": {
       "title": "Recompose {{verse}}",
-      "description": "Only this verse's prose is written again. The analysis, its citations and their verdicts stay as they are.",
+      "description": "The prose of this verse, and no other, is written again. The analysis, its citations and their verdicts stay as they are.",
       "current": "It currently has {{words}} words (≈ {{pages}} pages).",
       "guidanceLabel": "What is missing or wrong (optional)",
       "guidancePlaceholder": "E.g.: it came out as a data sheet — develop the morphology in prose, explain the polel/hiphil contrast and close with the translation decision.",
       "targetLabel": "Target words",
       "targetPlaceholder": "800",
       "targetHint": "Suggested from the length the rubric asks for. Change it or leave it empty.",
-      "safety": "The analysis is untouched: verified citations and your reviews stay as they are. If the paper is already assembled, the new prose goes into its section.",
+      "safety": "The analysis is not touched. The prose is rewritten in full, including your manual edits, and its citations become unverified. If you do not like it, you can return to the previous prose with “Undo”. If the paper is already assembled, the new prose goes into its section.",
       "cancel": "Cancel",
       "submit": "Recompose this verse",
       "toast": {
@@ -2539,7 +2539,11 @@
         "redoTooltip": "Returns the step to review without touching the content: it gets the accept and regenerate buttons again.",
         "saveEdit": "Save edit",
         "expand": "Expand",
-        "collapse": "Collapse"
+        "collapse": "Collapse",
+        "undoChange": "Undo",
+        "undoChangeTooltip": "Go back to the previous version of this step.",
+        "redoChange": "Redo",
+        "redoChangeTooltip": "Go back to the version you undid. It stays in review."
       },
       "gate": {
         "notInCorpus": "Cited in the paper but no longer in the corpus: add it back or remove its citations.",
@@ -2554,7 +2558,10 @@
         "accepted": "Step accepted",
         "acceptFailed": "Couldn't accept the step",
         "edited": "Edit saved",
-        "editFailed": "Couldn't save the edit"
+        "editFailed": "Couldn't save the edit",
+        "undone": "The previous version was restored.",
+        "redone": "The version you undid was recovered.",
+        "undoFailed": "The version could not be changed. Reload the page and try again."
       },
       "assembly": {
         "manifestTitle": "This goes into the document · {{count}} words",
