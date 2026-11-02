@@ -867,13 +867,11 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
         paperId: string,
         stepId: string,
         targetVersionId: string,
-        direction: 'undo' | 'redo',
-        canAccept: boolean,
     ): Promise<ExegeticalStep> {
         return this.mutateStep(ownerId, paperId, stepId, (step) => {
             const target = step.versions.find(v => v.id === targetVersionId);
             if (!target) throw new Error(`Version ${targetVersionId} not found in step ${stepId}`);
-            const next = stepAfterVersionMove(step, target, direction, canAccept);
+            const next = stepAfterVersionMove(step, target);
             step.current = next.current;
             step.accepted = next.accepted;
             step.state = next.state;
@@ -1439,15 +1437,20 @@ function deserializeStepVersion(raw: any): ExegeticalStepVersion {
                 })),
             }
             : {}),
-        ...(Array.isArray(raw?.previousProse?.citationReviews)
+        ...(raw?.previousProse
             ? {
                 previousProse: {
                     ...raw.previousProse,
-                    citationReviews: raw.previousProse.citationReviews.map((r: any) => ({
-                        path: String(r?.path ?? ''),
-                        note: String(r?.note ?? ''),
-                        reviewedAt: toDateOrNull(r?.reviewedAt) ?? new Date(),
-                    })),
+                    ...(raw.previousProse.undoneAt ? { undoneAt: toDateOrNull(raw.previousProse.undoneAt) ?? new Date() } : {}),
+                    ...(Array.isArray(raw.previousProse.citationReviews)
+                        ? {
+                            citationReviews: raw.previousProse.citationReviews.map((r: any) => ({
+                                path: String(r?.path ?? ''),
+                                note: String(r?.note ?? ''),
+                                reviewedAt: toDateOrNull(r?.reviewedAt) ?? new Date(),
+                            })),
+                        }
+                        : {}),
                 },
             }
             : {}),
@@ -1575,7 +1578,13 @@ function sinIndefinidos(valor: Record<string, unknown>): Record<string, unknown>
 function sinConteosDeProsa(v: VerificationSummary): VerificationSummary {
     // Datos viejos guardaron otra forma (hasta un arreglo vacío): se dejan igual.
     if (!v || typeof v !== 'object' || Array.isArray(v)) return v;
-    const { proseCitations: _p, proseCitationsWithIssues: _i, ...resto } = v;
+    const {
+        proseCitations: _p,
+        proseCitationsWithIssues: _i,
+        sourcesNamedWithoutCitation: _s,
+        witnessClaimsWithoutCitation: _w,
+        ...resto
+    } = v;
     return resto;
 }
 

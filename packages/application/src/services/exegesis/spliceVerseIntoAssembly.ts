@@ -12,27 +12,23 @@ import {
 } from '@dosfilos/domain';
 
 /**
- * Mete la prosa del verso en el trabajo ensamblado, en su sección.
+ * El documento con la prosa del verso en su sección, sin escribir nada.
  *
- * Devuelve `false` si no hay ensamblado o si su sección no aparece
- * —un ensamblado escrito a mano, o con otros encabezados—. Ahí el
- * llamador avisa: pegar la prosa donde caiga deja el trabajo con el
- * verso dos veces.
+ * `null` si no hay ensamblado o si su sección no aparece —un ensamblado
+ * escrito a mano, o con otros encabezados—.
  */
-export async function spliceVerseIntoAssembly(
-    paperRepository: IExegeticalPaperRepository,
-    ownerId: string,
+export function assemblyWithVerse(
     paper: ExegeticalPaper,
     analysis: CanonicalVerseAnalysis,
     prose: string,
     propias: ReadonlyArray<BriefQuestion>,
     enElDocumento: boolean,
-): Promise<boolean> {
+): string | null {
     const assembled = paper.assembledMarkdown?.trim();
-    if (!assembled) return false;
+    if (!assembled) return null;
     // Un versículo fuera del documento no tiene sección que reemplazar.
     // Buscarla igual podía encontrar la de otro.
-    if (!enElDocumento) return false;
+    if (!enElDocumento) return null;
 
     const key = verseSectionKey(analysis, paper.displayLanguage);
     // Con preguntas, la sección se titula con ellas. Un ensamble anterior
@@ -54,11 +50,28 @@ export async function spliceVerseIntoAssembly(
     const next = porPregunta ?? (hayPreguntas
         ? replaceVerseSectionExact(assembled, key, prose)
         : replaceVerseSection(assembled, key, prose));
-    if (next === null) {
-        console.warn('[ComposeVerseAcademicProseUseCase] el ensamblado no trae la sección', key);
-        return false;
-    }
-    if (next === assembled) return true;
+    if (next === null) console.warn('[ComposeVerseAcademicProseUseCase] el ensamblado no trae la sección', key);
+    return next;
+}
+
+/**
+ * Mete la prosa del verso en el trabajo ensamblado, en su sección.
+ *
+ * Devuelve `false` si no pudo. Ahí el llamador avisa: pegar la prosa donde
+ * caiga deja el trabajo con el verso dos veces.
+ */
+export async function spliceVerseIntoAssembly(
+    paperRepository: IExegeticalPaperRepository,
+    ownerId: string,
+    paper: ExegeticalPaper,
+    analysis: CanonicalVerseAnalysis,
+    prose: string,
+    propias: ReadonlyArray<BriefQuestion>,
+    enElDocumento: boolean,
+): Promise<boolean> {
+    const next = assemblyWithVerse(paper, analysis, prose, propias, enElDocumento);
+    if (next === null) return false;
+    if (next === paper.assembledMarkdown?.trim()) return true;
 
     await paperRepository.updatePaper(ownerId, paper.id, { assembledMarkdown: next });
     return true;

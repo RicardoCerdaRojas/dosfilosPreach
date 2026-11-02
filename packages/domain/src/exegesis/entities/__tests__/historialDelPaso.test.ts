@@ -102,31 +102,53 @@ describe('los punteros al volver a otra versión', () => {
     const v1 = version('v1');
     const v2 = version('v2', { parentVersionId: 'v1' });
 
-    it('deshacer lo regenerado en revisión devuelve a lo aceptado', () => {
-        const r = stepAfterVersionMove(paso({ state: 'awaiting-review', accepted: v1, current: v2 }), v1, 'undo', true);
+    it('volver a lo aceptado lo deja aceptado', () => {
+        const r = stepAfterVersionMove(paso({ state: 'awaiting-review', accepted: v1, current: v2 }), v1);
         expect(r).toMatchObject({ state: 'accepted', accepted: v1, current: v1 });
     });
 
-    it('deshacer en revisión sin aceptada sigue en revisión', () => {
-        const r = stepAfterVersionMove(paso({ state: 'awaiting-review', accepted: null, current: v2 }), v1, 'undo', true);
+    it('sin aceptada sigue en revisión', () => {
+        const r = stepAfterVersionMove(paso({ state: 'awaiting-review', accepted: null, current: v2 }), v1);
         expect(r).toMatchObject({ state: 'awaiting-review', accepted: null, current: v1 });
     });
 
-    it('deshacer sobre lo aceptado deja aceptada la anterior', () => {
-        expect(stepAfterVersionMove(paso({ accepted: v2, current: v2 }), v1, 'undo', true)).toMatchObject({ state: 'accepted', accepted: v1, current: v1 });
+    it('volver desde lo aceptado no acepta la anterior: queda en revisión y la aceptada no cambia', () => {
+        expect(stepAfterVersionMove(paso({ accepted: v2, current: v2 }), v1)).toMatchObject({ state: 'awaiting-review', accepted: v2, current: v1 });
     });
 
-    it('si la anterior tiene citas que «Aceptar» bloquearía, queda en revisión y sin aceptada', () => {
-        expect(stepAfterVersionMove(paso({ accepted: v2, current: v2 }), v1, 'undo', false)).toMatchObject({ state: 'awaiting-review', accepted: null, current: v1 });
-    });
-
-    it('rehacer lleva a revisión y conserva lo aceptado', () => {
-        expect(stepAfterVersionMove(paso({ accepted: v1, current: v1 }), v2, 'redo', true)).toMatchObject({ state: 'awaiting-review', accepted: v1, current: v2 });
+    it('avanzar a otra tampoco', () => {
+        expect(stepAfterVersionMove(paso({ accepted: v1, current: v1 }), v2)).toMatchObject({ state: 'awaiting-review', accepted: v1, current: v2 });
     });
 });
 
 describe('el recorte del historial', () => {
     it('no quita la versión anterior: es a la que se vuelve', () => {
         expect(versionsToKeepOnAppend(paso({ accepted: version('a') }), version('n', { parentVersionId: 'p' }))).toEqual(['a', 'n', 'p']);
+    });
+});
+
+describe('rehacer devuelve lo último que se dejó atrás', () => {
+    const dia = (n: number) => new Date(2026, 10, n);
+    const conProsa = (undoneAt: Date) => version('v1', { previousProse: { markdown: 'Recompuesta.', undone: true, undoneAt } });
+
+    it('una edición hecha después de deshacer la prosa va antes que esa prosa', () => {
+        const v1 = conProsa(dia(2));
+        const edicion = version('e', { parentVersionId: 'v1', createdAt: dia(3) });
+        const m = stepHistoryMoves(paso({ current: v1, accepted: v1, versions: [v1, edicion] }));
+        expect(m.redo).toEqual({ kind: 'version', versionId: 'v1', targetVersionId: 'e' });
+    });
+
+    it('una versión anterior a deshacer la prosa no le gana', () => {
+        const v1 = conProsa(dia(4));
+        const vieja = version('e', { parentVersionId: 'v1', createdAt: dia(3) });
+        const m = stepHistoryMoves(paso({ current: v1, accepted: v1, versions: [v1, vieja] }));
+        expect(m.redo).toEqual({ kind: 'prose', versionId: 'v1' });
+    });
+
+    it('deshacer guarda cuándo; rehacer no lo escribe', () => {
+        const ahora = dia(5);
+        const deshecha = swapPreviousProse(withRecomposedProse(version('v'), 'nueva'), ahora);
+        expect(deshecha.previousProse!.undoneAt).toEqual(ahora);
+        expect(swapPreviousProse(deshecha, ahora).previousProse).not.toHaveProperty('undoneAt');
     });
 });

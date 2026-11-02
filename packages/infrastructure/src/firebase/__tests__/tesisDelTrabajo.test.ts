@@ -25,4 +25,11 @@ describe('la prosa guardada para deshacer', () => {
         const paso = deserializeStep({ id: 's', versions: [v], currentId: 'v1', acceptedId: 'v1' });
         expect(paso.accepted!.previousProse).toEqual({ markdown: 'Antes.', undone: true, citationReviews: [{ path: 'prosa@5', note: 'n', reviewedAt: fecha }] });
     });
+
+    it('sin revisiones también convierte cuándo se deshizo', () => {
+        const fecha = new Date('2026-11-02T10:00:00Z');
+        const v = { id: 'v1', markdown: 'Nueva.', previousProse: { markdown: 'Antes.', undone: true, undoneAt: ts(fecha) } };
+        const paso = deserializeStep({ id: 's', versions: [v], currentId: 'v1', acceptedId: 'v1' });
+        expect(paso.accepted!.previousProse).toEqual({ markdown: 'Antes.', undone: true, undoneAt: fecha });
+    });
 });

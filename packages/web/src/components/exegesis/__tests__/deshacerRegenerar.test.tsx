@@ -12,7 +12,7 @@ const mutaciones = new Map<string, { mutateAsync: ReturnType<typeof vi.fn>; muta
 const mutacion = (k: string) => {
     if (!mutaciones.has(k)) {
         mutaciones.set(k, {
-            mutateAsync: vi.fn().mockImplementation(async () => { orden.push(k); return { assemblyUpdated: true }; }),
+            mutateAsync: vi.fn().mockImplementation(async () => { orden.push(k); return { documentBehind: false, step: { state: 'accepted' } }; }),
             mutate: vi.fn(),
             isPending: false,
         });
@@ -47,7 +47,8 @@ vi.mock('react-router-dom', () => ({
 }));
 const toastError = vi.fn();
 const toastWarning = vi.fn();
-vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: vi.fn(), warning: (...a: unknown[]) => toastWarning(...a) } }));
+const toastInfo = vi.fn();
+vi.mock('sonner', () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: vi.fn(), info: (...a: unknown[]) => toastInfo(...a), warning: (...a: unknown[]) => toastWarning(...a) } }));
 
 const { StepCard } = await import('../StepCard');
 
@@ -78,30 +79,49 @@ describe('deshacer «Regenerar»', () => {
     });
 
     it('un versículo recompuesto ofrece deshacer sobre la versión a la vista', async () => {
-        mutacion('undoStepChange').mutateAsync.mockResolvedValue({ assemblyUpdated: true });
+        mutacion('undoStepChange').mutateAsync.mockResolvedValue({ documentBehind: false, step: { state: 'accepted' } });
         conQuery(<StepCard step={verso({ previousProse: { markdown: 'Antes.' } })} paperId="p" language="es" hasAssembly />);
         expandir();
         expect(screen.queryByText('detail.steps.action.redoChange')).toBeNull();
         fireEvent.click(elPie('detail.steps.action.undoChange'));
-        await waitFor(() => expect(mutacion('undoStepChange').mutateAsync).toHaveBeenCalledWith({ paperId: 'p', stepId: 's', action: 'undo', fromVersionId: 'v1' }));
+        await waitFor(() => expect(mutacion('undoStepChange').mutateAsync).toHaveBeenCalledWith({ paperId: 'p', stepId: 's', action: 'undo', expected: { kind: 'prose', versionId: 'v1' } }));
         expect(toastWarning).not.toHaveBeenCalled();
     });
 
     it('lo deshecho ofrece rehacer', async () => {
-        mutacion('undoStepChange').mutateAsync.mockResolvedValue({ assemblyUpdated: true });
+        mutacion('undoStepChange').mutateAsync.mockResolvedValue({ documentBehind: false, step: { state: 'accepted' } });
         conQuery(<StepCard step={verso({ previousProse: { markdown: 'Nueva.', undone: true } })} paperId="p" language="es" />);
         expandir();
         expect(screen.queryByText('detail.steps.action.undoChange')).toBeNull();
         fireEvent.click(elPie('detail.steps.action.redoChange'));
-        await waitFor(() => expect(mutacion('undoStepChange').mutateAsync).toHaveBeenCalledWith({ paperId: 'p', stepId: 's', action: 'redo', fromVersionId: 'v1' }));
+        await waitFor(() => expect(mutacion('undoStepChange').mutateAsync).toHaveBeenCalledWith({ paperId: 'p', stepId: 's', action: 'redo', expected: { kind: 'prose', versionId: 'v1' } }));
     });
 
     it('si el documento no recibió lo restaurado, lo dice', async () => {
-        mutacion('undoStepChange').mutateAsync.mockResolvedValue({ assemblyUpdated: false });
+        mutacion('undoStepChange').mutateAsync.mockResolvedValue({ documentBehind: true, step: { state: 'accepted' } });
         conQuery(<StepCard step={verso({ previousProse: { markdown: 'Antes.' } })} paperId="p" language="es" hasAssembly />);
         expandir();
         fireEvent.click(elPie('detail.steps.action.undoChange'));
-        await waitFor(() => expect(toastWarning).toHaveBeenCalledWith('canonical.recompose.toast.assemblyUntouched'));
+        await waitFor(() => expect(toastWarning).toHaveBeenCalledWith('detail.steps.toast.undoneNotInDocument'));
+    });
+
+    it('si la versión quedó en revisión, lo dice: el trabajo sigue con la aceptada', async () => {
+        mutacion('undoStepChange').mutateAsync.mockResolvedValue({ documentBehind: false, step: { state: 'awaiting-review' } });
+        conQuery(<StepCard step={verso({ previousProse: { markdown: 'Antes.' } })} paperId="p" language="es" />);
+        expandir();
+        fireEvent.click(elPie('detail.steps.action.undoChange'));
+        await waitFor(() => expect(toastInfo).toHaveBeenCalledWith('detail.steps.toast.movedToReview'));
+    });
+
+    it('mientras se verifican las citas no se puede deshacer: los veredictos quedarían en otra prosa', () => {
+        mutacion('verifyStepCitations').isPending = true;
+        conQuery(<StepCard step={verso({ previousProse: { markdown: 'Antes.' } })} paperId="p" language="es" />);
+        expandir();
+        const botones = screen.getAllByRole('button', { name: /detail\.steps\.action\.undoChange/ }) as HTMLButtonElement[];
+        // El del encabezado y el del pie.
+        expect(botones.length).toBeGreaterThan(1);
+        expect(botones.every(b => b.disabled)).toBe(true);
+        mutacion('verifyStepCitations').isPending = false;
     });
 
     it('en revisión también se ofrece, para volver de lo regenerado', () => {

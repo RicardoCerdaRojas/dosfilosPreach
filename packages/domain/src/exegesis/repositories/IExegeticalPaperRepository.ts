@@ -340,8 +340,6 @@ export interface IExegeticalPaperRepository {
         paperId: string,
         stepId: string,
         targetVersionId: string,
-        direction: 'undo' | 'redo',
-        canAccept: boolean,
     ): Promise<ExegeticalStep>;
 
     setStepVersionMarkdown(

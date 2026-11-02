@@ -1,7 +1,7 @@
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import { sameBookNameForPsalms } from '../../bible/canon/psalmName';
 import type { ExegeticalPaper } from '../entities/ExegeticalPaper';
-import { versionUnderReview, type ExegeticalStep } from '../entities/ExegeticalStep';
+import { versionUnderReview, type ExegeticalStep, type ExegeticalStepVersion } from '../entities/ExegeticalStep';
 import { countWords } from '../../services/movementBudget';
 import { rangosConRaya } from './rangeDash';
 import type { DocumentSections } from './paperLength';
@@ -410,18 +410,62 @@ export function assemblyDelivery(paper: ExegeticalPaper): AssemblyDeliveryCheck 
     return { state: entregable === enPantalla ? 'al-dia' : 'difiere', ...palabras };
 }
 
+const plano = (t: string) => sameBookNameForPsalms(rangosConRaya(t)).replace(/\s+/g, ' ').trim();
+
+/** Si dos textos dicen lo mismo, sin contar espacios, raya de rangos ni «Salmo/Salmos». */
+export function sameDocumentText(a: string | null | undefined, b: string | null | undefined): boolean {
+    return plano(a ?? '') === plano(b ?? '');
+}
+
+/** Las líneas de prosa de un texto: sin títulos ni separadores. */
+const lineasDeProsa = (markdown: string | null | undefined): string[] =>
+    (markdown ?? '')
+        .split('\n')
+        .map(linea => linea.trim())
+        .filter(linea => linea && !linea.startsWith('#') && /\p{L}/u.test(linea));
+
+const lineasPlanas = (markdown: string | null | undefined) => new Set(lineasDeProsa(markdown).map(plano));
+
 /**
- * Las secciones aceptadas que cambiaron después del ensamble vigente y cuyo
- * texto no está en el documento. Editar un versículo a mano no toca
- * `assembledMarkdown`, y aceptar una introducción o una conclusión regenerada
- * tampoco: el paso se ve corregido y el Word sale con lo de antes, sin que nada
- * lo diga.
+ * Lo más corto que prueba que un texto viejo sigue en el documento. Una línea
+ * breve puede repetirse sin venir de ahí («En conclusión», una referencia).
+ */
+const PALABRAS_QUE_PRUEBAN = 4;
+
+/**
+ * El ensamble generado del que salió la versión vigente, subiendo por sus
+ * madres. No el último por fecha: uno regenerado y descartado no es su origen.
+ */
+function generatedOrigin(ensamble: ExegeticalStep, vigente: ExegeticalStepVersion): ExegeticalStepVersion {
+    let actual: ExegeticalStepVersion | undefined = vigente;
+    const vistas = new Set<string>();
+    while (actual && !vistas.has(actual.id)) {
+        if (actual.origin === 'generated') return actual;
+        vistas.add(actual.id);
+        const madre: string | null | undefined = actual.parentVersionId;
+        actual = ensamble.versions?.find(v => v.id === madre);
+    }
+    return ensamble.versions?.[0] ?? vigente;
+}
+
+/**
+ * Las secciones cuyo texto aceptado no coincide con el archivo porque cambió
+ * después de ensamblar. Editar un versículo a mano no toca `assembledMarkdown`,
+ * y aceptar una introducción regenerada o deshacer tampoco: el paso se ve
+ * corregido y el Word sale con lo de antes, sin que nada lo diga.
  *
- * El corte es el último ensamble GENERADO que dio origen al vigente. Sin él,
- * cada corrección hecha a mano sobre el ensamble se leería como una sección
- * atrasada; por eso, además, solo se mira lo que cambió después de ese corte.
- * Lo recompuesto sobre la misma versión no cambia su fecha: lo delata
- * `previousProse`.
+ * Se comparan tres textos, sin marcas ni fechas: la sección, el último ensamble
+ * GENERADO que dio origen al vigente, y el archivo.
+ * - Lo que el ensamble generado ya traía no cambió después: si el archivo dice
+ *   otra cosa, es una corrección a mano, y se respeta.
+ * - Lo que el ensamble no traía es un cambio posterior: tiene que estar en el
+ *   archivo. Si no está, la sección quedó atrás.
+ * - Lo que otra versión decía, ninguna sección aceptada dice y el archivo sigue
+ *   diciendo también: un párrafo borrado, o una sección que se excluyó.
+ *
+ * Un archivo que ni el ensamble ni las secciones explican es una composición
+ * guardada entera (`SaveAssembledPaperUseCase`): aquí no se puede saber qué le
+ * falta, y el aviso pediría destruirla.
  */
 export function sectionsBehindAssembly(
     paper: Pick<ExegeticalPaper, 'steps' | 'assembledMarkdown'>,
@@ -429,24 +473,33 @@ export function sectionsBehindAssembly(
 ): AssemblyPart[] {
     const documento = paper.assembledMarkdown?.trim();
     const ensamble = (paper.steps ?? []).find(s => s.kind === 'assembly');
-    // Recomponer un versículo deja el ensamble sin aceptada y con el texto al
-    // día (`assemblyDelivery`): el vigente es, entonces, el que está a la vista.
     const vigente = ensamble?.accepted ?? ensamble?.current;
     if (!documento || !ensamble || !vigente) return [];
-    const fecha = (d: Date) => new Date(d).getTime();
-    const base = ensamble.versions
-        ?.filter(v => v.origin === 'generated' && fecha(v.createdAt) <= fecha(vigente.createdAt))
-        .at(-1) ?? vigente;
-    const plano = (t: string) => sameBookNameForPsalms(rangosConRaya(t)).replace(/\s+/g, ' ').trim();
-    const enElDocumento = plano(documento);
-    return assemblyContents(paper.steps, language).included.filter(parte => {
-        const version = paper.steps.find(s => s.id === parte.stepId)?.accepted;
-        if (!version?.markdown) return false;
-        if (fecha(version.createdAt) <= fecha(base.createdAt) && !version.previousProse) return false;
-        return version.markdown
-            .split('\n')
-            .map(linea => linea.trim())
-            .filter(linea => linea && !linea.startsWith('#'))
-            .some(linea => !enElDocumento.includes(plano(linea)));
-    });
+    const base = generatedOrigin(ensamble, vigente);
+
+    const { included, pending, excluded } = assemblyContents(paper.steps, language);
+    const pasoDe = (parte: AssemblyPart) => paper.steps.find(s => s.id === parte.stepId);
+    const enElEnsamble = lineasPlanas(base.markdown);
+    const enElArchivo = lineasPlanas(documento);
+    const aceptadas = new Set(included.flatMap(parte => [...lineasPlanas(pasoDe(parte)?.accepted?.markdown)]));
+
+    const explicadas = [...enElArchivo].filter(l => enElEnsamble.has(l) || aceptadas.has(l)).length;
+    if (explicadas * 2 < enElArchivo.size) return [];
+
+    // Sigue en el archivo y ya no lo dice ninguna sección aceptada.
+    const sobra = (linea: string) =>
+        linea.split(/\s+/).length >= PALABRAS_QUE_PRUEBAN && enElArchivo.has(plano(linea)) && !aceptadas.has(plano(linea));
+    const quedoLoQuitado = (step: ExegeticalStep | undefined) => (step?.versions ?? [])
+        .flatMap(v => [v.markdown, v.previousProse?.markdown])
+        .some(texto => lineasDeProsa(texto).some(sobra));
+
+    return [
+        ...included.filter(parte => {
+            const step = pasoDe(parte);
+            if (!step) return false;
+            const falta = [...lineasPlanas(step.accepted?.markdown)].some(l => !enElEnsamble.has(l) && !enElArchivo.has(l));
+            return falta || quedoLoQuitado(step);
+        }),
+        ...[...pending, ...excluded].filter(parte => quedoLoQuitado(pasoDe(parte))),
+    ];
 }

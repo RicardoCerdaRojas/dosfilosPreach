@@ -9,6 +9,7 @@ import type {
     CreateExegeticalPaperInput,
     ExegeticalPaper,
     ExtractRubricFromTextInput,
+    StepHistoryMove,
     UpdateProjectSourceInput,
     UpdateRubricInput,
     UpdateStepPlanInput,
@@ -565,11 +566,12 @@ export function useExegesisPapers() {
 
     /** Deshacer o rehacer «Regenerar». Sin modelo y sin cobro. */
     const undoStepChange = useMutation({
-        mutationFn: async ({ paperId, stepId, action, fromVersionId }: { paperId: string; stepId: string; action: 'undo' | 'redo'; fromVersionId: string }) => {
+        mutationFn: async ({ paperId, stepId, action, expected }: { paperId: string; stepId: string; action: 'undo' | 'redo'; expected: StepHistoryMove }) => {
             if (!user?.uid) throw new Error('User not authenticated');
-            return exegesisService.undoStepChange.execute({ ownerId: user.uid, paperId, stepId, action, fromVersionId });
+            return exegesisService.undoStepChange.execute({ ownerId: user.uid, paperId, stepId, action, expected });
         },
-        onSuccess: () => {
+        // También si falló: el paso pudo cambiar antes de que fallara el documento.
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
         },
     });

@@ -8,7 +8,7 @@ import {
     sectionHeadings,
 } from '../assemblyContents';
 import { parseBriefQuestions } from '../briefQuestions';
-import { canonicalizeQuestionHeadings, replaceSectionsByHeadings, replaceVerseSectionExact } from '../composedVerseSections';
+import { canonicalizeQuestionHeadings, replaceSectionsByHeadings, replaceVerseSection, replaceVerseSectionBodies, replaceVerseSectionExact } from '../composedVerseSections';
 import { sectionBudgets, verseWordBudget } from '../paperLength';
 
 /**
@@ -239,5 +239,34 @@ describe('canonicalizeQuestionHeadings — títulos de otro nivel dentro de una 
     it('si el modelo usó ### para las dos, se toman ésas', () => {
         expect(canonicalizeQuestionHeadings('### x\n\nA.\n\n### y\n\nB.', DOS))
             .toBe('## ¿Primera?\n\nA.\n\n## ¿Segunda?\n\nB.');
+    });
+});
+
+describe('recomponer conserva el separador antes de la sección siguiente', () => {
+    const DOC = '# T\n\n---\n\n## Salmo 23:4\n\nProsa vieja.\n\n---\n\n## Salmo 23:5\n\nSigue.\n';
+    it('con el título exacto', () => {
+        expect(replaceVerseSectionExact(DOC, 'Salmo 23:4', 'Prosa nueva.')).toBe(DOC.replace('Prosa vieja.', 'Prosa nueva.'));
+    });
+    it('con el título que contiene la clave', () => {
+        expect(replaceVerseSection(DOC, 'Salmo 23:4', 'Prosa nueva.')).toBe(DOC.replace('Prosa vieja.', 'Prosa nueva.'));
+    });
+    it('sin separador no inventa uno', () => {
+        const sin = '## Salmo 23:4\n\nProsa vieja.\n\n## Salmo 23:5\n\nSigue.\n';
+        expect(replaceVerseSectionExact(sin, 'Salmo 23:4', 'Prosa nueva.')).not.toContain('---');
+        expect(replaceVerseSection(sin, 'Salmo 23:4', 'Prosa nueva.')).not.toContain('---');
+    });
+    it('un reemplazo que ya trae el separador no lo duplica', () => {
+        const out = replaceVerseSectionBodies(DOC, ['Salmo 23:4'], (_k, cuerpo) => cuerpo.replace('Prosa vieja.', 'Prosa nueva.'))!;
+        expect(out.match(/^---$/gm)).toHaveLength(2);
+    });
+    it('con el título exacto, una prosa que ya trae el separador tampoco lo duplica', () => {
+        expect(replaceVerseSectionExact(DOC, 'Salmo 23:4', 'Prosa nueva.\n\n---')!.match(/^---$/gm)).toHaveLength(2);
+    });
+    it('una prosa con títulos propios tampoco', () => {
+        expect(replaceVerseSectionExact(DOC, 'Salmo 23:4', '## Pregunta\n\nProsa nueva.\n\n---')!.match(/^---$/gm)).toHaveLength(2);
+    });
+    it('ida y vuelta deja el documento como estaba', () => {
+        const ida = replaceVerseSection(DOC, 'Salmo 23:4', 'Prosa nueva.')!;
+        expect(replaceVerseSection(ida, 'Salmo 23:4', 'Prosa vieja.')).toBe(DOC);
     });
 });

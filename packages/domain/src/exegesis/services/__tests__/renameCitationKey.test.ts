@@ -74,3 +74,17 @@ describe('a qué fuente corresponde la clave huérfana', () => {
     });
 });
 
+
+describe('renombrar una clave y la prosa guardada para deshacer', () => {
+    it('deshacer no devuelve la clave vieja', () => {
+        const v = { id: 'v', markdown: '(NA28, p. 7)', previousProse: { markdown: '(Aland, p. 7)', undone: false } };
+        const paso = renameKeyInStep({ versions: [v], current: v, accepted: v } as never, 'Aland', 'NA28');
+        expect(paso.accepted!.previousProse!.markdown).toBe('(NA28, p. 7)');
+        expect(paso.accepted!.previousProse!.undone).toBe(false);
+    });
+    it('una versión sin prosa guardada no gana el campo', () => {
+        const v = { id: 'v', markdown: '(Aland, p. 7)' };
+        const paso = renameKeyInStep({ versions: [v], current: v, accepted: v } as never, 'Aland', 'NA28');
+        expect(paso.accepted).not.toHaveProperty('previousProse');
+    });
+});

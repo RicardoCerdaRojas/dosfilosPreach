@@ -2543,7 +2543,7 @@
         "undoChange": "Undo",
         "undoChangeTooltip": "Go back to the previous version of this step.",
         "redoChange": "Redo",
-        "redoChangeTooltip": "Go back to the version you undid. It stays in review."
+        "redoChangeTooltip": "Goes back to what you undid."
       },
       "gate": {
         "notInCorpus": "Cited in the paper but no longer in the corpus: add it back or remove its citations.",
@@ -2561,7 +2561,9 @@
         "editFailed": "Couldn't save the edit",
         "undone": "The previous version was restored.",
         "redone": "The version you undid was recovered.",
-        "undoFailed": "The version could not be changed. Reload the page and try again."
+        "undoFailed": "The version could not be changed. Reload the page and try again.",
+        "undoneNotInDocument": "The step's prose changed, but the assembled document was not updated because it already holds different text. Check it before exporting.",
+        "movedToReview": "This version is now in review. Accept it for it to count in the paper."
       },
       "assembly": {
         "manifestTitle": "This goes into the document · {{count}} words",
@@ -2721,8 +2723,8 @@
         "body": "The file carries {{delivered}} words; the screen shows {{onScreen}}. Regenerate the assembly and accept it — only then does the file take what you see.",
         "toast": "You downloaded {{delivered}} words, and the screen shows {{onScreen}}. Regenerate the assembly, accept it, and download again."
       },
-      "behind_one": "“{{sections}}” changed after the assembly, and that change is not in the file. Regenerate the assembly and accept it to bring it in.",
-      "behind_other": "These sections changed after the assembly, and those changes are not in the file: {{sections}}. Regenerate the assembly and accept it to bring them in.",
+      "behind_one": "The file does not reflect the latest in “{{sections}}”. Check it before submitting: when you regenerate and accept the assembly, it takes what is accepted in each section.",
+      "behind_other": "The file does not reflect the latest in these sections: {{sections}}. Check them before submitting: when you regenerate and accept the assembly, it takes what is accepted in each section.",
       "orientative": "Study for preaching: length is a guide, not a grade. The rubric suggests {{target}}.",
       "noProse": "no prose"
     },

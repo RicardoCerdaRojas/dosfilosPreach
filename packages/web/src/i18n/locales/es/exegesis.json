@@ -2543,7 +2543,7 @@
         "undoChange": "Deshacer",
         "undoChangeTooltip": "Vuelve a la versión anterior de este paso.",
         "redoChange": "Rehacer",
-        "redoChangeTooltip": "Vuelve a la versión que deshiciste. Queda en revisión."
+        "redoChangeTooltip": "Vuelve a lo que deshiciste."
       },
       "gate": {
         "notInCorpus": "Citado en el trabajo, pero ya no está en el corpus: vuelve a agregarlo o quita sus citas.",
@@ -2561,7 +2561,9 @@
         "editFailed": "No se pudo guardar la edición",
         "undone": "Se restauró la versión anterior.",
         "redone": "Se recuperó la versión que habías deshecho.",
-        "undoFailed": "No se pudo cambiar de versión. Recarga la página e intenta otra vez."
+        "undoFailed": "No se pudo cambiar de versión. Recarga la página e intenta otra vez.",
+        "undoneNotInDocument": "Se cambió la prosa del paso, pero el documento ensamblado no se actualizó, porque ya trae otro texto. Revísalo antes de exportar.",
+        "movedToReview": "Esta versión quedó en revisión. Acéptala para que cuente en el trabajo."
       },
       "assembly": {
         "manifestTitle": "Esto entra al documento · {{count}} palabras",
@@ -2721,8 +2723,8 @@
         "body": "El archivo baja {{delivered}} palabras; en pantalla tienes {{onScreen}}. Regenera el ensamble y acéptalo: solo entonces el archivo toma lo que ves.",
         "toast": "Bajaste {{delivered}} palabras, y en pantalla hay {{onScreen}}. Regenera el ensamble, acéptalo y vuelve a descargar."
       },
-      "behind_one": "«{{sections}}» cambió después del ensamble y ese cambio no está en el archivo. Regenera el ensamble y acéptalo para que entre.",
-      "behind_other": "Estas secciones cambiaron después del ensamble y esos cambios no están en el archivo: {{sections}}. Regenera el ensamble y acéptalo para que entren.",
+      "behind_one": "El archivo no refleja lo último de «{{sections}}». Revísala antes de entregar: al regenerar y aceptar el ensamble, este toma lo aceptado de cada sección.",
+      "behind_other": "El archivo no refleja lo último de estas secciones: {{sections}}. Revísalas antes de entregar: al regenerar y aceptar el ensamble, este toma lo aceptado de cada sección.",
       "orientative": "Estudio para predicar: la extensión orienta, no se califica. La rúbrica sugiere {{target}}.",
       "noProse": "sin prosa"
     },

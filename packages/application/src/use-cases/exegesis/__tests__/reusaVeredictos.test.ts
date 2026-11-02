@@ -117,3 +117,28 @@ describe('B46 (revisión) · cada veredicto lleva la huella de la fuente con que
         expect(otra).not.toHaveProperty('sourceFingerprint');
     });
 });
+
+describe('deshacer mientras se verifica', () => {
+    const juez: ICitationVerifier = {
+        verify: async (input) => ({ citations: (input.citations ?? []).map(c => ({ ...c, status: 'verified' }) as VerifiedCitation) }),
+    };
+    const correr = async (markdownAlTerminar: string | null) => {
+        const guardar = vi.fn().mockResolvedValue(undefined);
+        const getPaper = vi.fn().mockResolvedValueOnce(trabajo()).mockImplementation(async () => {
+            const p = trabajo();
+            if (markdownAlTerminar !== null) p.steps[0]!.versions[1]!.markdown = markdownAlTerminar;
+            return p;
+        });
+        await new VerifyStepCitationsUseCase({ getPaper, setStepVersionVerifications: guardar } as never, { readResourceContent: async () => null } as never, juez)
+            .execute({ ownerId: 'u1', paperId: 'p1', stepId: 's1' });
+        return guardar;
+    };
+
+    it('si la prosa cambió, no guarda veredictos que leyeron otro texto', async () => {
+        expect(await correr('La prosa que volvió al deshacer.')).not.toHaveBeenCalled();
+    });
+
+    it('si es la misma, guarda', async () => {
+        expect(await correr(null)).toHaveBeenCalled();
+    });
+});

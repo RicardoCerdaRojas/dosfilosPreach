@@ -228,6 +228,8 @@ export interface PreviousProse {
     citationReviews?: ReadonlyArray<CitationReview>;
     /** `true` si esta es la prosa que se deshizo: ofrecerla es rehacer. */
     undone?: boolean;
+    /** Cuándo se deshizo: lo escrito después es más reciente que ella. */
+    undoneAt?: Date;
 }
 
 /**
@@ -386,11 +388,15 @@ export function stepHistoryMoves(
     const parent = shown.parentVersionId ? step.versions.find(v => v.id === shown.parentVersionId) : null;
     // La más reciente que salió de esta: es la que se deshizo.
     const child = [...step.versions].reverse().find(v => v.parentVersionId === shown.id && v.id !== shown.id);
+    // Rehacer devuelve lo último que se dejó atrás: una edición hecha después
+    // de deshacer la prosa va antes que esa prosa.
+    const childIsNewer = !!child && !!prose?.undoneAt
+        && new Date(child.createdAt).getTime() > new Date(prose.undoneAt).getTime();
     return {
         undo: prose && !prose.undone
             ? { kind: 'prose', versionId: shown.id }
             : parent ? { kind: 'version', versionId: shown.id, targetVersionId: parent.id } : null,
-        redo: prose?.undone
+        redo: prose?.undone && !childIsNewer
             ? { kind: 'prose', versionId: shown.id }
             : child ? { kind: 'version', versionId: shown.id, targetVersionId: child.id } : null,
     };
@@ -433,7 +439,7 @@ export function versionsToKeepOnAppend(
  * La versión con su prosa intercambiada por la guardada. Los veredictos de la
  * prosa saliente no valen para la entrante, y no se guardaron para ella.
  */
-export function swapPreviousProse(version: ExegeticalStepVersion): ExegeticalStepVersion {
+export function swapPreviousProse(version: ExegeticalStepVersion, now: Date = new Date()): ExegeticalStepVersion {
     const guardada = version.previousProse;
     if (!guardada) return version;
     const esDeProsa = (path: string) => path.startsWith('prosa@');
@@ -447,6 +453,7 @@ export function swapPreviousProse(version: ExegeticalStepVersion): ExegeticalSte
             markdown: version.markdown,
             citationReviews: revisiones.filter(r => esDeProsa(r.path)),
             undone: !guardada.undone,
+            ...(guardada.undone ? {} : { undoneAt: now }),
         },
     };
 }
@@ -454,23 +461,16 @@ export function swapPreviousProse(version: ExegeticalStepVersion): ExegeticalSte
 /**
  * Los punteros del paso al volver a otra versión.
  *
- * Deshacer sobre un paso aceptado deja aceptada la anterior: es como estaba.
- * Rehacer lleva a revisión, porque esa versión no se aceptó después de
- * deshacerla. `canAccept` es falso si la versión tiene citas que el control
- * de «Aceptar» bloquearía: entonces queda en revisión.
+ * Volver nunca acepta: la anterior en el historial puede ser un borrador que
+ * nadie aceptó, porque cada versión nace de `current`, y puede tener citas que
+ * «Aceptar» bloquearía. Solo la versión ya aceptada vuelve a estarlo. La
+ * aceptada no cambia, así que el documento tampoco.
  */
 export function stepAfterVersionMove<S extends Pick<ExegeticalStep, 'state' | 'current' | 'accepted'>>(
     step: S,
     target: ExegeticalStepVersion,
-    direction: 'undo' | 'redo',
-    canAccept: boolean,
 ): S {
     if (step.accepted?.id === target.id) return { ...step, current: target, state: 'accepted' };
-    if (direction === 'undo' && step.state === 'accepted') {
-        return canAccept
-            ? { ...step, current: target, accepted: target, state: 'accepted' }
-            : { ...step, current: target, accepted: null, state: 'awaiting-review' };
-    }
     return { ...step, current: target, state: 'awaiting-review' };
 }
 

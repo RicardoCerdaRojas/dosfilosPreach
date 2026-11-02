@@ -77,6 +77,7 @@ function makePaper(excerpts: ProjectSourceExcerpt[]): ExegeticalPaper {
         } as never,
         versions: [], createdAt: NOW, updatedAt: NOW,
     };
+    step.versions = [step.accepted!];
     return {
         id: 'paper-1', ownerId: 'owner-1', createdAt: NOW, updatedAt: NOW,
         passage: VERSE, displayLanguage: 'es', assignmentBrief: null, styleGuideId: null,
@@ -155,6 +156,7 @@ function makeAnalysisPaper(numbering: PageNumbering | null) {
         ],
     };
     paper.steps[0]!.accepted = { ...(paper.steps[0]!.accepted as object), markdown: '', canonicalAnalysis: analysis } as never;
+    paper.steps[0]!.versions = [paper.steps[0]!.accepted!];
     return { paper, numbering };
 }
 
