@@ -80,6 +80,7 @@ import { getTextZoomClass, type TextZoomLevel } from '@/lib/textZoom';
 import { exportPaperToDocx } from '@/lib/exegesis/exportPaperToDocx';
 import { paperBackLink, type PaperBackKind } from './paperBackLink';
 import { offersSermonStart } from './paperSermonStart';
+import { avisosAntesDeExportar } from './avisosAntesDeExportar';
 import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import {
     exportPaperToMarkdown,
@@ -88,11 +89,8 @@ import {
     type ExegeticalPaper,
     type ProjectSource,
     type SupportedLanguage,
-    assemblyDelivery,
     documentSections,
     paperCoverStyle,
-    hasCover,
-    paperIsDelivered,
     parseBriefQuestions,
     sectionBudgets,
     uncitedRubricRequirements,
@@ -328,25 +326,7 @@ export function ExegesisPaperPage() {
         }
     };
 
-    /**
-     * Los avisos que antes llegaban después de bajar el archivo, y ahora se
-     * ven antes (fase «Lecciones del TI #2», etapa 2).
-     *
-     * El ensamble sin aceptar: los exportadores leen `assembledMarkdown`, que
-     * NO se escribe al regenerar. Un ensamble regenerado y sin aceptar es
-     * invisible: la pantalla muestra el texto nuevo y el archivo trae el
-     * anterior (Santiago 2:1-13: habría bajado los nueve versículos que el
-     * autor excluyó). Y el Word sin portada, que nada decía.
-     */
-    const avisosAntesDeExportar = (formato: 'docx' | 'md'): string[] => {
-        const entrega = assemblyDelivery(paper);
-        return [
-            ...(entrega.state === 'difiere'
-                ? [t('detail.length.stale.toast', { delivered: entrega.deliveredWords, onScreen: entrega.onScreenWords })]
-                : []),
-            ...(formato === 'docx' && !hasCover(paper.cover) && paperIsDelivered(paper) ? [t('detail.exportDocx.toast.noCover')] : []),
-        ];
-    };
+    const avisos = (formato: 'docx' | 'md') => avisosAntesDeExportar(paper, formato, t);
 
     /**
      * Exportar pasa primero por la revisión: fichas incompletas (TP #6),
@@ -355,7 +335,7 @@ export function ExegesisPaperPage() {
      */
     const pedirExport = (formato: 'docx' | 'md') => {
         if (bibliography.some(e => !e.text) || uncitedRubricRequirements(paper).length > 0
-            || revisionDelTexto.findings.length > 0 || avisosAntesDeExportar(formato).length > 0) {
+            || revisionDelTexto.findings.length > 0 || avisos(formato).length > 0) {
             setExportPendiente(formato);
             return;
         }
@@ -694,7 +674,7 @@ export function ExegesisPaperPage() {
                     entries={bibliography}
                     open={!!exportPendiente}
                     review={revisionDelTexto}
-                    warnings={avisosAntesDeExportar(exportPendiente)}
+                    warnings={avisos(exportPendiente)}
                     onCancel={() => setExportPendiente(null)}
                     onExport={() => {
                         const formato = exportPendiente;

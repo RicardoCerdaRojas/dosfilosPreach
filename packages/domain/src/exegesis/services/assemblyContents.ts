@@ -409,3 +409,44 @@ export function assemblyDelivery(paper: ExegeticalPaper): AssemblyDeliveryCheck 
     if (!entregable || !enPantalla) return { state: 'sin-ensamble', ...palabras };
     return { state: entregable === enPantalla ? 'al-dia' : 'difiere', ...palabras };
 }
+
+/**
+ * Las secciones aceptadas que cambiaron después del ensamble vigente y cuyo
+ * texto no está en el documento. Editar un versículo a mano no toca
+ * `assembledMarkdown`, y aceptar una introducción o una conclusión regenerada
+ * tampoco: el paso se ve corregido y el Word sale con lo de antes, sin que nada
+ * lo diga.
+ *
+ * El corte es el último ensamble GENERADO que dio origen al vigente. Sin él,
+ * cada corrección hecha a mano sobre el ensamble se leería como una sección
+ * atrasada; por eso, además, solo se mira lo que cambió después de ese corte.
+ * Lo recompuesto sobre la misma versión no cambia su fecha: lo delata
+ * `previousProse`.
+ */
+export function sectionsBehindAssembly(
+    paper: Pick<ExegeticalPaper, 'steps' | 'assembledMarkdown'>,
+    language: 'es' | 'en',
+): AssemblyPart[] {
+    const documento = paper.assembledMarkdown?.trim();
+    const ensamble = (paper.steps ?? []).find(s => s.kind === 'assembly');
+    // Recomponer un versículo deja el ensamble sin aceptada y con el texto al
+    // día (`assemblyDelivery`): el vigente es, entonces, el que está a la vista.
+    const vigente = ensamble?.accepted ?? ensamble?.current;
+    if (!documento || !ensamble || !vigente) return [];
+    const fecha = (d: Date) => new Date(d).getTime();
+    const base = ensamble.versions
+        ?.filter(v => v.origin === 'generated' && fecha(v.createdAt) <= fecha(vigente.createdAt))
+        .at(-1) ?? vigente;
+    const plano = (t: string) => sameBookNameForPsalms(rangosConRaya(t)).replace(/\s+/g, ' ').trim();
+    const enElDocumento = plano(documento);
+    return assemblyContents(paper.steps, language).included.filter(parte => {
+        const version = paper.steps.find(s => s.id === parte.stepId)?.accepted;
+        if (!version?.markdown) return false;
+        if (fecha(version.createdAt) <= fecha(base.createdAt) && !version.previousProse) return false;
+        return version.markdown
+            .split('\n')
+            .map(linea => linea.trim())
+            .filter(linea => linea && !linea.startsWith('#'))
+            .some(linea => !enElDocumento.includes(plano(linea)));
+    });
+}
