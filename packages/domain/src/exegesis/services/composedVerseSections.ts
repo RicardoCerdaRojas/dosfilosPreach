@@ -96,6 +96,16 @@ export function locateVerseSections(
     return out;
 }
 
+const SEPARADOR_FINAL = /\n-{3,}\s*$/;
+
+/**
+ * El `---` que el ensamblador pone antes de la sección siguiente, si cayó en el
+ * tramo y lo que entra no lo trae ya.
+ */
+function separadorFinal(tramo: string, entra: string): string {
+    return SEPARADOR_FINAL.test(tramo) && !SEPARADOR_FINAL.test(`\n${entra.trim()}`) ? '---\n\n' : '';
+}
+
 /**
  * Reescribe el cuerpo de las secciones que `replace` decida, dejando
  * el resto del documento intacto —encabezados incluidos—. Devuelve
@@ -124,7 +134,9 @@ export function replaceVerseSectionBodies(
     let cursor = 0;
     for (const edit of edits) {
         out += markdown.slice(cursor, edit.bounds.bodyStart);
-        out += `\n\n${edit.next.trim()}\n\n`;
+        const viejo = markdown.slice(edit.bounds.bodyStart, edit.bounds.end);
+        const nuevo = edit.next.trim();
+        out += `\n\n${nuevo}\n\n${separadorFinal(viejo, nuevo)}`;
         cursor = edit.bounds.end;
     }
     out += markdown.slice(cursor);
@@ -315,7 +327,7 @@ export function replaceVerseSectionExact(assembled: string, key: string, prose: 
     if (!/^#{1,6}\s/.test(body)) {
         const viejo = assembled.slice(tramo.bodyStart, tramo.end);
         if (viejo.trim() === body) return assembled;
-        return `${assembled.slice(0, tramo.bodyStart)}\n\n${body}\n\n${assembled.slice(tramo.end)}`;
+        return `${assembled.slice(0, tramo.bodyStart)}\n\n${body}\n\n${separadorFinal(viejo, body)}${assembled.slice(tramo.end)}`;
     }
     const inicio = assembled.lastIndexOf('\n', tramo.bodyStart - 1) + 1;
     return reemplazaTramo(assembled, inicio, tramo.end, body);
@@ -327,8 +339,7 @@ export function replaceVerseSectionExact(assembled: string, key: string, prose: 
  */
 function reemplazaTramo(assembled: string, inicio: number, fin: number, body: string): string {
     const viejo = assembled.slice(inicio, fin);
-    const separador = /\n-{3,}\s*$/.test(viejo) ? '---\n\n' : '';
-    const nuevo = `${body}\n\n${separador}`;
+    const nuevo = `${body}\n\n${separadorFinal(viejo, body)}`;
     if (viejo.trim() === nuevo.trim()) return assembled;
     return `${assembled.slice(0, inicio)}${nuevo}${assembled.slice(fin)}`;
 }

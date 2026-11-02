@@ -326,6 +326,22 @@ export interface IExegeticalPaperRepository {
      *
      * Throws when the version doesn't belong to the step.
      */
+    /** Intercambia la prosa de la versión con la guardada al recomponer. */
+    swapStepVersionProse(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        versionId: string,
+    ): Promise<ExegeticalStep>;
+
+    /** Vuelve a otra versión del historial del paso (`stepAfterVersionMove`). */
+    moveToStepVersion(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        targetVersionId: string,
+    ): Promise<ExegeticalStep>;
+
     setStepVersionMarkdown(
         ownerId: string,
         paperId: string,

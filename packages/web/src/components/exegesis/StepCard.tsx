@@ -16,7 +16,10 @@ import {
     NotebookPen,
     ShieldCheck,
     MoreVertical,
-    Undo2,
+    LockOpen,
+    Undo,
+    CheckCheck,
+    Redo,
     MessageSquarePlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -38,7 +41,6 @@ import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
 import { RegenerateStepDialog } from '@/components/exegesis/RegenerateStepDialog';
 import { AgregarIdeaDialog } from '@/components/exegesis/AgregarIdeaDialog';
-import { ProseReviewCard } from '@/components/exegesis/ProseReviewCard';
 import { Link, useNavigate } from 'react-router-dom';
 import { applyPageLabelStyle, assemblyContents, assemblyHandEdit, insertIdea, isUnreviewedCitationsError, parseBriefQuestions, pertenceAlDocumento, questionsForVerse, resolveExegeticalMethod, restoreStoredPageLabels, separatesObservation, verseWordBudget } from '@dosfilos/domain';
 import type { PaperFormatting } from '@dosfilos/domain';
@@ -61,6 +63,8 @@ import { CreditPacksDialog } from '@/pages/library/components/CreditPacksDialog'
 import {
     formatPassageReference,
     isAbandonedGeneration,
+    stepHistoryMoves,
+    stepVersionNumbers,
     stepTextForEditing,
     versionUnderReview,
     ABANDONED_GENERATION_AFTER_MS,
@@ -132,6 +136,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         generateStep,
         acceptStep,
         saveStepEdit,
+        undoStepChange,
         analyzeVerseCanonically,
         composeConclusionFromAnalyses,
         composeIntroductionFromAnalyses,
@@ -258,8 +263,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             ? stepTextForEditing(step, assembledMarkdown)
             : step.accepted?.markdown ?? step.current?.markdown ?? '';
 
-    // La versión cuya prosa se ve: sus veredictos son los de esa prosa.
-    const versionALaVista = isReview ? step.current ?? step.accepted : step.accepted ?? step.current;
     const showActions = isReview;
     const showAccepted = isAccepted;
 
@@ -505,7 +508,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         || analyzeVerseCanonically.isPending
         || composeConclusionFromAnalyses.isPending
         || composeIntroductionFromAnalyses.isPending
-        || composeVerseAcademicProse.isPending;
+        || composeVerseAcademicProse.isPending
+        || undoStepChange.isPending;
 
     /**
      * La versión actual del paso está por cambiar: nada que trabaje sobre ella
@@ -628,6 +632,33 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         }
     };
 
+    /**
+     * Deshacer o rehacer «Regenerar» (decisión del fundador, 2026-11-02).
+     * Sin modelo y sin cobro: vuelve a lo que ya estaba guardado.
+     */
+    const movimientos = stepHistoryMoves(step);
+    const numeros = stepVersionNumbers(step);
+    const handleStepHistory = async (action: 'undo' | 'redo' | 'accepted') => {
+        const move = movimientos[action];
+        if (!move) return;
+        try {
+            const r = await undoStepChange.mutateAsync({ paperId, stepId: step.id, action, expected: move });
+            // El documento no se toca si trae otro texto: hay que decirlo,
+            // porque el Word sigue con lo de antes.
+            if (r.documentBehind) {
+                toast.warning(t('detail.steps.toast.undoneNotInDocument'));
+            } else if (r.step.state === 'awaiting-review') {
+                // Volver no acepta: hasta aceptar, el trabajo sigue con la otra.
+                toast.info(t('detail.steps.toast.movedToReview'));
+            } else {
+                toast.success(t({ undo: 'detail.steps.toast.undone', redo: 'detail.steps.toast.redone', accepted: 'detail.steps.toast.backToAccepted' }[action]));
+            }
+        } catch (err) {
+            console.error('[exegesis] step history move failed:', err);
+            toast.error(t('detail.steps.toast.undoFailed'));
+        }
+    };
+
     const handleSaveEdit = async () => {
         try {
             // Se guarda en la forma interna: las citas que no tocó vuelven a
@@ -675,10 +706,16 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
      */
     const accionesDelEncabezado: StepHeaderAction[] = (() => {
         const ic = 'h-3.5 w-3.5';
+        const historial: StepHeaderAction[] = [
+            ...(movimientos.undo ? [{ key: 'undoChange', label: t('detail.steps.action.undoChange'), icon: <Undo className={ic} />, onClick: () => { void handleStepHistory('undo'); }, disabled: versionEnVuelo }] : []),
+            ...(movimientos.redo ? [{ key: 'redoChange', label: t('detail.steps.action.redoChange'), icon: <Redo className={ic} />, onClick: () => { void handleStepHistory('redo'); }, disabled: versionEnVuelo }] : []),
+            ...(movimientos.accepted ? [{ key: 'backToAccepted', label: t('detail.steps.action.backToAccepted', { number: numeros.accepted }), icon: <CheckCheck className={ic} />, onClick: () => { void handleStepHistory('accepted'); }, disabled: versionEnVuelo }] : []),
+        ];
         if (isReview && !editing) {
             return [
                 { key: 'regenerate', label: t('detail.steps.action.regenerate'), icon: <RotateCcw className={ic} />, onClick: () => setRegenerateOpen(true), disabled: versionEnVuelo, pending: anyPipelinePending },
                 { key: 'edit', label: t('detail.steps.action.editManual'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: versionEnVuelo },
+                ...historial,
 
                 // Las citas se revisan en su página, con o sin análisis: el
                 // diálogo sólo mostraba y se vaciaba al recargar (TP #7, #29;
@@ -689,10 +726,11 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         if (showAccepted && !editing) {
             const acciones: StepHeaderAction[] = [
                 { key: 'edit', label: t('detail.steps.action.editAccepted'), icon: <Pencil className={ic} />, onClick: startEdit, disabled: anyPipelinePending },
+                ...historial,
                 ...(previewMarkdown.trim()
                     ? [{ key: 'idea', label: t('detail.steps.addIdea.action'), icon: <MessageSquarePlus className={ic} />, onClick: () => setIdeaOpen(true), disabled: anyPipelinePending }]
                     : []),
-                { key: 'redo', label: t('detail.steps.action.redo'), icon: <Undo2 className={ic} />, onClick: () => reopenStep.mutate({ paperId, stepId: step.id }), disabled: reopenStep.isPending || anyPipelinePending },
+                { key: 'redo', label: t('detail.steps.action.redo'), icon: <LockOpen className={ic} />, onClick: () => reopenStep.mutate({ paperId, stepId: step.id }), disabled: reopenStep.isPending || anyPipelinePending },
                 { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath },
             ];
             if (isVerse && canonicalAnalysis) {
@@ -788,7 +826,12 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                         <span>
                             {t(`detail.steps.state.${estadoRotulo}`)}
-                            {step.versions.length > 0 ? ` · v${step.versions.length}` : ''}
+                            {numeros.shown !== null
+                                ? ` · ${t('detail.steps.versionOf', { shown: numeros.shown, total: numeros.total })}`
+                                : ''}
+                            {numeros.accepted !== null && step.state !== 'accepted'
+                                ? ` · ${t('detail.steps.acceptedVersion', { number: numeros.accepted })}`
+                                : ''}
                         </span>
                         {/* Qué pregunta del encuadre le toca a este paso. Se
                             dice acá para que el emparejamiento sea visible sin
@@ -1119,23 +1162,6 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             // structured payload that came back.
                             canonicalAnalysis && <CanonicalAnalysisStudyView analysis={canonicalAnalysis} onOpenCitation={openCitation} />
                         )}
-                        {/* «Revisión antes de entregar» (TP #8, 8b, E3): avisa, no bloquea. */}
-                        {isVerse && canonicalAnalysis && previewMarkdown.trim() && viewMode === 'prose' && (isReview || showAccepted) && (
-                            <ProseReviewCard
-                                paperId={paperId}
-                                stepId={step.id}
-                                prose={prosaEntregada}
-                                analysis={canonicalAnalysis}
-                                verdicts={versionALaVista?.citationVerdicts ?? []}
-                                reviews={versionALaVista?.citationReviews ?? []}
-                                sources={paperDeLasCitas?.sources ?? []}
-                                language={language === 'en' ? 'en' : 'es'}
-                                onRecompose={(guidance) => handleComposeVerseProse(guidance)}
-                                recomposing={composeVerseAcademicProse.isPending}
-                                disabled={anyPipelinePending}
-                                onQuotaError={handleQuotaError}
-                            />
-                        )}
                     </div>
                 )}
 
@@ -1171,34 +1197,54 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             {/* Action bar — only for awaiting-review */}
             {showActions && !editing && (
                 <footer className="px-5 py-3 border-t border-slate-100 dark:border-zinc-800 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                         <Button
                             size="sm"
                             onClick={handleAccept}
                             disabled={versionEnVuelo || !step.current}
                             className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
                         >
-                            {acceptStep.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
+                            {acceptStep.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />}
                             {t('detail.steps.action.accept')}
                         </Button>
                         <Button
                             size="sm"
                             variant="outline"
+                            className="text-xs has-[>svg]:px-2"
                             onClick={() => setRegenerateOpen(true)}
                             disabled={versionEnVuelo}
                         >
-                            {anyPipelinePending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5 mr-1.5" />}
+                            {anyPipelinePending ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" />}
                             {anyPipelinePending ? t('detail.steps.action.regenerating') : t('detail.steps.action.regenerate')}
                         </Button>
                         <Button
                             size="sm"
                             variant="ghost"
+                            className="text-xs has-[>svg]:px-1.5"
                             onClick={startEdit}
                             disabled={versionEnVuelo}
                         >
-                            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                            <Pencil className="size-3.5" />
                             {t('detail.steps.action.editManual')}
                         </Button>
+                        {movimientos.undo && (
+                            <Button size="sm" variant="ghost" className="text-xs has-[>svg]:px-1.5" onClick={() => void handleStepHistory('undo')} disabled={versionEnVuelo} title={t('detail.steps.action.undoChangeTooltip')}>
+                                <Undo className="size-3.5" />
+                                {t('detail.steps.action.undoChange')}
+                            </Button>
+                        )}
+                        {movimientos.redo && (
+                            <Button size="sm" variant="ghost" className="text-xs has-[>svg]:px-1.5" onClick={() => void handleStepHistory('redo')} disabled={versionEnVuelo} title={t('detail.steps.action.redoChangeTooltip')}>
+                                <Redo className="size-3.5" />
+                                {t('detail.steps.action.redoChange')}
+                            </Button>
+                        )}
+                        {movimientos.accepted && (
+                            <Button size="sm" variant="ghost" className="text-xs has-[>svg]:px-1.5" onClick={() => void handleStepHistory('accepted')} disabled={versionEnVuelo} title={t('detail.steps.action.backToAcceptedTooltip')}>
+                                <CheckCheck className="size-3.5" />
+                                {t('detail.steps.action.backToAccepted', { number: numeros.accepted })}
+                            </Button>
+                        )}
 
                         {/* Migrate-to-canonical entry point also lives in
                             the awaiting-review footer for verse steps that
@@ -1208,20 +1254,21 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             <Button
                                 size="sm"
                                 variant="ghost"
+                                className="text-xs has-[>svg]:px-1.5"
                                 onClick={() => handleAnalyzeCanonically()}
                                 disabled={versionEnVuelo}
                                 title={t('canonical.actions.analyzeFromAcceptedTooltip')}
                             >
                                 {analyzeVerseCanonically.isPending
-                                    ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                                    : <NotebookPen className="h-3.5 w-3.5 mr-1.5" />}
+                                    ? <Loader2 className="size-3.5 animate-spin" />
+                                    : <NotebookPen className="size-3.5" />}
                                 {t('canonical.actions.analyzeFromAccepted')}
                             </Button>
                         )}
                         {step.current?.canonicalAnalysis ? (
-                            <Button asChild size="sm" variant="ghost" className="ml-auto">
+                            <Button asChild size="sm" variant="ghost" className="ml-auto text-xs has-[>svg]:px-1.5">
                                 <Link to={reviewPath} title={t('canonical.review.linkTooltip')}>
-                                    <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+                                    <ShieldCheck className="size-3.5" />
                                     {t('canonical.review.link')}
                                 </Link>
                             </Button>
@@ -1231,10 +1278,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                 variant="ghost"
                                 onClick={handleVerifyCitations}
                                 disabled={versionEnVuelo || !step.current}
-                                className="ml-auto"
+                                className="ml-auto text-xs has-[>svg]:px-1.5"
                                 title={t('canonical.verify.button.tooltip')}
                             >
-                                {verifyStepCitations.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />}
+                                {verifyStepCitations.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <ShieldCheck className="size-3.5" />}
                                 {t('canonical.verify.button.label')}
                             </Button>
                         )}
@@ -1272,6 +1319,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         type="button"
                         onClick={startEdit}
                         disabled={anyPipelinePending}
+                        title={t('detail.steps.action.editAcceptedTooltip')}
                         className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
                     >
                         <Pencil className="h-3 w-3" />
@@ -1288,6 +1336,30 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             {t('detail.steps.addIdea.action')}
                         </button>
                     )}
+                    {movimientos.undo && (
+                        <button
+                            type="button"
+                            onClick={() => void handleStepHistory('undo')}
+                            disabled={versionEnVuelo}
+                            title={t('detail.steps.action.undoChangeTooltip')}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-success disabled:opacity-50"
+                        >
+                            <Undo className="h-3 w-3" />
+                            {t('detail.steps.action.undoChange')}
+                        </button>
+                    )}
+                    {movimientos.redo && (
+                        <button
+                            type="button"
+                            onClick={() => void handleStepHistory('redo')}
+                            disabled={versionEnVuelo}
+                            title={t('detail.steps.action.redoChangeTooltip')}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-success disabled:opacity-50"
+                        >
+                            <Redo className="h-3 w-3" />
+                            {t('detail.steps.action.redoChange')}
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={() => reopenStep.mutate({ paperId, stepId: step.id })}
@@ -1295,7 +1367,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         title={t('detail.steps.action.redoTooltip')}
                         className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
                     >
-                        <RotateCcw className="h-3 w-3" />
+                        <LockOpen className="h-3 w-3" />
                         {t('detail.steps.action.redo')}
                     </button>
                     {canonicalAnalysis ? (

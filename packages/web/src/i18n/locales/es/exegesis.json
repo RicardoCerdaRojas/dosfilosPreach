@@ -1906,7 +1906,7 @@
       "analyze": "Análisis canónico",
       "analyzeTooltip": "Genera el análisis estructurado (study mode + composer académico)",
       "analyzeRetry": "Reintentar análisis",
-      "analyzeFromAccepted": "Migrar a análisis canónico",
+      "analyzeFromAccepted": "Migrar a análisis",
       "analyzeFromAcceptedTooltip": "Genera el análisis estructurado para este verso (reemplaza el markdown legacy con study view + payload reusable por composers).",
       "regenAnalysis": "Regenerar análisis",
       "regenAnalysisTooltip": "Vuelve a correr el análisis canónico para este verso. La prosa per-verso anterior se invalida hasta que la recompongas.",
@@ -1915,39 +1915,6 @@
       "composeFromAnalyses": "Componer desde análisis",
       "recomposeFromAnalyses": "Recomponer desde análisis",
       "composeRetry": "Reintentar composición"
-    },
-    "proseReview": {
-      "title": "Revisión antes de entregar",
-      "subtitle": "Avisa lo que suele corregirse en un trabajo académico. No bloquea el Word: lo decides tú.",
-      "count_one": "{{count}} aviso",
-      "count_other": "{{count}} avisos",
-      "clean": "Sin avisos",
-      "fixed": {
-        "missing-criterion": "Pregunta {{question}}: la prosa no usa el criterio decisivo del análisis: «{{criterion}}».",
-        "missing-grammar": "El análisis cita la gramática del curso ({{key}}, {{page}}) y la prosa no.",
-        "unverified-citation": "La cita {{excerpt}} no se pudo verificar y nadie la revisó.",
-        "repeated-alert": "La prosa repite la cita {{excerpt}}, que no se pudo verificar en el análisis.",
-        "double-closing": "Este cierre parece afirmar dos cosas: divídelo en dos oraciones.",
-        "hyphen-range": "Rango con guion: va con raya corta (–).",
-        "greek-grave": "Acento griego: el agudo final pasa a grave delante de otra palabra.",
-        "punctuation": "Puntuación: coma doble o espacio antes de la coma.",
-        "lowercase-start": "El párrafo empieza en minúscula.",
-        "repetition": "Repetición: «{{excerpt}}» aparece {{count}} veces.",
-        "translation-mismatch": "La traducción que adopta el cierre no es la traducción final del análisis («{{analysis}}»). ¿Es a propósito? Si no, corrige el cierre o la traducción del análisis."
-      },
-      "reviewer": {
-        "criterion": "Criterio {{number}}",
-        "clean": "El revisor no encontró fallas en los criterios del curso.",
-        "stale": "La prosa cambió después de la última revisión con los criterios: vuelve a revisarla."
-      },
-      "action": {
-        "review": "Revisar con los criterios del curso",
-        "reviewAgain": "Volver a revisar",
-        "recompose": "Recomponer con estas observaciones"
-      },
-      "toast": {
-        "failed": "No se pudo revisar la prosa. Intenta de nuevo."
-      }
     },
     "verseProse": {
       "nextStepHint": "Sin la prosa, este versículo no entra al documento.",
@@ -2332,14 +2299,14 @@
     },
     "recompose": {
       "title": "Recomponer {{verse}}",
-      "description": "Se vuelve a redactar la prosa de este verso y de ninguno más. El análisis, las citas y sus veredictos quedan como están.",
+      "description": "Se vuelve a redactar la prosa de este verso y de ninguno más. El análisis, sus citas y sus veredictos quedan como están.",
       "current": "Ahora tiene {{words}} palabras (≈ {{pages}} páginas).",
       "guidanceLabel": "Qué falta o qué corregir (opcional)",
       "guidancePlaceholder": "Ej.: «Salió como ficha: desarrolla la morfología de יְשׁוֹבֵב en prosa, explica el contraste polel/hifil y cierra con la decisión de traducción».",
       "targetLabel": "Palabras objetivo",
       "targetPlaceholder": "800",
       "targetHint": "Sugerido a partir de la extensión que pide la rúbrica. Puedes cambiarlo o dejarlo vacío.",
-      "safety": "No se toca el análisis: las citas verificadas y las revisiones que hiciste siguen igual. Si el trabajo ya está ensamblado, la prosa nueva entra en su sección.",
+      "safety": "No se toca el análisis. La prosa se reescribe entera, también lo que editaste a mano, y sus citas quedan sin verificar. Si no te convence, puedes volver a la prosa anterior con «Deshacer». Si el trabajo ya está ensamblado, la prosa nueva entra en su sección.",
       "cancel": "Cancelar",
       "submit": "Recomponer este verso",
       "toast": {
@@ -2482,7 +2449,7 @@
     },
     "steps": {
       "addIdea": {
-        "action": "Agregar una idea",
+        "action": "Agregar idea",
         "title": "Agregar una idea a {{section}}",
         "description": "Escribe la idea con su cita. El asistente la redacta en una o dos oraciones y elige dónde va; el resto de la sección no cambia. La ves antes de insertarla.",
         "label": "La idea y su cita",
@@ -2554,6 +2521,8 @@
         "show": "Mostrar",
         "hide": "Ocultar"
       },
+      "versionOf": "v{{shown}} de {{total}}",
+      "acceptedVersion": "última aceptada: v{{number}}",
       "action": {
         "generate": "Generar",
         "retry": "Reintentar",
@@ -2567,12 +2536,19 @@
         "regenerate": "Regenerar",
         "regenerating": "Regenerando…",
         "editManual": "Editar a mano",
-        "editAccepted": "Editar contenido aceptado",
+        "editAccepted": "Editar",
+        "editAcceptedTooltip": "Edita a mano el contenido aceptado.",
         "redo": "Volver a revisión",
         "redoTooltip": "Devuelve el paso a revisión sin tocar el contenido: queda otra vez con los botones de aceptar y regenerar.",
         "saveEdit": "Guardar edición",
         "expand": "Expandir",
-        "collapse": "Colapsar"
+        "collapse": "Colapsar",
+        "undoChange": "Deshacer",
+        "undoChangeTooltip": "Vuelve a la versión anterior de este paso. Sin costo.",
+        "redoChange": "Rehacer",
+        "redoChangeTooltip": "Vuelve a lo que deshiciste. Sin costo.",
+        "backToAccepted": "Volver a v{{number}}",
+        "backToAcceptedTooltip": "Vuelve a la última versión que aceptaste y la deja aceptada. El documento no cambia."
       },
       "gate": {
         "notInCorpus": "Citado en el trabajo, pero ya no está en el corpus: vuelve a agregarlo o quita sus citas.",
@@ -2587,7 +2563,13 @@
         "accepted": "Paso aceptado",
         "acceptFailed": "No se pudo aceptar el paso",
         "edited": "Edición guardada",
-        "editFailed": "No se pudo guardar la edición"
+        "editFailed": "No se pudo guardar la edición",
+        "undone": "Se restauró la versión anterior.",
+        "redone": "Se recuperó la versión que habías deshecho.",
+        "backToAccepted": "Volviste a la última versión aceptada.",
+        "undoFailed": "No se pudo cambiar de versión. Recarga la página e intenta otra vez.",
+        "undoneNotInDocument": "Se cambió la prosa del paso, pero el documento ensamblado no se actualizó, porque ya trae otro texto. Revísalo antes de exportar.",
+        "movedToReview": "Esta versión quedó en revisión. Acéptala para que cuente en el trabajo."
       },
       "assembly": {
         "manifestTitle": "Esto entra al documento · {{count}} palabras",
@@ -2747,6 +2729,8 @@
         "body": "El archivo baja {{delivered}} palabras; en pantalla tienes {{onScreen}}. Regenera el ensamble y acéptalo: solo entonces el archivo toma lo que ves.",
         "toast": "Bajaste {{delivered}} palabras, y en pantalla hay {{onScreen}}. Regenera el ensamble, acéptalo y vuelve a descargar."
       },
+      "behind_one": "El archivo no refleja lo último de «{{sections}}». Revísala antes de entregar: al regenerar y aceptar el ensamble, este toma lo aceptado de cada sección.",
+      "behind_other": "El archivo no refleja lo último de estas secciones: {{sections}}. Revísalas antes de entregar: al regenerar y aceptar el ensamble, este toma lo aceptado de cada sección.",
       "orientative": "Estudio para predicar: la extensión orienta, no se califica. La rúbrica sugiere {{target}}.",
       "noProse": "sin prosa"
     },

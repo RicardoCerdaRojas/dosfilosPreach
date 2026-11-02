@@ -20,7 +20,6 @@ import {
     GeminiIntroductionComposer,
     GeminiVerseAcademicComposer,
     GeminiIdeaPlacer,
-    GeminiProseReviewer,
     GeminiThesisAdvisor,
     GeminiExegesisOrchestrator,
     GeminiSermonComposer,
@@ -131,7 +130,6 @@ import {
     SetStepInclusionUseCase,
     ComposeVerseAcademicProseUseCase,
     PlaceIdeaInSectionUseCase,
-    ReviewVerseProseUseCase,
     SetPaperProjectUseCase,
     AddRuleToStyleGuideUseCase,
     ImportPreviousWorksUseCase,
@@ -143,6 +141,7 @@ import {
     SaveWorkProfileFromPaperUseCase,
     ReviewCitationUseCase,
     SaveStepEditUseCase,
+    UndoStepChangeUseCase,
     VerifyStepCitationsUseCase,
     RunCoherencePassUseCase,
     ClassifySourceTypeUseCase,
@@ -252,6 +251,8 @@ class ExegesisService {
     public generateStep: GenerateStepUseCase;
     public acceptStep: AcceptStepUseCase;
     public saveStepEdit: SaveStepEditUseCase;
+    /** Deshacer o rehacer «Regenerar», sin modelo y sin cobro. */
+    public undoStepChange: UndoStepChangeUseCase;
     // Programmatic citation verification (v1.5 differentiator vs
     // NotebookLM). Runs over a step version's accepted markdown,
     // matches cited sources against the paper's project-source list,
@@ -302,7 +303,6 @@ class ExegesisService {
     public addRuleToStyleGuide: AddRuleToStyleGuideUseCase;
     /** Curso: «Traer los trabajos anteriores», sin reaplicarles el encargo. */
     public importPreviousWorks: ImportPreviousWorksUseCase;
-    public reviewVerseProse: ReviewVerseProseUseCase;
 
     // Ministry composers (Phase 6) — sermon / devotional / study
     // guide composed from the same `CanonicalVerseAnalysis` artifact.
@@ -548,6 +548,7 @@ class ExegesisService {
         this.reviewCitation = new ReviewCitationUseCase(paperRepository);
         this.reopenStep = new ReopenStepUseCase(paperRepository);
         this.saveStepEdit = new SaveStepEditUseCase(paperRepository);
+        this.undoStepChange = new UndoStepChangeUseCase(paperRepository);
 
         // Citation verifier — defaults to the LLM-based adapter so
         // cross-language papers (Spanish prose paraphrasing English
@@ -730,13 +731,6 @@ class ExegesisService {
             new GeminiIdeaPlacer(exegesisModelId),
         );
 
-        // «Revisión antes de entregar»: la prosa de un versículo contra los
-        // criterios del curso. Solo avisa (TP #8, 8b, E3).
-        this.reviewVerseProse = new ReviewVerseProseUseCase(
-            paperRepository,
-            styleGuideRepository,
-            new GeminiProseReviewer(exegesisModelId),
-        );
         // La tesis con modelo (etapa 3.3): el ruteo la manda a gpt-6.1-sol.
         const thesisAdvisor = new GeminiThesisAdvisor(exegesisModelId);
         this.proposeThesis = new ProposeThesisUseCase(paperRepository, thesisAdvisor);

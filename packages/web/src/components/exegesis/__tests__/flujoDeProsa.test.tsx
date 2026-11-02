@@ -20,7 +20,6 @@ vi.mock('../StudentReadingPanel', () => ({ StudentReadingPanel: () => null, Obse
 vi.mock('../useStudentReadingDraft', () => ({ useStudentReadingDraft: () => ({ texto: '', setTexto: vi.fn(), sinCambios: true, guardando: false, guardar: vi.fn().mockResolvedValue(true) }) }));
 let papelDelPaso: Record<string, unknown> = { sources: [] };
 vi.mock('@/hooks/exegesis/useExegesisPaper', () => ({ useExegesisPaper: () => ({ paper: papelDelPaso }) }));
-vi.mock('@/hooks/exegesis/useReviewVerseProse', () => ({ useReviewVerseProse: () => ({ mutateAsync: vi.fn(), isPending: false, data: undefined }) }));
 vi.mock('@/components/exegesis/citation/SourceViewerProvider', () => ({
     useRegisterCitationSink: () => undefined,
     useSourceViewer: () => ({ open: vi.fn(), openCitation: vi.fn() }),

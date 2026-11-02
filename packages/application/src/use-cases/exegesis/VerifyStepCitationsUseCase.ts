@@ -122,14 +122,20 @@ export class VerifyStepCitationsUseCase {
                     contexto.previous.filter(v => v.origin !== 'analysis'), contexto.passageRef);
             const citations = stampSourceFingerprints(juzgadas, sources);
 
-            await this.paperRepository.setStepVersionVerifications(
-                ownerId,
-                paperId,
-                stepId,
-                target.id,
-                summary,
-                citations,
-            );
+            // Mientras se verificaba pudo cambiar la prosa (deshacer, recomponer):
+            // estos veredictos quedarían pegados a un texto que no leyeron.
+            const fresco = await this.paperRepository.getPaper(ownerId, paperId);
+            const vigente = fresco?.steps.find(s => s.id === stepId)?.versions.find(v => v.id === target.id);
+            if (vigente?.markdown === target.markdown) {
+                await this.paperRepository.setStepVersionVerifications(
+                    ownerId,
+                    paperId,
+                    stepId,
+                    target.id,
+                    summary,
+                    citations,
+                );
+            }
 
             return { summary, citations, versionId: target.id };
         } catch (err) {

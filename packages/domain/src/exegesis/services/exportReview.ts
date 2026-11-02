@@ -1,5 +1,5 @@
 import { findInlineCitations } from './inlineCitations';
-import { mechanicalProseFindings, type ProseCheckKind } from './proseReview';
+import { mechanicalProseFindings, type MechanicalProseKind } from './mechanicalProseFindings';
 
 /**
  * La revisión antes de exportar: lo que se puede corregir en la app antes
@@ -26,7 +26,7 @@ export type ExportReviewKind =
     | 'nomenclature'
     /** «Waltke-O’Connor» en un trabajo que también escribe «Waltke y O’Connor». */
     | 'author-form'
-    | Extract<ProseCheckKind, 'hyphen-range' | 'greek-grave' | 'punctuation'>;
+    | MechanicalProseKind;
 
 export interface ExportFinding {
     kind: ExportReviewKind;

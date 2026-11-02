@@ -1906,7 +1906,7 @@
       "analyze": "Canonical analysis",
       "analyzeTooltip": "Generate the structured analysis (study mode + academic composer)",
       "analyzeRetry": "Retry analysis",
-      "analyzeFromAccepted": "Migrate to canonical analysis",
+      "analyzeFromAccepted": "Migrate to analysis",
       "analyzeFromAcceptedTooltip": "Generate the structured analysis for this verse (replaces the legacy markdown with study view + payload reusable by composers).",
       "regenAnalysis": "Regenerate analysis",
       "regenAnalysisTooltip": "Re-run the canonical analysis for this verse. The previous per-verse prose is invalidated until you recompose it.",
@@ -1915,39 +1915,6 @@
       "composeFromAnalyses": "Compose from analyses",
       "recomposeFromAnalyses": "Recompose from analyses",
       "composeRetry": "Retry composition"
-    },
-    "proseReview": {
-      "title": "Review before delivery",
-      "subtitle": "Flags what usually gets corrected in an academic paper. It does not block the Word export: you decide.",
-      "count_one": "{{count}} warning",
-      "count_other": "{{count}} warnings",
-      "clean": "No warnings",
-      "fixed": {
-        "missing-criterion": "Question {{question}}: the prose does not use the analysis's decisive criterion: \"{{criterion}}\".",
-        "missing-grammar": "The analysis cites the course grammar ({{key}}, {{page}}) and the prose does not.",
-        "unverified-citation": "The citation {{excerpt}} could not be verified and nobody reviewed it.",
-        "repeated-alert": "The prose repeats the citation {{excerpt}}, which could not be verified in the analysis.",
-        "double-closing": "This closing sentence seems to state two things: split it in two.",
-        "hyphen-range": "Range with a hyphen: use an en dash (–).",
-        "greek-grave": "Greek accent: a final acute becomes grave before another word.",
-        "punctuation": "Punctuation: double comma or space before a comma.",
-        "lowercase-start": "The paragraph starts in lowercase.",
-        "repetition": "Repetition: \"{{excerpt}}\" appears {{count}} times.",
-        "translation-mismatch": "The translation the closing adopts is not the analysis's final translation (\"{{analysis}}\"). Is this on purpose? If not, fix the closing or the analysis's translation."
-      },
-      "reviewer": {
-        "criterion": "Criterion {{number}}",
-        "clean": "The reviewer found no failures against the course criteria.",
-        "stale": "The prose changed after the last criteria review: review it again."
-      },
-      "action": {
-        "review": "Review with the course criteria",
-        "reviewAgain": "Review again",
-        "recompose": "Recompose with these notes"
-      },
-      "toast": {
-        "failed": "The prose could not be reviewed. Try again."
-      }
     },
     "verseProse": {
       "nextStepHint": "Without prose, this verse does not enter the document.",
@@ -2332,14 +2299,14 @@
     },
     "recompose": {
       "title": "Recompose {{verse}}",
-      "description": "Only this verse's prose is written again. The analysis, its citations and their verdicts stay as they are.",
+      "description": "The prose of this verse, and no other, is written again. The analysis, its citations and their verdicts stay as they are.",
       "current": "It currently has {{words}} words (≈ {{pages}} pages).",
       "guidanceLabel": "What is missing or wrong (optional)",
       "guidancePlaceholder": "E.g.: it came out as a data sheet — develop the morphology in prose, explain the polel/hiphil contrast and close with the translation decision.",
       "targetLabel": "Target words",
       "targetPlaceholder": "800",
       "targetHint": "Suggested from the length the rubric asks for. Change it or leave it empty.",
-      "safety": "The analysis is untouched: verified citations and your reviews stay as they are. If the paper is already assembled, the new prose goes into its section.",
+      "safety": "The analysis is not touched. The prose is rewritten in full, including your manual edits, and its citations become unverified. If you do not like it, you can return to the previous prose with “Undo”. If the paper is already assembled, the new prose goes into its section.",
       "cancel": "Cancel",
       "submit": "Recompose this verse",
       "toast": {
@@ -2482,7 +2449,7 @@
     },
     "steps": {
       "addIdea": {
-        "action": "Add an idea",
+        "action": "Add idea",
         "title": "Add an idea to {{section}}",
         "description": "Write the idea with its citation. The assistant phrases it in one or two sentences and picks where it goes; the rest of the section stays the same. You see it before inserting.",
         "label": "The idea and its citation",
@@ -2554,6 +2521,8 @@
         "show": "Show",
         "hide": "Hide"
       },
+      "versionOf": "v{{shown}} of {{total}}",
+      "acceptedVersion": "last accepted: v{{number}}",
       "action": {
         "generate": "Generate",
         "retry": "Retry",
@@ -2567,12 +2536,19 @@
         "regenerate": "Regenerate",
         "regenerating": "Regenerating…",
         "editManual": "Edit manually",
-        "editAccepted": "Edit accepted content",
+        "editAccepted": "Edit",
+        "editAcceptedTooltip": "Edit the accepted content by hand.",
         "redo": "Back to review",
         "redoTooltip": "Returns the step to review without touching the content: it gets the accept and regenerate buttons again.",
         "saveEdit": "Save edit",
         "expand": "Expand",
-        "collapse": "Collapse"
+        "collapse": "Collapse",
+        "undoChange": "Undo",
+        "undoChangeTooltip": "Goes back to this step's previous version. No charge.",
+        "redoChange": "Redo",
+        "redoChangeTooltip": "Goes back to what you undid. No charge.",
+        "backToAccepted": "Back to v{{number}}",
+        "backToAcceptedTooltip": "Goes back to the last version you accepted and leaves it accepted. The document does not change."
       },
       "gate": {
         "notInCorpus": "Cited in the paper but no longer in the corpus: add it back or remove its citations.",
@@ -2587,7 +2563,13 @@
         "accepted": "Step accepted",
         "acceptFailed": "Couldn't accept the step",
         "edited": "Edit saved",
-        "editFailed": "Couldn't save the edit"
+        "editFailed": "Couldn't save the edit",
+        "undone": "The previous version was restored.",
+        "redone": "The version you undid was recovered.",
+        "backToAccepted": "You are back on the last accepted version.",
+        "undoFailed": "The version could not be changed. Reload the page and try again.",
+        "undoneNotInDocument": "The step's prose changed, but the assembled document was not updated because it already holds different text. Check it before exporting.",
+        "movedToReview": "This version is now in review. Accept it for it to count in the paper."
       },
       "assembly": {
         "manifestTitle": "This goes into the document · {{count}} words",
@@ -2747,6 +2729,8 @@
         "body": "The file carries {{delivered}} words; the screen shows {{onScreen}}. Regenerate the assembly and accept it — only then does the file take what you see.",
         "toast": "You downloaded {{delivered}} words, and the screen shows {{onScreen}}. Regenerate the assembly, accept it, and download again."
       },
+      "behind_one": "The file does not reflect the latest in “{{sections}}”. Check it before submitting: when you regenerate and accept the assembly, it takes what is accepted in each section.",
+      "behind_other": "The file does not reflect the latest in these sections: {{sections}}. Check them before submitting: when you regenerate and accept the assembly, it takes what is accepted in each section.",
       "orientative": "Study for preaching: length is a guide, not a grade. The rubric suggests {{target}}.",
       "noProse": "no prose"
     },

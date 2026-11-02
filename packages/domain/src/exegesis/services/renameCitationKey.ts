@@ -54,6 +54,8 @@ export function renameKeyInStep(step: ExegeticalStep, from: string, to: string):
         ...v,
         markdown: renameKeyInText(v.markdown, from, to),
         ...(v.canonicalAnalysis ? { canonicalAnalysis: renameKeyInValue(v.canonicalAnalysis, from, to) } : {}),
+        // Deshacer no puede devolver la clave vieja (TP #6).
+        ...(v.previousProse ? { previousProse: { ...v.previousProse, markdown: renameKeyInText(v.previousProse.markdown, from, to) } } : {}),
     }));
     const porId = (id: string | undefined) => versiones.find(v => v.id === id) ?? null;
     return {

@@ -9,6 +9,7 @@ import type {
     CreateExegeticalPaperInput,
     ExegeticalPaper,
     ExtractRubricFromTextInput,
+    StepHistoryMove,
     UpdateProjectSourceInput,
     UpdateRubricInput,
     UpdateStepPlanInput,
@@ -563,6 +564,18 @@ export function useExegesisPapers() {
         },
     });
 
+    /** Deshacer o rehacer «Regenerar». Sin modelo y sin cobro. */
+    const undoStepChange = useMutation({
+        mutationFn: async ({ paperId, stepId, action, expected }: { paperId: string; stepId: string; action: 'undo' | 'redo' | 'accepted'; expected: StepHistoryMove }) => {
+            if (!user?.uid) throw new Error('User not authenticated');
+            return exegesisService.undoStepChange.execute({ ownerId: user.uid, paperId, stepId, action, expected });
+        },
+        // También si falló: el paso pudo cambiar antes de que fallara el documento.
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        },
+    });
+
     // Source-type auto-classification — single Gemini call over the
     // first ~5k chars of a resource's extracted text. Used by the
     // corpus-attach UI to pre-select the SourceType dropdown.
@@ -749,6 +762,7 @@ export function useExegesisPapers() {
         setStepInclusion,
         placeIdeaInSection,
         saveStepEdit,
+        undoStepChange,
         verifyStepCitations,
         reviewCitation,
         correctCitation,
