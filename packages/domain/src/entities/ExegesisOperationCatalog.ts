@@ -44,6 +44,8 @@ export type ExegesisOperationKey =
     | 'placeIdeaInSection'
     // «Revisión antes de entregar»: lee la prosa de un versículo contra los
     // criterios del curso (TP #8, 8b, E3).
+    // Dada de baja (2026-11-02). Se conserva: el historial de consumo muestra
+    // su rótulo, y un cliente viejo en caché puede pedirla durante el despliegue.
     | 'reviewVerseProse'
     // La tesis del trabajo (fase «Lecciones del TI #2», 3.3). Costo medido:
     // 0,027–0,045 USD por llamada con gpt-6.1-sol (decisión del fundador).

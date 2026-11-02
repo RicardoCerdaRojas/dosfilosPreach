@@ -20,7 +20,6 @@ import {
     GeminiIntroductionComposer,
     GeminiVerseAcademicComposer,
     GeminiIdeaPlacer,
-    GeminiProseReviewer,
     GeminiThesisAdvisor,
     GeminiExegesisOrchestrator,
     GeminiSermonComposer,
@@ -131,7 +130,6 @@ import {
     SetStepInclusionUseCase,
     ComposeVerseAcademicProseUseCase,
     PlaceIdeaInSectionUseCase,
-    ReviewVerseProseUseCase,
     SetPaperProjectUseCase,
     AddRuleToStyleGuideUseCase,
     ImportPreviousWorksUseCase,
@@ -302,7 +300,6 @@ class ExegesisService {
     public addRuleToStyleGuide: AddRuleToStyleGuideUseCase;
     /** Curso: «Traer los trabajos anteriores», sin reaplicarles el encargo. */
     public importPreviousWorks: ImportPreviousWorksUseCase;
-    public reviewVerseProse: ReviewVerseProseUseCase;
 
     // Ministry composers (Phase 6) — sermon / devotional / study
     // guide composed from the same `CanonicalVerseAnalysis` artifact.
@@ -730,13 +727,6 @@ class ExegesisService {
             new GeminiIdeaPlacer(exegesisModelId),
         );
 
-        // «Revisión antes de entregar»: la prosa de un versículo contra los
-        // criterios del curso. Solo avisa (TP #8, 8b, E3).
-        this.reviewVerseProse = new ReviewVerseProseUseCase(
-            paperRepository,
-            styleGuideRepository,
-            new GeminiProseReviewer(exegesisModelId),
-        );
         // La tesis con modelo (etapa 3.3): el ruteo la manda a gpt-6.1-sol.
         const thesisAdvisor = new GeminiThesisAdvisor(exegesisModelId);
         this.proposeThesis = new ProposeThesisUseCase(paperRepository, thesisAdvisor);

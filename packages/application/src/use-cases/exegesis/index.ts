@@ -150,11 +150,6 @@ export {
     type PreviousWorkStatus,
 } from './ImportPreviousWorksUseCase';
 export {
-    ReviewVerseProseUseCase,
-    type ReviewVerseProseInput,
-    type ReviewVerseProseOutput,
-} from './ReviewVerseProseUseCase';
-export {
     ComposeSermonFromAnalysesUseCase,
     ComposeDevotionalFromAnalysesUseCase,
     ComposeStudyGuideFromAnalysesUseCase,

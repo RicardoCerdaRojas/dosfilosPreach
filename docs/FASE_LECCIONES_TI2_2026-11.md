@@ -415,6 +415,10 @@ Queda como posible:
    - Se agrega una advertencia suave si hay versículos sin aceptar.
 
 ### Etapa 4 · Revisión en todas las secciones y vocabulario en todo lo que se genera (M–L)
+
+> **Decisión del 2026-11-02: la «Revisión antes de entregar» se da de baja.** Tras investigar su peso metodológico y su riesgo, el fundador decidió quitar la tarjeta completa, porque puede desvirtuar un trabajo que ya tiene buen nivel. La etapa 4 descrita abajo **no se publica**: quedó en la rama local `feat/revision-y-vocabulario`, sin subir. Lo que sí se hace: «Regenerar» guarda la versión anterior para poder deshacer. Se conservan la revisión antes de exportar y sus arreglos mecánicos, que son otra función. En el servidor se mantienen la ruta `exegesis.reviewProse` y la operación `reviewVerseProse`, por el historial de consumo y los clientes viejos durante el despliegue.
+>
+> **Medido en esa investigación:** una oración con aviso de la tarjeta se cambió el 30 % de las veces, contra el 26 % de una sin aviso. Los cierres «sin + infinitivo» no fueron una corrección del fundador: se generaron 22 y el Word entregado conserva 20, así que lo que dicen sobre eso el §2.6 y la bitácora no debe leerse como corrección humana.
 **Por qué:** la regla en el prompt no bastó (v4); hubo unas 30 correcciones humanas de prosa; la regla 22 no llega al sermón.
 
 1. **«Revisión antes de entregar» en la introducción y la conclusión (B64).**
