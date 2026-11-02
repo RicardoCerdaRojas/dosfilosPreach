@@ -2449,7 +2449,7 @@
     },
     "steps": {
       "addIdea": {
-        "action": "Add an idea",
+        "action": "Add idea",
         "title": "Add an idea to {{section}}",
         "description": "Write the idea with its citation. The assistant phrases it in one or two sentences and picks where it goes; the rest of the section stays the same. You see it before inserting.",
         "label": "The idea and its citation",
@@ -2536,7 +2536,8 @@
         "regenerate": "Regenerate",
         "regenerating": "Regenerating…",
         "editManual": "Edit manually",
-        "editAccepted": "Edit accepted content",
+        "editAccepted": "Edit",
+        "editAcceptedTooltip": "Edit the accepted content by hand.",
         "redo": "Back to review",
         "redoTooltip": "Returns the step to review without touching the content: it gets the accept and regenerate buttons again.",
         "saveEdit": "Save edit",
@@ -2546,7 +2547,7 @@
         "undoChangeTooltip": "Go back to the previous version of this step.",
         "redoChange": "Redo",
         "redoChangeTooltip": "Goes back to what you undid.",
-        "backToAccepted": "Back to last accepted (v{{number}})",
+        "backToAccepted": "Back to v{{number}}",
         "backToAcceptedTooltip": "Goes back to the last version you accepted and leaves it accepted. The document does not change."
       },
       "gate": {

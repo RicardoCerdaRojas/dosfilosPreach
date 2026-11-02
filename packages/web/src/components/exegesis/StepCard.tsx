@@ -16,7 +16,7 @@ import {
     NotebookPen,
     ShieldCheck,
     MoreVertical,
-    Undo2,
+    LockOpen,
     Undo,
     History,
     Redo,
@@ -730,7 +730,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 ...(previewMarkdown.trim()
                     ? [{ key: 'idea', label: t('detail.steps.addIdea.action'), icon: <MessageSquarePlus className={ic} />, onClick: () => setIdeaOpen(true), disabled: anyPipelinePending }]
                     : []),
-                { key: 'redo', label: t('detail.steps.action.redo'), icon: <Undo2 className={ic} />, onClick: () => reopenStep.mutate({ paperId, stepId: step.id }), disabled: reopenStep.isPending || anyPipelinePending },
+                { key: 'redo', label: t('detail.steps.action.redo'), icon: <LockOpen className={ic} />, onClick: () => reopenStep.mutate({ paperId, stepId: step.id }), disabled: reopenStep.isPending || anyPipelinePending },
                 { key: 'review', label: t('canonical.review.link'), icon: <ShieldCheck className={ic} />, to: reviewPath },
             ];
             if (isVerse && canonicalAnalysis) {
@@ -1219,6 +1219,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         <Button
                             size="sm"
                             variant="ghost"
+                            className="px-2"
                             onClick={startEdit}
                             disabled={versionEnVuelo}
                         >
@@ -1226,19 +1227,19 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             {t('detail.steps.action.editManual')}
                         </Button>
                         {movimientos.undo && (
-                            <Button size="sm" variant="ghost" onClick={() => void handleStepHistory('undo')} disabled={versionEnVuelo} title={t('detail.steps.action.undoChangeTooltip')}>
+                            <Button size="sm" variant="ghost" className="px-2" onClick={() => void handleStepHistory('undo')} disabled={versionEnVuelo} title={t('detail.steps.action.undoChangeTooltip')}>
                                 <Undo className="h-3.5 w-3.5 mr-1.5" />
                                 {t('detail.steps.action.undoChange')}
                             </Button>
                         )}
                         {movimientos.redo && (
-                            <Button size="sm" variant="ghost" onClick={() => void handleStepHistory('redo')} disabled={versionEnVuelo} title={t('detail.steps.action.redoChangeTooltip')}>
+                            <Button size="sm" variant="ghost" className="px-2" onClick={() => void handleStepHistory('redo')} disabled={versionEnVuelo} title={t('detail.steps.action.redoChangeTooltip')}>
                                 <Redo className="h-3.5 w-3.5 mr-1.5" />
                                 {t('detail.steps.action.redoChange')}
                             </Button>
                         )}
                         {movimientos.accepted && (
-                            <Button size="sm" variant="ghost" onClick={() => void handleStepHistory('accepted')} disabled={versionEnVuelo} title={t('detail.steps.action.backToAcceptedTooltip')}>
+                            <Button size="sm" variant="ghost" className="px-2" onClick={() => void handleStepHistory('accepted')} disabled={versionEnVuelo} title={t('detail.steps.action.backToAcceptedTooltip')}>
                                 <History className="h-3.5 w-3.5 mr-1.5" />
                                 {t('detail.steps.action.backToAccepted', { number: numeros.accepted })}
                             </Button>
@@ -1263,7 +1264,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             </Button>
                         )}
                         {step.current?.canonicalAnalysis ? (
-                            <Button asChild size="sm" variant="ghost" className="ml-auto">
+                            <Button asChild size="sm" variant="ghost" className="ml-auto px-2">
                                 <Link to={reviewPath} title={t('canonical.review.linkTooltip')}>
                                     <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
                                     {t('canonical.review.link')}
@@ -1275,7 +1276,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                 variant="ghost"
                                 onClick={handleVerifyCitations}
                                 disabled={versionEnVuelo || !step.current}
-                                className="ml-auto"
+                                className="ml-auto px-2"
                                 title={t('canonical.verify.button.tooltip')}
                             >
                                 {verifyStepCitations.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />}
@@ -1316,6 +1317,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         type="button"
                         onClick={startEdit}
                         disabled={anyPipelinePending}
+                        title={t('detail.steps.action.editAcceptedTooltip')}
                         className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
                     >
                         <Pencil className="h-3 w-3" />
@@ -1363,7 +1365,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         title={t('detail.steps.action.redoTooltip')}
                         className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300 disabled:opacity-50"
                     >
-                        <RotateCcw className="h-3 w-3" />
+                        <LockOpen className="h-3 w-3" />
                         {t('detail.steps.action.redo')}
                     </button>
                     {canonicalAnalysis ? (

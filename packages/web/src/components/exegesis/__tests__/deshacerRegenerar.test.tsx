@@ -153,6 +153,29 @@ describe('deshacer «Regenerar»', () => {
         });
     });
 
+    describe('ninguna acción repite ícono', () => {
+        const iconos = (zona: Element) => [...zona.querySelectorAll('button svg, a svg')].map(i => i.getAttribute('class'));
+        const sinRepetidos = (lista: Array<string | null>) => expect(new Set(lista).size).toBe(lista.length);
+        const conclusionAceptada = () => {
+            const v1 = { id: 'v1', markdown: 'Uno.', parentVersionId: null, createdAt: new Date() };
+            const v2 = { id: 'v2', markdown: 'Dos.', parentVersionId: 'v1', createdAt: new Date() };
+            return { id: 's', paperId: 'p', kind: 'conclusion', verseRef: null, order: 5, state: 'accepted', versions: [v1, v2], current: v2, accepted: v2, createdAt: new Date(), updatedAt: new Date() } as unknown as ExegeticalStep;
+        };
+
+        it.each([
+            ['una conclusión', conclusionAceptada],
+            ['un versículo', () => verso({ previousProse: { markdown: 'Antes.' } })],
+        ])('en %s aceptado, ni en el pie ni en el encabezado', (_n, paso) => {
+            conQuery(<StepCard step={paso()} paperId="p" language="es" />);
+            expandir();
+            const pie = elPie('detail.steps.action.redo').closest('footer')!;
+            sinRepetidos(iconos(pie));
+            expect(pie.querySelector('.lucide-lock-open')).not.toBeNull();
+            const delEncabezado = screen.getAllByRole('button', { name: /detail\.steps\.action\.redo$/ }).find(b => !b.closest('footer'))!;
+            sinRepetidos(iconos(delEncabezado.parentElement!));
+        });
+    });
+
     it('en revisión también se ofrece, para volver de lo regenerado', () => {
         const v1 = { id: 'v1', markdown: 'Antes.', parentVersionId: null, createdAt: new Date() };
         const v2 = { id: 'v2', markdown: 'Después.', parentVersionId: 'v1', createdAt: new Date() };

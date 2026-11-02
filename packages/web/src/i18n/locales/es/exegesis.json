@@ -2449,7 +2449,7 @@
     },
     "steps": {
       "addIdea": {
-        "action": "Agregar una idea",
+        "action": "Agregar idea",
         "title": "Agregar una idea a {{section}}",
         "description": "Escribe la idea con su cita. El asistente la redacta en una o dos oraciones y elige dónde va; el resto de la sección no cambia. La ves antes de insertarla.",
         "label": "La idea y su cita",
@@ -2536,7 +2536,8 @@
         "regenerate": "Regenerar",
         "regenerating": "Regenerando…",
         "editManual": "Editar a mano",
-        "editAccepted": "Editar contenido aceptado",
+        "editAccepted": "Editar",
+        "editAcceptedTooltip": "Edita a mano el contenido aceptado.",
         "redo": "Volver a revisión",
         "redoTooltip": "Devuelve el paso a revisión sin tocar el contenido: queda otra vez con los botones de aceptar y regenerar.",
         "saveEdit": "Guardar edición",
@@ -2546,7 +2547,7 @@
         "undoChangeTooltip": "Vuelve a la versión anterior de este paso.",
         "redoChange": "Rehacer",
         "redoChangeTooltip": "Vuelve a lo que deshiciste.",
-        "backToAccepted": "Volver a la última aceptada (v{{number}})",
+        "backToAccepted": "Volver a v{{number}}",
         "backToAcceptedTooltip": "Vuelve a la última versión que aceptaste y la deja aceptada. El documento no cambia."
       },
       "gate": {
