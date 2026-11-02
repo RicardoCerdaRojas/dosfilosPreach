@@ -142,6 +142,62 @@ Las dos cuentas estaban a una consulta de distancia. Y al probar un arreglo,
 una aserción que no podía fallar pasó en verde: **toda prueba nueva se rompe a
 propósito una vez** (mutación a mano) para ver que falla.
 
+## 10. ¿De dónde sale el criterio, y qué puede dañar en un trabajo que ya está bien?
+
+Se contesta ANTES de escribir código, no antes del PR. Si la función juzga o
+reescribe el trabajo del usuario: de dónde sale cada criterio, cuánto puede
+desvirtuar lo bueno, cómo se revierte y cuál es la versión más barata que prueba
+que sirve. Si el valor es dudoso, primero se investiga.
+
+Mordió en la etapa 4 de «Lecciones del TI #2»: 8 commits de una revisión de prosa
+cuyos criterios no se podían defender. La investigación llegó después, y la
+función se dio de baja (#822).
+
+## 11. ¿Esto escribe en dos lugares? ¿Qué no puede pasar nunca?
+
+Antes de diseñar, por escrito: quién modifica cada dato y qué nunca puede pasar.
+Se empieza por la versión que no escribe en estado compartido. Las pruebas recorren
+secuencias de principio a fin, sin escribir a mano el resultado que esperan. **Si la
+segunda corrección del mismo problema agrega estado o heurística, se para y se
+rediseña.**
+
+Mordió en «Deshacer» (#822): pedían guardar la versión anterior y se le agregó
+sincronización con el documento. Tres revisiones hallaron 15, 13 y 5 defectos, dos
+de ellos borraban texto del autor. Lo que los eliminó fue quitar código.
+
+## 12. ¿Cómo se llega a esto desde datos reales?
+
+Por cada acción nueva: en qué estados reales aparece y cuál es el camino normal
+para llegar ahí. Datos armados a mano prueban que la función funciona, no que el
+usuario la encuentra. Se agrega a `packages/web/banco/estados.ts` el estado que la
+hace aparecer.
+
+Mordió en «Volver a la aceptada» (#822): verde en las pruebas, y no aparecía en
+el camino normal, porque «Volver a revisión» soltaba la aceptada.
+
+## 13. ¿La pantalla dice dónde estás, qué va a pasar y cuánto cuesta?
+
+Antes y después de cada acción: dónde está el usuario, cómo vuelve, y si la acción
+cuesta. Los nombres e íconos se miran junto a los vecinos, no solos.
+
+Mordió en #822: «v5» contaba versiones y no decía cuál se veía; «Rehacer» se leía
+como «Recomponer», que cuesta; dos acciones con el mismo ícono.
+
+## 14. ¿La viste?
+
+Toda interfaz se mira en un navegador real, en los anchos reales, antes de
+entregarla: `yarn banco` desde `packages/web` monta las tarjetas con el CSS real,
+falla si algo desborda, repite ícono o parte una fila, y deja capturas en
+`banco/.capturas/` para mirarlas. El informe no ve si algo se entiende. Un cálculo
+no es una verificación: si no se pudo ver, se dice.
+
+Mordió en #822: se afirmó dos veces que los botones cabían, por cálculo. Una regla
+del botón anulaba el relleno que se había quitado.
+
+**Al encargar la revisión a un agente, se le piden también las preguntas 12 a 14.**
+Tres revisiones de lógica no vieron ninguno de los problemas de pantalla, porque el
+encargo no los pedía.
+
 ---
 
 ## Lo que esta lista NO reemplaza

@@ -9,6 +9,7 @@
     "prebuild": "node scripts/copy-pdfjs-assets.mjs",
     "build": "vite build",
     "preview": "vite preview",
+    "banco": "node banco/capturar.mjs",
     "lint": "eslint .",
     "type-check": "bash ../../scripts/check-web-types.sh",
     "type-check:raw": "tsc --noEmit -p tsconfig.app.json",
