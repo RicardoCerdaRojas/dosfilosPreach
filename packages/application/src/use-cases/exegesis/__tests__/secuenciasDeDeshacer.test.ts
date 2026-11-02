@@ -95,7 +95,7 @@ const corregirEnsambleAMano = (texto: string) => {
     cambiar('a', s => ({ ...s, versions: [...s.versions, v], current: v, accepted: v, state: 'accepted' }));
     paper = { ...paper, assembledMarkdown: texto };
 };
-const mover = (id: string, action: 'undo' | 'redo') =>
+const mover = (id: string, action: 'undo' | 'redo' | 'accepted') =>
     useCase.execute({ ownerId: 'o', paperId: 'p', stepId: id, action, expected: stepHistoryMoves(paso(id))[action]! });
 const atrasadas = () => sectionsBehindAssembly(paper, 'es').map(p => p.label);
 const documento = () => paper.assembledMarkdown!;
@@ -292,6 +292,19 @@ describe('deshacer y el documento', () => {
         const antes = documento();
         await mover('v4', 'undo');
         expect(documento()).toBe(antes);
+    });
+
+    it('tras varias regeneraciones, se vuelve de un salto a la aceptada, sin tocar el documento', async () => {
+        const antes = documento();
+        const aceptada = paso('c').accepted!;
+        const v2 = version('c-2', AGREGADA, { parentVersionId: aceptada.id });
+        const v3 = version('c-3', A_MANO, { parentVersionId: 'c-2' });
+        cambiar('c', s => ({ ...s, versions: [...s.versions, v2, v3], current: v3, state: 'awaiting-review' }));
+        const r = await mover('c', 'accepted');
+        expect(paso('c').state).toBe('accepted');
+        expect(paso('c').current!.id).toBe(aceptada.id);
+        expect(documento()).toBe(antes);
+        expect(r.documentBehind).toBe(false);
     });
 
     it('avanzar a una versión que no es la aceptada la deja en revisión: no entra al documento', async () => {

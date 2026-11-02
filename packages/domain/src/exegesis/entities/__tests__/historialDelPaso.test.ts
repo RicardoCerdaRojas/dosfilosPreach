@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     stepAfterVersionMove,
     stepHistoryMoves,
+    stepVersionNumbers,
     swapPreviousProse,
     versionsToKeepOnAppend,
     withRecomposedProse,
@@ -64,11 +65,11 @@ describe('qué se puede deshacer', () => {
 
     it('recompuesto: deshace la prosa; una vez deshecho, rehace, y lo anterior del historial queda disponible', () => {
         const recompuesta = version('v2', { parentVersionId: 'v1', previousProse: { markdown: 'antes' } });
-        expect(stepHistoryMoves(paso({ accepted: recompuesta, current: recompuesta, versions: [v1, recompuesta] }))).toEqual({
+        expect(stepHistoryMoves(paso({ accepted: recompuesta, current: recompuesta, versions: [v1, recompuesta] }))).toMatchObject({
             undo: { kind: 'prose', versionId: 'v2' }, redo: null,
         });
         const deshecha = version('v2', { parentVersionId: 'v1', previousProse: { markdown: 'nueva', undone: true } });
-        expect(stepHistoryMoves(paso({ accepted: deshecha, current: deshecha, versions: [v1, deshecha] }))).toEqual({
+        expect(stepHistoryMoves(paso({ accepted: deshecha, current: deshecha, versions: [v1, deshecha] }))).toMatchObject({
             undo: { kind: 'version', versionId: 'v2', targetVersionId: 'v1' }, redo: { kind: 'prose', versionId: 'v2' },
         });
     });
@@ -87,9 +88,9 @@ describe('qué se puede deshacer', () => {
     });
 
     it('nada si no hay anterior, si la anterior se recortó, o mientras genera', () => {
-        expect(stepHistoryMoves(paso({ accepted: v1, current: v1, versions: [v1] }))).toEqual({ undo: null, redo: null });
+        expect(stepHistoryMoves(paso({ accepted: v1, current: v1, versions: [v1] }))).toEqual({ undo: null, redo: null, accepted: null });
         expect(stepHistoryMoves(paso({ accepted: v2, current: v2, versions: [v2] })).undo).toBeNull();
-        expect(stepHistoryMoves(paso({ state: 'generating', current: v2, versions: [v1, v2] }))).toEqual({ undo: null, redo: null });
+        expect(stepHistoryMoves(paso({ state: 'generating', current: v2, versions: [v1, v2] }))).toEqual({ undo: null, redo: null, accepted: null });
     });
 
     it('una prosa guardada vacía no se ofrece', () => {
@@ -150,5 +151,36 @@ describe('rehacer devuelve lo último que se dejó atrás', () => {
         const deshecha = swapPreviousProse(withRecomposedProse(version('v'), 'nueva'), ahora);
         expect(deshecha.previousProse!.undoneAt).toEqual(ahora);
         expect(swapPreviousProse(deshecha, ahora).previousProse).not.toHaveProperty('undoneAt');
+    });
+});
+
+describe('saber cuál es la aceptada', () => {
+    const v1 = version('v1');
+    const v2 = version('v2', { parentVersionId: 'v1' });
+    const v3 = version('v3', { parentVersionId: 'v2' });
+
+    it('en revisión de otra versión, ofrece ir directo a la aceptada', () => {
+        const m = stepHistoryMoves(paso({ state: 'awaiting-review', current: v3, accepted: v1, versions: [v1, v2, v3] }));
+        expect(m.accepted).toEqual({ kind: 'version', versionId: 'v3', targetVersionId: 'v1' });
+    });
+    it('viendo la aceptada, no lo ofrece', () => {
+        expect(stepHistoryMoves(paso({ current: v1, accepted: v1, versions: [v1, v2] })).accepted).toBeNull();
+        expect(stepHistoryMoves(paso({ state: 'awaiting-review', current: v1, accepted: v1, versions: [v1] })).accepted).toBeNull();
+    });
+    it('sin aceptada, no lo ofrece', () => {
+        expect(stepHistoryMoves(paso({ state: 'awaiting-review', current: v2, accepted: null, versions: [v1, v2] })).accepted).toBeNull();
+    });
+    it('generando, nada se ofrece', () => {
+        expect(stepHistoryMoves(paso({ state: 'generating' as never, current: v2, accepted: v1, versions: [v1, v2] }))).toEqual({ undo: null, redo: null, accepted: null });
+    });
+
+    it('el número es el de la versión a la vista, no el total', () => {
+        expect(stepVersionNumbers(paso({ state: 'awaiting-review', current: v2, accepted: v1, versions: [v1, v2, v3] }))).toEqual({ shown: 2, accepted: 1, total: 3 });
+    });
+    it('aceptada a la vista: los dos números coinciden', () => {
+        expect(stepVersionNumbers(paso({ current: v3, accepted: v3, versions: [v1, v2, v3] }))).toEqual({ shown: 3, accepted: 3, total: 3 });
+    });
+    it('sin aceptada, ni versiones, no inventa números', () => {
+        expect(stepVersionNumbers(paso({ state: 'awaiting-review', current: null, accepted: null, versions: [] }))).toEqual({ shown: null, accepted: null, total: 0 });
     });
 });

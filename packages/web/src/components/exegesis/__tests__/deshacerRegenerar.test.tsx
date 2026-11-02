@@ -124,6 +124,35 @@ describe('deshacer «Regenerar»', () => {
         mutacion('verifyStepCitations').isPending = false;
     });
 
+    describe('la versión a la vista y la aceptada', () => {
+        const pasoEnRevision = (current: 'v2' | 'v3') => {
+            const v1 = { id: 'v1', markdown: 'Uno.', parentVersionId: null, createdAt: new Date() };
+            const v2 = { id: 'v2', markdown: 'Dos.', parentVersionId: 'v1', createdAt: new Date() };
+            const v3 = { id: 'v3', markdown: 'Tres.', parentVersionId: 'v2', createdAt: new Date() };
+            return { id: 's', paperId: 'p', kind: 'conclusion', verseRef: null, order: 5, state: 'awaiting-review', versions: [v1, v2, v3], current: current === 'v2' ? v2 : v3, accepted: v1, createdAt: new Date(), updatedAt: new Date() } as unknown as ExegeticalStep;
+        };
+
+        it('dice cuál se ve y cuál es la aceptada', () => {
+            conQuery(<StepCard step={pasoEnRevision('v2')} paperId="p" language="es" />);
+            expect(document.body.textContent).toContain('detail.steps.versionOf {"shown":2,"total":3}');
+            expect(document.body.textContent).toContain('detail.steps.acceptedVersion {"number":1}');
+        });
+
+        it('el botón va directo a la aceptada', async () => {
+            mutacion('undoStepChange').mutateAsync.mockResolvedValue({ documentBehind: false, step: { state: 'accepted' } });
+            conQuery(<StepCard step={pasoEnRevision('v3')} paperId="p" language="es" />);
+            fireEvent.click(elPie('detail.steps.action.backToAccepted {"number":1}'));
+            await waitFor(() => expect(mutacion('undoStepChange').mutateAsync).toHaveBeenCalledWith({ paperId: 'p', stepId: 's', action: 'accepted', expected: { kind: 'version', versionId: 'v3', targetVersionId: 'v1' } }));
+        });
+
+        it('viendo la aceptada no repite su número ni ofrece el botón', () => {
+            conQuery(<StepCard step={verso()} paperId="p" language="es" />);
+            expandir();
+            expect(document.body.textContent).not.toContain('detail.steps.acceptedVersion');
+            expect(screen.queryByText(/backToAccepted/)).toBeNull();
+        });
+    });
+
     it('en revisión también se ofrece, para volver de lo regenerado', () => {
         const v1 = { id: 'v1', markdown: 'Antes.', parentVersionId: null, createdAt: new Date() };
         const v2 = { id: 'v2', markdown: 'Después.', parentVersionId: 'v1', createdAt: new Date() };

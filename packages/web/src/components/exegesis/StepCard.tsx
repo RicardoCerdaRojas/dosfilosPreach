@@ -18,6 +18,7 @@ import {
     MoreVertical,
     Undo2,
     Undo,
+    History,
     Redo,
     MessageSquarePlus,
 } from 'lucide-react';
@@ -63,6 +64,7 @@ import {
     formatPassageReference,
     isAbandonedGeneration,
     stepHistoryMoves,
+    stepVersionNumbers,
     stepTextForEditing,
     versionUnderReview,
     ABANDONED_GENERATION_AFTER_MS,
@@ -635,7 +637,8 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
      * Sin modelo y sin cobro: vuelve a lo que ya estaba guardado.
      */
     const movimientos = stepHistoryMoves(step);
-    const handleStepHistory = async (action: 'undo' | 'redo') => {
+    const numeros = stepVersionNumbers(step);
+    const handleStepHistory = async (action: 'undo' | 'redo' | 'accepted') => {
         const move = movimientos[action];
         if (!move) return;
         try {
@@ -648,7 +651,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                 // Volver no acepta: hasta aceptar, el trabajo sigue con la otra.
                 toast.info(t('detail.steps.toast.movedToReview'));
             } else {
-                toast.success(t(action === 'undo' ? 'detail.steps.toast.undone' : 'detail.steps.toast.redone'));
+                toast.success(t({ undo: 'detail.steps.toast.undone', redo: 'detail.steps.toast.redone', accepted: 'detail.steps.toast.backToAccepted' }[action]));
             }
         } catch (err) {
             console.error('[exegesis] step history move failed:', err);
@@ -706,6 +709,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         const historial: StepHeaderAction[] = [
             ...(movimientos.undo ? [{ key: 'undoChange', label: t('detail.steps.action.undoChange'), icon: <Undo className={ic} />, onClick: () => { void handleStepHistory('undo'); }, disabled: versionEnVuelo }] : []),
             ...(movimientos.redo ? [{ key: 'redoChange', label: t('detail.steps.action.redoChange'), icon: <Redo className={ic} />, onClick: () => { void handleStepHistory('redo'); }, disabled: versionEnVuelo }] : []),
+            ...(movimientos.accepted ? [{ key: 'backToAccepted', label: t('detail.steps.action.backToAccepted', { number: numeros.accepted }), icon: <History className={ic} />, onClick: () => { void handleStepHistory('accepted'); }, disabled: versionEnVuelo }] : []),
         ];
         if (isReview && !editing) {
             return [
@@ -822,7 +826,12 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                         <span>
                             {t(`detail.steps.state.${estadoRotulo}`)}
-                            {step.versions.length > 0 ? ` · v${step.versions.length}` : ''}
+                            {numeros.shown !== null
+                                ? ` · ${t('detail.steps.versionOf', { shown: numeros.shown, total: numeros.total })}`
+                                : ''}
+                            {numeros.accepted !== null && numeros.accepted !== numeros.shown
+                                ? ` · ${t('detail.steps.acceptedVersion', { number: numeros.accepted })}`
+                                : ''}
                         </span>
                         {/* Qué pregunta del encuadre le toca a este paso. Se
                             dice acá para que el emparejamiento sea visible sin
@@ -1226,6 +1235,12 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             <Button size="sm" variant="ghost" onClick={() => void handleStepHistory('redo')} disabled={versionEnVuelo} title={t('detail.steps.action.redoChangeTooltip')}>
                                 <Redo className="h-3.5 w-3.5 mr-1.5" />
                                 {t('detail.steps.action.redoChange')}
+                            </Button>
+                        )}
+                        {movimientos.accepted && (
+                            <Button size="sm" variant="ghost" onClick={() => void handleStepHistory('accepted')} disabled={versionEnVuelo} title={t('detail.steps.action.backToAcceptedTooltip')}>
+                                <History className="h-3.5 w-3.5 mr-1.5" />
+                                {t('detail.steps.action.backToAccepted', { number: numeros.accepted })}
                             </Button>
                         )}
 

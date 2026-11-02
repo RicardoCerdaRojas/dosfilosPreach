@@ -566,7 +566,7 @@ export function useExegesisPapers() {
 
     /** Deshacer o rehacer «Regenerar». Sin modelo y sin cobro. */
     const undoStepChange = useMutation({
-        mutationFn: async ({ paperId, stepId, action, expected }: { paperId: string; stepId: string; action: 'undo' | 'redo'; expected: StepHistoryMove }) => {
+        mutationFn: async ({ paperId, stepId, action, expected }: { paperId: string; stepId: string; action: 'undo' | 'redo' | 'accepted'; expected: StepHistoryMove }) => {
             if (!user?.uid) throw new Error('User not authenticated');
             return exegesisService.undoStepChange.execute({ ownerId: user.uid, paperId, stepId, action, expected });
         },

@@ -2521,6 +2521,8 @@
         "show": "Mostrar",
         "hide": "Ocultar"
       },
+      "versionOf": "v{{shown}} de {{total}}",
+      "acceptedVersion": "aceptada: v{{number}}",
       "action": {
         "generate": "Generar",
         "retry": "Reintentar",
@@ -2543,7 +2545,9 @@
         "undoChange": "Deshacer",
         "undoChangeTooltip": "Vuelve a la versión anterior de este paso.",
         "redoChange": "Rehacer",
-        "redoChangeTooltip": "Vuelve a lo que deshiciste."
+        "redoChangeTooltip": "Vuelve a lo que deshiciste.",
+        "backToAccepted": "Volver a la aceptada (v{{number}})",
+        "backToAcceptedTooltip": "Vuelve a la última versión que aceptaste. El documento no cambia."
       },
       "gate": {
         "notInCorpus": "Citado en el trabajo, pero ya no está en el corpus: vuelve a agregarlo o quita sus citas.",
@@ -2561,6 +2565,7 @@
         "editFailed": "No se pudo guardar la edición",
         "undone": "Se restauró la versión anterior.",
         "redone": "Se recuperó la versión que habías deshecho.",
+        "backToAccepted": "Volviste a la versión aceptada.",
         "undoFailed": "No se pudo cambiar de versión. Recarga la página e intenta otra vez.",
         "undoneNotInDocument": "Se cambió la prosa del paso, pero el documento ensamblado no se actualizó, porque ya trae otro texto. Revísalo antes de exportar.",
         "movedToReview": "Esta versión quedó en revisión. Acéptala para que cuente en el trabajo."

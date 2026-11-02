@@ -16,7 +16,8 @@ export interface UndoStepChangeInput {
     ownerId: string;
     paperId: string;
     stepId: string;
-    action: 'undo' | 'redo';
+    /** `accepted` va directo a la versión aceptada. */
+    action: 'undo' | 'redo' | 'accepted';
     /** El movimiento que la pantalla ofrecía: si ya es otro, no se aplica. */
     expected: StepHistoryMove;
 }

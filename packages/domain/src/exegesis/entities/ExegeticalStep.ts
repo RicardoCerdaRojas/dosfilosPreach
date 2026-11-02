@@ -376,14 +376,16 @@ export type StepHistoryMove =
 export interface StepHistoryMoves {
     undo: StepHistoryMove | null;
     redo: StepHistoryMove | null;
+    /** Ir directo a la versión aceptada, si la que se ve es otra. */
+    accepted: StepHistoryMove | null;
 }
 
 export function stepHistoryMoves(
     step: Pick<ExegeticalStep, 'state' | 'current' | 'accepted' | 'versions'>,
 ): StepHistoryMoves {
-    if (step.state !== 'accepted' && step.state !== 'awaiting-review') return { undo: null, redo: null };
+    if (step.state !== 'accepted' && step.state !== 'awaiting-review') return { undo: null, redo: null, accepted: null };
     const shown = versionUnderReview(step);
-    if (!shown) return { undo: null, redo: null };
+    if (!shown) return { undo: null, redo: null, accepted: null };
     const prose = shown.previousProse?.markdown?.trim() ? shown.previousProse : null;
     const parent = shown.parentVersionId ? step.versions.find(v => v.id === shown.parentVersionId) : null;
     // La más reciente que salió de esta: es la que se deshizo.
@@ -399,6 +401,27 @@ export function stepHistoryMoves(
         redo: prose?.undone && !childIsNewer
             ? { kind: 'prose', versionId: shown.id }
             : child ? { kind: 'version', versionId: shown.id, targetVersionId: child.id } : null,
+        accepted: step.accepted && step.accepted.id !== shown.id
+            ? { kind: 'version', versionId: shown.id, targetVersionId: step.accepted.id }
+            : null,
+    };
+}
+
+/**
+ * Qué número de versión se ve y cuál es la aceptada, contando desde la más
+ * antigua que se conserva. `null` si la versión no está en la lista.
+ */
+export function stepVersionNumbers(
+    step: Pick<ExegeticalStep, 'state' | 'current' | 'accepted' | 'versions'>,
+): { shown: number | null; accepted: number | null; total: number } {
+    const numero = (id: string | undefined) => {
+        const i = step.versions.findIndex(v => v.id === id);
+        return i === -1 ? null : i + 1;
+    };
+    return {
+        shown: numero(versionUnderReview(step)?.id),
+        accepted: numero(step.accepted?.id),
+        total: step.versions.length,
     };
 }
 
