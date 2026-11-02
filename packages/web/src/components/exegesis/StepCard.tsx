@@ -18,7 +18,7 @@ import {
     MoreVertical,
     LockOpen,
     Undo,
-    History,
+    CheckCheck,
     Redo,
     MessageSquarePlus,
 } from 'lucide-react';
@@ -709,7 +709,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
         const historial: StepHeaderAction[] = [
             ...(movimientos.undo ? [{ key: 'undoChange', label: t('detail.steps.action.undoChange'), icon: <Undo className={ic} />, onClick: () => { void handleStepHistory('undo'); }, disabled: versionEnVuelo }] : []),
             ...(movimientos.redo ? [{ key: 'redoChange', label: t('detail.steps.action.redoChange'), icon: <Redo className={ic} />, onClick: () => { void handleStepHistory('redo'); }, disabled: versionEnVuelo }] : []),
-            ...(movimientos.accepted ? [{ key: 'backToAccepted', label: t('detail.steps.action.backToAccepted', { number: numeros.accepted }), icon: <History className={ic} />, onClick: () => { void handleStepHistory('accepted'); }, disabled: versionEnVuelo }] : []),
+            ...(movimientos.accepted ? [{ key: 'backToAccepted', label: t('detail.steps.action.backToAccepted', { number: numeros.accepted }), icon: <CheckCheck className={ic} />, onClick: () => { void handleStepHistory('accepted'); }, disabled: versionEnVuelo }] : []),
         ];
         if (isReview && !editing) {
             return [
@@ -829,7 +829,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             {numeros.shown !== null
                                 ? ` · ${t('detail.steps.versionOf', { shown: numeros.shown, total: numeros.total })}`
                                 : ''}
-                            {numeros.accepted !== null && numeros.accepted !== numeros.shown
+                            {numeros.accepted !== null && step.state !== 'accepted'
                                 ? ` · ${t('detail.steps.acceptedVersion', { number: numeros.accepted })}`
                                 : ''}
                         </span>
@@ -1241,7 +1241,7 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         )}
                         {movimientos.accepted && (
                             <Button size="sm" variant="ghost" className="text-xs has-[>svg]:px-1.5" onClick={() => void handleStepHistory('accepted')} disabled={versionEnVuelo} title={t('detail.steps.action.backToAcceptedTooltip')}>
-                                <History className="size-3.5" />
+                                <CheckCheck className="size-3.5" />
                                 {t('detail.steps.action.backToAccepted', { number: numeros.accepted })}
                             </Button>
                         )}

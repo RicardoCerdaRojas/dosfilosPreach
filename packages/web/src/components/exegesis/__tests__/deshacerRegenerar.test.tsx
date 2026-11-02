@@ -145,6 +145,14 @@ describe('deshacer «Regenerar»', () => {
             await waitFor(() => expect(mutacion('undoStepChange').mutateAsync).toHaveBeenCalledWith({ paperId: 'p', stepId: 's', action: 'accepted', expected: { kind: 'version', versionId: 'v3', targetVersionId: 'v1' } }));
         });
 
+        it('devuelta a revisión, dice que esta es la última aceptada, aunque no haya a dónde saltar', () => {
+            const v1 = { id: 'v1', markdown: 'Uno.', parentVersionId: null, createdAt: new Date() };
+            const paso = { id: 's', paperId: 'p', kind: 'conclusion', verseRef: null, order: 5, state: 'awaiting-review', versions: [v1], current: v1, accepted: null, lastAcceptedVersionId: 'v1', createdAt: new Date(), updatedAt: new Date() } as unknown as ExegeticalStep;
+            conQuery(<StepCard step={paso} paperId="p" language="es" />);
+            expect(document.body.textContent).toContain('detail.steps.acceptedVersion {"number":1}');
+            expect(screen.queryByText(/backToAccepted/)).toBeNull();
+        });
+
         it('viendo la aceptada no repite su número ni ofrece el botón', () => {
             conQuery(<StepCard step={verso()} paperId="p" language="es" />);
             expandir();
