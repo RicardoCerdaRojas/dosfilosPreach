@@ -1197,50 +1197,51 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
             {/* Action bar — only for awaiting-review */}
             {showActions && !editing && (
                 <footer className="px-5 py-3 border-t border-slate-100 dark:border-zinc-800 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                         <Button
                             size="sm"
                             onClick={handleAccept}
                             disabled={versionEnVuelo || !step.current}
                             className="bg-emerald-500 hover:bg-emerald-400 text-slate-900"
                         >
-                            {acceptStep.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
+                            {acceptStep.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />}
                             {t('detail.steps.action.accept')}
                         </Button>
                         <Button
                             size="sm"
                             variant="outline"
+                            className="text-xs has-[>svg]:px-2"
                             onClick={() => setRegenerateOpen(true)}
                             disabled={versionEnVuelo}
                         >
-                            {anyPipelinePending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5 mr-1.5" />}
+                            {anyPipelinePending ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" />}
                             {anyPipelinePending ? t('detail.steps.action.regenerating') : t('detail.steps.action.regenerate')}
                         </Button>
                         <Button
                             size="sm"
                             variant="ghost"
-                            className="px-2"
+                            className="text-xs has-[>svg]:px-1.5"
                             onClick={startEdit}
                             disabled={versionEnVuelo}
                         >
-                            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                            <Pencil className="size-3.5" />
                             {t('detail.steps.action.editManual')}
                         </Button>
                         {movimientos.undo && (
-                            <Button size="sm" variant="ghost" className="px-2" onClick={() => void handleStepHistory('undo')} disabled={versionEnVuelo} title={t('detail.steps.action.undoChangeTooltip')}>
-                                <Undo className="h-3.5 w-3.5 mr-1.5" />
+                            <Button size="sm" variant="ghost" className="text-xs has-[>svg]:px-1.5" onClick={() => void handleStepHistory('undo')} disabled={versionEnVuelo} title={t('detail.steps.action.undoChangeTooltip')}>
+                                <Undo className="size-3.5" />
                                 {t('detail.steps.action.undoChange')}
                             </Button>
                         )}
                         {movimientos.redo && (
-                            <Button size="sm" variant="ghost" className="px-2" onClick={() => void handleStepHistory('redo')} disabled={versionEnVuelo} title={t('detail.steps.action.redoChangeTooltip')}>
-                                <Redo className="h-3.5 w-3.5 mr-1.5" />
+                            <Button size="sm" variant="ghost" className="text-xs has-[>svg]:px-1.5" onClick={() => void handleStepHistory('redo')} disabled={versionEnVuelo} title={t('detail.steps.action.redoChangeTooltip')}>
+                                <Redo className="size-3.5" />
                                 {t('detail.steps.action.redoChange')}
                             </Button>
                         )}
                         {movimientos.accepted && (
-                            <Button size="sm" variant="ghost" className="px-2" onClick={() => void handleStepHistory('accepted')} disabled={versionEnVuelo} title={t('detail.steps.action.backToAcceptedTooltip')}>
-                                <History className="h-3.5 w-3.5 mr-1.5" />
+                            <Button size="sm" variant="ghost" className="text-xs has-[>svg]:px-1.5" onClick={() => void handleStepHistory('accepted')} disabled={versionEnVuelo} title={t('detail.steps.action.backToAcceptedTooltip')}>
+                                <History className="size-3.5" />
                                 {t('detail.steps.action.backToAccepted', { number: numeros.accepted })}
                             </Button>
                         )}
@@ -1253,20 +1254,21 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                             <Button
                                 size="sm"
                                 variant="ghost"
+                                className="text-xs has-[>svg]:px-1.5"
                                 onClick={() => handleAnalyzeCanonically()}
                                 disabled={versionEnVuelo}
                                 title={t('canonical.actions.analyzeFromAcceptedTooltip')}
                             >
                                 {analyzeVerseCanonically.isPending
-                                    ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                                    : <NotebookPen className="h-3.5 w-3.5 mr-1.5" />}
+                                    ? <Loader2 className="size-3.5 animate-spin" />
+                                    : <NotebookPen className="size-3.5" />}
                                 {t('canonical.actions.analyzeFromAccepted')}
                             </Button>
                         )}
                         {step.current?.canonicalAnalysis ? (
-                            <Button asChild size="sm" variant="ghost" className="ml-auto px-2">
+                            <Button asChild size="sm" variant="ghost" className="ml-auto text-xs has-[>svg]:px-1.5">
                                 <Link to={reviewPath} title={t('canonical.review.linkTooltip')}>
-                                    <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+                                    <ShieldCheck className="size-3.5" />
                                     {t('canonical.review.link')}
                                 </Link>
                             </Button>
@@ -1276,10 +1278,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                                 variant="ghost"
                                 onClick={handleVerifyCitations}
                                 disabled={versionEnVuelo || !step.current}
-                                className="ml-auto px-2"
+                                className="ml-auto text-xs has-[>svg]:px-1.5"
                                 title={t('canonical.verify.button.tooltip')}
                             >
-                                {verifyStepCitations.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />}
+                                {verifyStepCitations.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <ShieldCheck className="size-3.5" />}
                                 {t('canonical.verify.button.label')}
                             </Button>
                         )}
