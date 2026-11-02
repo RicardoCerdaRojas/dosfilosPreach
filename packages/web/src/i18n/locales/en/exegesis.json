@@ -2522,7 +2522,7 @@
         "hide": "Hide"
       },
       "versionOf": "v{{shown}} of {{total}}",
-      "acceptedVersion": "accepted: v{{number}}",
+      "acceptedVersion": "last accepted: v{{number}}",
       "action": {
         "generate": "Generate",
         "retry": "Retry",
@@ -2546,8 +2546,8 @@
         "undoChangeTooltip": "Go back to the previous version of this step.",
         "redoChange": "Redo",
         "redoChangeTooltip": "Goes back to what you undid.",
-        "backToAccepted": "Back to accepted (v{{number}})",
-        "backToAcceptedTooltip": "Goes back to the last version you accepted. The document does not change."
+        "backToAccepted": "Back to last accepted (v{{number}})",
+        "backToAcceptedTooltip": "Goes back to the last version you accepted and leaves it accepted. The document does not change."
       },
       "gate": {
         "notInCorpus": "Cited in the paper but no longer in the corpus: add it back or remove its citations.",
@@ -2565,7 +2565,7 @@
         "editFailed": "Couldn't save the edit",
         "undone": "The previous version was restored.",
         "redone": "The version you undid was recovered.",
-        "backToAccepted": "You are back on the accepted version.",
+        "backToAccepted": "You are back on the last accepted version.",
         "undoFailed": "The version could not be changed. Reload the page and try again.",
         "undoneNotInDocument": "The step's prose changed, but the assembled document was not updated because it already holds different text. Check it before exporting.",
         "movedToReview": "This version is now in review. Accept it for it to count in the paper."

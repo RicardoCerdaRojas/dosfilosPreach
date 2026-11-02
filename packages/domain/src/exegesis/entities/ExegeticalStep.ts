@@ -90,6 +90,13 @@ export interface ExegeticalStep {
     accepted: ExegeticalStepVersion | null;
 
     /**
+     * La versión que estaba aceptada al devolver el paso a revisión. Esa acción
+     * suelta `accepted`, y es el camino normal para regenerar un paso aceptado:
+     * sin esto no se sabría a cuál volver.
+     */
+    lastAcceptedVersionId?: string | null;
+
+    /**
      * Append-only history. Useful for "show me what was generated before
      * I edited" and for the `parentVersionId` chain that documents what
      * each regeneration was reacting to.
@@ -380,8 +387,15 @@ export interface StepHistoryMoves {
     accepted: StepHistoryMove | null;
 }
 
+/** La versión aceptada o, si el paso volvió a revisión, la que lo estaba. */
+export function lastAcceptedVersion(
+    step: Pick<ExegeticalStep, 'accepted' | 'versions' | 'lastAcceptedVersionId'>,
+): ExegeticalStepVersion | null {
+    return step.accepted ?? step.versions.find(v => v.id === step.lastAcceptedVersionId) ?? null;
+}
+
 export function stepHistoryMoves(
-    step: Pick<ExegeticalStep, 'state' | 'current' | 'accepted' | 'versions'>,
+    step: Pick<ExegeticalStep, 'state' | 'current' | 'accepted' | 'versions' | 'lastAcceptedVersionId'>,
 ): StepHistoryMoves {
     if (step.state !== 'accepted' && step.state !== 'awaiting-review') return { undo: null, redo: null, accepted: null };
     const shown = versionUnderReview(step);
@@ -392,6 +406,7 @@ export function stepHistoryMoves(
     const child = [...step.versions].reverse().find(v => v.parentVersionId === shown.id && v.id !== shown.id);
     // Rehacer devuelve lo último que se dejó atrás: una edición hecha después
     // de deshacer la prosa va antes que esa prosa.
+    const aceptada = lastAcceptedVersion(step);
     const childIsNewer = !!child && !!prose?.undoneAt
         && new Date(child.createdAt).getTime() > new Date(prose.undoneAt).getTime();
     return {
@@ -401,8 +416,8 @@ export function stepHistoryMoves(
         redo: prose?.undone && !childIsNewer
             ? { kind: 'prose', versionId: shown.id }
             : child ? { kind: 'version', versionId: shown.id, targetVersionId: child.id } : null,
-        accepted: step.accepted && step.accepted.id !== shown.id
-            ? { kind: 'version', versionId: shown.id, targetVersionId: step.accepted.id }
+        accepted: aceptada && aceptada.id !== shown.id
+            ? { kind: 'version', versionId: shown.id, targetVersionId: aceptada.id }
             : null,
     };
 }
@@ -412,7 +427,7 @@ export function stepHistoryMoves(
  * antigua que se conserva. `null` si la versión no está en la lista.
  */
 export function stepVersionNumbers(
-    step: Pick<ExegeticalStep, 'state' | 'current' | 'accepted' | 'versions'>,
+    step: Pick<ExegeticalStep, 'state' | 'current' | 'accepted' | 'versions' | 'lastAcceptedVersionId'>,
 ): { shown: number | null; accepted: number | null; total: number } {
     const numero = (id: string | undefined) => {
         const i = step.versions.findIndex(v => v.id === id);
@@ -420,7 +435,7 @@ export function stepVersionNumbers(
     };
     return {
         shown: numero(versionUnderReview(step)?.id),
-        accepted: numero(step.accepted?.id),
+        accepted: numero(lastAcceptedVersion(step)?.id),
         total: step.versions.length,
     };
 }
@@ -451,11 +466,12 @@ export function withRecomposedProse(version: ExegeticalStepVersion, markdown: st
 
 /** Las versiones que el recorte del historial no puede quitar al agregar otra. */
 export function versionsToKeepOnAppend(
-    step: Pick<ExegeticalStep, 'accepted'>,
+    step: Pick<ExegeticalStep, 'accepted' | 'lastAcceptedVersionId'>,
     added: Pick<ExegeticalStepVersion, 'id' | 'parentVersionId'>,
 ): Array<string | null | undefined> {
-    // La anterior es a la que se vuelve al deshacer.
-    return [step.accepted?.id, added.id, added.parentVersionId];
+    // La anterior es a la que se vuelve al deshacer, y a la última aceptada se
+    // vuelve de un salto.
+    return [step.accepted?.id, step.lastAcceptedVersionId, added.id, added.parentVersionId];
 }
 
 /**
@@ -486,14 +502,16 @@ export function swapPreviousProse(version: ExegeticalStepVersion, now: Date = ne
  *
  * Volver nunca acepta: la anterior en el historial puede ser un borrador que
  * nadie aceptó, porque cada versión nace de `current`, y puede tener citas que
- * «Aceptar» bloquearía. Solo la versión ya aceptada vuelve a estarlo. La
- * aceptada no cambia, así que el documento tampoco.
+ * «Aceptar» bloquearía. Solo la versión ya aceptada vuelve a estarlo, también
+ * la que lo estaba antes de devolver el paso a revisión. La aceptada no cambia
+ * por otra, así que el documento tampoco.
  */
-export function stepAfterVersionMove<S extends Pick<ExegeticalStep, 'state' | 'current' | 'accepted'>>(
+export function stepAfterVersionMove<S extends Pick<ExegeticalStep, 'state' | 'current' | 'accepted' | 'lastAcceptedVersionId'>>(
     step: S,
     target: ExegeticalStepVersion,
 ): S {
     if (step.accepted?.id === target.id) return { ...step, current: target, state: 'accepted' };
+    if (!step.accepted && step.lastAcceptedVersionId === target.id) return { ...step, current: target, accepted: target, state: 'accepted' };
     return { ...step, current: target, state: 'awaiting-review' };
 }
 

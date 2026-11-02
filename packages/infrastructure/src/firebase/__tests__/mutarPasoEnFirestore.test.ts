@@ -50,3 +50,41 @@ describe('los conteos que miden la prosa', () => {
         expect(buildManualEditVersion(madre as never, 'y').verifications).toEqual({ verified: 9 });
     });
 });
+
+describe('devolver a revisión', () => {
+    it('recuerda cuál estaba aceptada, y volver a ella la deja aceptada', async () => {
+        guardado = {
+            ownerId: 'o',
+            steps: [{
+                id: 's', kind: 'conclusion', state: 'accepted', createdAt: new Date(), updatedAt: new Date(),
+                versions: [version('v1', 'Aceptada.'), version('v2', 'Otra.')],
+                currentId: 'v1',
+                acceptedId: 'v1',
+            }],
+        };
+        await repo.reopenStep('o', 'p', 's');
+        const paso = () => (guardado.steps as Array<Record<string, unknown>>)[0]!;
+        expect(paso().acceptedId).toBeNull();
+        expect(paso().lastAcceptedVersionId).toBe('v1');
+        await repo.moveToStepVersion('o', 'p', 's', 'v2');
+        expect(paso().state).toBe('awaiting-review');
+        const r = await repo.moveToStepVersion('o', 'p', 's', 'v1');
+        expect(paso().acceptedId).toBe('v1');
+        expect(r.state).toBe('accepted');
+    });
+
+    it('reabrir dos veces no borra cuál estaba aceptada', async () => {
+        guardado = {
+            ownerId: 'o',
+            steps: [{
+                id: 's', kind: 'conclusion', state: 'accepted', createdAt: new Date(), updatedAt: new Date(),
+                versions: [version('v1', 'Aceptada.')],
+                currentId: 'v1',
+                acceptedId: 'v1',
+            }],
+        };
+        await repo.reopenStep('o', 'p', 's');
+        await repo.reopenStep('o', 'p', 's');
+        expect((guardado.steps as Array<Record<string, unknown>>)[0]!.lastAcceptedVersionId).toBe('v1');
+    });
+});

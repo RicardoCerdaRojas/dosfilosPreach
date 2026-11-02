@@ -124,7 +124,7 @@ describe('los punteros al volver a otra versión', () => {
 
 describe('el recorte del historial', () => {
     it('no quita la versión anterior: es a la que se vuelve', () => {
-        expect(versionsToKeepOnAppend(paso({ accepted: version('a') }), version('n', { parentVersionId: 'p' }))).toEqual(['a', 'n', 'p']);
+        expect(versionsToKeepOnAppend(paso({ accepted: version('a') }), version('n', { parentVersionId: 'p' }))).toEqual(['a', undefined, 'n', 'p']);
     });
 });
 
@@ -182,5 +182,35 @@ describe('saber cuál es la aceptada', () => {
     });
     it('sin aceptada, ni versiones, no inventa números', () => {
         expect(stepVersionNumbers(paso({ state: 'awaiting-review', current: null, accepted: null, versions: [] }))).toEqual({ shown: null, accepted: null, total: 0 });
+    });
+
+    describe('después de devolver el paso a revisión', () => {
+        const reabierto = { state: 'awaiting-review', accepted: null, lastAcceptedVersionId: 'v1' } as const;
+
+        it('sigue diciendo cuál fue y ofrece volver', () => {
+            const paso3 = paso({ ...reabierto, current: v3, versions: [v1, v2, v3] });
+            expect(stepVersionNumbers(paso3)).toEqual({ shown: 3, accepted: 1, total: 3 });
+            expect(stepHistoryMoves(paso3).accepted).toEqual({ kind: 'version', versionId: 'v3', targetVersionId: 'v1' });
+        });
+        it('volver la deja aceptada otra vez: nunca dejó de ser lo que el autor aceptó', () => {
+            expect(stepAfterVersionMove(paso({ ...reabierto, current: v3 }), v1)).toMatchObject({ state: 'accepted', accepted: v1, current: v1 });
+        });
+        it('volver a otra sigue en revisión y sin aceptada', () => {
+            expect(stepAfterVersionMove(paso({ ...reabierto, current: v3 }), v2)).toMatchObject({ state: 'awaiting-review', accepted: null, current: v2 });
+        });
+        it('con otra aceptada después, la marca vieja no cuenta', () => {
+            const conOtra = paso({ state: 'awaiting-review', accepted: v2, lastAcceptedVersionId: 'v1', current: v3, versions: [v1, v2, v3] });
+            expect(stepVersionNumbers(conOtra).accepted).toBe(2);
+            expect(stepAfterVersionMove(conOtra, v1)).toMatchObject({ state: 'awaiting-review', accepted: v2 });
+        });
+        it('si ya está a la vista, no ofrece el salto', () => {
+            expect(stepHistoryMoves(paso({ ...reabierto, current: v1, versions: [v1, v2] })).accepted).toBeNull();
+        });
+        it('una marca que no está en la lista no inventa número', () => {
+            expect(stepVersionNumbers(paso({ ...reabierto, lastAcceptedVersionId: 'ya-no', current: v2, versions: [v2] })).accepted).toBeNull();
+        });
+        it('el recorte la conserva', () => {
+            expect(versionsToKeepOnAppend(paso({ accepted: null, lastAcceptedVersionId: 'v1' }), version('n', { parentVersionId: 'p' }))).toContain('v1');
+        });
     });
 });

@@ -307,6 +307,20 @@ describe('deshacer y el documento', () => {
         expect(r.documentBehind).toBe(false);
     });
 
+    it('devolver a revisión, regenerar dos veces y volver: queda aceptada la de antes y el documento igual', async () => {
+        const antes = documento();
+        const aceptada = paso('c').accepted!;
+        cambiar('c', s => ({ ...s, lastAcceptedVersionId: s.accepted!.id, accepted: null, state: 'awaiting-review' }));
+        const v2 = version('c-2', AGREGADA, { parentVersionId: aceptada.id });
+        const v3 = version('c-3', A_MANO, { parentVersionId: 'c-2' });
+        cambiar('c', s => ({ ...s, versions: [...s.versions, v2, v3], current: v3 }));
+        await mover('c', 'accepted');
+        expect(paso('c').state).toBe('accepted');
+        expect(paso('c').accepted!.id).toBe(aceptada.id);
+        expect(documento()).toBe(antes);
+        expect(atrasadas()).toEqual([]);
+    });
+
     it('avanzar a una versión que no es la aceptada la deja en revisión: no entra al documento', async () => {
         const madre = paso('v4').accepted!;
         const v2 = version('v4-2', RECOMPUESTA, { parentVersionId: madre.id, canonicalAnalysis: madre.canonicalAnalysis! });

@@ -706,6 +706,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
      */
     async reopenStep(ownerId: string, paperId: string, stepId: string): Promise<ExegeticalStep> {
         return this.mutateStep(ownerId, paperId, stepId, (step) => {
+            if (step.accepted) step.lastAcceptedVersionId = step.accepted.id;
             step.accepted = null;
             step.state = step.versions.length > 0 ? 'awaiting-review' : 'pending';
             step.updatedAt = new Date();
