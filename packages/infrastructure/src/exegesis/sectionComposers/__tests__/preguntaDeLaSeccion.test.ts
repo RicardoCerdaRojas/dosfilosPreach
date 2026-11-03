@@ -92,3 +92,10 @@ describe('el registro del autor', () => {
         expect(buildVerseProsePrompt(entrada()).systemInstruction).not.toContain('abre con su morfología completa');
     });
 });
+
+/** Etapa 4.4: el TI #2 nombró los piel sin decir qué hacen; el compositor recibe la regla. */
+describe('la gramática aplicada llega al compositor del versículo', () => {
+    it('lo pide en la instrucción de sistema', () => {
+        expect(buildVerseProsePrompt(entrada()).systemInstruction).toContain('GRAMÁTICA APLICADA, NO NOMBRADA');
+    });
+});

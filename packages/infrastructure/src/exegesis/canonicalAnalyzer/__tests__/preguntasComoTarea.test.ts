@@ -183,3 +183,11 @@ describe('las reglas de la guía de estilo', () => {
         expect(buildAnalyzerPrompt(entrada()).systemInstruction).not.toContain('Reglas del curso');
     });
 });
+
+/** Etapa 4.4 (reglas 10 y 16): cada forma en que se apoya una decisión va como entrada, con su categoría y su página. */
+describe('la gramática aplicada llega al analizador', () => {
+    it('cada forma verbal y cada cadena constructa de una decisión, como entrada propia', () => {
+        expect(buildAnalyzerPrompt(entrada()).userMessage).toContain('Cada forma verbal (con su tallo) y cada construcción de genitivo (en hebreo, cada cadena constructa)');
+        expect(buildAnalyzerPrompt(entrada({ language: 'en' } as never)).userMessage).toContain('every construct chain) that a decision relies on gets its own entry');
+    });
+});
