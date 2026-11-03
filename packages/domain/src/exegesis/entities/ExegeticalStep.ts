@@ -498,6 +498,40 @@ export function swapPreviousProse(version: ExegeticalStepVersion, now: Date = ne
 }
 
 /**
+ * El paso sin sus versiones más viejas, de a una, hasta que `cabe` o hasta que no
+ * quede qué quitar. El último recurso antes de no poder guardar. Nunca quita aquello
+ * de lo que dependen la pantalla y sus botones: lo aceptado, lo que se ve, a qué
+ * vuelve «Deshacer» y qué recupera «Rehacer»; ni lo que `tocadas` dice que esta misma
+ * escritura acaba de cambiar; ni, en el ensamble, lo generado, con lo que compara el
+ * aviso al exportar. Las hijas de lo que sale pasan a su abuela: la cadena sigue.
+ */
+export function withoutOldestVersions(
+    step: ExegeticalStep,
+    cabe: (paso: ExegeticalStep) => boolean,
+    tocadas: ReadonlyArray<string> = [],
+): ExegeticalStep {
+    const shown = versionUnderReview(step);
+    const hija = [...step.versions].reverse().find(v => v.parentVersionId === shown?.id);
+    const quedan = [
+        step.accepted?.id, step.accepted?.parentVersionId, step.lastAcceptedVersionId,
+        step.current?.id, shown?.parentVersionId, hija?.id, ...tocadas,
+    ];
+    let paso = step;
+    for (const v of step.versions) {
+        if (quedan.includes(v.id) || (step.kind === 'assembly' && v.origin === 'generated')) continue;
+        // Su madre de ahora: la de la lista original pudo salir antes que ella.
+        const madre = paso.versions.find(x => x.id === v.id)?.parentVersionId ?? null;
+        const versions = paso.versions
+            .filter(x => x.id !== v.id)
+            .map(x => (x.parentVersionId === v.id ? { ...x, parentVersionId: madre } : x));
+        const porId = (x: ExegeticalStepVersion | null) => (x && versions.find(y => y.id === x.id)) || x;
+        paso = { ...paso, versions, current: porId(paso.current), accepted: porId(paso.accepted) };
+        if (cabe(paso)) return paso;
+    }
+    return paso;
+}
+
+/**
  * Los punteros del paso al volver a otra versión.
  *
  * Volver nunca acepta: la anterior en el historial puede ser un borrador que
