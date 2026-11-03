@@ -390,6 +390,8 @@ export function formatAnswerMethod(
         `  3. Present the CONCESSIONS an author makes against their own thesis: they are often the decisive argument.`,
         `  4. Never use the classification of one element to decide another without showing the relation between them.`,
         `  5. A grammatical category is not a translation: classify, then translate, and say which of the two each source gives.`,
+        // P1 (etapa 4): en el TP #9 el criterio de 4:14 decidía «por la presencia de τὸ» sin decir que el aparato da τὰ y la omisión.
+        `  6. If the decisive criterion depends on a form that has variants in the apparatus (\`textualCriticism.variants\`), say so in the criterion: which reading it decides on and why that one.`,
     ] : [
         `- Cómo responder las preguntas (el método):`,
         `  1. Busca un criterio que DISTINGA entre las lecturas, de preferencia de la misma carta o de la estructura del pasaje. Un criterio que vale para las dos lecturas no decide nada.`,
@@ -397,6 +399,7 @@ export function formatAnswerMethod(
         `  3. Presenta las CONCESIONES que un autor hace contra su propia tesis: suelen ser el argumento decisivo.`,
         `  4. Nunca uses la clasificación de un elemento para decidir otro sin mostrar la relación entre los dos.`,
         `  5. Una categoría gramatical no es una traducción: clasifica, después traduce, y di cuál de las dos cosas da cada fuente.`,
+        `  6. Si el criterio decisivo depende de una forma con variantes en el aparato (\`textualCriticism.variants\`), dilo en el criterio: sobre qué lectura decide y por qué esa.`,
     ]).join('\n');
 }
 

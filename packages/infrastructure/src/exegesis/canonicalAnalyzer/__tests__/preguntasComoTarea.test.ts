@@ -191,3 +191,13 @@ describe('la gramática aplicada llega al analizador', () => {
         expect(buildAnalyzerPrompt(entrada({ language: 'en' } as never)).userMessage).toContain('every construct chain) that a decision relies on gets its own entry');
     });
 });
+
+/** P1 (etapa 4): si el criterio depende de una forma con variantes, el criterio dice sobre qué lectura decide. */
+describe('el aparato llega al criterio', () => {
+    it('lo pide al analizador, en los dos idiomas', () => {
+        const { userMessage, systemInstruction } = buildAnalyzerPrompt(entrada({ sectionQuestions: preguntas } as never));
+        expect(userMessage + systemInstruction).toContain('dilo en el criterio: sobre qué lectura decide y por qué esa');
+        const en = buildAnalyzerPrompt(entrada({ sectionQuestions: preguntas, language: 'en' } as never));
+        expect(en.userMessage + en.systemInstruction).toContain('which reading it decides on and why that one');
+    });
+});

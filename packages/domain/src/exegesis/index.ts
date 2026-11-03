@@ -131,6 +131,7 @@ export * from './services/paperBibliography';
 export * from './services/ideaPlacement';
 export * from './services/pericopeContext';
 export * from './services/assemblyContents';
+export * from './services/apparatusConditions';
 export * from './services/coverSuggestion';
 export * from './services/citationKeyFromAuthor';
 export * from './services/corpusFootprint';

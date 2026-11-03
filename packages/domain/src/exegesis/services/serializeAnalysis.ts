@@ -1,3 +1,4 @@
+import { conditioningVariants } from './apparatusConditions';
 import { citedLocation } from '../entities/CanonicalVerseAnalysis';
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import { relabelProsePages } from './relabelProsePages';
@@ -188,7 +189,7 @@ export function serializeAnalysis(
     lines.push('Textual criticism:');
     lines.push(`  ${prose(analysis.textualCriticism.note)}`);
     for (const v of analysis.textualCriticism.variants) {
-        lines.push(`- variant: ${v.lemma} → adopted "${v.adoptedReading}"`);
+        lines.push(`- variant: ${v.lemma} → adopted "${v.adoptedReading ?? ''}"`);
         for (const r of v.readings) {
             lines.push(`    reading "${r.text}" (witnesses: ${r.witnesses.join(', ')})`);
         }
@@ -257,6 +258,7 @@ export function serializeAnalysis(
     // la decisión. En el TP #8 la prosa de 4:3 volvió a decidir por κακῶς,
     // que vale para las dos lecturas, y perdió la concesión de Mayor 133.
     const respuestas = analysis.questionAnswers ?? [];
+    const condicionadas = conditioningVariants(analysis);
     if (respuestas.length > 0) {
         lines.push('');
         lines.push('Answers to the brief questions (KEEP the decisive criterion and the decision):');
@@ -268,6 +270,10 @@ export function serializeAnalysis(
             }
             const fuentes = q.decisiveCriterion.sources.map(d => `${d.sourceKey} ${cite(d)}`).join('; ');
             lines.push(`  · decisive criterion: ${prose(q.decisiveCriterion.text)} — why this and not the other: ${prose(q.decisiveCriterion.whyThisOverThat)}${fuentes ? ` (sources: ${fuentes})` : ''}`);
+            // P1: la decisión depende de una forma que el aparato da como dudosa.
+            for (const v of condicionadas.filter(c => c.questionNumber === q.questionNumber)) {
+                lines.push(`  · CONDITIONED BY THE TEXT: the criterion depends on "${v.lemma}", which the apparatus also gives as ${[...v.rivals, ...(v.omission ? ['omission'] : [])].join(', ')}${v.witnesses ? ` (${v.witnesses})` : ''}. The prose MUST say which reading it decides on ("${v.adopted}") and why.`);
+            }
             lines.push(`  · decision: ${prose(q.decision)}`);
         }
     }
