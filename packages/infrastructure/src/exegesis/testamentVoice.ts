@@ -61,8 +61,10 @@ const OT_VOICE: TestamentVoice = {
     apparatusEn: 'Textual criticism: BHS/BHQ apparatus, Tov, Würthwein',
     witnessesEs: 'TM (Códice de Leningrado), Pentateuco Samaritano, LXX, Qumrán (1QIsaᵃ y afines), Peshitta, Vulgata, Targumim según corresponda',
     witnessesEn: 'MT (Leningrad Codex), Samaritan Pentateuch, LXX, Qumran (1QIsaᵃ and related), Peshitta, Vulgate, Targumim as appropriate',
-    morphologyEs: 'qatal qal 3ª masculino singular; participio nifal; wayyiqtol hifil',
-    morphologyEn: 'qal qatal 3rd masculine singular; niphal participle; hiphil wayyiqtol',
+    // Perfecto e imperfecto, la nomenclatura del curso (regla 22): el ejemplo
+    // con «qatal… wayyiqtol» enseñaba la mezcla que el TI #2 corrigió a mano.
+    morphologyEs: 'perfecto qal 3ª masculino singular; participio nifal; imperfecto consecutivo hifil',
+    morphologyEn: 'qal perfect 3rd masculine singular; niphal participle; hiphil imperfect consecutive',
 };
 
 /**
@@ -83,8 +85,8 @@ const OT_ARAMAIC_VOICE: TestamentVoice = {
     grammarsEn: 'Hebrew and Aramaic grammar/syntax: Waltke-O\'Connor, Joüon-Muraoka, Gesenius (GKC); Rosenthal (A Grammar of Biblical Aramaic)',
     lexiconsEs: 'Léxico: HALOT, BDB, DCH, TDOT, NIDOTTE; Vogt (A Lexicon of Biblical Aramaic)',
     lexiconsEn: 'Lexicon: HALOT, BDB, DCH, TDOT, NIDOTTE; Vogt (A Lexicon of Biblical Aramaic)',
-    morphologyEs: 'qatal qal 3ª masculino singular; participio nifal; wayyiqtol hifil; en arameo: perfecto peal, participio haphel, imperfecto hithpeel',
-    morphologyEn: 'qal qatal 3rd masculine singular; niphal participle; hiphil wayyiqtol; in Aramaic: peal perfect, haphel participle, hithpeel imperfect',
+    morphologyEs: 'perfecto qal 3ª masculino singular; participio nifal; imperfecto consecutivo hifil; en arameo: perfecto peal, participio haphel, imperfecto hithpeel',
+    morphologyEn: 'qal perfect 3rd masculine singular; niphal participle; hiphil imperfect consecutive; in Aramaic: peal perfect, haphel participle, hithpeel imperfect',
 };
 
 /**

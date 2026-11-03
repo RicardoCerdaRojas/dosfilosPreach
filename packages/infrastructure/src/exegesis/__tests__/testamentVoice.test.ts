@@ -19,8 +19,8 @@ const OT_VOICE_DE_HOY = {
     apparatusEn: 'Textual criticism: BHS/BHQ apparatus, Tov, Würthwein',
     witnessesEs: 'TM (Códice de Leningrado), Pentateuco Samaritano, LXX, Qumrán (1QIsaᵃ y afines), Peshitta, Vulgata, Targumim según corresponda',
     witnessesEn: 'MT (Leningrad Codex), Samaritan Pentateuch, LXX, Qumran (1QIsaᵃ and related), Peshitta, Vulgate, Targumim as appropriate',
-    morphologyEs: 'qatal qal 3ª masculino singular; participio nifal; wayyiqtol hifil',
-    morphologyEn: 'qal qatal 3rd masculine singular; niphal participle; hiphil wayyiqtol',
+    morphologyEs: 'perfecto qal 3ª masculino singular; participio nifal; imperfecto consecutivo hifil',
+    morphologyEn: 'qal perfect 3rd masculine singular; niphal participle; hiphil imperfect consecutive',
 };
 
 describe('voiceFor', () => {
@@ -50,7 +50,9 @@ describe('voiceFor', () => {
     });
 
     it('no usa morfología griega para el hebreo', () => {
-        expect(voiceFor('ISA').morphologyEs).toContain('qatal');
+        expect(voiceFor('ISA').morphologyEs).toContain('perfecto');
+        // Regla 22: una sola nomenclatura; el ejemplo no enseña las siglas.
+        expect(voiceFor('ISA').morphologyEs).not.toMatch(/qatal|yiqtol/);
         expect(voiceFor('ISA').morphologyEs).not.toContain('aoristo');
     });
 

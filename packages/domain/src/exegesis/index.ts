@@ -122,6 +122,7 @@ export * from './entities/WorkProfile';
 export * from './entities/preachingStudyRubric';
 export * from './entities/TermGlossary';
 export * from './services/academicVoice';
+export * from './services/vocabularyRules';
 export * from './repositories/ITermGlossaryRepository';
 export * from './repositories/IVoiceProfileRepository';
 export * from './repositories/IWorkProfileRepository';

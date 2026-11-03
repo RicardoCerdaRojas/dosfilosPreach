@@ -12,7 +12,7 @@ describe('GeminiIdeaPlacer — prompt y respuesta', () => {
         expect(userMessage).toContain('Mayor lo confirma (Mayor, 14)');
         expect(systemInstruction).toContain('NO reescribes la sección');
         expect(systemInstruction).toContain('TAL CUAL');
-        expect(systemInstruction).toContain('Tercera persona impersonal');
+        expect(systemInstruction).toContain('Tercera persona: el sujeto es el texto');
     });
 
     it('lee la respuesta, con o sin cerco de código; sin oración, falla', () => {

@@ -72,10 +72,20 @@ describe('la sección sabe qué pregunta responde', () => {
 describe('el registro del autor', () => {
     it('tercera persona, cita en la misma oración, sin jerga ni intensificadores', () => {
         const { systemInstruction } = buildVerseProsePrompt(entrada());
-        expect(systemInstruction).toContain('Tercera persona impersonal');
+        expect(systemInstruction).toContain('Tercera persona: el sujeto es el texto, la forma o el autor');
+        // Etapa 4.2: el ejemplo ya no enseña la muletilla «se prefiere» (13 en el TI #2).
+        expect(systemInstruction).not.toContain('se prefiere');
         expect(systemInstruction).toContain('La cita va en la MISMA oración');
         expect(systemInstruction).toContain('núcleo semántico');
         expect(systemInstruction).toContain('Sin intensificadores');
+    });
+    it('etapa 4.2: el vocabulario del TI #2 llega a la prosa del versículo', () => {
+        const { systemInstruction } = buildVerseProsePrompt(entrada());
+        expect(systemInstruction).toContain('Una sola nomenclatura para las formas verbales');
+        expect(systemInstruction).toContain('«el salmista»');
+        expect(systemInstruction).toContain('«el SEÑOR» para יהוה');
+        expect(systemInstruction).toContain('No refutes una lectura que el texto no presentó');
+        expect(systemInstruction).toContain('«el salmista»');
     });
     it('con una pregunta, la morfología completa abre la respuesta', () => {
         expect(buildVerseProsePrompt(entrada([PREGUNTA])).systemInstruction).toContain('abre con su morfología completa');

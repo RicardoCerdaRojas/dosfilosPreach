@@ -85,7 +85,7 @@ Lecciones para los compositores y para la revisión de prosa, en todas las secci
 
    Se dice lo positivo.
 5. **Muletillas medidas en el cuerpo:**
-   - 18 cierres con «sin + infinitivo» (sin exigir, sin añadir…);
+   - ~~18 cierres con «sin + infinitivo» (sin exigir, sin añadir…)~~ **Corregido el 2026-11-03: no es una corrección del fundador. Medido: 22 generados, 20 entregados.**
    - 13 «Se prefiere» o «Se conserva» en tres versículos;
    - «sin exigir una referencia a la existencia después de la muerte», 3 veces.
 6. **La voz del texto es «el salmista»**, que es como la nombra la tesis. «Creyente» no: lleva a la aplicación y afirma algo que el análisis no demostró. El fundador cambió los 13 «hablante» por «salmista».

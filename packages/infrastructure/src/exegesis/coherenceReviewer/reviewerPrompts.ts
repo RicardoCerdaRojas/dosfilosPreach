@@ -10,7 +10,7 @@ Categorías a buscar:
 - translation-inconsistency: la traducción de una palabra clave cambia entre versículos sin justificación.
 - unfulfilled-promise: la introducción promete discutir X que el cuerpo nunca toca.
 - conclusion-overreach: la conclusión introduce argumentos nuevos en vez de sintetizar.
-- tone-drift: el registro académico se quiebra (ej. lenguaje devocional en medio del análisis técnico).
+- tone-drift: el registro académico se quiebra (ej. lenguaje devocional en medio del análisis técnico), o el vocabulario cambia entre secciones: una sección dice perfecto/imperfecto y otra qatal/yiqtol sin glosa; una dice «el salmista» y otra «el hablante» o «el creyente»; una dice «el SEÑOR» y otra «Yahweh».
 - other: cualquier inconsistencia importante que no encaja arriba.
 
 Severidad:
@@ -34,7 +34,7 @@ Categories to look for:
 - translation-inconsistency: a key word's translation shifts between verses without justification.
 - unfulfilled-promise: the introduction promises a discussion the body never has.
 - conclusion-overreach: the conclusion introduces NEW arguments instead of synthesizing the body.
-- tone-drift: academic register breaks (e.g. devotional language amid technical analysis).
+- tone-drift: academic register breaks (e.g. devotional language amid technical analysis), or the vocabulary shifts between sections: one says perfect/imperfect and another qatal/yiqtol unglossed; one says "the psalmist" and another "the speaker" or "the believer"; one says "the LORD" and another "Yahweh".
 - other: any important inconsistency that doesn't fit above.
 
 Severity:

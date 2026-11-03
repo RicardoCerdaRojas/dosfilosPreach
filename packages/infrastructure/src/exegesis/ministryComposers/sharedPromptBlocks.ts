@@ -1,4 +1,4 @@
-import type { ComposerSourceMetadata } from '@dosfilos/domain';
+import { buildVocabularyBlock, type ComposerSourceMetadata } from '@dosfilos/domain';
 
 /**
  * Shared prompt fragments for the three ministry composers (sermon /
@@ -10,6 +10,11 @@ import type { ComposerSourceMetadata } from '@dosfilos/domain';
  * advisory, not binding. The seminary's citation conventions don't
  * govern pulpit register; the analyses' confidence flags and
  * theological hooks do.
+ *
+ * Vocabulary is the exception (stage 4.2, B67): the general rule —plain
+ * words, «el salmista», «el SEÑOR», no refuting unpresented readings— lives
+ * in code and reaches these composers too, in its pastoral variant, which
+ * forbids grammatical terms even when explained. In the pulpit no jargon.
  */
 
 export function commonGuardrails(lang: 'es' | 'en'): string {
@@ -21,15 +26,19 @@ export function commonGuardrails(lang: 'es' | 'en'): string {
             `- Calibrate hedge language to the analyses' \`confidenceFlags\`: high → "demonstrates / establishes"; medium → "argues / contends"; tentative → "suggests / could be read as".`,
             `- Theological synthesis is informed by each analysis's \`theologicalHooks\` — surface the doctrinal locus the verse touches, anchored in what the analysis actually established.`,
             `- NO devotional inflation. NO doctrinal claims the text doesn't support. NO modern political/cultural commentary unless directly mandated by the assignment brief.`,
+            ``,
+            buildVocabularyBlock('en', 'pastoral'),
         ].join('\n');
     }
     return [
         `## Salvaguardas (NO NEGOCIABLES)`,
-        `- El trabajo exegético YA ESTÁ HECHO en los análisis estructurados de abajo. Tu tarea es COMPOSICIÓN para este formato. NO re-analizes el griego, NO introduzcas afirmaciones exegéticas nuevas, NO inventes fuentes o citas.`,
+        `- El trabajo exegético YA ESTÁ HECHO en los análisis estructurados de abajo. Tu tarea es COMPOSICIÓN para este formato. NO reanalices el griego, NO introduzcas afirmaciones exegéticas nuevas, NO inventes fuentes o citas.`,
         `- SOLO usa ideas, decisiones y citas PRESENTES en los análisis. Los compromisos de traducción deben ser los que los análisis adoptaron.`,
         `- Calibra el lenguaje hedge a los \`confidenceFlags\` de los análisis: high → "demuestra / establece"; medium → "sostiene / argumenta"; tentative → "sugiere / podría leerse como".`,
         `- La síntesis teológica se informa con los \`theologicalHooks\` de cada análisis — destaca el locus doctrinal que el verso toca, anclado en lo que el análisis efectivamente estableció.`,
         `- SIN inflación devocional. SIN afirmaciones doctrinales que el texto no respalda. SIN comentario político/cultural contemporáneo salvo que el encuadre del paper lo demande directamente.`,
+        ``,
+        buildVocabularyBlock('es', 'pastoral'),
     ].join('\n');
 }
 
