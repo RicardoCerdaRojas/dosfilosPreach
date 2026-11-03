@@ -422,6 +422,8 @@ Queda como posible:
 > - «Deshacer» y «Rehacer» en cada paso, sin costo. Volver a otra versión deja el paso en revisión y no cambia la aceptada ni el documento. Solo la prosa recompuesta vuelve también al documento, y únicamente si su sección es exactamente lo que entró.
 > - El encabezado dice qué versión se ve y cuál fue la última aceptada, y «Volver a vN» va directo a ella. «Volver a revisión» la recuerda.
 > - La revisión antes de exportar nombra las secciones cuyo cambio no llegó al archivo.
+
+> **Rescatado de la etapa 4 (decisión del fundador, 2026-11-03; rama `feat/rescate-etapa-4`):** solo lo que mejora lo que se genera. Reglas de vocabulario, sin la de «sin + infinitivo», que se apoyaba en una afirmación falsa; gramática aplicada; P1; y P2, que sale apagado (`ANALYZER_WRITES_PREMISES`) y se enciende junto con `WRITE_COMPACT_VERSIONS`. No se rescatan los avisos de estilo ni la corrección con un clic.
 >
 > **Medido en esa investigación:** una oración con aviso de la tarjeta se cambió el 30 % de las veces, contra el 26 % de una sin aviso. Los cierres «sin + infinitivo» no fueron una corrección del fundador: se generaron 22 y el Word entregado conserva 20, así que lo que dicen sobre eso el §2.6 y la bitácora no debe leerse como corrección humana.
 **Por qué:** la regla en el prompt no bastó (v4); hubo unas 30 correcciones humanas de prosa; la regla 22 no llega al sermón.

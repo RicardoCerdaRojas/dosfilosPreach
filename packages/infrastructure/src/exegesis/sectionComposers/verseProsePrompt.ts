@@ -112,7 +112,13 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
 
     // Las reglas propias del curso, de la guía de estilo (E2).
     const styleRulesBlock = buildStyleRulesBlock(input.styleGuideManifest?.additionalRules, lang);
-    const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, styleRulesBlock, glossaryBlock,
+    // Etapa 4.4 (reglas 10 y 16): el TI #1 explicó el hifil, el polel y el
+    // piel frente al hifil, cada uno con su gramática; el TI #2 solo nombró
+    // los piel y dejó las cadenas constructas sin categoría ni gramática.
+    const gramaticaAplicada = lang === 'en'
+        ? 'GRAMMAR APPLIED, NOT NAMED: when the decision relies on a conjugation or a construct chain, say what that category does here, with the course grammar and its page in the same paragraph if the analysis gives them; never invent a page. Naming "piel" or "construct" is not enough.'
+        : 'GRAMÁTICA APLICADA, NO NOMBRADA: cuando la decisión se apoya en una conjugación o en una cadena constructa, di qué hace aquí esa categoría, con la gramática del curso y su página en el mismo párrafo si el análisis las trae; nunca inventes una página. Nombrar «piel» o «constructo» no basta.';
+    const systemInstruction = [baseInstruction, '', preguntasBlock, styleGuideBlock, styleRulesBlock, glossaryBlock, gramaticaAplicada,
         buildCitationFormBlock(input.citationForm ?? null, lang),
         buildWordBudgetBlock(target ?? input.wordBudget ?? null, lang),
         buildAcademicRegisterBlock(lang, { answersQuestions: (input.sectionQuestions ?? []).length > 0 }),
@@ -196,7 +202,7 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         alertsBlock,
         '',
         lang === 'en' ? 'CANONICAL ANALYSIS (the only authoritative content source):' : 'ANÁLISIS CANÓNICO (única fuente autoritativa):',
-        serializeAnalysis(input.verseAnalysis, lang, { pageLabel: input.pageLabel }),
+        serializeAnalysis(input.verseAnalysis, lang, { pageLabel: input.pageLabel, forComposingProse: true }),
         lengthBlock,
         guidanceBlock,
     ].filter(Boolean).join('\n\n');

@@ -8,6 +8,9 @@ describe('títulos temáticos — el mensaje y la respuesta (etapa 3.4)', () => 
         expect(system).toContain('«(v. N)»');
         expect(system).toContain('NO copies la traducción');
         expect(system).toContain('«Salmo de David»');
+        // Etapa 4.2: la regla general de vocabulario, no una copia suelta.
+        expect(system).toContain('VOCABULARIO (reglas duras):');
+        expect(system).toContain('«el SEÑOR» para יהוה');
         expect(user).toContain('## Tesis aprobada\nLa tesis.');
         expect(user).toContain('- v1: Salmo 23:1');
     });

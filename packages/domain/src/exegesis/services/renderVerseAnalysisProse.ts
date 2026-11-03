@@ -1,3 +1,4 @@
+import { citedPremises, criterionStatement, hasCriterionPremises } from '../entities/CanonicalVerseAnalysis';
 import { citedLocation } from '../entities/CanonicalVerseAnalysis';
 import { formatPassageReference } from '../../bible/canon/passage-reference';
 import { relabelProsePages } from './relabelProsePages';
@@ -138,7 +139,12 @@ export function renderVerseAnalysisProse(
             .map(o => `«${o.reading.trim()}»${o.argument?.trim() ? `, ${o.argument.trim()}` : ''}${cite(o.defenders ?? [])}`);
         if (lecturas.length > 0) partes.push(sentence(`${L('Las lecturas propuestas son', 'The proposed readings are')}: ${lecturas.join('; ')}`));
         const criterio = qa.decisiveCriterion;
-        if (criterio?.text?.trim()) {
+        if (hasCriterionPremises(criterio)) {
+            // P2: cada premisa con su fuente; la inferencia, sin cita.
+            for (const p of citedPremises(criterio)) partes.push(sentence(`${p.text.trim()}${cite(p.sources)}`));
+            if (criterionStatement(criterio)) partes.push(sentence(`${L('De ahí, el criterio que decide', 'Hence the deciding criterion')}: ${criterionStatement(criterio)}`));
+            if (criterio!.whyThisOverThat?.trim()) partes.push(sentence(criterio!.whyThisOverThat));
+        } else if (criterio?.text?.trim()) {
             partes.push(sentence(`${L('El criterio que decide es', 'The deciding criterion is')} ${criterio.text.trim()}${cite(criterio.sources ?? [])}`));
             if (criterio.whyThisOverThat?.trim()) partes.push(sentence(criterio.whyThisOverThat));
         }

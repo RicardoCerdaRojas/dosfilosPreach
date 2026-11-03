@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildVocabularyBlock } from '@dosfilos/domain';
 import { MAX_PROMPT_CHARS } from '../../../llm/promptBudget';
 import { THESIS_PROPOSAL_SCHEMA, THESIS_REVIEW_SCHEMA, buildThesisProposalPrompt, buildThesisReviewPrompt, fitThesisPrompt, parseThesisProposals, parseThesisReview } from '../thesisPrompt';
 import { HEADINGS_SCHEMA } from '../headingsPrompt';
@@ -64,5 +65,12 @@ describe('revisión adversarial de la etapa 3', () => {
         expect(user).toContain('## Tesis a revisar\nMi tesis.');
         // Uno corto pasa entero.
         expect(fitThesisPrompt({ ...BASE, thesis: 'T.' }, buildThesisReviewPrompt, 'prueba').user).toBe(buildThesisReviewPrompt({ ...BASE, thesis: 'T.' }).user);
+    });
+});
+
+describe('etapa 4.2: la voz de la tesis es la regla general de vocabulario', () => {
+    it('la revisión y la propuesta la llevan, en el idioma del trabajo', () => {
+        expect(buildThesisReviewPrompt({ ...BASE, thesis: 'T.' }).system).toContain(buildVocabularyBlock('es', 'academic'));
+        expect(buildThesisProposalPrompt({ ...BASE, language: 'en' }).system).toContain(buildVocabularyBlock('en', 'academic'));
     });
 });

@@ -620,6 +620,28 @@ describe('AnalyzeVerseCanonicallyUseCase — preguntas del encuadre', () => {
         ]);
     });
 
+    it('P2: la premisa que solo cita una fuente ajena al corpus se quita; la otra queda sellada', async () => {
+        const paper = conPreguntas(makePaper([makeSource('Tuggy', 'res-a')]));
+        const analysis = {
+            ...analysisCiting(['Tuggy']),
+            questionAnswers: [{
+                questionNumber: 1, directAnswer: 'siervo', decision: 'siervo', options: [],
+                decisiveCriterion: {
+                    text: 'i', inference: 'i', whyThisOverThat: 'w', sources: [],
+                    premises: [
+                        { text: 'Tuggy da «siervo».', sources: [{ sourceKey: 'Tuggy', page: 149 }] },
+                        { text: 'Lo inventado.', sources: [{ sourceKey: 'Inventado', page: 3 }] },
+                    ],
+                },
+            }],
+        };
+        const { useCase, appended } = buildUseCase({ paper, analysis, retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const premisas = appended[0]!.questionAnswers![0]!.decisiveCriterion.premises!;
+        expect(premisas.map(p => p.text)).toEqual(['Tuggy da «siervo».']);
+        expect(premisas[0]!.sources[0]).toHaveProperty('pageKind');
+    });
+
     it('un defensor que no es del corpus se quita y la lectura queda', async () => {
         const paper = conPreguntas(makePaper([makeSource('Tuggy', 'res-a')]));
         const analysis = {

@@ -86,7 +86,7 @@ function buildDevotionalPrompt(input: ComposeDevotionalInput): { systemInstructi
             `Avoid jargon (greek terms only when truly needed and translated). Avoid moralizing. Anchor every claim in what the analyses establish.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n')
         : [
-            `Componés reflexiones devocionales a partir de análisis canónicos PRE-COMPLETADOS. El trabajo exegético está hecho — tu tarea es traducir los hallazgos en reflexión espiritual accesible sin perder fidelidad.`,
+            `Compones reflexiones devocionales a partir de análisis canónicos PRE-COMPLETADOS. El trabajo exegético está hecho — tu tarea es traducir los hallazgos en reflexión espiritual accesible sin perder fidelidad.`,
             ``,
             `## Pasaje`,
             `**${passage}**`,

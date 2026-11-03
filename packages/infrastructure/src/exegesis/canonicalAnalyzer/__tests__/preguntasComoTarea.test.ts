@@ -80,6 +80,46 @@ describe('mapToCanonicalVerseAnalysis — questionAnswers', () => {
         }]);
     });
 
+    it('P2: la inferencia sin cita y las premisas con la suya; una premisa vacía se descarta', () => {
+        const a = mapToCanonicalVerseAnalysis({
+            ...base,
+            questionAnswers: [{
+                questionNumber: 4, directAnswer: 'x', decision: 'y', options: [],
+                decisiveCriterion: {
+                    inference: 'Ningún pasaje corresponde exactamente.',
+                    whyThisOverThat: 'w',
+                    premises: [{ text: 'Mayor no identifica la cita.', sources: [{ sourceKey: 'Mayor', page: 135 }] }, { text: '', sources: [] }, 'basura'],
+                },
+            }],
+        }, entrada({ sectionQuestions: preguntas }));
+        expect(a.questionAnswers![0]!.decisiveCriterion).toEqual({
+            text: 'Ningún pasaje corresponde exactamente.',
+            inference: 'Ningún pasaje corresponde exactamente.',
+            whyThisOverThat: 'w',
+            sources: [],
+            premises: [{ text: 'Mayor no identifica la cita.', sources: [{ sourceKey: 'Mayor', page: 135 }] }],
+        });
+    });
+
+    it('una forma a medias no pierde lo que trae', () => {
+        const con = (decisiveCriterion: Record<string, unknown>) => mapToCanonicalVerseAnalysis({ ...base, questionAnswers: [{ questionNumber: 1, directAnswer: 'r', options: [], decision: 'd', decisiveCriterion }] }, entrada({ sectionQuestions: [{ number: 1, text: 'P', kinds: [] }] } as never)).questionAnswers![0]!.decisiveCriterion;
+        const cita = { sourceKey: 'Mayor', page: 5 };
+        expect(con({ inference: 'Sólo inferencia.', whyThisOverThat: 'w' }).text).toBe('Sólo inferencia.');
+        const vieja = con({ text: 'Con su cita.', whyThisOverThat: 'w', sources: [cita], premises: [] });
+        expect(vieja.text).toBe('Con su cita.');
+        expect(vieja.sources).toHaveLength(1);
+        expect(con({ text: 'Texto sin inferencia.', whyThisOverThat: 'w', premises: [{ text: 'P', sources: [cita] }] }).text).toBe('Texto sin inferencia.');
+        const conCita = con({ inference: 'Inferencia citada.', whyThisOverThat: 'w', sources: [cita] });
+        expect(conCita.text).toBe('Inferencia citada.');
+        expect(conCita.sources).toHaveLength(1);
+    });
+
+    it('P2 sigue apagado: el esquema pide la forma de siempre', () => {
+        const criterio = JSON.stringify(canonicalVerseAnalysisSchema(voiceFor('JAS'), { withQuestions: true })).match(/"decisiveCriterion":\{.*?"required":\[[^\]]*\]/)?.[0] ?? '';
+        expect(criterio).toContain('"text"');
+        expect(criterio).not.toContain('"premises"');
+    });
+
     it('sin preguntas no agrega el campo', () => {
         expect(mapToCanonicalVerseAnalysis(base, entrada())).not.toHaveProperty('questionAnswers');
     });
@@ -181,5 +221,25 @@ describe('las reglas de la guía de estilo', () => {
     });
     it('sin reglas, no hay bloque', () => {
         expect(buildAnalyzerPrompt(entrada()).systemInstruction).not.toContain('Reglas del curso');
+    });
+});
+
+/** Etapa 4.4 (reglas 10 y 16): cada forma en que se apoya una decisión va como entrada, con su categoría y su página. */
+describe('la gramática aplicada llega al analizador', () => {
+    it('cada forma verbal y cada cadena constructa de una decisión, como entrada propia', () => {
+        expect(buildAnalyzerPrompt(entrada()).userMessage).toContain('Cada forma verbal (con su tallo) y cada construcción de genitivo (en hebreo, cada cadena constructa)');
+        expect(buildAnalyzerPrompt(entrada({ language: 'en' } as never)).userMessage).toContain('every construct chain) that a decision relies on gets its own entry');
+    });
+});
+
+/** P1 (etapa 4): si el criterio depende de una forma con variantes, el criterio dice sobre qué lectura decide. */
+describe('el aparato llega al criterio', () => {
+    it('lo pide al analizador, en los dos idiomas', () => {
+        const { userMessage, systemInstruction } = buildAnalyzerPrompt(entrada({ sectionQuestions: preguntas } as never));
+        expect(userMessage + systemInstruction).toContain('dilo en el criterio: sobre qué lectura decide y por qué esa');
+        const en = buildAnalyzerPrompt(entrada({ sectionQuestions: preguntas, language: 'en' } as never));
+        expect(en.userMessage + en.systemInstruction).toContain('which reading it decides on and why that one');
+        // P2 sigue apagado: el analizador no pide premisas todavía.
+        expect(userMessage + systemInstruction).not.toContain('`premises`');
     });
 });

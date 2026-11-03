@@ -17,6 +17,10 @@ import {
 } from 'lucide-react';
 import {
     citedLocation,
+    criterionStatement,
+    citedPremises,
+    criterionInference,
+    hasCriterionPremises,
     formatPassageReference,
     type CanonicalVerseAnalysis,
     type CitationPageKind,
@@ -201,6 +205,8 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                     title={t('canonical.study.answersTitle')}
                     hint={t('canonical.study.answersHint')}
                     count={analysis.questionAnswers!.length}
+                    // Al revisar citas: el chip de una premisa tiene que estar para llegar a él.
+                    defaultOpen={!!marks}
                 >
                     <ul className="space-y-3">
                         {analysis.questionAnswers!.map((q, i) => (
@@ -223,7 +229,29 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                 )}
                                 <div className="rounded-md bg-muted/40 px-2 py-1.5 space-y-0.5">
                                     <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('canonical.study.answerCriterion')}</p>
-                                    <p className="text-foreground">{q.decisiveCriterion.text}</p>
+                                    {hasCriterionPremises(q.decisiveCriterion) ? (
+                                        // P2: lo que dicen las fuentes, cada una con su cita; la
+                                        // inferencia, rotulada como del análisis y sin cita.
+                                        <>
+                                            <ul className="space-y-1">
+                                                {/* Sin filtrar: el índice es parte de la ruta de la marca. */}
+                                                {(q.decisiveCriterion.premises ?? []).map((p, j) => p.sources.length > 0 && (
+                                                    <li key={j} className="space-y-0.5">
+                                                        <p className="text-foreground/90">{p.text}</p>
+                                                        <SourceList onOpenCitation={onOpenCitation} citations={p.sources} marks={marks} pathFor={k => `questionAnswers[${i}].decisiveCriterion.premises[${j}].sources[${k}]`} />
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            {citedPremises(q.decisiveCriterion).length === 0 && (
+                                                <p className="text-[11px] text-muted-foreground">{t('canonical.study.answerNoSources')}</p>
+                                            )}
+                                            {criterionInference(q.decisiveCriterion) && (
+                                                <p className="text-foreground"><span className="font-semibold">{t('canonical.study.answerInference')}</span> {criterionStatement(q.decisiveCriterion)}</p>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <p className="text-foreground">{q.decisiveCriterion.text}</p>
+                                    )}
                                     <p className="text-foreground/85">{q.decisiveCriterion.whyThisOverThat}</p>
                                     {q.decisiveCriterion.sources.length > 0 && <SourceList onOpenCitation={onOpenCitation} citations={q.decisiveCriterion.sources} marks={marks} pathFor={k => `questionAnswers[${i}].decisiveCriterion.sources[${k}]`} />}
                                 </div>

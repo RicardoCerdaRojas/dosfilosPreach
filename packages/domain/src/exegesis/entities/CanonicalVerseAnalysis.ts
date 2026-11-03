@@ -831,12 +831,67 @@ export interface AnswerOption {
  * lecturas no decide nada»).
  */
 export interface DecisiveCriterion {
-    /** El criterio: de preferencia estructural o de la misma carta. */
+    /**
+     * El criterio: de preferencia estructural o de la misma carta. En la
+     * forma con premisas (P2), es la inferencia del análisis.
+     */
     text: string;
     /** Por qué favorece una lectura y no la otra. */
     whyThisOverThat: string;
-    /** Quién da el criterio, si lo da una fuente. Vacío si es del análisis. */
+    /**
+     * Quién da el criterio, si lo da una fuente (forma vieja). En la forma
+     * con premisas va vacío: las fuentes respaldan cada premisa, no la
+     * inferencia.
+     */
     sources: ReadonlyArray<SourceCitation>;
+    /**
+     * P2 (etapa 4 de «Lecciones del TI #2»): la conclusión del análisis, SIN
+     * cita. En el TP #9 el modelo escribió cuatro veces la síntesis y la
+     * colgó de fuentes que solo daban las premisas; el verificador la
+     * reprobaba aunque cada fuente decía lo suyo. Ausente en lo guardado
+     * antes de P2: ese criterio se lee como una sola premisa, sin migrar.
+     */
+    inference?: string;
+    /** P2: lo que dice cada fuente, verificable, con su cita. */
+    premises?: ReadonlyArray<CriterionPremise>;
+}
+
+export interface CriterionPremise {
+    text: string;
+    sources: ReadonlyArray<SourceCitation>;
+}
+
+/**
+ * Las premisas del criterio, en las dos formas. Lo guardado antes de P2
+ * (`text` con `sources`) es una sola premisa.
+ */
+export function criterionPremises(dc: DecisiveCriterion | null | undefined): CriterionPremise[] {
+    if (!dc) return [];
+    if (dc.premises && dc.premises.length > 0) return [...dc.premises];
+    return dc.sources?.length ? [{ text: dc.text, sources: dc.sources }] : [];
+}
+
+/** La inferencia del análisis, sin cita; `null` en lo guardado antes de P2. */
+export function criterionInference(dc: DecisiveCriterion | null | undefined): string | null {
+    return dc?.inference?.trim() || null;
+}
+
+/** Lo que el criterio afirma, en las dos formas: la inferencia o el texto viejo. */
+export function criterionStatement(dc: DecisiveCriterion | null | undefined): string {
+    return (criterionInference(dc) ?? dc?.text ?? '').trim();
+}
+
+/** Si el criterio tiene la forma de P2: inferencia, premisas o las dos. */
+export function hasCriterionPremises(dc: DecisiveCriterion | null | undefined): boolean {
+    return !!criterionInference(dc) || (dc?.premises?.length ?? 0) > 0;
+}
+
+/**
+ * Las premisas que se pueden atribuir. Quitar la última cita de una premisa la deja
+ * sin fuente, y sin fuente no se puede decir que un autor la dijo.
+ */
+export function citedPremises(dc: DecisiveCriterion | null | undefined): CriterionPremise[] {
+    return (dc?.premises ?? []).filter(p => p.sources.length > 0);
 }
 
 // ── Empty-state factory ─────────────────────────────────────────────────

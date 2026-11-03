@@ -1,3 +1,4 @@
+import { ANALYZER_WRITES_PREMISES } from './analyzerOutputShape';
 import type { TestamentVoice } from '../testamentVoice';
 
 /**
@@ -608,7 +609,28 @@ function QUESTION_ANSWERS_SCHEMA() {
                         required: ['reading', 'argument', 'defenders'],
                     },
                 },
-                decisiveCriterion: {
+                decisiveCriterion: ANALYZER_WRITES_PREMISES ? {
+                    type: 'object',
+                    description: 'El criterio que DISTINGUE entre las lecturas. Un criterio que vale para las dos no decide nada.',
+                    // P2: lo que dicen las fuentes, separado de lo que el análisis infiere.
+                    properties: {
+                        inference: { type: 'string', description: 'El criterio: la conclusión del ANÁLISIS, de preferencia estructural o de la misma carta. SIN cita: no es lo que dice una fuente.' },
+                        whyThisOverThat: { type: 'string', description: 'Por qué favorece una lectura y NO la otra.' },
+                        premises: {
+                            type: 'array',
+                            description: 'Lo que dice cada fuente en que se apoya la inferencia, verificable, con su página. Vacío si la inferencia sale solo de la observación.',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    text: { type: 'string', description: 'Lo que ESA fuente dice, no la conclusión del análisis.' },
+                                    sources: { type: 'array', items: SOURCE_CITATION_SCHEMA() },
+                                },
+                                required: ['text', 'sources'],
+                            },
+                        },
+                    },
+                    required: ['inference', 'whyThisOverThat', 'premises'],
+                } : {
                     type: 'object',
                     description: 'El criterio que DISTINGUE entre las lecturas. Un criterio que vale para las dos no decide nada.',
                     properties: {

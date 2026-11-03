@@ -183,7 +183,7 @@ function renderUserMessage(input: ComposeAcademicPaperInput, sourcesBlock: strin
     // análisis escribió en su prosa viajan con el número de hoja.
     const citableKeys = input.sources.map(s => s.citationKey).filter(Boolean);
     const briefings = input.verseAnalyses
-        .map(a => serializeAnalysis(a, lang, { pageLabel: input.pageLabel, citableKeys }))
+        .map(a => serializeAnalysis(a, lang, { forComposingProse: true, pageLabel: input.pageLabel, citableKeys }))
         .join('\n\n');
 
     const coverageContract = formatCoverageContract(input.verseAnalyses, lang);

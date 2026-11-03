@@ -1,3 +1,5 @@
+import { vocabularyRules } from './vocabularyRules';
+
 /**
  * CÓMO ESCRIBE ESTE AUTOR, en sus propias palabras.
  *
@@ -291,8 +293,8 @@ export function buildAcademicRegisterBlock(
     const reglas = language === 'en'
         ? [
             'REGISTER (hard rules):',
-            '- Impersonal third person ("it is preferable", "this reading is adopted"). Never "I" or "we".',
-            '- The register of a graduate seminary student: plain sentences, explicit connectors. Technical terms only when they are grammar categories (epexegetical genitive, dative of advantage), explained the first time. No jargon such as "semantic core", "head noun", "exegetical adjudication".',
+            '- Third person: the subject is the text, the form or the author ("the verbless clause affirms…", "Ross holds…"). An impersonal ("this reading is adopted") at most once per paragraph. Never "I" or "we".',
+            '- The register of a graduate seminary student: plain sentences, explicit connectors. Technical terms: the grammar categories (epexegetical genitive, dative of advantage), explained the first time. No jargon such as "semantic core", "head noun", "exegetical adjudication".',
             '- Every Greek or Hebrew word carries its English gloss the first time.',
             '- A citation goes in the SAME sentence as what that source says. Never split a claim from its citation.',
             '- No intensifiers the source does not support ("strong support", "considerably", "clearly"): state what the source says, with its own force.',
@@ -300,12 +302,14 @@ export function buildAcademicRegisterBlock(
         ]
         : [
             'REGISTRO (reglas duras):',
-            '- Tercera persona impersonal («se prefiere», «se adopta esta lectura»). Nunca «yo» ni «nosotros».',
-            '- El registro de un seminarista de posgrado: oraciones claras, conectores explícitos. Términos técnicos sólo si son categorías de la gramática (genitivo epexegético, dativo de ventaja), explicados la primera vez. Nada de jerga como «núcleo semántico», «sustantivo rector», «adjudicación exegética».',
+            '- Tercera persona: el sujeto es el texto, la forma o el autor («la cláusula sin verbo afirma…», «Ross sostiene…»). El impersonal con «se» («se adopta esta lectura»), como mucho una vez por párrafo. Nunca «yo» ni «nosotros».',
+            '- El registro de un seminarista de posgrado: oraciones claras, conectores explícitos. Términos técnicos: las categorías de la gramática (genitivo epexegético, dativo de ventaja), explicadas la primera vez. Nada de jerga como «núcleo semántico», «sustantivo rector», «adjudicación exegética».',
             '- Cada palabra griega o hebrea lleva su glosa en español la primera vez.',
             '- La cita va en la MISMA oración que lo que esa fuente dice. Nunca separes una afirmación de su cita.',
             '- Sin intensificadores que la fuente no respalda («sólido apoyo», «considerablemente», «claramente»): di lo que la fuente dice, con su propia fuerza.',
             ...(opts.answersQuestions ? ['- Cuando respondes una pregunta sobre una forma (un genitivo, un participio, una frase), abre con su morfología completa (caso, número, género / tiempo, voz, modo, persona) antes de interpretarla.'] : []),
         ];
-    return reglas.join('\n');
+    // El vocabulario del TI #2 (etapa 4.2): una sola nomenclatura, la palabra
+    // llana, «el salmista», «el SEÑOR», sin refutar lo no presentado.
+    return [...reglas, ...vocabularyRules(language, 'academic')].join('\n');
 }

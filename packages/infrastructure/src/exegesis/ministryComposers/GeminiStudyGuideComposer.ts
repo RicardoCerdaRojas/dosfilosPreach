@@ -102,7 +102,7 @@ function buildStudyGuidePrompt(input: ComposeStudyGuideInput): { systemInstructi
             `Questions are open-ended (avoid yes/no). The leader's notes never spoiler-state — they orient the leader without dictating answers.`,
         ].filter(Boolean).join('\n').replace(/\n{3,}/g, '\n\n')
         : [
-            `Componés guías de estudio bíblico inductivo a partir de análisis canónicos PRE-COMPLETADOS. El trabajo exegético está hecho — tu tarea es traducir los hallazgos en preguntas OIA bien construidas (Observación → Interpretación → Aplicación) apropiadas a la audiencia.`,
+            `Compones guías de estudio bíblico inductivo a partir de análisis canónicos PRE-COMPLETADOS. El trabajo exegético está hecho — tu tarea es traducir los hallazgos en preguntas OIA bien construidas (Observación → Interpretación → Aplicación) apropiadas a la audiencia.`,
             ``,
             `## Pasaje`,
             `**${passage}**`,

@@ -14,6 +14,7 @@
 import { fitPromptToCap } from '../../llm/promptBudget';
 import {
     THESIS_CRITERIA,
+    buildVocabularyBlock,
     type ThesisAdvisorInput,
     type ThesisCriterionResult,
     type ThesisProposal,
@@ -28,7 +29,13 @@ const CRITERIOS_ES = `Los seis criterios del curso para una tesis. Una buena tes
 5. connects — Retoma explícitamente lo que estableció la tesis de la unidad anterior (una continuidad temática implícita no basta). Si no se da tesis anterior, el veredicto es «no-aplica».
 6. answers — Afirma algo que el análisis pedido en el enunciado demuestra (si pide análisis sintáctico y léxico, algo que la sintaxis y el léxico muestran). No exijas que detalle cada herramienta.`;
 
-const VOZ_ES = `Escribe en español llano, como un profesor que corrige: sin jerga innecesaria; un término técnico que no sea de la gramática del curso, glosado entre paréntesis la primera vez. Una sola nomenclatura (perfecto/imperfecto). La voz del texto es «el salmista» (o el autor del pasaje), no «el creyente». Nombra a Dios como lo hace la traducción del trabajo (en el AT, «el SEÑOR» para יהוה), no «Yahweh».`;
+/** La voz de las razones y de las tesis: la regla general de vocabulario (etapa 4.2), una sola para todos los prompts. */
+function voz(lang: 'es' | 'en'): string {
+    return [
+        lang === 'en' ? 'Write in plain language, like a professor who corrects.' : 'Escribe en español llano, como un profesor que corrige.',
+        buildVocabularyBlock(lang, 'academic'),
+    ].join('\n');
+}
 
 /** El idioma de la respuesta: el del trabajo. */
 function idioma(lang: 'es' | 'en'): string {
@@ -57,7 +64,7 @@ export function buildThesisReviewPrompt(input: ThesisAdvisorInput & { thesis: st
         'Juzga SOLO con lo que está en los análisis aceptados, el enunciado y la tesis anterior. No inventes datos del texto.',
         'Para cada criterio da un veredicto («cumple», «no-cumple» o «no-aplica») y la razón en una o dos oraciones, nombrando el versículo cuando corresponda.',
         'Si algún criterio no se cumple, propone una tesis corregida de una o dos oraciones que los cumpla todos, lo más cercana posible a la del estudiante (cambia lo mínimo). Si cumple todos, la sugerencia es null.',
-        VOZ_ES,
+        voz(input.language),
         idioma(input.language),
     ].join('\n\n');
     const user = [contexto(input), '', '## Tesis a revisar', input.thesis.trim()].join('\n');
@@ -71,7 +78,7 @@ export function buildThesisProposalPrompt(input: ThesisAdvisorInput): { system: 
         'Propón entre 2 y 3 tesis distintas entre sí (no reformulaciones de la misma), cada una de una o dos oraciones y no más de 60 palabras, que cumplan los seis criterios. El respaldo va aparte, versículo por versículo: qué decisión o dato del análisis aceptado sostiene la tesis en ese versículo.',
         'Si el enunciado pide análisis sintáctico o léxico, cada tesis afirma qué muestra la sintaxis o el léxico: nombra la construcción o la forma verbal decisiva que sostiene la interpretación (por ejemplo, una cláusula sin verbo, un cambio de conjugación), sin enumerar todas. Una tesis solo temática no responde a ese enunciado.',
         'Cada afirmación gramatical de la tesis tiene que estar en los análisis: forma verbal, sujeto, construcción. No generalices («los imperfectos…») si los análisis no lo sostienen para todos los casos.',
-        VOZ_ES,
+        voz(input.language),
         idioma(input.language),
     ].join('\n\n');
     return { system, user: contexto(input) };

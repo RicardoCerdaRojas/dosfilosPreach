@@ -72,13 +72,39 @@ describe('la sección sabe qué pregunta responde', () => {
 describe('el registro del autor', () => {
     it('tercera persona, cita en la misma oración, sin jerga ni intensificadores', () => {
         const { systemInstruction } = buildVerseProsePrompt(entrada());
-        expect(systemInstruction).toContain('Tercera persona impersonal');
+        expect(systemInstruction).toContain('Tercera persona: el sujeto es el texto, la forma o el autor');
+        // Etapa 4.2: el ejemplo ya no enseña la muletilla «se prefiere» (13 en el TI #2).
+        expect(systemInstruction).not.toContain('se prefiere');
         expect(systemInstruction).toContain('La cita va en la MISMA oración');
         expect(systemInstruction).toContain('núcleo semántico');
         expect(systemInstruction).toContain('Sin intensificadores');
     });
+    it('etapa 4.2: el vocabulario del TI #2 llega a la prosa del versículo', () => {
+        const { systemInstruction } = buildVerseProsePrompt(entrada());
+        expect(systemInstruction).toContain('En hebreo, una sola nomenclatura para las formas verbales');
+        expect(systemInstruction).toContain('«el salmista»');
+        expect(systemInstruction).toContain('«el SEÑOR» para יהוה');
+        expect(systemInstruction).toContain('No refutes una lectura que ni el trabajo ni una fuente presentó');
+    });
+    it('P1: quien redacta el versículo recibe la forma dudosa del criterio', () => {
+        const base = entrada();
+        const verseAnalysis = {
+            ...base.verseAnalysis,
+            textualCriticism: { note: '', variants: [{ lemma: 'τὸ τῆς αὔριον', readings: [{ text: 'τὸ τῆς αὔριον', witnesses: ['ℵ'] }, { text: 'τὰ τῆς αὔριον', witnesses: ['A'] }], adoptedReading: 'τὸ τῆς αὔριον', rationale: '' }] },
+            questionAnswers: [{ questionNumber: 1, directAnswer: 'r', options: [], decision: 'd', decisiveCriterion: { text: 'Decide τὸ τῆς αὔριον.', whyThisOverThat: 'w', sources: [] } }],
+        };
+        const { userMessage, systemInstruction } = buildVerseProsePrompt({ ...base, verseAnalysis } as never);
+        expect(userMessage + systemInstruction).toContain('CONDITIONED BY THE TEXT');
+    });
     it('con una pregunta, la morfología completa abre la respuesta', () => {
         expect(buildVerseProsePrompt(entrada([PREGUNTA])).systemInstruction).toContain('abre con su morfología completa');
         expect(buildVerseProsePrompt(entrada()).systemInstruction).not.toContain('abre con su morfología completa');
+    });
+});
+
+/** Etapa 4.4: el TI #2 nombró los piel sin decir qué hacen; el compositor recibe la regla. */
+describe('la gramática aplicada llega al compositor del versículo', () => {
+    it('lo pide en la instrucción de sistema', () => {
+        expect(buildVerseProsePrompt(entrada()).systemInstruction).toContain('GRAMÁTICA APLICADA, NO NOMBRADA');
     });
 });

@@ -62,11 +62,13 @@ export function mapToCanonicalVerseAnalysis(
  * cosa y sólo las preguntas que se le hicieron (C1). Una respuesta a una
  * pregunta que no es de este versículo se descarta.
  */
+const texto = (v: unknown) => (typeof v === 'string' ? v : '');
+const citas = (v: unknown) => (Array.isArray(v) ? v.filter(c => c && typeof c === 'object' && typeof (c as { sourceKey?: unknown }).sourceKey === 'string') : []) as never[];
+type CriterioDecisivo = NonNullable<CanonicalVerseAnalysis['questionAnswers']>[number]['decisiveCriterion'];
+
 function normalizeQuestionAnswers(raw: unknown, input: AnalyzeVerseInput): NonNullable<CanonicalVerseAnalysis['questionAnswers']> {
     if (!Array.isArray(raw)) return [];
     const numeros = new Set((input.sectionQuestions ?? []).map(q => q.number));
-    const texto = (v: unknown) => (typeof v === 'string' ? v : '');
-    const citas = (v: unknown) => (Array.isArray(v) ? v.filter(c => c && typeof c === 'object' && typeof (c as { sourceKey?: unknown }).sourceKey === 'string') : []) as never[];
     return raw
         .filter((q): q is Record<string, unknown> => !!q && typeof q === 'object')
         .filter(q => typeof q.questionNumber === 'number' && numeros.has(q.questionNumber))
@@ -78,12 +80,25 @@ function normalizeQuestionAnswers(raw: unknown, input: AnalyzeVerseInput): NonNu
                 options: (Array.isArray(q.options) ? q.options : [])
                     .filter((o): o is Record<string, unknown> => !!o && typeof o === 'object')
                     .map(o => ({ reading: texto(o.reading), argument: texto(o.argument), defenders: citas(o.defenders) })),
-                decisiveCriterion: {
-                    text: texto(criterio.text),
-                    whyThisOverThat: texto(criterio.whyThisOverThat),
-                    sources: citas(criterio.sources),
-                },
+                decisiveCriterion: criterioDecisivo(criterio),
                 decision: texto(q.decision),
             };
         });
+}
+
+/**
+ * P2: la inferencia sin cita y las premisas con la suya. Si el modelo
+ * devuelve la forma vieja (`text` con `sources`), se conserva como estaba.
+ */
+function criterioDecisivo(criterio: Record<string, unknown>): CriterioDecisivo {
+    const premises = (Array.isArray(criterio.premises) ? criterio.premises : [])
+        .filter((p): p is Record<string, unknown> => !!p && typeof p === 'object')
+        .map(p => ({ text: texto(p.text), sources: citas(p.sources) }))
+        .filter(p => p.text);
+    // Una forma a medias no pierde lo que trae: sin premisas, lo citado del criterio sigue.
+    if (premises.length > 0 || (texto(criterio.inference) && citas(criterio.sources).length === 0)) {
+        const inference = texto(criterio.inference) || texto(criterio.text);
+        return { text: inference, whyThisOverThat: texto(criterio.whyThisOverThat), sources: [], inference, premises };
+    }
+    return { text: texto(criterio.text) || texto(criterio.inference), whyThisOverThat: texto(criterio.whyThisOverThat), sources: citas(criterio.sources) };
 }

@@ -732,7 +732,17 @@ function sanitizeSourceReferences(
             questionAnswers: analysis.questionAnswers.map(q => ({
                 ...q,
                 options: q.options.map(o => ({ ...o, defenders: cleanCitations(o.defenders) })),
-                decisiveCriterion: { ...q.decisiveCriterion, sources: cleanCitations(q.decisiveCriterion.sources) },
+                decisiveCriterion: {
+                    ...q.decisiveCriterion,
+                    sources: cleanCitations(q.decisiveCriterion.sources),
+                    // P2: una premisa que se queda sin fuente del corpus no es
+                    // premisa (lo que dice una fuente): se quita.
+                    ...(q.decisiveCriterion.premises ? {
+                        premises: q.decisiveCriterion.premises
+                            .map(p => ({ ...p, sources: cleanCitations(p.sources) }))
+                            .filter(p => p.sources.length > 0),
+                    } : {}),
+                },
             })),
         } : {}),
     };

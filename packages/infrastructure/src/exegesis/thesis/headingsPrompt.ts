@@ -1,4 +1,4 @@
-import type { ThesisAdvisorInput } from '@dosfilos/domain';
+import { buildVocabularyBlock, type ThesisAdvisorInput } from '@dosfilos/domain';
 
 /**
  * Proponer el título temático de cada versículo (fase «Lecciones del TI #2»,
@@ -22,7 +22,7 @@ export function buildHeadingsPrompt(input: HeadingsPromptInput): { system: strin
         'Cada título dice qué hace ese versículo en el argumento del trabajo, en pocas palabras (entre 3 y 9), y termina con la referencia entre paréntesis: «(v. N)» o «(vv. N–M)».',
         'NO copies la traducción ni uses el título del salmo («Salmo de David») como título del versículo. Toma el tema de lo que el análisis aceptado estableció y de la tesis aprobada.',
         'Los títulos de los distintos versículos forman una progresión: leídos en orden, cuentan el argumento.',
-        'Español llano. Nombra a Dios como lo hace la traducción del trabajo (en el AT, «el SEÑOR» para יהוה), no «Yahweh». La voz del texto es «el salmista» (o el autor del pasaje).',
+        buildVocabularyBlock(input.language, 'academic'),
         en ? 'Write the headings in English.' : 'Escribe los títulos en español.',
     ].join('\n\n');
     const user = [
