@@ -4,8 +4,7 @@ import { criterionPremises, criterionStatement, type CanonicalVerseAnalysis } fr
  * Lo que dice el aparato llega al criterio y a la prosa (P1 de la fase
  * «Revisión autónoma», etapa 4 de «Lecciones del TI #2»).
  *
- * Regla de dominio, sin modelo: si el criterio decisivo de una pregunta —o la
- * traducción decidida— menciona una forma que tiene variantes en
+ * Regla de dominio, sin modelo: si el criterio decisivo de una pregunta menciona una forma que tiene variantes en
  * `textualCriticism.variants` (el lema o la lectura de una variante), la
  * respuesta está CONDICIONADA POR EL TEXTO. Entonces el análisis tiene que
  * decir sobre qué lectura decide y por qué, y la prosa tiene que nombrarla: el
@@ -17,8 +16,8 @@ import { criterionPremises, criterionStatement, type CanonicalVerseAnalysis } fr
  * Ninguna de las dos prosas lo decía.
  */
 export interface ConditioningVariant {
-    /** La pregunta cuyo criterio depende de la variante; `null` si es la traducción decidida. */
-    questionNumber: number | null;
+    /** La pregunta cuyo criterio depende de la variante. */
+    questionNumber: number;
     lemma: string;
     adopted: string;
     /** Las otras lecturas, sin la adoptada ni la omisión. */
@@ -35,7 +34,10 @@ export function plainOriginal(s: string): string {
         .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 }
 
-const OMISION = /^(?:∅|om\.?|omit(?:e|s|ted)?|—|-)$/iu;
+// Una lectura vacía también es la omisión: así la devuelve el modelo («», K L).
+const OMISION = /^(?:|∅|om\.?|omit(?:e|s|ted)?|—|-)$/iu;
+/** Una forma corta suelta (ὁ, ה) aparece en cualquier criterio sin hablar de ella. */
+const LETRAS_QUE_DISTINGUEN = 3;
 
 function contiene(texto: string, forma: string): boolean {
     const f = plainOriginal(forma);
@@ -48,12 +50,13 @@ export function conditioningVariants(analysis: CanonicalVerseAnalysis | null): C
     const out: ConditioningVariant[] = [];
     for (const v of variantes) {
         const lecturas = (v.readings ?? []).map(r => r.text?.trim() ?? '').filter(t => t && !OMISION.test(t));
-        const formas = [...new Set([v.lemma?.trim() ?? '', ...lecturas].filter(Boolean))];
+        const formas = [...new Set([v.lemma?.trim() ?? '', ...lecturas].filter(Boolean))]
+            .filter(f => plainOriginal(f).replace(/\s/g, '').length >= LETRAS_QUE_DISTINGUEN);
         if (formas.length === 0) continue;
         const menciona = (texto: string | null | undefined) => !!texto && formas.some(f => contiene(texto, f));
         const base = {
             lemma: v.lemma,
-            adopted: v.adoptedReading,
+            adopted: v.adoptedReading ?? '',
             rivals: lecturas.filter(t => plainOriginal(t) !== plainOriginal(v.adoptedReading ?? '')),
             omission: (v.readings ?? []).some(r => OMISION.test(r.text?.trim() ?? '')),
             witnesses: (v.readings ?? [])
@@ -61,15 +64,12 @@ export function conditioningVariants(analysis: CanonicalVerseAnalysis | null): C
                 .map(r => `${r.text} ${(r.witnesses ?? []).join(' ')}`.trim())
                 .join('; '),
         };
-        let encontrada = false;
         for (const q of analysis?.questionAnswers ?? []) {
             const criterio = [criterionStatement(q.decisiveCriterion), ...criterionPremises(q.decisiveCriterion).map(p => p.text)].join(' ');
             if (menciona(criterio)) {
                 out.push({ ...base, questionNumber: q.questionNumber });
-                encontrada = true;
             }
         }
-        if (!encontrada && menciona(analysis?.finalTranslation)) out.push({ ...base, questionNumber: null });
     }
     return out;
 }

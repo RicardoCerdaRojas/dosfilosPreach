@@ -1971,6 +1971,7 @@
       "answerQuestion": "Question {{number}}",
       "answerNoDefender": "No source in the corpus defends it.",
       "answerCriterion": "Decisive criterion",
+      "answerNoSources": "No cited source supports this criterion.",
       "answerInference": "The analysis's inference (no citation):",
       "answerDecision": "Decision:",
       "headerLabel": "Text and translation",

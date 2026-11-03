@@ -45,9 +45,21 @@ describe('la decisión condicionada por el texto', () => {
         expect(conditioningVariants(a)).toEqual([expect.objectContaining({ questionNumber: 2, lemma: 'τὸ τῆς αὔριον' })]);
     });
 
-    it('también la traducción decidida, si cita la forma', () => {
+    it('la traducción decidida sola no condiciona: no hay pregunta a la que responder', () => {
         const a = conVariante('Otro criterio.', { finalTranslation: 'no saben τὸ τῆς αὔριον' } as never);
-        expect(conditioningVariants(a)).toEqual([expect.objectContaining({ questionNumber: null })]);
+        expect(conditioningVariants(a)).toEqual([]);
+    });
+
+    it('una forma corta suelta no condiciona: «ὁ» aparece en cualquier criterio', () => {
+        const a = conVariante('El artículo de ὁ δυνάμενος decide.');
+        (a.textualCriticism.variants as unknown as Array<Record<string, unknown>>)[0] = { lemma: 'ὁ', readings: [{ text: 'ὁ', witnesses: ['ℵ'] }, { text: '', witnesses: ['K'] }], adoptedReading: 'ὁ', rationale: '' };
+        expect(conditioningVariants(a)).toEqual([]);
+    });
+
+    it('una lectura vacía es la omisión, no una rival sin nombre', () => {
+        const a = conVariante('Decide τὸ τῆς αὔριον.');
+        (a.textualCriticism.variants as unknown as Array<Record<string, unknown>>)[0] = { lemma: 'τὸ τῆς αὔριον', readings: [{ text: 'τὸ τῆς αὔριον', witnesses: ['ℵ'] }, { text: '', witnesses: ['K', 'L'] }], adoptedReading: 'τὸ τῆς αὔριον', rationale: '' };
+        expect(conditioningVariants(a)).toEqual([expect.objectContaining({ rivals: [], omission: true })]);
     });
 
     it('sin acentos ni espíritus: «το της αυριον» es la misma forma', () => {
@@ -57,8 +69,20 @@ describe('la decisión condicionada por el texto', () => {
 
 describe('la marca para el compositor', () => {
     it('el compositor recibe la variante como algo que la prosa debe nombrar', () => {
-        const texto = serializeAnalysis(CONDICIONADO, 'es');
+        const texto = serializeAnalysis(CONDICIONADO, 'es', { forComposingProse: true });
         expect(texto).toContain('CONDITIONED BY THE TEXT: the criterion depends on "τὸ τῆς αὔριον", which the apparatus also gives as τὰ τῆς αὔριον, τῆς αὔριον');
-        expect(serializeAnalysis(conVariante('Sin relación.'), 'es')).not.toContain('CONDITIONED BY THE TEXT');
+        expect(serializeAnalysis(conVariante('Sin relación.'), 'es', { forComposingProse: true })).not.toContain('CONDITIONED BY THE TEXT');
+    });
+
+    it('solo quien redacta el versículo o el trabajo recibe la orden', () => {
+        expect(serializeAnalysis(CONDICIONADO, 'es')).not.toContain('CONDITIONED BY THE TEXT');
+        expect(serializeAnalysis(CONDICIONADO, 'es', { forComposingProse: true })).toContain('CONDITIONED BY THE TEXT');
+    });
+
+    it('sin lectura adoptada, no imprime «null»', () => {
+        const a = conVariante('Decide τὸ τῆς αὔριον.');
+        (a.textualCriticism.variants as unknown as Array<Record<string, unknown>>)[0]!.adoptedReading = null;
+        expect(serializeAnalysis(a, 'es', { forComposingProse: true })).not.toContain('null');
+        expect(serializeAnalysis(a, 'es', { forComposingProse: true })).not.toContain('("")');
     });
 });

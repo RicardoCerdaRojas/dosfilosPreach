@@ -202,7 +202,7 @@ export function buildVerseProsePrompt(input: ComposeVerseInput): {
         alertsBlock,
         '',
         lang === 'en' ? 'CANONICAL ANALYSIS (the only authoritative content source):' : 'ANÁLISIS CANÓNICO (única fuente autoritativa):',
-        serializeAnalysis(input.verseAnalysis, lang, { pageLabel: input.pageLabel }),
+        serializeAnalysis(input.verseAnalysis, lang, { pageLabel: input.pageLabel, forComposingProse: true }),
         lengthBlock,
         guidanceBlock,
     ].filter(Boolean).join('\n\n');

@@ -1,4 +1,4 @@
-import { criterionStatement, hasCriterionPremises } from '../entities/CanonicalVerseAnalysis';
+import { citedPremises, criterionStatement, hasCriterionPremises } from '../entities/CanonicalVerseAnalysis';
 import { conditioningVariants } from './apparatusConditions';
 import { citedLocation } from '../entities/CanonicalVerseAnalysis';
 import { formatPassageReference } from '../../bible/canon/passage-reference';
@@ -80,6 +80,12 @@ import type { CanonicalVerseAnalysis, CitationPageKind } from '../entities/Canon
  * Sin este gancho el compositor tendría que reescribir cadenas ya formateadas.
  */
 export interface SerializeAnalysisOptions {
+    /**
+     * Para quien redacta el versículo o el trabajo: pide decir qué lectura adopta si la
+     * decisión depende de una forma dudosa (P1). El sermón, el devocional, la guía, la
+     * tesis y la conclusión no la reciben: la cuestión se trata en la sección del versículo.
+     */
+    forComposingProse?: boolean;
     /**
      * Por defecto rotula según `pageKind`: `p. N` para la página impresa y
      * `hoja N` para la hoja del archivo.
@@ -273,7 +279,9 @@ export function serializeAnalysis(
                 // P2: la inferencia es del análisis y va sin cita; cada premisa
                 // lleva la fuente que la dice.
                 lines.push(`  · decisive criterion (the analysis's own inference — write it in the prose as the paper's own, WITHOUT a citation): ${prose(criterionStatement(q.decisiveCriterion))} — why this and not the other: ${prose(q.decisiveCriterion.whyThisOverThat)}`);
-                for (const p of q.decisiveCriterion.premises!) {
+                const premisas = citedPremises(q.decisiveCriterion);
+                if (premisas.length === 0) lines.push('    (no source supports this criterion: do not attribute it to anyone)');
+                for (const p of premisas) {
                     lines.push(`    premise: ${prose(p.text)} (sources: ${p.sources.map(d => `${d.sourceKey} ${cite(d)}`).join('; ')})`);
                 }
             } else {
@@ -281,8 +289,8 @@ export function serializeAnalysis(
                 lines.push(`  · decisive criterion: ${prose(q.decisiveCriterion.text)} — why this and not the other: ${prose(q.decisiveCriterion.whyThisOverThat)}${fuentes ? ` (sources: ${fuentes})` : ''}`);
             }
             // P1: la decisión depende de una forma que el aparato da como dudosa.
-            for (const v of condicionadas.filter(c => c.questionNumber === q.questionNumber)) {
-                lines.push(`  · CONDITIONED BY THE TEXT: the criterion depends on "${v.lemma}", which the apparatus also gives as ${[...v.rivals, ...(v.omission ? ['omission'] : [])].join(', ')}${v.witnesses ? ` (${v.witnesses})` : ''}. The prose MUST say which reading it decides on ("${v.adopted}") and why.`);
+            for (const v of options.forComposingProse ? condicionadas.filter(c => c.questionNumber === q.questionNumber) : []) {
+                lines.push(`  · CONDITIONED BY THE TEXT: the criterion depends on "${v.lemma}", which the apparatus also gives as ${[...v.rivals, ...(v.omission ? ['omission'] : [])].join(', ')}${v.witnesses ? ` (${v.witnesses})` : ''}. If the decision truly rests on this form, the prose says which reading it decides on${v.adopted ? ` ("${v.adopted}")` : ''} and why.`);
             }
             lines.push(`  · decision: ${prose(q.decision)}`);
         }

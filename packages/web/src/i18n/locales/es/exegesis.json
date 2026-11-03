@@ -1971,6 +1971,7 @@
       "answerQuestion": "Pregunta {{number}}",
       "answerNoDefender": "Ninguna fuente del corpus la defiende.",
       "answerCriterion": "Criterio decisivo",
+      "answerNoSources": "Ninguna fuente citada apoya este criterio.",
       "answerInference": "La inferencia del análisis (sin cita):",
       "answerDecision": "Decisión:",
       "headerLabel": "Texto y traducción",

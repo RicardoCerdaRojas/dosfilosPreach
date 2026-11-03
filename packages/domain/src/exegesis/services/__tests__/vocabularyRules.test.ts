@@ -6,15 +6,22 @@ import { buildAcademicRegisterBlock } from '../academicVoice';
 describe('la regla general de vocabulario', () => {
     it('académica: una nomenclatura, la palabra llana, «el salmista», «el SEÑOR», sin refutar, sin «sin + infinitivo»', () => {
         const r = vocabularyRules('es', 'academic').join('\n');
-        expect(r).toContain('Una sola nomenclatura');
+        expect(r).toContain('En hebreo, una sola nomenclatura');
         expect(r).toContain('«yiqtol (imperfecto)»');
         expect(r).toContain('«fuerza» y no «eficacia»');
         expect(r).toContain('«el salmista»');
-        expect(r).toContain('No «el hablante» ni «el creyente»');
-        expect(r).toContain('«el SEÑOR» para יהוה, no «Yahweh»');
-        expect(r).toContain('No refutes una lectura que el texto no presentó');
+        expect(r).toContain('No «el hablante»');
+        expect(r).toContain('Tampoco «el creyente»');
+        expect(r).toContain('si dice «el SEÑOR» para יהוה, no escribas «Yahweh»');
+        expect(r).toContain('No refutes una lectura que ni el trabajo ni una fuente presentó');
         expect(r).not.toContain('sin + infinitivo');
         expect(r).toContain('hendíadis');
+    });
+
+    it('pastoral: la aplicación y refutar malas lecturas son de su oficio', () => {
+        const r = vocabularyRules('es', 'pastoral').join('\n');
+        expect(r).not.toContain('el creyente');
+        expect(r).not.toContain('No refutes');
     });
 
     it('pastoral: sin términos de gramática ni siquiera explicados; no prohíbe «nosotros» (el grupo pequeño lo pide)', () => {

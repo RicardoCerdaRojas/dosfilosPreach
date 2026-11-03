@@ -111,7 +111,7 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
         if (hasCriterionPremises(q.decisiveCriterion)) {
             // P2: cada fuente se coteja con SU premisa; la inferencia no lleva
             // cita y no se verifica.
-            q.decisiveCriterion.premises!.forEach((p, j) =>
+            (q.decisiveCriterion.premises ?? []).forEach((p, j) =>
                 p.sources.forEach((s, k) =>
                     push('answer-criterion', `questionAnswers[${i}].decisiveCriterion.premises[${j}].sources[${k}]`, s, p.text)));
         } else {

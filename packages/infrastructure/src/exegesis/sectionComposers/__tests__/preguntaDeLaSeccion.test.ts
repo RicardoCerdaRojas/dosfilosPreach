@@ -81,11 +81,20 @@ describe('el registro del autor', () => {
     });
     it('etapa 4.2: el vocabulario del TI #2 llega a la prosa del versículo', () => {
         const { systemInstruction } = buildVerseProsePrompt(entrada());
-        expect(systemInstruction).toContain('Una sola nomenclatura para las formas verbales');
+        expect(systemInstruction).toContain('En hebreo, una sola nomenclatura para las formas verbales');
         expect(systemInstruction).toContain('«el salmista»');
         expect(systemInstruction).toContain('«el SEÑOR» para יהוה');
-        expect(systemInstruction).toContain('No refutes una lectura que el texto no presentó');
-        expect(systemInstruction).toContain('«el salmista»');
+        expect(systemInstruction).toContain('No refutes una lectura que ni el trabajo ni una fuente presentó');
+    });
+    it('P1: quien redacta el versículo recibe la forma dudosa del criterio', () => {
+        const base = entrada();
+        const verseAnalysis = {
+            ...base.verseAnalysis,
+            textualCriticism: { note: '', variants: [{ lemma: 'τὸ τῆς αὔριον', readings: [{ text: 'τὸ τῆς αὔριον', witnesses: ['ℵ'] }, { text: 'τὰ τῆς αὔριον', witnesses: ['A'] }], adoptedReading: 'τὸ τῆς αὔριον', rationale: '' }] },
+            questionAnswers: [{ questionNumber: 1, directAnswer: 'r', options: [], decision: 'd', decisiveCriterion: { text: 'Decide τὸ τῆς αὔριον.', whyThisOverThat: 'w', sources: [] } }],
+        };
+        const { userMessage, systemInstruction } = buildVerseProsePrompt({ ...base, verseAnalysis } as never);
+        expect(userMessage + systemInstruction).toContain('CONDITIONED BY THE TEXT');
     });
     it('con una pregunta, la morfología completa abre la respuesta', () => {
         expect(buildVerseProsePrompt(entrada([PREGUNTA])).systemInstruction).toContain('abre con su morfología completa');

@@ -91,13 +91,14 @@ function normalizeQuestionAnswers(raw: unknown, input: AnalyzeVerseInput): NonNu
  * devuelve la forma vieja (`text` con `sources`), se conserva como estaba.
  */
 function criterioDecisivo(criterio: Record<string, unknown>): CriterioDecisivo {
-    if (Array.isArray(criterio.premises)) {
-        const premises = criterio.premises
-            .filter((p): p is Record<string, unknown> => !!p && typeof p === 'object')
-            .map(p => ({ text: texto(p.text), sources: citas(p.sources) }))
-            .filter(p => p.text);
-        const inference = texto(criterio.inference);
+    const premises = (Array.isArray(criterio.premises) ? criterio.premises : [])
+        .filter((p): p is Record<string, unknown> => !!p && typeof p === 'object')
+        .map(p => ({ text: texto(p.text), sources: citas(p.sources) }))
+        .filter(p => p.text);
+    // Una forma a medias no pierde lo que trae: sin premisas, lo citado del criterio sigue.
+    if (premises.length > 0 || (texto(criterio.inference) && citas(criterio.sources).length === 0)) {
+        const inference = texto(criterio.inference) || texto(criterio.text);
         return { text: inference, whyThisOverThat: texto(criterio.whyThisOverThat), sources: [], inference, premises };
     }
-    return { text: texto(criterio.text), whyThisOverThat: texto(criterio.whyThisOverThat), sources: citas(criterio.sources) };
+    return { text: texto(criterio.text) || texto(criterio.inference), whyThisOverThat: texto(criterio.whyThisOverThat), sources: citas(criterio.sources) };
 }

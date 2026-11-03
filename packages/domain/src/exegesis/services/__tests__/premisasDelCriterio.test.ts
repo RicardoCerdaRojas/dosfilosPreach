@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
+import { hasCriterionPremises,
     buildEmptyCanonicalVerseAnalysis,
     criterionInference,
     criterionPremises,
@@ -95,4 +95,20 @@ describe('la forma con premisas', () => {
         expect(prosa).toContain(`De ahí, el criterio que decide: ${NUEVO.inference}`);
     });
 
+    it('una premisa sin su última cita no se atribuye, ni en la prosa ni al redactar', () => {
+        const criterio = { ...NUEVO, premises: [{ text: 'Varner representa τὸ como objeto.', sources: [] }, ...NUEVO.premises!] };
+        expect(renderVerseAnalysisProse(conCriterio(criterio), 'es')).not.toContain('Varner representa');
+        expect(serializeAnalysis(conCriterio(criterio), 'es')).not.toContain('Varner representa');
+    });
+
+    it('sin premisas, el análisis se dice sin fuente y no se le atribuye a nadie', () => {
+        const criterio = { ...NUEVO, sources: [], premises: [] };
+        expect(hasCriterionPremises(criterio)).toBe(true);
+        expect(serializeAnalysis(conCriterio(criterio), 'es')).toContain('no source supports this criterion');
+    });
+
+    it('una inferencia vacía no deja una oración vacía', () => {
+        const criterio = { ...NUEVO, inference: '', text: '' };
+        expect(renderVerseAnalysisProse(conCriterio(criterio), 'es')).not.toContain('el criterio que decide:');
+    });
 });

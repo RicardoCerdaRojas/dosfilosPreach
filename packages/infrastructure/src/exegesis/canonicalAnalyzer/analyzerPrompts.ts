@@ -1,3 +1,4 @@
+import { ANALYZER_WRITES_PREMISES } from './analyzerOutputShape';
 import {
     buildHebrewMorphologyBlock,
     type HebrewVerseMorphology,
@@ -245,7 +246,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
             ``,
             `**syntacticAnalysis.mainVerb** — Identify the main verb of the sentence containing this verse. Set to null when the verse is part of a longer sentence whose main verb lives elsewhere (participial chains, μέν…δέ pairs, periodic sentences); when null, populate "mainVerbNote" to explain.`,
             ``,
-            `**syntacticAnalysis.keyConstructions** — Each participle, relative clause, prepositional phrase, genitive construction. Each entry: text + morphology (in natural language: "${voice.morphologyEn}") + syntactic function (${gramaticaEn.label}'s categories) + interpretive significance.${gramaticaEn.inCorpus ? ` When the corpus grammar (${gramaticaEn.label}) classifies a construction, classify it with THAT category and its page, and answer according to that classification: do not swap it for a category from another grammar.` : ''} Every verb form (with its stem) and every genitive construction (in Hebrew, every construct chain) that a decision relies on gets its own entry, with its category and, when the corpus grammar classifies it, its page: the prose will apply that category, not just name it.`,
+            `**syntacticAnalysis.keyConstructions** — Each participle, relative clause, prepositional phrase, genitive construction. Each entry: text + morphology (in natural language: "${voice.morphologyEn}") + syntactic function (${gramaticaEn.label}'s categories) + interpretive significance.${gramaticaEn.inCorpus ? ` When the corpus grammar (${gramaticaEn.label}) classifies a construction, classify it with THAT category and its page, and answer according to that classification: do not swap it for a category from another grammar.` : ''} Every verb form (with its stem) and every genitive construction (in Hebrew, every construct chain) that a decision relies on gets its own entry, with its category: the prose will apply that category, not just name it.`,
             ``,
             `**syntacticAnalysis.discourseParticles** — δέ, γάρ, οὖν, μέν, καί, ἀλλά, ὅτι and others when their argumentative function is notable. Use Levinsohn / Runge categories.`,
             ``,
@@ -294,7 +295,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
         ``,
         `**syntacticAnalysis.mainVerb** — Identifica el verbo principal de la oración que contiene este verso. Pon null cuando el verso es parte de una oración cuyo verbo principal vive en otro lado (cadenas participiales, pares μέν…δέ, oraciones periódicas); cuando es null, puebla "mainVerbNote" para explicar.`,
         ``,
-        `**syntacticAnalysis.keyConstructions** — Cada participio, cláusula relativa, frase preposicional, construcción de genitivo. Cada entrada: text + morphology (en lenguaje natural: "${voice.morphologyEs}") + syntacticFunction (categorías de ${gramaticaEs.label}) + interpretiveSignificance.${gramaticaEs.inCorpus ? ` Cuando la gramática del corpus (${gramaticaEs.label}) clasifica una construcción, clasifícala con ESA categoría y su página, y responde según esa clasificación: no la cambies por la categoría de otra gramática.` : ''} Cada forma verbal (con su tallo) y cada construcción de genitivo (en hebreo, cada cadena constructa) en que se apoye una decisión va como entrada propia, con su categoría y, si la gramática del corpus la clasifica, su página: la prosa aplicará esa categoría, no solo la nombrará.`,
+        `**syntacticAnalysis.keyConstructions** — Cada participio, cláusula relativa, frase preposicional, construcción de genitivo. Cada entrada: text + morphology (en lenguaje natural: "${voice.morphologyEs}") + syntacticFunction (categorías de ${gramaticaEs.label}) + interpretiveSignificance.${gramaticaEs.inCorpus ? ` Cuando la gramática del corpus (${gramaticaEs.label}) clasifica una construcción, clasifícala con ESA categoría y su página, y responde según esa clasificación: no la cambies por la categoría de otra gramática.` : ''} Cada forma verbal (con su tallo) y cada construcción de genitivo (en hebreo, cada cadena constructa) en que se apoye una decisión va como entrada propia, con su categoría: la prosa aplicará esa categoría, no solo la nombrará.`,
         ``,
         `**syntacticAnalysis.discourseParticles** — δέ, γάρ, οὖν, μέν, καί, ἀλλά, ὅτι y otras cuando su función argumentativa es notable. Usa categorías de Levinsohn / Runge.`,
         ``,
@@ -393,7 +394,7 @@ export function formatAnswerMethod(
         // P1 (etapa 4): en el TP #9 el criterio de 4:14 decidía «por la presencia de τὸ» sin decir que el aparato da τὰ y la omisión.
         `  6. If the decisive criterion depends on a form that has variants in the apparatus (\`textualCriticism.variants\`), say so in the criterion: which reading it decides on and why that one.`,
         // P2: el TP #9 colgó cuatro veces la síntesis de fuentes que solo daban las premisas.
-        `  7. In \`decisiveCriterion\`, separate what the sources say (\`premises\`, each with its citation) from what the analysis infers from them (\`inference\`, WITHOUT a citation). Never hang the inference on the sources.`,
+        ...(ANALYZER_WRITES_PREMISES ? [`  7. In \`decisiveCriterion\`, separate what the sources say (\`premises\`, each with its citation) from what the analysis infers from them (\`inference\`, WITHOUT a citation). Never hang the inference on the sources.`,] : []),
     ] : [
         `- Cómo responder las preguntas (el método):`,
         `  1. Busca un criterio que DISTINGA entre las lecturas, de preferencia de la misma carta o de la estructura del pasaje. Un criterio que vale para las dos lecturas no decide nada.`,
@@ -402,7 +403,7 @@ export function formatAnswerMethod(
         `  4. Nunca uses la clasificación de un elemento para decidir otro sin mostrar la relación entre los dos.`,
         `  5. Una categoría gramatical no es una traducción: clasifica, después traduce, y di cuál de las dos cosas da cada fuente.`,
         `  6. Si el criterio decisivo depende de una forma con variantes en el aparato (\`textualCriticism.variants\`), dilo en el criterio: sobre qué lectura decide y por qué esa.`,
-        `  7. En \`decisiveCriterion\`, separa lo que dicen las fuentes (\`premises\`, cada una con su cita) de lo que el análisis infiere de ellas (\`inference\`, SIN cita). La inferencia nunca se cuelga de las fuentes.`,
+        ...(ANALYZER_WRITES_PREMISES ? [`  7. En \`decisiveCriterion\`, separa lo que dicen las fuentes (\`premises\`, cada una con su cita) de lo que el análisis infiere de ellas (\`inference\`, SIN cita). La inferencia nunca se cuelga de las fuentes.`,] : []),
     ]).join('\n');
 }
 

@@ -101,10 +101,23 @@ describe('mapToCanonicalVerseAnalysis — questionAnswers', () => {
         });
     });
 
-    it('P2: el esquema pide la inferencia y las premisas', () => {
-        const criterio = JSON.stringify(canonicalVerseAnalysisSchema(voiceFor('JAS'), { withQuestions: true })).match(/"decisiveCriterion":\{.*?"required":\[[^\]]*\]/s)?.[0] ?? '';
-        expect(criterio).toContain('"inference"');
-        expect(criterio).toContain('"premises"');
+    it('una forma a medias no pierde lo que trae', () => {
+        const con = (decisiveCriterion: Record<string, unknown>) => mapToCanonicalVerseAnalysis({ ...base, questionAnswers: [{ questionNumber: 1, directAnswer: 'r', options: [], decision: 'd', decisiveCriterion }] }, entrada({ sectionQuestions: [{ number: 1, text: 'P', kinds: [] }] } as never)).questionAnswers![0]!.decisiveCriterion;
+        const cita = { sourceKey: 'Mayor', page: 5 };
+        expect(con({ inference: 'Sólo inferencia.', whyThisOverThat: 'w' }).text).toBe('Sólo inferencia.');
+        const vieja = con({ text: 'Con su cita.', whyThisOverThat: 'w', sources: [cita], premises: [] });
+        expect(vieja.text).toBe('Con su cita.');
+        expect(vieja.sources).toHaveLength(1);
+        expect(con({ text: 'Texto sin inferencia.', whyThisOverThat: 'w', premises: [{ text: 'P', sources: [cita] }] }).text).toBe('Texto sin inferencia.');
+        const conCita = con({ inference: 'Inferencia citada.', whyThisOverThat: 'w', sources: [cita] });
+        expect(conCita.text).toBe('Inferencia citada.');
+        expect(conCita.sources).toHaveLength(1);
+    });
+
+    it('P2 sigue apagado: el esquema pide la forma de siempre', () => {
+        const criterio = JSON.stringify(canonicalVerseAnalysisSchema(voiceFor('JAS'), { withQuestions: true })).match(/"decisiveCriterion":\{.*?"required":\[[^\]]*\]/)?.[0] ?? '';
+        expect(criterio).toContain('"text"');
+        expect(criterio).not.toContain('"premises"');
     });
 
     it('sin preguntas no agrega el campo', () => {
@@ -226,8 +239,7 @@ describe('el aparato llega al criterio', () => {
         expect(userMessage + systemInstruction).toContain('dilo en el criterio: sobre qué lectura decide y por qué esa');
         const en = buildAnalyzerPrompt(entrada({ sectionQuestions: preguntas, language: 'en' } as never));
         expect(en.userMessage + en.systemInstruction).toContain('which reading it decides on and why that one');
-        // P2: lo que dicen las fuentes, separado de lo que infiere el análisis.
-        expect(userMessage + systemInstruction).toContain('separa lo que dicen las fuentes (`premises`, cada una con su cita) de lo que el análisis infiere de ellas (`inference`, SIN cita)');
-        expect(en.userMessage + en.systemInstruction).toContain('Never hang the inference on the sources');
+        // P2 sigue apagado: el analizador no pide premisas todavía.
+        expect(userMessage + systemInstruction).not.toContain('`premises`');
     });
 });

@@ -1,3 +1,4 @@
+import { ANALYZER_WRITES_PREMISES } from './analyzerOutputShape';
 import type { TestamentVoice } from '../testamentVoice';
 
 /**
@@ -608,7 +609,7 @@ function QUESTION_ANSWERS_SCHEMA() {
                         required: ['reading', 'argument', 'defenders'],
                     },
                 },
-                decisiveCriterion: {
+                decisiveCriterion: ANALYZER_WRITES_PREMISES ? {
                     type: 'object',
                     description: 'El criterio que DISTINGUE entre las lecturas. Un criterio que vale para las dos no decide nada.',
                     // P2: lo que dicen las fuentes, separado de lo que el análisis infiere.
@@ -629,6 +630,19 @@ function QUESTION_ANSWERS_SCHEMA() {
                         },
                     },
                     required: ['inference', 'whyThisOverThat', 'premises'],
+                } : {
+                    type: 'object',
+                    description: 'El criterio que DISTINGUE entre las lecturas. Un criterio que vale para las dos no decide nada.',
+                    properties: {
+                        text: { type: 'string', description: 'El criterio, de preferencia estructural o de la misma carta.' },
+                        whyThisOverThat: { type: 'string', description: 'Por qué favorece una lectura y NO la otra.' },
+                        sources: {
+                            type: 'array',
+                            description: 'Quién da el criterio, con su página. Vacío si el criterio es del análisis.',
+                            items: SOURCE_CITATION_SCHEMA(),
+                        },
+                    },
+                    required: ['text', 'whyThisOverThat', 'sources'],
                 },
                 decision: { type: 'string', description: 'La decisión, con la razón propia. Sin citas.' },
             },

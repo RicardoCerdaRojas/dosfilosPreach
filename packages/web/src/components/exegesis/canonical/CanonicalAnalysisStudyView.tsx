@@ -18,6 +18,8 @@ import {
 import {
     citedLocation,
     criterionStatement,
+    citedPremises,
+    criterionInference,
     hasCriterionPremises,
     formatPassageReference,
     type CanonicalVerseAnalysis,
@@ -203,6 +205,8 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                     title={t('canonical.study.answersTitle')}
                     hint={t('canonical.study.answersHint')}
                     count={analysis.questionAnswers!.length}
+                    // Al revisar citas: el chip de una premisa tiene que estar para llegar a él.
+                    defaultOpen={!!marks}
                 >
                     <ul className="space-y-3">
                         {analysis.questionAnswers!.map((q, i) => (
@@ -230,14 +234,20 @@ export function CanonicalAnalysisStudyView({ analysis, onOpenCitation, marks }: 
                                         // inferencia, rotulada como del análisis y sin cita.
                                         <>
                                             <ul className="space-y-1">
-                                                {q.decisiveCriterion.premises!.map((p, j) => (
+                                                {/* Sin filtrar: el índice es parte de la ruta de la marca. */}
+                                                {(q.decisiveCriterion.premises ?? []).map((p, j) => p.sources.length > 0 && (
                                                     <li key={j} className="space-y-0.5">
                                                         <p className="text-foreground/90">{p.text}</p>
                                                         <SourceList onOpenCitation={onOpenCitation} citations={p.sources} marks={marks} pathFor={k => `questionAnswers[${i}].decisiveCriterion.premises[${j}].sources[${k}]`} />
                                                     </li>
                                                 ))}
                                             </ul>
-                                            <p className="text-foreground"><span className="font-semibold">{t('canonical.study.answerInference')}</span> {criterionStatement(q.decisiveCriterion)}</p>
+                                            {citedPremises(q.decisiveCriterion).length === 0 && (
+                                                <p className="text-[11px] text-muted-foreground">{t('canonical.study.answerNoSources')}</p>
+                                            )}
+                                            {criterionInference(q.decisiveCriterion) && (
+                                                <p className="text-foreground"><span className="font-semibold">{t('canonical.study.answerInference')}</span> {criterionStatement(q.decisiveCriterion)}</p>
+                                            )}
                                         </>
                                     ) : (
                                         <p className="text-foreground">{q.decisiveCriterion.text}</p>

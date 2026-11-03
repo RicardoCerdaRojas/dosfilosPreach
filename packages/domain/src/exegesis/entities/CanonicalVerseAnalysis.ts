@@ -881,9 +881,17 @@ export function criterionStatement(dc: DecisiveCriterion | null | undefined): st
     return (criterionInference(dc) ?? dc?.text ?? '').trim();
 }
 
-/** Si el criterio tiene la forma con premisas (P2). */
+/** Si el criterio tiene la forma de P2: inferencia, premisas o las dos. */
 export function hasCriterionPremises(dc: DecisiveCriterion | null | undefined): boolean {
-    return !!dc?.premises && dc.premises.length > 0;
+    return !!criterionInference(dc) || (dc?.premises?.length ?? 0) > 0;
+}
+
+/**
+ * Las premisas que se pueden atribuir. Quitar la última cita de una premisa la deja
+ * sin fuente, y sin fuente no se puede decir que un autor la dijo.
+ */
+export function citedPremises(dc: DecisiveCriterion | null | undefined): CriterionPremise[] {
+    return (dc?.premises ?? []).filter(p => p.sources.length > 0);
 }
 
 // ── Empty-state factory ─────────────────────────────────────────────────
