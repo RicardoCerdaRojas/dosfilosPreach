@@ -77,7 +77,12 @@ export function stampCitationPageKind(
             questionAnswers: analysis.questionAnswers.map(q => ({
                 ...q,
                 options: q.options.map(o => ({ ...o, defenders: o.defenders.map(stamp) })),
-                decisiveCriterion: { ...q.decisiveCriterion, sources: q.decisiveCriterion.sources.map(stamp) },
+                decisiveCriterion: {
+                    ...q.decisiveCriterion,
+                    sources: q.decisiveCriterion.sources.map(stamp),
+                    // P2: las fuentes de cada premisa.
+                    ...(q.decisiveCriterion.premises ? { premises: q.decisiveCriterion.premises.map(p => ({ ...p, sources: p.sources.map(stamp) })) } : {}),
+                },
             })),
         } : {}),
     };

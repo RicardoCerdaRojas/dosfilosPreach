@@ -611,16 +611,24 @@ function QUESTION_ANSWERS_SCHEMA() {
                 decisiveCriterion: {
                     type: 'object',
                     description: 'El criterio que DISTINGUE entre las lecturas. Un criterio que vale para las dos no decide nada.',
+                    // P2: lo que dicen las fuentes, separado de lo que el análisis infiere.
                     properties: {
-                        text: { type: 'string', description: 'El criterio, de preferencia estructural o de la misma carta.' },
+                        inference: { type: 'string', description: 'El criterio: la conclusión del ANÁLISIS, de preferencia estructural o de la misma carta. SIN cita: no es lo que dice una fuente.' },
                         whyThisOverThat: { type: 'string', description: 'Por qué favorece una lectura y NO la otra.' },
-                        sources: {
+                        premises: {
                             type: 'array',
-                            description: 'Quién da el criterio, con su página. Vacío si el criterio es del análisis.',
-                            items: SOURCE_CITATION_SCHEMA(),
+                            description: 'Lo que dice cada fuente en que se apoya la inferencia, verificable, con su página. Vacío si la inferencia sale solo de la observación.',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    text: { type: 'string', description: 'Lo que ESA fuente dice, no la conclusión del análisis.' },
+                                    sources: { type: 'array', items: SOURCE_CITATION_SCHEMA() },
+                                },
+                                required: ['text', 'sources'],
+                            },
                         },
                     },
-                    required: ['text', 'whyThisOverThat', 'sources'],
+                    required: ['inference', 'whyThisOverThat', 'premises'],
                 },
                 decision: { type: 'string', description: 'La decisión, con la razón propia. Sin citas.' },
             },

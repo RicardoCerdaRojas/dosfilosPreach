@@ -38,6 +38,13 @@ describe('la decisión condicionada por el texto', () => {
         expect(conditioningVariants(null)).toEqual([]);
     });
 
+    it('con premisas (P2): la forma puede estar en una premisa y no en la inferencia', () => {
+        const a = conVariante('Otro criterio.');
+        (a.questionAnswers![0]!.decisiveCriterion as { inference?: string; premises?: unknown }).inference = 'El objeto es completo antes de la pregunta.';
+        (a.questionAnswers![0]!.decisiveCriterion as { premises?: unknown }).premises = [{ text: 'McCartney prefiere τὸ τῆς αὔριον.', sources: [{ sourceKey: 'McCartney', page: 230 }] }];
+        expect(conditioningVariants(a)).toEqual([expect.objectContaining({ questionNumber: 2, lemma: 'τὸ τῆς αὔριον' })]);
+    });
+
     it('también la traducción decidida, si cita la forma', () => {
         const a = conVariante('Otro criterio.', { finalTranslation: 'no saben τὸ τῆς αὔριον' } as never);
         expect(conditioningVariants(a)).toEqual([expect.objectContaining({ questionNumber: null })]);

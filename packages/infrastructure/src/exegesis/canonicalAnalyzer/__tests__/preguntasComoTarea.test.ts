@@ -80,6 +80,33 @@ describe('mapToCanonicalVerseAnalysis — questionAnswers', () => {
         }]);
     });
 
+    it('P2: la inferencia sin cita y las premisas con la suya; una premisa vacía se descarta', () => {
+        const a = mapToCanonicalVerseAnalysis({
+            ...base,
+            questionAnswers: [{
+                questionNumber: 4, directAnswer: 'x', decision: 'y', options: [],
+                decisiveCriterion: {
+                    inference: 'Ningún pasaje corresponde exactamente.',
+                    whyThisOverThat: 'w',
+                    premises: [{ text: 'Mayor no identifica la cita.', sources: [{ sourceKey: 'Mayor', page: 135 }] }, { text: '', sources: [] }, 'basura'],
+                },
+            }],
+        }, entrada({ sectionQuestions: preguntas }));
+        expect(a.questionAnswers![0]!.decisiveCriterion).toEqual({
+            text: 'Ningún pasaje corresponde exactamente.',
+            inference: 'Ningún pasaje corresponde exactamente.',
+            whyThisOverThat: 'w',
+            sources: [],
+            premises: [{ text: 'Mayor no identifica la cita.', sources: [{ sourceKey: 'Mayor', page: 135 }] }],
+        });
+    });
+
+    it('P2: el esquema pide la inferencia y las premisas', () => {
+        const criterio = JSON.stringify(canonicalVerseAnalysisSchema(voiceFor('JAS'), { withQuestions: true })).match(/"decisiveCriterion":\{.*?"required":\[[^\]]*\]/s)?.[0] ?? '';
+        expect(criterio).toContain('"inference"');
+        expect(criterio).toContain('"premises"');
+    });
+
     it('sin preguntas no agrega el campo', () => {
         expect(mapToCanonicalVerseAnalysis(base, entrada())).not.toHaveProperty('questionAnswers');
     });
@@ -199,5 +226,8 @@ describe('el aparato llega al criterio', () => {
         expect(userMessage + systemInstruction).toContain('dilo en el criterio: sobre qué lectura decide y por qué esa');
         const en = buildAnalyzerPrompt(entrada({ sectionQuestions: preguntas, language: 'en' } as never));
         expect(en.userMessage + en.systemInstruction).toContain('which reading it decides on and why that one');
+        // P2: lo que dicen las fuentes, separado de lo que infiere el análisis.
+        expect(userMessage + systemInstruction).toContain('separa lo que dicen las fuentes (`premises`, cada una con su cita) de lo que el análisis infiere de ellas (`inference`, SIN cita)');
+        expect(en.userMessage + en.systemInstruction).toContain('Never hang the inference on the sources');
     });
 });

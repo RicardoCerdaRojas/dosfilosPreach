@@ -55,6 +55,8 @@ const PATH_FIELDS = new Set([
     'options',
     'defenders',
     'decisiveCriterion',
+    // P2: `decisiveCriterion.premises[j].sources[k]`.
+    'premises',
 ]);
 
 interface PathStep {

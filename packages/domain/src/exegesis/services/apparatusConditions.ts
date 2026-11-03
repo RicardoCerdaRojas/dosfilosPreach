@@ -1,4 +1,4 @@
-import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
+import { criterionPremises, criterionStatement, type CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
 
 /**
  * Lo que dice el aparato llega al criterio y a la prosa (P1 de la fase
@@ -63,7 +63,8 @@ export function conditioningVariants(analysis: CanonicalVerseAnalysis | null): C
         };
         let encontrada = false;
         for (const q of analysis?.questionAnswers ?? []) {
-            if (menciona(q.decisiveCriterion?.text)) {
+            const criterio = [criterionStatement(q.decisiveCriterion), ...criterionPremises(q.decisiveCriterion).map(p => p.text)].join(' ');
+            if (menciona(criterio)) {
                 out.push({ ...base, questionNumber: q.questionNumber });
                 encontrada = true;
             }

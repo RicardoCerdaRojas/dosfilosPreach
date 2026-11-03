@@ -1,4 +1,4 @@
-import type { CanonicalVerseAnalysis, CitationPageKind } from '../entities/CanonicalVerseAnalysis';
+import { hasCriterionPremises, type CanonicalVerseAnalysis, type CitationPageKind } from '../entities/CanonicalVerseAnalysis';
 import type { ParsedCitation } from '../entities/CitationVerification';
 
 /**
@@ -108,10 +108,20 @@ export function collectAnalysisClaims(analysis: CanonicalVerseAnalysis): Analysi
         q.options.forEach((o, j) =>
             o.defenders.forEach((s, k) =>
                 push('answer-option', `questionAnswers[${i}].options[${j}].defenders[${k}]`, s, `${o.reading}: ${o.argument}`)));
-        (q.decisiveCriterion?.sources ?? []).forEach((s, k) =>
-            // Solo el criterio: el «por qué» es razonamiento del análisis, y
-            // juntarlo bajo la cita rehacía la afirmación mixta (revisión de 8b).
-            push('answer-criterion', `questionAnswers[${i}].decisiveCriterion.sources[${k}]`, s, q.decisiveCriterion.text));
+        if (hasCriterionPremises(q.decisiveCriterion)) {
+            // P2: cada fuente se coteja con SU premisa; la inferencia no lleva
+            // cita y no se verifica.
+            q.decisiveCriterion.premises!.forEach((p, j) =>
+                p.sources.forEach((s, k) =>
+                    push('answer-criterion', `questionAnswers[${i}].decisiveCriterion.premises[${j}].sources[${k}]`, s, p.text)));
+        } else {
+            // Lo guardado antes de P2 se enumera igual que siempre: los
+            // veredictos guardados se identifican por su lugar en esta lista.
+            (q.decisiveCriterion?.sources ?? []).forEach((s, k) =>
+                // Solo el criterio: el «por qué» es razonamiento del análisis, y
+                // juntarlo bajo la cita rehacía la afirmación mixta (revisión de 8b).
+                push('answer-criterion', `questionAnswers[${i}].decisiveCriterion.sources[${k}]`, s, q.decisiveCriterion.text));
+        }
     });
     return out;
 }

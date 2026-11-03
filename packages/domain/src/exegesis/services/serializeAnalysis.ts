@@ -1,3 +1,4 @@
+import { criterionStatement, hasCriterionPremises } from '../entities/CanonicalVerseAnalysis';
 import { conditioningVariants } from './apparatusConditions';
 import { citedLocation } from '../entities/CanonicalVerseAnalysis';
 import { formatPassageReference } from '../../bible/canon/passage-reference';
@@ -268,8 +269,17 @@ export function serializeAnalysis(
                 const quien = o.defenders.map(d => `${d.sourceKey} ${cite(d)}`).join('; ');
                 lines.push(`  · reading: ${prose(o.reading)} — ${prose(o.argument)}${quien ? ` (defended by: ${quien})` : ' (no defender in the corpus)'}`);
             }
-            const fuentes = q.decisiveCriterion.sources.map(d => `${d.sourceKey} ${cite(d)}`).join('; ');
-            lines.push(`  · decisive criterion: ${prose(q.decisiveCriterion.text)} — why this and not the other: ${prose(q.decisiveCriterion.whyThisOverThat)}${fuentes ? ` (sources: ${fuentes})` : ''}`);
+            if (hasCriterionPremises(q.decisiveCriterion)) {
+                // P2: la inferencia es del análisis y va sin cita; cada premisa
+                // lleva la fuente que la dice.
+                lines.push(`  · decisive criterion (the analysis's own inference — write it in the prose as the paper's own, WITHOUT a citation): ${prose(criterionStatement(q.decisiveCriterion))} — why this and not the other: ${prose(q.decisiveCriterion.whyThisOverThat)}`);
+                for (const p of q.decisiveCriterion.premises!) {
+                    lines.push(`    premise: ${prose(p.text)} (sources: ${p.sources.map(d => `${d.sourceKey} ${cite(d)}`).join('; ')})`);
+                }
+            } else {
+                const fuentes = q.decisiveCriterion.sources.map(d => `${d.sourceKey} ${cite(d)}`).join('; ');
+                lines.push(`  · decisive criterion: ${prose(q.decisiveCriterion.text)} — why this and not the other: ${prose(q.decisiveCriterion.whyThisOverThat)}${fuentes ? ` (sources: ${fuentes})` : ''}`);
+            }
             // P1: la decisión depende de una forma que el aparato da como dudosa.
             for (const v of condicionadas.filter(c => c.questionNumber === q.questionNumber)) {
                 lines.push(`  · CONDITIONED BY THE TEXT: the criterion depends on "${v.lemma}", which the apparatus also gives as ${[...v.rivals, ...(v.omission ? ['omission'] : [])].join(', ')}${v.witnesses ? ` (${v.witnesses})` : ''}. The prose MUST say which reading it decides on ("${v.adopted}") and why.`);
