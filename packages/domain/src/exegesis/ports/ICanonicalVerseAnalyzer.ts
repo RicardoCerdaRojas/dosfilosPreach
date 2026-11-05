@@ -5,6 +5,7 @@ import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis'
 import type { StepEmphasis } from '../entities/StepSourcePlan';
 import type { BriefQuestionKind } from '../services/briefQuestions';
 import type { ConcordanceEntry } from '../services/bookConcordance';
+import type { SourceMaterialRead } from '../services/materialRead';
 import type {
     ExegesisPriorStep,
     ExegesisSourceContext,
@@ -246,4 +247,10 @@ export interface AnalyzeVerseOutput {
      * completion). Null when the model did not report usage.
      */
     tokensUsed: number | null;
+
+    /**
+     * Por fuente, las hojas que quedaron en el prompt después del reparto del
+     * presupuesto. Ausente en un analizador que no lo informa.
+     */
+    materialRead?: ReadonlyArray<SourceMaterialRead>;
 }

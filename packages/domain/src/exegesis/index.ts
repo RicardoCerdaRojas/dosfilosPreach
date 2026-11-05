@@ -131,6 +131,7 @@ export * from './services/paperBibliography';
 export * from './services/ideaPlacement';
 export * from './services/pericopeContext';
 export * from './services/bookConcordance';
+export * from './services/materialRead';
 export * from './services/assemblyContents';
 export * from './services/apparatusConditions';
 export * from './services/coverSuggestion';

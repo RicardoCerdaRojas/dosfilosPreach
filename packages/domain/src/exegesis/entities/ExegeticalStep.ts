@@ -161,6 +161,13 @@ export interface ExegeticalStepVersion {
      */
     analysisMethod?: import('./ExegeticalPaper').ExegeticalMethod | null;
 
+    /**
+     * Lo que el análisis leyó de cada fuente: las hojas que quedaron en el
+     * prompt tras la selección y el reparto, y si el reparto cortó (PR 1 de
+     * «Del corpus al texto»). Ausente en lo generado antes.
+     */
+    materialRead?: ReadonlyArray<import('../services/materialRead').SourceMaterialRead> | null;
+
     /** When this version was produced (or saved, for edits). */
     createdAt: Date;
 

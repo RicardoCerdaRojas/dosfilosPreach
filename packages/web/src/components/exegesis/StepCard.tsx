@@ -36,6 +36,7 @@ import { destinoDeCita, type CitaEnlazada } from '@/components/exegesis/citation
 import { ProsaConCitas } from '@/components/exegesis/citation/ProsaConCitas';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { ObservationCitationNotice, StudentReadingPanel } from './StudentReadingPanel';
+import { MaterialReadNotice } from './MaterialReadNotice';
 import { useStudentReadingDraft } from './useStudentReadingDraft';
 import { VerseRecomposeDialog } from '@/components/exegesis/VerseRecomposeDialog';
 import { StepHeaderActions, type StepHeaderAction } from '@/components/exegesis/StepHeaderActions';
@@ -1089,6 +1090,10 @@ export function StepCard({ step, paperId, language, allSteps, assignmentBrief = 
                         sources={paperDeLasCitas.sources}
                         method={(step.state === 'awaiting-review' ? step.current ?? step.accepted : step.accepted ?? step.current)?.analysisMethod}
                     />
+                )}
+                {isVerse && canonicalAnalysis && (
+                    // De la misma versión que se muestra, como el aviso de arriba.
+                    <MaterialReadNotice materialRead={(step.state === 'awaiting-review' ? step.current ?? step.accepted : step.accepted ?? step.current)?.materialRead} />
                 )}
                 {isGenerating && (
                     <div className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">

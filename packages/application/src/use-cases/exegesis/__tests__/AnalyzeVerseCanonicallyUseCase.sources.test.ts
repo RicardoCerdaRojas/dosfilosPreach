@@ -649,6 +649,15 @@ describe('AnalyzeVerseCanonicallyUseCase — preguntas del encuadre', () => {
         expect(analyzer.analyzeVerse.mock.calls[0][0].bookConcordance).toBeNull();
     });
 
+    it('la versión guarda lo que el analizador dice que llegó al prompt', async () => {
+        const paper = makePaper([makeSource('Tuggy', 'res-a')]);
+        const { useCase, analyzer, versiones } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'] });
+        const leido = [{ sourceKey: 'Tuggy', label: 'Tuggy', read: 'p. 149', truncated: false, pinnedCut: false }];
+        analyzer.analyzeVerse.mockResolvedValueOnce({ analysis: analysisCiting(['Tuggy']), tokensUsed: 10, materialRead: leido });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(versiones[0]?.materialRead).toEqual(leido);
+    });
+
     it('si el libro no se puede leer, el análisis sigue sin concordancia', async () => {
         const paper = conPreguntas(makePaper([makeSource('Tuggy', 'res-a')]));
         const { useCase, analyzer } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'], greek: 'Ἰάκωβος θεοῦ δοῦλος', book: 'falla' });

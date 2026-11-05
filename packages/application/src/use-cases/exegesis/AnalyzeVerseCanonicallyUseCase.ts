@@ -286,6 +286,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                     canonicalAnalysis: verified.analysis,
                     // El método con que se pidió (etapa 2, capa 3).
                     ...(analyzerInput.method ? { analysisMethod: analyzerInput.method } : {}),
+                    // Lo que llegó al prompt de cada fuente (PR 1, «se ve lo que pasa»).
+                    ...(rawResult.materialRead ? { materialRead: rawResult.materialRead } : {}),
                 },
             );
         } catch (err) {

@@ -6,8 +6,10 @@ import {
     formatPassageReference,
     isObservationTool,
     separatesObservation,
+    summarizeReadAnchors,
     type AnalyzeVerseInput,
     type CanonicalVerseAnalysis,
+    type SourceMaterialRead,
 } from '@dosfilos/domain';
 import { PRIOR_ANALYSES_BUDGET_CHARS, allocateSourceBudgets, avisarFijadoRecortado, fitPromptToCap } from '../../llm/promptBudget';
 import { voiceFor } from '../testamentVoice';
@@ -31,15 +33,19 @@ import { buildStyleRulesBlock } from '../styleRulesBlock';
 interface BuiltAnalyzerPrompt {
     systemInstruction: string;
     userMessage: string;
+    /** Por fuente, lo que quedó en el mensaje después del reparto. */
+    materialRead: SourceMaterialRead[];
 }
 
 const SOURCE_BUDGET_CHARS_TOTAL = 220_000;
 const STYLE_GUIDE_BUDGET_CHARS = 20_000;
 
 export function buildAnalyzerPrompt(input: AnalyzeVerseInput): BuiltAnalyzerPrompt {
+    const materialRead: SourceMaterialRead[] = [];
     return {
         systemInstruction: buildSystemInstruction(input),
-        userMessage: buildUserMessage(input),
+        userMessage: buildUserMessage(input, materialRead),
+        materialRead,
     };
 }
 
@@ -198,10 +204,10 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
  * del servidor y un paper con cuatro comentarios extraídos completos hacía
  * fallar toda generación con `prompt excede 200000 caracteres`.
  */
-function buildUserMessage(input: AnalyzeVerseInput): string {
+function buildUserMessage(input: AnalyzeVerseInput, materialRead: SourceMaterialRead[]): string {
     return fitPromptToCap(
         sourcesBlock => renderUserMessage(input, sourcesBlock),
-        budget => formatSources(input.sources, input.language, budget),
+        budget => formatSources(input.sources, input.language, budget, materialRead),
         SOURCE_BUDGET_CHARS_TOTAL,
         'GeminiCanonicalVerseAnalyzer',
     );
@@ -541,6 +547,8 @@ function formatSources(
     sources: ReadonlyArray<AnalyzeVerseInput['sources'][number]>,
     lang: 'es' | 'en',
     budgetChars: number,
+    /** Se llena con lo que cada fuente deja en el mensaje. */
+    materialRead: SourceMaterialRead[] = [],
 ): string {
     if (sources.length === 0) {
         return lang === 'en'
@@ -557,6 +565,17 @@ function formatSources(
         sources.map(s => s.pinnedChars ?? 0),
     );
     avisarFijadoRecortado(sources, budgets, 'GeminiCanonicalVerseAnalyzer');
+    // Se registra con el mismo recorte que va al prompt, no con una cuenta aparte.
+    materialRead.splice(0, materialRead.length, ...sources.map((s, i) => {
+        const texto = s.textContent ?? '';
+        return {
+            sourceKey: s.citationKey ?? null,
+            label: s.displayLabel ?? s.citationKey ?? '',
+            read: summarizeReadAnchors(truncate(texto, budgets[i]!)),
+            truncated: texto.length > budgets[i]!,
+            pinnedCut: (s.pinnedChars ?? 0) > 0 && budgets[i]! < (s.pinnedChars ?? 0),
+        };
+    }));
 
     // v1.7+: lead the source block with a directive that names the
     // pinned sourceKeys so the model treats them as a contract, not a

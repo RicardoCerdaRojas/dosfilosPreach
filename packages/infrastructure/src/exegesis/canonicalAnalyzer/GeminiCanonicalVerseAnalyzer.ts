@@ -48,7 +48,7 @@ export class GeminiCanonicalVerseAnalyzer implements ICanonicalVerseAnalyzer {
     }
 
     async analyzeVerse(input: AnalyzeVerseInput): Promise<AnalyzeVerseOutput> {
-        const { systemInstruction, userMessage } = buildAnalyzerPrompt(input);
+        const { systemInstruction, userMessage, materialRead } = buildAnalyzerPrompt(input);
 
         console.log('[GeminiCanonicalVerseAnalyzer] analyzing', {
             verse: `${input.verseRef.bookId} ${input.verseRef.chapterStart}:${input.verseRef.verseStart}-${input.verseRef.verseEnd ?? input.verseRef.verseStart}`,
@@ -91,6 +91,7 @@ export class GeminiCanonicalVerseAnalyzer implements ICanonicalVerseAnalyzer {
             analysis,
             modelId: modeloUsado ?? this.modelName,
             tokensUsed,
+            materialRead,
         };
     }
 }
