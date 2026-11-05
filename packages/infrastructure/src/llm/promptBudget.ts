@@ -89,7 +89,8 @@ export function fitPromptToCap(
  * Los análisis previos SÍ van en el mensaje y crecen con el trabajo (hasta
  * 40.000): el medidor lo dice en pantalla.
  */
-const VERSE_FIXED_PARTS_CHARS = 6_000;
+// + 2.600 de la concordancia del libro (tope 2.500 más rótulos), desde el PR 1 de «Del corpus al texto».
+const VERSE_FIXED_PARTS_CHARS = 8_600;
 
 /**
  * Tope de los análisis ya aceptados que el analizador repite en cada versículo

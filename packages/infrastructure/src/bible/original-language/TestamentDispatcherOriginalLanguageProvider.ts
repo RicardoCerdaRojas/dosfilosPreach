@@ -72,4 +72,13 @@ export class TestamentDispatcherOriginalLanguageProvider implements IOriginalLan
         }
         return null;
     }
+
+    /** Solo el griego la implementa; un libro del AT devuelve `null`. */
+    async getBookMorphology(bookId: BibleBookId): Promise<ReadonlyArray<GreekVerseTokens> | null> {
+        for (const provider of [this.greek, this.hebrew]) {
+            if (!provider.supports(bookId)) continue;
+            return provider.getBookMorphology?.(bookId) ?? null;
+        }
+        return null;
+    }
 }

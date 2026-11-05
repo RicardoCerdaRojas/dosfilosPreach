@@ -106,6 +106,17 @@ export class SBLGNTBibleProvider implements IOriginalLanguageBibleProvider {
         return { reference: { chapter, verse }, text: entry.text, tokens: entry.tokens };
     }
 
+    /** El libro entero, en orden, del mismo archivo que el resto: sin una segunda fuente. */
+    async getBookMorphology(bookId: BibleBookId): Promise<ReadonlyArray<GreekVerseTokens> | null> {
+        if (!this.supports(bookId)) return null;
+        const book = await this.loadBook(bookId);
+        return [...book.entries()]
+            .sort(([a], [b]) => a - b)
+            .flatMap(([chapter, verses]) => [...verses.entries()]
+                .sort(([a], [b]) => a - b)
+                .map(([verse, entry]) => ({ reference: { chapter, verse }, text: entry.text, tokens: entry.tokens })));
+    }
+
     /**
      * Cuántas veces aparece un lema EN ESTE LIBRO. Derivado del archivo ya
      * cargado — runtime y gratis. El conteo NT-completo vive precomputado en
