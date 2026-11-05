@@ -24,6 +24,10 @@ describe('catálogo de cobro: paridad con el dominio', () => {
         for (const [k, o] of Object.entries(CATALOGO_DE_COBRO)) expect(o.maxLlamadas, k).toBeGreaterThanOrEqual(6);
     });
 
+    it('la prosa del versículo cubre dos llamadas: la segunda acorta si se pasó del presupuesto (PR 1)', () => {
+        expect(CATALOGO_DE_COBRO.composeVerseAcademicProse!.maxLlamadas).toBe(12);
+    });
+
     it('las etiquetas que NO cobran siguen sin cobrar (planificación, expositivo, bibliografía)', () => {
         for (const e of ['exegesis.planStepCorpus', 'exegesis.detectPericopes', 'exegesis.readBibliography', 'exegesis.classifySourceType', 'exegesis.expository.macro', 'sermon.consult']) {
             expect(ETIQUETAS_QUE_COBRAN.has(e), e).toBe(false);

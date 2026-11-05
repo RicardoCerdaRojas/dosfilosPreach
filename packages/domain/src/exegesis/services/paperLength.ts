@@ -311,3 +311,45 @@ export function buildWordBudgetBlock(words: number | null, language: 'es' | 'en'
             'Recorta amplitud, nunca rigor. Menos puntos, cada uno argumentado y citado entero — no los mismos puntos dichos más corto.',
         ].join('\n');
 }
+
+/**
+ * Cuánto puede pasarse una sección de su presupuesto antes de reescribirla.
+ *
+ * El margen de las compuertas de «Del corpus al texto» (§9): +8 %. Las
+ * instrucciones de argumentar y de vecinos alargaron la prosa un 12 % en 2 de
+ * 3 textos (compuerta R); pedir «aproximadamente N palabras» no bastó.
+ */
+export const WORD_BUDGET_TOLERANCE = 0.08;
+
+/**
+ * Si la prosa se pasó del presupuesto, contando como el documento: el cuerpo,
+ * sin las citas que bajan al pie. Sin presupuesto nunca se pasa.
+ */
+export function exceedsWordBudget(markdown: string, budget: number | null): { words: number; over: boolean } {
+    const words = estimateLength(markdown).words;
+    return { words, over: !!budget && budget > 0 && words > budget * (1 + WORD_BUDGET_TOLERANCE) };
+}
+
+/**
+ * La indicación para la segunda pasada, cuando la primera se pasó.
+ *
+ * Se le da el borrador y no solo la cifra: recomponer desde el análisis vuelve
+ * a escribir lo mismo de largo, y acortar un texto dado conserva lo que costó
+ * conseguir. Dice qué NO se recorta, porque es justo lo que las instrucciones
+ * de argumentar agregaron.
+ */
+export function buildShortenGuidance(draft: string, words: number, budget: number, language: 'es' | 'en'): string {
+    return language === 'en'
+        ? [
+            `The previous draft came out at ${words} words and the budget for this section is ${budget}. Rewrite it in no more than ${budget} words.`,
+            'Cut repetition and morphological description that decides nothing. Keep the answer to every question, every citation with its page, the support from the context and the answer to the rival reading.',
+            'Draft to shorten:',
+            draft.trim(),
+        ].join('\n')
+        : [
+            `El borrador anterior salió con ${words} palabras y el presupuesto de esta sección es ${budget}. Reescríbelo en no más de ${budget} palabras.`,
+            'Recorta repetición y descripción morfológica que no decide nada. Conserva la respuesta a cada pregunta, cada cita con su página, el apoyo del contexto y la respuesta a la lectura rival.',
+            'Borrador a acortar:',
+            draft.trim(),
+        ].join('\n');
+}

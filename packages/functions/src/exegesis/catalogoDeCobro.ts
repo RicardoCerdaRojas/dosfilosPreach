@@ -30,7 +30,8 @@ const DOS = 12;
 
 export const CATALOGO_DE_COBRO: Readonly<Record<string, OperacionCobrada>> = {
     analyzeVerseCanonically: { costoUsd: 0.10, etiquetas: ['exegesis.analyzeVerse'], maxLlamadas: UNA },
-    composeVerseAcademicProse: { costoUsd: 0.02, etiquetas: ['exegesis.composeVerse'], maxLlamadas: UNA },
+    // DOS: si la prosa se pasa del presupuesto, una segunda pasada la acorta (`composeWithinBudget`).
+    composeVerseAcademicProse: { costoUsd: 0.02, etiquetas: ['exegesis.composeVerse'], maxLlamadas: DOS },
     composeConclusionFromAnalyses: { costoUsd: 0.06, etiquetas: ['exegesis.composeConclusion'], maxLlamadas: DOS },
     composeIntroductionFromAnalyses: { costoUsd: 0.06, etiquetas: ['exegesis.composeIntroduction'], maxLlamadas: DOS },
     composeAcademicPaper: { costoUsd: 0.20, etiquetas: ['exegesis.composeAcademicPaper'], maxLlamadas: DOS },
