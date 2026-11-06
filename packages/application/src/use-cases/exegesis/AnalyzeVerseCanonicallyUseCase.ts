@@ -21,8 +21,10 @@ import type {
     SourceCitation,
     IPageNumberingReader,
     PageNumbering,
+    ConcordanceEntry,
 } from '@dosfilos/domain';
 import {
+    buildBookConcordance,
     formatPericopeContext,
     pericopeContextRange,
     EMPTY_VERIFICATION_SUMMARY,
@@ -145,6 +147,13 @@ export class AnalyzeVerseCanonicallyUseCase {
             const sources = await this.loadSourceContexts(
                 paper, step.id, step.verseRef!, originalLanguageText, numberings,
             );
+            const sectionQuestions = questionsOfStep(step, parseBriefQuestions(paper.assignmentBrief, paper.passage))
+                .map(q => ({ number: q.number, text: q.text, kinds: questionKinds(q.text) }));
+            // Solo con preguntas: es donde la compuerta R la midió, junto con
+            // la regla de argumentar que la usa.
+            const bookConcordance = sectionQuestions.length > 0
+                ? await this.loadBookConcordance(paper.passage, step.verseRef!)
+                : null;
             const priorAcceptedAnalyses = collectPriorAcceptedAnalyses(paper, step);
             const stepEmphasis = paper.stepPlan.defaults.verse ?? null;
 
@@ -183,8 +192,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                 studentReading: paper.stepPlan.perStep[step.id]?.studentReading?.trim() || null,
                 verseMorphology,
                 // Las preguntas de este versículo como TAREA, con su tipo (C1).
-                sectionQuestions: questionsOfStep(step, parseBriefQuestions(paper.assignmentBrief, paper.passage))
-                    .map(q => ({ number: q.number, text: q.text, kinds: questionKinds(q.text) })),
+                sectionQuestions,
+                bookConcordance,
                 // Las reglas propias del curso, también al analizar (E2).
                 styleRules: await loadCourseStyleRules(this.styleGuideRepository, input.ownerId, paper, 'AnalyzeVerseCanonically'),
             };
@@ -277,6 +286,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                     canonicalAnalysis: verified.analysis,
                     // El método con que se pidió (etapa 2, capa 3).
                     ...(analyzerInput.method ? { analysisMethod: analyzerInput.method } : {}),
+                    // Lo que llegó al prompt de cada fuente (PR 1, «se ve lo que pasa»).
+                    ...(rawResult.materialRead ? { materialRead: rawResult.materialRead } : {}),
                 },
             );
         } catch (err) {
@@ -400,6 +411,26 @@ export class AnalyzeVerseCanonicallyUseCase {
             );
         } catch (err) {
             console.warn('[AnalyzeVerseCanonically] sin morfología tabulada para el versículo:', err);
+            return null;
+        }
+    }
+
+    /**
+     * La concordancia interna del libro, calculada de su morfología. Un fallo
+     * aquí no interrumpe el análisis: sin ella, trabaja como antes.
+     */
+    private async loadBookConcordance(
+        paperPassage: PassageReference,
+        verseRef: PassageReference,
+    ): Promise<ConcordanceEntry[] | null> {
+        const provider = this.originalLanguageProvider;
+        if (!provider?.getBookMorphology || !provider.supports(verseRef.bookId)) return null;
+        try {
+            const book = await provider.getBookMorphology(verseRef.bookId);
+            if (!book) return null;
+            return buildBookConcordance({ book, verseRef, paperPassage });
+        } catch (err) {
+            console.warn('[AnalyzeVerseCanonically] sin concordancia del libro:', err);
             return null;
         }
     }

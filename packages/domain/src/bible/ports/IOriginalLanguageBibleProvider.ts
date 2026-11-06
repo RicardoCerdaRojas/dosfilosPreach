@@ -75,4 +75,13 @@ export interface IOriginalLanguageBibleProvider {
         chapter: number,
         verse: number,
     ): Promise<GreekVerseTokens | HebrewVerseMorphology | null>;
+
+    /**
+     * El libro entero con su morfología, versículo por versículo, para la
+     * concordancia interna del libro (`buildBookConcordance`).
+     *
+     * OPCIONAL y solo griego: la concordancia se midió sobre MorphGNT. Quien
+     * no lo implemente deja al analizador sin concordancia, como antes.
+     */
+    getBookMorphology?(bookId: BibleBookId): Promise<ReadonlyArray<GreekVerseTokens> | null>;
 }

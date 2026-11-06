@@ -33,6 +33,8 @@ import {
     isCitableSourceType,
     pertenceAlDocumento,
     verseWordBudget,
+    exceedsWordBudget,
+    buildShortenGuidance,
     type AcademicVoiceSample,
     briefWithExclusions,
 } from '@dosfilos/domain';
@@ -96,6 +98,12 @@ export interface ComposeVerseAcademicProseOutput extends ComposeVerseOutput {
  *   - Persistence throws → bubble (small payload, simple write — no
  *     "save it elsewhere" fallback).
  */
+/**
+ * Lo mínimo que puede quedar la prosa acortada, como parte del presupuesto.
+ * En la medición del PR 1 la segunda pasada dejó 270 y 290 de 300 (0,9).
+ */
+const MIN_SHORTENED_SHARE = 0.7;
+
 export class ComposeVerseAcademicProseUseCase {
     constructor(
         private paperRepository: IExegeticalPaperRepository,
@@ -218,7 +226,7 @@ export class ComposeVerseAcademicProseUseCase {
                 })(),
             };
             reservation.markLlmContacted();
-            const raw = await this.composer.composeVerse(composerInput);
+            const raw = await this.composeWithinBudget(composerInput, wordBudget);
 
             // Optional deterministic style formatter — same pattern as
             // the whole-paper composer.
@@ -281,6 +289,48 @@ export class ComposeVerseAcademicProseUseCase {
         }
     }
 
+
+    /**
+     * Compone y, si la prosa se pasó del presupuesto más el margen, la acorta
+     * en una segunda pasada sobre el mismo borrador. Se queda con la más corta
+     * de las dos: una segunda pasada que no acortó no reemplaza a la primera.
+     *
+     * Una sola reintentada: si tampoco entra, el autor ve la extensión en el
+     * medidor del trabajo y decide; tres llamadas por versículo no se cobran
+     * en silencio.
+     */
+    private async composeWithinBudget(
+        composerInput: ComposeVerseInput,
+        wordBudget: number | null,
+    ): Promise<ComposeVerseOutput> {
+        const first = await this.composer.composeVerse(composerInput);
+        const medida = exceedsWordBudget(first.markdown, wordBudget);
+        if (!medida.over || !wordBudget) return first;
+
+        const acortar = buildShortenGuidance(first.markdown, medida.words, wordBudget, composerInput.language);
+        let second: ComposeVerseOutput;
+        try {
+            second = await this.composer.composeVerse({
+                ...composerInput,
+                guidance: composerInput.guidance ? `${composerInput.guidance}\n\n${acortar}` : acortar,
+            });
+        } catch (err) {
+            // La primera prosa es buena y ya se pagó: un fallo al acortar no la pierde.
+            console.warn('[ComposeVerseAcademicProseUseCase] la segunda pasada falló; queda la primera:', err);
+            return first;
+        }
+        const segunda = exceedsWordBudget(second.markdown, wordBudget);
+        console.info('[ComposeVerseAcademicProseUseCase] prosa sobre el presupuesto, segunda pasada:', {
+            presupuesto: wordBudget, primera: medida.words, segunda: segunda.words,
+        });
+        // Más corta, pero no degenerada: muy por debajo del presupuesto suele
+        // ser una prosa que dejó respuestas o citas en el camino.
+        const sirve = segunda.words < medida.words && segunda.words >= wordBudget * MIN_SHORTENED_SHARE;
+        const elegida = sirve ? second : first;
+        // Las dos pasadas se gastaron: el registro las cuenta a ambas.
+        const tokens = (first.tokensUsed ?? 0) + (second.tokensUsed ?? 0);
+        return { ...elegida, tokensUsed: first.tokensUsed == null && second.tokensUsed == null ? null : tokens };
+    }
 
     /**
      * Las palabras que este autor no usa.

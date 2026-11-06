@@ -6,8 +6,10 @@ import {
     formatPassageReference,
     isObservationTool,
     separatesObservation,
+    summarizeReadAnchors,
     type AnalyzeVerseInput,
     type CanonicalVerseAnalysis,
+    type SourceMaterialRead,
 } from '@dosfilos/domain';
 import { PRIOR_ANALYSES_BUDGET_CHARS, allocateSourceBudgets, avisarFijadoRecortado, fitPromptToCap } from '../../llm/promptBudget';
 import { voiceFor } from '../testamentVoice';
@@ -31,15 +33,19 @@ import { buildStyleRulesBlock } from '../styleRulesBlock';
 interface BuiltAnalyzerPrompt {
     systemInstruction: string;
     userMessage: string;
+    /** Por fuente, lo que quedó en el mensaje después del reparto. */
+    materialRead: SourceMaterialRead[];
 }
 
 const SOURCE_BUDGET_CHARS_TOTAL = 220_000;
 const STYLE_GUIDE_BUDGET_CHARS = 20_000;
 
 export function buildAnalyzerPrompt(input: AnalyzeVerseInput): BuiltAnalyzerPrompt {
+    const materialRead: SourceMaterialRead[] = [];
     return {
         systemInstruction: buildSystemInstruction(input),
-        userMessage: buildUserMessage(input),
+        userMessage: buildUserMessage(input, materialRead),
+        materialRead,
     };
 }
 
@@ -119,6 +125,8 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             // fuente técnica no autoriza a reconstruir una sección ausente…».
             `- The output is the student's paper. Never write about the corpus, the excerpts, the usage plan, source roles or what the provided material lacks. If the material does not support a point, omit it or mark it tentative in confidenceFlags.`,
             methodBlock,
+            // Junto al método y no al final: el servidor corta la instrucción de sistema por el final.
+            formatArgumentChecks(input.sectionQuestions, lang, !!input.bookConcordance?.length),
             workMethodBlock,
             corpusGapsBlock,
             ``,
@@ -175,6 +183,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         `- Separa lo que dice la fuente de lo que concluyes tú. En cada entrada con fuente, el campo citado dice SÓLO lo que esa fuente dice; tu conclusión va en "ownInference", sin cita. «Mayor lee la activa como pedir para sí (p. 133)» es la fuente; «por eso el contraste es de motivo» es tuyo.`,
         `- Lo que escribes es el trabajo del estudiante. Nunca hables del corpus, de los fragmentos, del plan de uso, de los roles de las fuentes ni de lo que falta en el material provisto. Si el material no sostiene un punto, omítelo o márcalo tentative en confidenceFlags.`,
         methodBlock,
+        formatArgumentChecks(input.sectionQuestions, lang, !!input.bookConcordance?.length),
         workMethodBlock,
         corpusGapsBlock,
         ``,
@@ -195,10 +204,10 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
  * del servidor y un paper con cuatro comentarios extraídos completos hacía
  * fallar toda generación con `prompt excede 200000 caracteres`.
  */
-function buildUserMessage(input: AnalyzeVerseInput): string {
+function buildUserMessage(input: AnalyzeVerseInput, materialRead: SourceMaterialRead[]): string {
     return fitPromptToCap(
         sourcesBlock => renderUserMessage(input, sourcesBlock),
-        budget => formatSources(input.sources, input.language, budget),
+        budget => formatSources(input.sources, input.language, budget, materialRead),
         SOURCE_BUDGET_CHARS_TOTAL,
         'GeminiCanonicalVerseAnalyzer',
     );
@@ -283,6 +292,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
             ``,
             priorAnalysesBlock,
             hint,
+            formatBookConcordance(input.bookConcordance, lang),
         ].filter(Boolean).join('\n');
     }
 
@@ -332,6 +342,7 @@ function renderUserMessage(input: AnalyzeVerseInput, sourcesBlock: string): stri
         ``,
         priorAnalysesBlock,
         hint,
+        formatBookConcordance(input.bookConcordance, lang),
     ].filter(Boolean).join('\n');
 }
 
@@ -407,6 +418,82 @@ export function formatAnswerMethod(
     ]).join('\n');
 }
 
+/**
+ * Argumentar: tres comprobaciones antes de decidir (§6 bis de
+ * `docs/FASE_DEL_CORPUS_AL_TEXTO_2026-11.md`).
+ *
+ * Las tres correcciones de fondo del TP #10 fueron de argumentación: la rival
+ * sin responder, un criterio que valía para las dos lecturas y 5:6 sin el
+ * apoyo de 5:4–5 y 2:6. `formatAnswerMethod` ya pedía lo primero y lo segundo,
+ * y el modelo no lo cumplió: esto exige RESPONDER dentro de `whyThisOverThat`
+ * y usar la concordancia calculada. Es el texto medido en la compuerta R
+ * (`research_notes/compuerta_r_2026-11-05/resultado.md`); el inglés es su
+ * traducción, sin medir.
+ */
+export function formatArgumentChecks(
+    questions: AnalyzeVerseInput['sectionQuestions'],
+    lang: 'es' | 'en',
+    /** Sin concordancia (hebreo, o el libro no se pudo leer) la regla no la nombra: invitaría a citar de memoria. */
+    withConcordance = false,
+): string {
+    if (!questions || questions.length === 0) return '';
+    return (lang === 'en' ? [
+        ``,
+        `## Argue: three checks before deciding (on every question)`,
+        `1. ANSWER THE RIVAL: in \`whyThisOverThat\`, start from the \`argument\` of the strongest rival reading: name it and say why it does not decide. If a corpus sheet carries the datum that answers it (a parallel use, a comparable construction), cite it with its page.`,
+        `2. TEST YOUR CRITERION: if your criterion also holds for the rival reading, say so in \`whyThisOverThat\` and look for one that does not hold for it. If you cannot find one, present the decision as tentative.`,
+        `3. SUPPORT WITH THE CONTEXT: use the verses of the pericope you received${withConcordance ? ' and the passages of the same book in the computed concordance' : ''}. Name the verse and what it contributes to the decision. Only links the text shows.`,
+    ] : [
+        ``,
+        `## Argumentar: tres comprobaciones antes de decidir (en cada pregunta)`,
+        `1. RESPONDE A LA RIVAL: en \`whyThisOverThat\`, empieza por el \`argument\` de la lectura rival más fuerte: nómbralo y di por qué no decide. Si una hoja del corpus trae el dato que lo responde (un uso paralelo, una construcción comparable), cítalo con su página.`,
+        `2. PRUEBA TU CRITERIO: si tu criterio también se cumple con la lectura rival, dilo en \`whyThisOverThat\` y busca uno que no se cumpla con ella. Si no lo hallas, presenta la decisión como tentativa.`,
+        `3. APOYA CON EL CONTEXTO: usa los versículos de la perícopa que recibiste${withConcordance ? ' y los pasajes del mismo libro de la concordancia calculada' : ''}. Nombra el versículo y lo que aporta a la decisión. Solo vínculos que el texto muestra.`,
+    ]).join('\n');
+}
+
+/**
+ * Tope de la concordancia en el prompt. El de la compuerta R: con él, 5:3 y
+ * 5:6 entraron enteros y no desplaza fuentes (el resto del mensaje se ajusta
+ * con `fitPromptToCap`).
+ */
+export const CONCORDANCE_BUDGET_CHARS = 2_500;
+
+/**
+ * La concordancia interna del libro, como datos. Los lemas del versículo van
+ * primero: si el tope corta, corta los del resto del pasaje. Corta por línea
+ * entera, nunca a mitad de un versículo griego.
+ */
+export function formatBookConcordance(
+    entries: AnalyzeVerseInput['bookConcordance'],
+    lang: 'es' | 'en',
+): string {
+    if (!entries || entries.length === 0) return '';
+    const linea = (e: NonNullable<typeof entries>[number]) =>
+        `- ${e.lemma}: ${e.occurrences.map(o => `${o.chapter}:${o.verse} ${o.text}`).join(' | ')}`;
+    const cabecera = lang === 'en'
+        ? [``, `## Internal concordance of the book (computed from the Greek text; outside the pericope)`]
+        : [``, `## Concordancia interna del libro (calculada del texto griego; fuera de la perícopa)`];
+    const rotuloVerso = lang === 'en' ? 'Lemmas of this verse and their other occurrences:' : 'Lemas de este versículo y sus otras apariciones:';
+    const rotuloPasaje = lang === 'en' ? 'Lemmas of the rest of the pericope:' : 'Lemas del resto de la perícopa:';
+    const ninguno = lang === 'en' ? '- none' : '- ninguno';
+    const delVerso = entries.filter(e => e.inVerse).map(linea);
+    const delPasaje = entries.filter(e => !e.inVerse).map(linea);
+    const lineas = [...cabecera, rotuloVerso, ...(delVerso.length ? delVerso : [ninguno]), rotuloPasaje, ...(delPasaje.length ? delPasaje : [ninguno])];
+
+    const salida: string[] = [];
+    let usados = 0;
+    let omitidos = 0;
+    for (const l of lineas) {
+        const esLema = l.startsWith('- ') && l !== ninguno;
+        if (esLema && usados + l.length + 1 > CONCORDANCE_BUDGET_CHARS) { omitidos++; continue; }
+        salida.push(l);
+        usados += l.length + 1;
+    }
+    if (omitidos > 0) salida.push(lang === 'en' ? `[${omitidos} lemmas left out for length]` : `[${omitidos} lemas fuera por extensión]`);
+    return salida.join('\n');
+}
+
 function formatAssignmentBrief(brief: string | null, lang: 'es' | 'en'): string {
     if (!brief || !brief.trim()) return '';
     const heading = lang === 'en' ? '## Paper framing' : '## Encuadre del paper';
@@ -460,6 +547,8 @@ function formatSources(
     sources: ReadonlyArray<AnalyzeVerseInput['sources'][number]>,
     lang: 'es' | 'en',
     budgetChars: number,
+    /** Se llena con lo que cada fuente deja en el mensaje. */
+    materialRead: SourceMaterialRead[] = [],
 ): string {
     if (sources.length === 0) {
         return lang === 'en'
@@ -476,6 +565,17 @@ function formatSources(
         sources.map(s => s.pinnedChars ?? 0),
     );
     avisarFijadoRecortado(sources, budgets, 'GeminiCanonicalVerseAnalyzer');
+    // Se registra con el mismo recorte que va al prompt, no con una cuenta aparte.
+    materialRead.splice(0, materialRead.length, ...sources.map((s, i) => {
+        const texto = s.textContent ?? '';
+        return {
+            sourceKey: s.citationKey ?? null,
+            label: s.displayLabel ?? s.citationKey ?? '',
+            read: summarizeReadAnchors(truncate(texto, budgets[i]!)),
+            truncated: texto.length > budgets[i]!,
+            pinnedCut: (s.pinnedChars ?? 0) > 0 && budgets[i]! < (s.pinnedChars ?? 0),
+        };
+    }));
 
     // v1.7+: lead the source block with a directive that names the
     // pinned sourceKeys so the model treats them as a contract, not a

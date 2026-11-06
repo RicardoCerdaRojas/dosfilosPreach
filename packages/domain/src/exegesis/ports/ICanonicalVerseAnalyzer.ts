@@ -4,6 +4,8 @@ import type { PassageReference } from '../../bible/canon/passage-reference';
 import type { CanonicalVerseAnalysis } from '../entities/CanonicalVerseAnalysis';
 import type { StepEmphasis } from '../entities/StepSourcePlan';
 import type { BriefQuestionKind } from '../services/briefQuestions';
+import type { ConcordanceEntry } from '../services/bookConcordance';
+import type { SourceMaterialRead } from '../services/materialRead';
 import type {
     ExegesisPriorStep,
     ExegesisSourceContext,
@@ -93,6 +95,15 @@ export interface AnalyzeVerseInput {
      * versículo— o cuando el proveedor no responde.
      */
     pericopeContext: string | null;
+
+    /**
+     * La concordancia interna del libro (`buildBookConcordance`): los lemas
+     * poco frecuentes del versículo y del pasaje, con sus apariciones en el
+     * resto del libro. Es la evidencia del contexto que la devolución del
+     * TP #10 pidió (5:6 con 2:6). Ausente o nula sin preguntas, en hebreo o
+     * cuando el proveedor no la da.
+     */
+    bookConcordance?: ReadonlyArray<ConcordanceEntry> | null;
 
     /**
      * Free-text framing of the paper — typically the assignment
@@ -236,4 +247,10 @@ export interface AnalyzeVerseOutput {
      * completion). Null when the model did not report usage.
      */
     tokensUsed: number | null;
+
+    /**
+     * Por fuente, las hojas que quedaron en el prompt después del reparto del
+     * presupuesto. Ausente en un analizador que no lo informa.
+     */
+    materialRead?: ReadonlyArray<SourceMaterialRead>;
 }

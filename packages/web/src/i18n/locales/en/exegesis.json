@@ -75,6 +75,13 @@
       "oldTestamentLinks": "OT links"
     }
   },
+  "materialRead": {
+    "title": "What the analysis read",
+    "hint": "The sheets of each source that reached this analysis. Anything not listed here was not read, even if it is selected.",
+    "truncated": "cut for length",
+    "pinnedCut": "the pinned pages did not fit",
+    "noAnchors": "text without pages"
+  },
   "directory": {
     "badge": "Assisted exegetical research papers",
     "heroTitle": "Exegetical Research",

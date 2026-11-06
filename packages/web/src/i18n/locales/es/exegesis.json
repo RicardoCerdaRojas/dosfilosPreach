@@ -75,6 +75,13 @@
       "oldTestamentLinks": "los vínculos con el AT"
     }
   },
+  "materialRead": {
+    "title": "Lo que leyó el análisis",
+    "hint": "Las hojas de cada fuente que llegaron a este análisis. Lo que no está aquí no se leyó, aunque esté elegido.",
+    "truncated": "recortada por extensión",
+    "pinnedCut": "lo fijado no cupo entero",
+    "noAnchors": "texto sin páginas"
+  },
   "directory": {
     "badge": "Trabajo de investigación exegética asistida",
     "heroTitle": "Investigación exegética",

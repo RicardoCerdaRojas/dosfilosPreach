@@ -130,6 +130,8 @@ function buildUseCase(opts: {
     emptyFor?: string[];
     /** Lo que el lector de contenido entrega para el documento entero. */
     fullText?: string;
+    /** El libro con su morfología, para la concordancia; `'falla'` hace que el proveedor lance. */
+    book?: unknown[] | 'falla';
 }) {
     const appended: CanonicalVerseAnalysis[] = [];
     const versiones: Array<Record<string, unknown>> = [];
@@ -167,6 +169,11 @@ function buildUseCase(opts: {
         ? {
             supports: () => true,
             getChapterContent: vi.fn().mockResolvedValue([opts.greek]),
+            ...(opts.book ? {
+                getBookMorphology: opts.book === 'falla'
+                    ? vi.fn().mockRejectedValue(new Error('CDN caído'))
+                    : vi.fn().mockResolvedValue(opts.book),
+            } : {}),
         }
         : undefined;
     const useCase = new AnalyzeVerseCanonicallyUseCase(
@@ -618,6 +625,45 @@ describe('AnalyzeVerseCanonicallyUseCase — preguntas del encuadre', () => {
         expect(analyzer.analyzeVerse.mock.calls[0][0].sectionQuestions).toEqual([
             { number: 1, text: '¿Qué significa δοῦλος (Stg. 1:1)?', kinds: ['lexical'] },
         ]);
+    });
+
+    // TP #10: la evidencia del contexto (2:6 para 5:6) estaba en el mismo libro.
+    const LIBRO = [
+        { reference: { chapter: 1, verse: 1 }, text: 'Ἰάκωβος θεοῦ δοῦλος', tokens: [{ text: 'δοῦλος', lemma: 'δοῦλος', pos: 'N' }] },
+        { reference: { chapter: 4, verse: 4 }, text: 'texto de 4:4', tokens: [{ text: 'δοῦλος', lemma: 'δοῦλος', pos: 'N' }] },
+    ];
+
+    it('con preguntas, pasa la concordancia del libro calculada de su morfología', async () => {
+        const paper = conPreguntas(makePaper([makeSource('Tuggy', 'res-a')]));
+        const { useCase, analyzer } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'], greek: 'Ἰάκωβος θεοῦ δοῦλος', book: LIBRO });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(analyzer.analyzeVerse.mock.calls[0][0].bookConcordance).toEqual([
+            { lemma: 'δοῦλος', inVerse: true, occurrences: [{ chapter: 4, verse: 4, text: 'texto de 4:4' }] },
+        ]);
+    });
+
+    it('sin preguntas no hay concordancia: no se midió ahí', async () => {
+        const paper = makePaper([makeSource('Tuggy', 'res-a')]);
+        const { useCase, analyzer } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'], greek: 'Ἰάκωβος θεοῦ δοῦλος', book: LIBRO });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(analyzer.analyzeVerse.mock.calls[0][0].bookConcordance).toBeNull();
+    });
+
+    it('la versión guarda lo que el analizador dice que llegó al prompt', async () => {
+        const paper = makePaper([makeSource('Tuggy', 'res-a')]);
+        const { useCase, analyzer, versiones } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'] });
+        const leido = [{ sourceKey: 'Tuggy', label: 'Tuggy', read: 'p. 149', truncated: false, pinnedCut: false }];
+        analyzer.analyzeVerse.mockResolvedValueOnce({ analysis: analysisCiting(['Tuggy']), tokensUsed: 10, materialRead: leido });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(versiones[0]?.materialRead).toEqual(leido);
+    });
+
+    it('si el libro no se puede leer, el análisis sigue sin concordancia', async () => {
+        const paper = conPreguntas(makePaper([makeSource('Tuggy', 'res-a')]));
+        const { useCase, analyzer } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'], greek: 'Ἰάκωβος θεοῦ δοῦλος', book: 'falla' });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(analyzer.analyzeVerse).toHaveBeenCalledTimes(1);
+        expect(analyzer.analyzeVerse.mock.calls[0][0].bookConcordance).toBeNull();
     });
 
     it('P2: la premisa que solo cita una fuente ajena al corpus se quita; la otra queda sellada', async () => {

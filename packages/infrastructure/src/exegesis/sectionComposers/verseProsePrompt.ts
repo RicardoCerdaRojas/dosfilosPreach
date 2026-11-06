@@ -46,12 +46,32 @@ OUTPUT FORMAT:
 - No title, no "Verse N:" — prose starts directly.
 - No bibliography section — that lives in the whole-paper composer.`;
 
+/**
+ * La regla de versículos vecinos (§7 de `docs/FASE_DEL_CORPUS_AL_TEXTO_2026-11.md`).
+ *
+ * La prohibición absoluta (#110) chocaba con el profesor: el TP #10 se corrigió
+ * en 5:6 por no apoyarse en 5:4–5 y 2:6, y el análisis ya traía el vínculo. Con
+ * la regla nueva y la de argumentar del analizador, la compuerta R pasó 3 de 3;
+ * con cada una sola, 0. Solo en trabajos con preguntas, que es donde se midió:
+ * con 300 palabras por versículo y no con secciones largas de un TI.
+ */
+const VECINOS_PROHIBIDOS = {
+    es: '- NUNCA escribas sobre versículos vecinos. Solo este versículo.',
+    en: '- NEVER write about adjacent verses. This verse only.',
+} as const;
+const VECINOS_CUANDO_EL_ANALISIS_LOS_VINCULA = {
+    es: '- Escribe sobre este versículo. Menciona un versículo vecino cuando el análisis lo vincule o cuando ese vínculo explique la función del verso (por ejemplo, una palabra retomada o una construcción compartida).',
+    en: '- Write about this verse. Mention a neighboring verse when the analysis links it or when that link explains the verse\'s function (for example, a word taken up again or a shared construction).',
+} as const;
+
 export function buildVerseProsePrompt(input: ComposeVerseInput): {
     systemInstruction: string;
     userMessage: string;
 } {
     const lang = input.language;
-    const baseInstruction = lang === 'en' ? EN_INSTRUCTION : ES_INSTRUCTION;
+    const conPreguntas = (input.sectionQuestions ?? []).length > 0;
+    const baseInstruction = (lang === 'en' ? EN_INSTRUCTION : ES_INSTRUCTION)
+        .replace(VECINOS_PROHIBIDOS[lang], conPreguntas ? VECINOS_CUANDO_EL_ANALISIS_LOS_VINCULA[lang] : VECINOS_PROHIBIDOS[lang]);
 
     const styleGuideBlock = input.styleGuideContent.trim().length > 0
         ? [
