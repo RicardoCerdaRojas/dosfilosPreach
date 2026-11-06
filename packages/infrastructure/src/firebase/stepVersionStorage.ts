@@ -12,13 +12,24 @@ import type { VerifiedCitation } from '@dosfilos/domain';
  * copia entera, porque hay quien lee el documento sin pasar por aquí
  * (`getExegesisPapersSummary`). Las referencias se recalculan en cada escritura.
  *
- * **Se despliega en dos pasos.** El código anterior no entiende las referencias:
+ * **Se desplegó en dos pasos.** El código anterior no entiende las referencias:
  * una pestaña abierta durante el despliegue leería versiones sin análisis y, al
- * escribir, las volvería definitivas. Primero sale la lectura; la escritura se
- * enciende en otro despliegue, cuando ya no queden pestañas de antes
- * (`WRITE_COMPACT_VERSIONS`).
+ * escribir, las volvería definitivas. La lectura salió el 2026-11-03 (#824); la
+ * escritura se enciende aquí, cuando ya no quedan pestañas de antes.
  */
-export const WRITE_COMPACT_VERSIONS = false;
+export const WRITE_COMPACT_VERSIONS = true;
+
+/** Un paso tal como está guardado, otra vez compactado. Sin pasar por el dominio: no pierde nada. */
+export function recompactStoredStep(paso: unknown): unknown {
+    type Guardado = { versions?: unknown; lastAcceptedVersionId?: string | null } & Partial<Record<'acceptedId' | 'currentId', string | null>>
+        & Partial<Record<'accepted' | 'current', { id?: string } | null>>;
+    const p = paso as Guardado;
+    if (!WRITE_COMPACT_VERSIONS || !Array.isArray(p?.versions)) return paso;
+    const versiones = expandVersions(p.versions as VersionCruda[]);
+    // La forma vieja guardaba `accepted` y `current` enteros, sin identificador aparte.
+    const enteras = [p.acceptedId ?? p.accepted?.id, p.lastAcceptedVersionId, p.currentId ?? p.current?.id];
+    return { ...p, versions: compactVersions(versiones, enteras) };
+}
 
 type VersionCruda = Record<string, unknown> & { id: string };
 
