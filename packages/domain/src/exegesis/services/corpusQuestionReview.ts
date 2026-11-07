@@ -71,6 +71,8 @@ export interface QuestionSheet {
     sheet: number;
     /** `pinned` implica `in-corpus`. */
     state: 'pinned' | 'in-corpus' | 'outside';
+    /** Fijada solo para el paso de esta pregunta (PR 2): se puede soltar desde aquí. */
+    stepPinned?: boolean;
     /** El renglón donde la hoja nombra el versículo, cuando la búsqueda lo trae. */
     snippet?: string;
 }
@@ -215,9 +217,11 @@ export function reviewCorpusByQuestion(input: {
 
         let preguntaEnCurso = 0;
         const estado = (sheet: number): QuestionSheet['state'] =>
-            inRanges(sheet, source.pinned) || inRanges(sheet, source.pinnedByQuestion?.[preguntaEnCurso] ?? []) ? 'pinned'
+            inRanges(sheet, source.pinned) || delPaso(sheet) ? 'pinned'
                 : source.selected === null || inRanges(sheet, source.selected) ? 'in-corpus'
                     : 'outside';
+        const delPaso = (sheet: number) => inRanges(sheet, source.pinnedByQuestion?.[preguntaEnCurso] ?? []);
+        const soloDelPaso = (sheet: number) => (delPaso(sheet) && !inRanges(sheet, source.pinned) ? { stepPinned: true as const } : {});
 
         let tocaAlguna = false;
 
@@ -233,7 +237,7 @@ export function reviewCorpusByQuestion(input: {
                 l.question === row.number && l.entry !== null);
             const queNombran = source.verseHits
                 .filter(h => h.verses.some(v => row.verses.includes(v)))
-                .map(h => ({ sheet: h.sheet, count: h.count, state: estado(h.sheet), ...(h.snippet ? { snippet: h.snippet } : {}) }));
+                .map(h => ({ sheet: h.sheet, count: h.count, state: estado(h.sheet), ...soloDelPaso(h.sheet), ...(h.snippet ? { snippet: h.snippet } : {}) }));
             if (queNombran.length > 0) {
                 tocaAlguna = true;
                 const dentro = queNombran.filter(h => h.state !== 'outside');
@@ -244,7 +248,7 @@ export function reviewCorpusByQuestion(input: {
                 row.sources.push({
                     sourceId: source.sourceId,
                     via: 'verse',
-                    sheets: mostradas.map(({ sheet, state, snippet }) => ({ sheet, state, ...(snippet ? { snippet } : {}) })),
+                    sheets: mostradas.map(({ sheet, state, snippet, ...resto }) => ({ sheet, state, ...('stepPinned' in resto ? { stepPinned: true } : {}), ...(snippet ? { snippet } : {}) })),
                 });
                 // Dos casos, y no cada mención de afuera: un comentario nombra
                 // el versículo en la introducción y en el índice, y avisar por
@@ -273,7 +277,7 @@ export function reviewCorpusByQuestion(input: {
             const lemasDeLaPregunta = (esLexica ? source.lemmaEntries ?? [] : []).filter(l => l.question === row.number);
             if (lemasDeLaPregunta.some(l => l.entry || l.appears)) tocaAlguna = true;
             for (const lema of lemasDeLaPregunta.filter(l => l.entry)) {
-                const hojas = sheetsOf(lema.entry!).map(sheet => ({ sheet, state: estado(sheet) }));
+                const hojas = sheetsOf(lema.entry!).map(sheet => ({ sheet, state: estado(sheet), ...soloDelPaso(sheet) }));
                 row.sources.push({ sourceId: source.sourceId, via: 'lemma', term: lema.term, sheets: hojas });
                 const faltan = hojas.filter(h => h.state === 'outside').map(h => h.sheet);
                 if (faltan.length > 0) {

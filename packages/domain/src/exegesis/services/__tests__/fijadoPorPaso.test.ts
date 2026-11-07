@@ -107,3 +107,40 @@ describe('stepCorpusQuery: la consulta lleva las preguntas del paso', async () =
         expect(stepCorpusQuery({ label: 'Santiago 4', stepQuestions: [], brief: '  Encuadre  ' })).toBe('Santiago 4 — Encuadre');
     });
 });
+
+describe('fijar desde la revisión por pregunta', async () => {
+    const { stepPinsForQuestion } = await import('../curatedScope');
+    const plan = { perStep: { a: paso({ k: [r(10, 12)] }), b: paso({}) } } as never;
+    it('fijar suma la hoja en cada paso de la pregunta', () => {
+        expect(stepPinsForQuestion({ plan, stepsOfQuestion: ['a', 'b'], sourceId: 'k', sheets: [13], pin: true }))
+            .toEqual([{ stepId: 'a', ranges: [r(10, 13)] }, { stepId: 'b', ranges: [r(13)] }]);
+    });
+    it('soltar quita solo esa hoja, aunque estuviera dentro de un tramo', () => {
+        expect(stepPinsForQuestion({ plan, stepsOfQuestion: ['a'], sourceId: 'k', sheets: [11], pin: false }))
+            .toEqual([{ stepId: 'a', ranges: [r(10), r(12)] }]);
+    });
+    it('la revisión marca lo fijado solo para la pregunta, y no lo fijado para todo el trabajo', async () => {
+        const { reviewCorpusByQuestion } = await import('../corpusQuestionReview');
+        const review = reviewCorpusByQuestion({
+            chapter: 5,
+            questions: [{ number: 2, text: '¿5:6?', verses: [{ chapter: 5, verse: 6 }] }] as never,
+            sources: [{
+                sourceId: 'k', sourceType: 'commentary-critical', selected: [r(1, 50)], pinned: [r(41)], printedPages: 'resolved',
+                pinnedByQuestion: { 2: [r(40)] },
+                verseHits: [{ sheet: 40, count: 2, verses: [6] }, { sheet: 41, count: 1, verses: [6] }],
+            }],
+        });
+        const hojas = review.rows[0]!.sources[0]!.sheets;
+        expect(hojas.find(h => h.sheet === 40)).toMatchObject({ state: 'pinned', stepPinned: true });
+        expect(hojas.find(h => h.sheet === 41)!.stepPinned).toBeUndefined();
+    });
+});
+
+describe('REGRESIÓN (revisión del PR 2): un documento chico que viaja entero', () => {
+    it('no se cuenta dos veces en el medidor por tener hojas del paso', () => {
+        const chico = Array.from({ length: 5 }, (_, i) => ({ sheet: i + 1, chunkIndices: [i], section: null, firstLine: '', charCount: 1000 })) as never;
+        const f = corpusFootprint([sinNada('k')], new Map([['k', chico]]), { perStep: { p1: paso({ k: [r(2)] }) } } as never);
+        expect(f.pinnedChars).toBe(5000);
+        expect(f.stepPinnedChars).toBeUndefined();
+    });
+});

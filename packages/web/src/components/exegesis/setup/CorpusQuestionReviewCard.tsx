@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { rutaCalibracion } from '@/lib/rutaCalibracion';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useCorpusQuestionReview, type ReviewedSource } from '@/hooks/exegesis/useCorpusQuestionReview';
-import { useAddAndPinSheets } from '@/hooks/exegesis/useAddAndPinSheets';
+import { SinPasoError, usePinSheetsForQuestion } from '@/hooks/exegesis/usePinSheetsForQuestion';
 import { nombreCortoDeFuente } from '../corpus-plan/nombreCortoDeFuente';
 import { QuestionUncoveredSources } from './QuestionUncoveredSources';
 
@@ -38,7 +38,7 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
     const navigate = useNavigate();
     const { review, sources, failed, unindexed, isLoading } = useCorpusQuestionReview(paper);
     const { removeSource } = useExegesisPapers();
-    const addAndPin = useAddAndPinSheets(paper);
+    const fijarParaPregunta = usePinSheetsForQuestion(paper);
     const [abierta, setAbierta] = useState(false);
     const [ocupada, setOcupada] = useState<string | null>(null);
     // Quitar pide un segundo clic: no hay deshacer, y la fuente pierde su rol,
@@ -57,20 +57,24 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
     const versiculos = (verses: ReadonlyArray<number>) => verses.map(v => `${chapter}:${v}`).join(', ');
     const fila = (question: number) => review.rows.find(r => r.number === question);
 
-    const agregar = async (sourceId: string, sheets: ReadonlyArray<number>) => {
-        const fuente = sources.get(sourceId);
-        if (!fuente) return;
-        const clave = `${sourceId}:${sheets.join(',')}`;
-        setOcupada(clave);
+    // Fija para los pasos de esas preguntas, y solo para ellos (PR 2): fijar en la
+    // receta hacía viajar la hoja a todos los pasos.
+    const fijar = async (sourceId: string, sheets: ReadonlyArray<number>, questions: ReadonlyArray<number>, pin = true) => {
+        if (!sources.get(sourceId)) return;
+        setOcupada(`${sourceId}:${sheets.join(',')}`);
         try {
-            await addAndPin.run(fuente, sheets);
-            toast.success(t('paperSetup.subSteps.corpus.questionReview.toast.added', {
+            await fijarParaPregunta.run(sourceId, questions, sheets, pin);
+            toast.success(t(`paperSetup.subSteps.corpus.questionReview.toast.${pin ? 'pinnedForQuestion' : 'releasedForQuestion'}`, {
                 pages: paginas(sourceId, sheets),
                 source: nombre(sourceId),
+                count: questions.length,
+                questions: questions.join(', '),
             }));
         } catch (err) {
-            console.error('[CorpusQuestionReviewCard] no se pudo agregar', err);
-            toast.error(t('paperSetup.subSteps.corpus.questionReview.toast.addFailed'));
+            console.error('[CorpusQuestionReviewCard] no se pudo fijar', err);
+            toast.error(t(err instanceof SinPasoError
+                ? 'paperSetup.subSteps.corpus.questionReview.toast.noStep'
+                : 'paperSetup.subSteps.corpus.questionReview.toast.addFailed', { count: questions.length, questions: questions.join(', ') }));
         } finally {
             setOcupada(null);
         }
@@ -94,8 +98,6 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
     const avisos = review.warnings;
     const noRevisadas = failed.length + unindexed.length;
     const conAvisos = avisos.length > 0 || noRevisadas > 0;
-    const editable = (sourceId: string) => sources.get(sourceId)?.editable === true;
-    const ajustar = (sourceId: string) => navigate(`/dashboard/exegesis/${paper.id}/fuentes/${sourceId}/paginas`);
 
     return (
         <section
@@ -131,10 +133,8 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
                             warning={w}
                             texto={textoDelAviso(t, w, { nombre, paginas, versiculos, fila })}
                             ocupada={ocupada}
-                            editable={'sourceId' in w ? editable(w.sourceId) : false}
                             confirmingRemove={'sourceId' in w && porQuitar === w.sourceId}
-                            onAdd={agregar}
-                            onAdjust={ajustar}
+                            onPin={fijar}
                             onRemove={quitar}
                             onCalibrate={sourceId => {
                                 const f = sources.get(sourceId);
@@ -176,8 +176,7 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
                             nombre={nombre}
                             sources={sources}
                             ocupada={ocupada}
-                            editable={editable}
-                            onAdd={agregar}
+                            onPin={fijar}
                         />
                     ))}
                 </ol>
@@ -239,21 +238,16 @@ function WarningItem({
     warning,
     texto,
     ocupada,
-    editable,
     confirmingRemove,
-    onAdd,
-    onAdjust,
+    onPin,
     onRemove,
     onCalibrate,
 }: {
     warning: CorpusReviewWarning;
     texto: string;
     ocupada: string | null;
-    /** La fuente tiene receta de páginas: se le pueden sumar hojas. */
-    editable: boolean;
     confirmingRemove: boolean;
-    onAdd: (sourceId: string, sheets: ReadonlyArray<number>) => void;
-    onAdjust: (sourceId: string) => void;
+    onPin: (sourceId: string, sheets: ReadonlyArray<number>, questions: ReadonlyArray<number>) => void;
     onRemove: (sourceId: string) => void;
     onCalibrate: (sourceId: string) => void;
 }) {
@@ -263,9 +257,13 @@ function WarningItem({
 
     let accion: { label: string; run: () => void; clave: string } | null = null;
     if (warning.kind === 'missing-sheets' || warning.kind === 'missing-entry') {
-        accion = editable
-            ? { label: t(`${base}.addAndPin`), run: () => onAdd(warning.sourceId, warning.sheets), clave: `${warning.sourceId}:${warning.sheets.join(',')}` }
-            : { label: t(`${base}.adjust`), run: () => onAdjust(warning.sourceId), clave: `ajustar:${warning.sourceId}` };
+        // Sin receta también: lo fijado para el paso se consulta igual (`effectiveScope`).
+        const preguntas = warning.kind === 'missing-sheets' ? warning.questions : [warning.question];
+        accion = {
+            label: t(`${base}.pinForQuestion`, { count: preguntas.length }),
+            run: () => onPin(warning.sourceId, warning.sheets, preguntas),
+            clave: `${warning.sourceId}:${warning.sheets.join(',')}`,
+        };
     } else if (warning.kind === 'unrelated') {
         accion = {
             label: t(confirmingRemove ? `${base}.removeConfirm` : `${base}.remove`),
@@ -316,8 +314,7 @@ function QuestionItem({
     nombre,
     sources,
     ocupada,
-    editable,
-    onAdd,
+    onPin,
 }: {
     row: QuestionReviewRow;
     versiculos: string;
@@ -326,8 +323,7 @@ function QuestionItem({
     nombre: (id: string) => string;
     sources: ReadonlyMap<string, ReviewedSource>;
     ocupada: string | null;
-    editable: (sourceId: string) => boolean;
-    onAdd: (sourceId: string, sheets: ReadonlyArray<number>) => void;
+    onPin: (sourceId: string, sheets: ReadonlyArray<number>, questions: ReadonlyArray<number>, pin?: boolean) => void;
 }) {
     const { t } = useTranslation('exegesis');
     return (
@@ -355,8 +351,7 @@ function QuestionItem({
                                     label={pageLabel(t, sources.get(cov.sourceId), h.sheet)}
                                     busy={ocupada === `${cov.sourceId}:${h.sheet}`}
                                     disabled={ocupada !== null}
-                                    editable={editable(cov.sourceId)}
-                                    onPin={() => onAdd(cov.sourceId, [h.sheet])}
+                                    onToggle={() => onPin(cov.sourceId, [h.sheet], [row.number], !h.stepPinned)}
                                 />
                             ))}
                         </li>
@@ -369,33 +364,41 @@ function QuestionItem({
 }
 
 /**
- * Una hoja que toca la pregunta. Fijada: no hace nada. En el corpus: se fija.
- * Afuera: se agrega y se fija.
+ * Una hoja que toca la pregunta. Fijada para todo el trabajo: no hace nada.
+ * Fijada para esta pregunta: se suelta. En el corpus o afuera: se fija para
+ * esta pregunta.
  */
 function SheetChip({
     sheet,
     label,
     busy,
     disabled,
-    editable,
-    onPin,
+    onToggle,
 }: {
     sheet: QuestionSheet;
     label: string;
     busy: boolean;
     disabled: boolean;
-    /** Sin receta de páginas (documento completo, fragmentos viejos) no se pulsa. */
-    editable: boolean;
-    onPin: () => void;
+    onToggle: () => void;
 }) {
     const { t } = useTranslation('exegesis');
     const base = 'paperSetup.subSteps.corpus.questionReview.chip';
-    const estado = t(`${base}.${sheet.state === 'in-corpus' ? 'inCorpus' : sheet.state}`, { page: label });
-    if (!editable && sheet.state !== 'pinned') {
+    const clave = sheet.stepPinned ? 'stepPinned' : sheet.state === 'in-corpus' ? 'inCorpus' : sheet.state;
+    const estado = t(`${base}.${clave}`, { page: label });
+    if (sheet.stepPinned) {
         return (
-            <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 text-[10.5px] text-foreground" title={estado}>
+            <button
+                type="button"
+                onClick={onToggle}
+                disabled={disabled}
+                title={estado}
+                aria-label={estado}
+                aria-pressed
+                className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10.5px] text-foreground transition-colors hover:bg-primary/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+                {busy ? <Loader2 className="h-2.5 w-2.5 animate-spin" aria-hidden /> : <Pin className="h-2.5 w-2.5" aria-hidden />}
                 {label}
-            </span>
+            </button>
         );
     }
     if (sheet.state === 'pinned') {
@@ -413,10 +416,11 @@ function SheetChip({
     return (
         <button
             type="button"
-            onClick={onPin}
+            onClick={onToggle}
             disabled={disabled}
             title={estado}
             aria-label={estado}
+            aria-pressed={false}
             className={cn(
                 'inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10.5px] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 afuera

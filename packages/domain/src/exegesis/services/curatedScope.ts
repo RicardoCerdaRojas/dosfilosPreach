@@ -215,3 +215,25 @@ export function pinnedSheetsInAnyStep(
 ): SheetRange[] {
     return normalizeSheetRanges(Object.values(plan?.perStep ?? {}).flatMap(e => stepPinnedSheets(e, sourceId)));
 }
+
+/**
+ * Cómo quedan las hojas de una fuente en cada paso de una pregunta al fijar o
+ * soltar unas hojas desde la revisión por pregunta (PR 2). Una pregunta puede
+ * tocar más de un paso; lo fijado va a todos ellos, y a ningún otro.
+ */
+export function stepPinsForQuestion(input: {
+    stepsOfQuestion: ReadonlyArray<string>;
+    plan: Pick<StepSourcePlan, 'perStep'>;
+    sourceId: string;
+    sheets: ReadonlyArray<number>;
+    pin: boolean;
+}): Array<{ stepId: string; ranges: SheetRange[] }> {
+    const hojas = new Set(input.sheets);
+    return input.stepsOfQuestion.map(stepId => {
+        const actuales = normalizeSheetRanges(input.plan.perStep[stepId]?.pinnedSheets?.[input.sourceId] ?? []);
+        if (input.pin) return { stepId, ranges: normalizeSheetRanges([...actuales, ...input.sheets.map(h => ({ start: h, end: h }))]) };
+        const quedan: SheetRange[] = [];
+        for (const r of actuales) for (let h = r.start; h <= r.end; h++) if (!hojas.has(h)) quedan.push({ start: h, end: h });
+        return { stepId, ranges: normalizeSheetRanges(quedan) };
+    });
+}
