@@ -279,6 +279,40 @@ describe('lemmaEntriesIn · dónde empieza y termina la entrada de un lema', () 
         expect(lemmaEntriesIn(texto, [griegoPlegado('μέλος')])).toEqual({});
     });
 
+    // PR 2, unidad 3: Kittel abreviado abre sus artículos sin negrita, con la familia y la glosa.
+    it('una línea «griego [glosa]» abre el artículo de toda la familia, hasta el siguiente', () => {
+        const kittel = [
+            { chunkIndex: 1, sheet: 137, text: 'δίκαιος [justo, recto], δικαιοσύνη [justicia], δικαιόω [justificar]\n\nA. El uso griego…' },
+            { chunkIndex: 2, sheet: 139, text: 'En el NT, Stg 5:6 los justos oprimidos…' },
+            { chunkIndex: 3, sheet: 143, text: 'δίκτυον [red]\n\nRed de pesca.' },
+        ];
+        const r = lemmaEntriesIn(kittel, ['δίκαιος', 'δικαιόω', 'δίκτυον'].map(griegoPlegado));
+        expect(r[griegoPlegado('δίκαιος')]).toEqual({ startSheet: 137, endSheet: 143 });
+        expect(r[griegoPlegado('δικαιόω')]).toEqual({ startSheet: 137, endSheet: 143 });
+        expect(r[griegoPlegado('δίκτυον')]).toEqual({ startSheet: 143, endSheet: 143 });
+    });
+
+    it('la glosa entre corchetes a mitad de renglón no abre artículo', () => {
+        const texto = [{ chunkIndex: 1, sheet: 9, text: 'Compárese σήπω [pudrir] en la p. 775.' }];
+        expect(lemmaEntriesIn(texto, [griegoPlegado('σήπω')])).toEqual({});
+    });
+
+    it('REGRESIÓN (revisión del PR 2): «θησαυρίζω [Mt 6:19]» en el cuerpo es una cita, no abre artículo', () => {
+        const kittel = [
+            { chunkIndex: 1, sheet: 100, text: 'σήπω [pudrir]\n\nEl uso…' },
+            { chunkIndex: 2, sheet: 101, text: 'θησαυρίζω [Mt 6:19] aparece también…' },
+            { chunkIndex: 3, sheet: 102, text: 'sigue σήπω' },
+            { chunkIndex: 4, sheet: 103, text: 'σκάπτω [cavar]' },
+        ];
+        expect(lemmaEntriesIn(kittel, [griegoPlegado('σήπω')])[griegoPlegado('σήπω')]).toEqual({ startSheet: 100, endSheet: 103 });
+        expect(lemmaEntriesIn(kittel, [griegoPlegado('θησαυρίζω')])).toEqual({});
+    });
+
+    it('el aparato «ποία] Bℵ*» no es una glosa', () => {
+        const ropes = [{ chunkIndex: 1, sheet: 294, text: 'ποία] Bℵ* 1518 syrʰᵉˡ bohᵃˡᵉˣ.' }];
+        expect(lemmaEntriesIn(ropes, [griegoPlegado('ποία')])).toEqual({});
+    });
+
     it('la entrada se corta en el tope de hojas', () => {
         const largo = [
             { chunkIndex: 1, sheet: 100, text: '**λόγος, ου, ὁ.** *Palabra*.' },

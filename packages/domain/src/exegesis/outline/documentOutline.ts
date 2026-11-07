@@ -101,6 +101,19 @@ const TRAILING_BOOK_REF = /^(.*?[A-Za-zÁÉÍÓÚÜÑáéíóúüñ.]\s*)(\d+[:.
 const BARE_REF = /^\d+[:.]\d+(?:[-–—]\d+(?:[:.]\d+)?)?$/;
 
 /**
+ * La referencia sin libro AL COMIENZO y después el título: «5:1–18 CONCLUSION»,
+ * «1:2–11 The Christian Faith», «3:1 WHO WOULD BE A TEACHER?» (Adamson, NICNT;
+ * TP #10, PR 2). Pide una letra después, para no tomar «1:1-3, 5» por título.
+ */
+const LEADING_BARE_REF = /^(\d+[:.]\d+(?:[-–—](?:\d+[:.])?\d+)?)\s+(?=\p{L})/u;
+
+/** «*a. In testing (1:2–4)*»: la cursiva o negrita del encabezado no es parte de él. */
+const MARKDOWN_WRAP = /^[*_]+|[*_]+$/g;
+
+/** «The Epistle of James», «Epistle to the Romans»: lo que precede al libro en una miga. */
+const BOOK_TITLE_PREFIX = /^(?:the\s+)?(?:book|epistle|letter|gospel)\s+(?:of|to)\s+(?:the\s+)?(?:st\.?\s+|saint\s+)?/i;
+
+/**
  * Le asigna a cada chunk la referencia bíblica que le corresponde.
  *
  * Recorre las entradas en orden de `chunkIndex` llevando dos estados:
@@ -136,12 +149,15 @@ export function resolveOutlineReferences(
 
     let currentBook: BibleBookId | null = null;
     let currentReference: PassageReference | null = null;
+    const titulillos = repeatedHeadings(ordered);
 
     return ordered.map(entry => {
         const bookFromPath = detectBookFromPath(entry.sectionPath);
         if (bookFromPath && bookFromPath !== currentBook) {
             currentBook = bookFromPath;
-            currentReference = null;
+            // Corta la herencia solo si de verdad cambia el libro: la cabecera
+            // «THE EPISTLE OF ST. JAMES» de Mayor no interrumpe sus notas de Santiago.
+            if (currentReference?.bookId !== bookFromPath) currentReference = null;
         }
 
         const fromHeading = entry.section ? parseHeadingReference(entry.section, currentBook) : null;
@@ -152,6 +168,17 @@ export function resolveOutlineReferences(
             ? notesRunningHeadReference(entry.section.trim(), fallbackBookId)
             : null;
 
+        // Un encabezado que REAPARECE entre otros y envuelve a la subsección en
+        // curso es el titulillo de la página, no una sección nueva: Adamson
+        // repite «5:1–18 CONCLUSION» en cada página impar, y pisaba «(5:1–6)»
+        // hasta dejar el pasaje en dos hojas (TP #10, PR 2). Una sección más
+        // amplia que aparece una sola vez («2:14–26 Teología» tras «2:14–17») sí
+        // la reemplaza. El de página en romanos dice qué versículos trae
+        // («Ⅳ, 11» y después «Ⅳ, 11–13» en Ropes), y ese manda siempre.
+        if (fromHeading && currentReference && titulillos.has(entry.section!.trim()) && !isPageRunningHead(entry.section!)
+            && referenceContains(fromHeading, currentReference) && !referenceContains(currentReference, fromHeading)) {
+            return { ...entry, reference: currentReference, resolution: 'inherited' as const };
+        }
         if (fromHeading) {
             currentBook = fromHeading.bookId;
             currentReference = fromHeading;
@@ -186,7 +213,7 @@ export function parseHeadingReference(
     heading: string,
     contextBookId: BibleBookId | null,
 ): PassageReference | null {
-    const cleaned = heading.trim();
+    const cleaned = heading.trim().replace(MARKDOWN_WRAP, '').trim();
     if (!cleaned) return null;
 
     // 1. La cadena entera ES la referencia. "Micah 4:8", "Jonah 1:1-3".
@@ -233,6 +260,15 @@ export function parseHeadingReference(
         return withContextBook(cleaned, contextBookId);
     }
 
+    // 4 bis. La referencia desnuda al comienzo y el título detrás:
+    //    «5:1–18 CONCLUSION» (Adamson). Con el mismo tope que la forma 1: una
+    //    línea de cuerpo promovida a encabezado no es un título.
+    const leading = cleaned.length <= MAX_HEADING_CHARS ? cleaned.match(LEADING_BARE_REF) : null;
+    if (contextBookId && leading?.[1]) {
+        const fromContext = withContextBook(leading[1], contextBookId);
+        if (fromContext) return fromContext;
+    }
+
     // 5. Encabezado de página de un comentario clásico de notas: capítulo en
     //    romanos, los versículos de la página y el «]». Mayor: «IV 2] NOTES»,
     //    «IV 2, 3] NOTES», «IV 3–5] NOTES», «III 17–IV 1] NOTES» (TP #8, 8a,
@@ -268,6 +304,28 @@ export function parseHeadingReference(
  * «IV» suelto no llegan aquí: hace falta el versículo.
  */
 const ROMAN_CHAPTER_HEADING = /^([IVXL]{1,6})(\s*,\s*|\.\s*|\s+)(\d{1,3})(?:\s*[–—-]\s*(?:([IVXL]{1,6})(\s*,\s*|\.\s*|\s+))?(\d{1,3}))?\.?$/i;
+
+/**
+ * Los encabezados que reaparecen después de otros: un titulillo de página.
+ * Cuenta tramos, no fragmentos: una sección larga repite su encabezado en
+ * cada fragmento seguido, y eso no la hace titulillo.
+ */
+function repeatedHeadings(entries: ReadonlyArray<DocumentOutlineEntry>): Set<string> {
+    const tramos = new Map<string, number>();
+    let anterior: string | null = null;
+    for (const e of entries) {
+        const h = e.section?.trim() || null;
+        if (h && h !== anterior) tramos.set(h, (tramos.get(h) ?? 0) + 1);
+        anterior = h;
+    }
+    return new Set([...tramos].filter(([, n]) => n >= 2).map(([h]) => h));
+}
+
+/** El encabezado de página de Mayor o de Ropes: dice qué versículos trae esa página. */
+function isPageRunningHead(heading: string): boolean {
+    const cleaned = heading.trim();
+    return NOTES_RUNNING_HEAD.test(cleaned) || ROMAN_CHAPTER_HEADING.test(cleaned.normalize('NFKC'));
+}
 
 function romanSeparatorOk(roman: string, separator: string): boolean {
     const lower = roman !== roman.toUpperCase();
@@ -353,6 +411,13 @@ function detectBookFromPath(sectionPath: ReadonlyArray<string>): BibleBookId | n
         if (!candidate || candidate.length > MAX_HEADING_CHARS) continue;
         const matches = findBooksByAlias(candidate);
         if (matches.length === 1) return matches[0]!.id;
+        // «THE EPISTLE OF JAMES», como Adamson rotula sus páginas: sin esto el
+        // comentario no tenía libro y ninguno de sus encabezados se leía (TP #10).
+        const sinPrefijo = candidate.replace(BOOK_TITLE_PREFIX, '');
+        if (sinPrefijo !== candidate) {
+            const delTitulo = findBooksByAlias(sinPrefijo);
+            if (delTitulo.length === 1) return delTitulo[0]!.id;
+        }
     }
     return null;
 }

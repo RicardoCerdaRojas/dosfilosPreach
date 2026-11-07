@@ -20,6 +20,15 @@ const RANGO_MAXIMO = 40;
 const RANGO_DE_CAPITULOS_MAXIMO = 30;
 /** El capítulo más largo (Sal 119) tiene 176 versículos. */
 const VERSICULO_MAXIMO = 176;
+/**
+ * Desde aquí una cita es de una sección, no de sus versículos: «5:1–18
+ * CONCLUSION» es el titulillo de cada página impar de Adamson y la marcaba como
+ * si nombrara 5:6 (aviso falso B82, TP #10). Deja solo el capítulo.
+ */
+const RANGO_DE_SECCION = 10;
+/** «Ⅳ, 17–Ⅴ, 1»: un rango que entra apenas en el capítulo siguiente sigue siendo de versículos. */
+const DESBORDE_DE_CAPITULO = 3;
+
 /** Claves por fragmento: un índice de Escrituras no aporta más y engorda el documento. */
 export const REFS_POR_FRAGMENTO = 120;
 /** El tope de valores de `array-contains-any` en Firestore. */
@@ -33,6 +42,13 @@ export interface OpcionesDeRefs {
      * en minúscula: ahí se apaga, y también se aceptan «stg 5» o «sal 23».
      */
     exigirMayuscula?: boolean;
+    /**
+     * Leer como sección, sin sus versículos, un rango de más de
+     * `RANGO_DE_SECCION` o que cruza de capítulo. Solo al INDEXAR un fragmento
+     * (`refsDeFragmento`): una consulta «santiago 3:1-12» pide esos versículos,
+     * y sin ellos el buscador ordenaba por número de hoja (revisión del PR 2).
+     */
+    rangosDeSeccion?: boolean;
 }
 
 /** Una cita reconocida: el texto tal como apareció y lo que nombra. */
@@ -41,7 +57,7 @@ export interface Cita { texto: string; libro: string; capitulo: number; versicul
 /** Espacio sin salto de renglón: una cita no cruza de un renglón a otro. */
 const H = '[^\\S\\n]*';
 
-let patron: { re: RegExp; porGrafia: Map<string, string[]>; capitulos: Map<string, number> } | null = null;
+let patron: { re: RegExp; conRomano: RegExp; superindice: RegExp; porGrafia: Map<string, string[]>; capitulos: Map<string, number> } | null = null;
 
 function armarPatron() {
     if (patron) return patron;
@@ -74,7 +90,15 @@ function armarPatron() {
         `(?!\\d)`,
         'giu',
     );
-    patron = { re, porGrafia, capitulos };
+    // «1 Pet. v. 1», «Rom. viii. 28»: el capítulo en romanos, como cita Mayor.
+    const conRomano = new RegExp(`(?<![\\p{L}\\p{N}])(${alternancia})(\\.?${H})([ivxl]{1,6})\\.${H}(\\d{1,3})(?!\\d)`, 'giu');
+    // El superíndice es versículo solo tras un libro o tras «on», «in», «cf.»:
+    // tras «v. 4» o «p. 4» es una nota al pie (revisión del PR 2).
+    const superindice = new RegExp(
+        `(?<=(?:(?<![\\p{L}\\p{N}])(?:${alternancia})\\.?|(?<![\\p{L}])(?:on|in|cf|cp|see|comp)\\.?)[^\\S\\n]{1,3})${CITA_EN_SUPERINDICE}(?:[^\\S\\n]+${CITA_EN_SUPERINDICE})*`,
+        'giu',
+    );
+    patron = { re, conRomano, superindice, porGrafia, capitulos };
     return patron;
 }
 
@@ -137,17 +161,48 @@ function versiculosDe(desdeStr: string | undefined, hastaStr: string | undefined
     return versiculos;
 }
 
-/** Sin acentos (Génesis, Éxodo) pero conservando la mayúscula. */
-const sinAcentos = (texto: string) => texto.normalize('NFD').replace(/\p{M}/gu, '');
+const SUPERINDICES = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+const DE_SUPERINDICE = (s: string) => [...s].map(c => String(SUPERINDICES.indexOf(c))).join('');
+/** «2¹», «2¹⁻⁶», «1¹⁰ ᶠ˙»: el capítulo y, en superíndice, el versículo. Un año («1910²») no lo es. */
+const CITA_EN_SUPERINDICE = `(?<![\\p{N}${SUPERINDICES}])(\\d{1,3})([${SUPERINDICES}]{1,3})(?:[⁻–-]([${SUPERINDICES}]{1,3}))?(?:${H}ᶠ{1,2}${H}˙)?(?![${SUPERINDICES}])`;
+const UNA_EN_SUPERINDICE = new RegExp(CITA_EN_SUPERINDICE, 'gu');
+
+/**
+ * Los comentarios de la ICC escriben el versículo en superíndice y separan la
+ * lista con espacios: «Rom. 2¹ 14⁴», «Jas. 2⁷ 3¹³», «cf. on 4¹³» (Ropes, TP #9:
+ * solo se leía el capítulo, o nada). Se reescriben a la forma de siempre,
+ * «Rom. 2:1; 14:4», para que la lean la cita, su continuación y el contexto.
+ */
+function sinSuperindices(texto: string): string {
+    return texto.replace(armarPatron().superindice, lista => lista.replace(UNA_EN_SUPERINDICE, (_t, cap: string, vers: string, fin?: string) =>
+        `${cap}:${DE_SUPERINDICE(vers)}${fin ? `-${DE_SUPERINDICE(fin)}` : ''}`).replace(/(\d)[^\S\n]+(?=\d{1,3}:)/g, '$1; '));
+}
+
+/** Sin acentos (Génesis, Éxodo) pero conservando la mayúscula, y con los versículos en superíndice ya leídos. */
+const sinAcentos = (texto: string) => sinSuperindices(texto.normalize('NFD').replace(/\p{M}/gu, ''));
 
 /** Las citas de un texto, en orden de aparición (para el índice y para revisarlas a mano). */
 export function citasDeTexto(texto: string, opciones: OpcionesDeRefs = {}): Cita[] {
     return citasYTramos(texto, opciones).citas;
 }
 
+/**
+ * «1 Pet. v. 1» → «1 Pet. 5:1». Sin esto la cita no se tapaba y el «v. 1» se leía
+ * como versículo del libro comentado: Mayor h. 441 daba Santiago 5:1 (B82). Solo
+ * tras el nombre de un libro: «cf. v. 1» sigue siendo el versículo 1.
+ */
+function conCapituloArabigo(plano: string): string {
+    return plano.replace(armarPatron().conRomano, (todo, grafia: string, medio: string, romano: string, vers: string) => {
+        // Con mayúscula, como toda cita en prosa: «in v. 3» o «is v. 3» no son libros.
+        if (!/\p{Lu}/u.test(/\p{L}/u.exec(grafia)?.[0] ?? '')) return todo;
+        const capitulo = romanoANumero(romano);
+        return capitulo ? `${grafia}${medio}${capitulo}:${vers}` : todo;
+    });
+}
+
 /** Las citas y dónde está cada una en el texto sin acentos (para taparlas). */
 function citasYTramos(texto: string, opciones: OpcionesDeRefs = {}): { citas: Cita[]; plano: string; tramos: Array<[number, number]> } {
-    const plano = sinAcentos(texto ?? '');
+    const plano = conCapituloArabigo(sinAcentos(texto ?? ''));
     const citas: Cita[] = [];
     const tramos: Array<[number, number]> = [];
     if (!plano) return { citas, plano, tramos };
@@ -195,9 +250,11 @@ function citasYTramos(texto: string, opciones: OpcionesDeRefs = {}): { citas: Ci
             // «1:18-3:20»: el comienzo, los capítulos de en medio y el final.
             const finCap = Number(finCapStr);
             const ultimo = finCap > capitulo && finCap - capitulo <= RANGO_DE_CAPITULOS_MAXIMO && finCap <= (capitulos.get(libro) ?? 0) ? finCap : capitulo;
-            citas.push({ texto: cita, libro, capitulo, versiculos: versiculosDe(versStr, undefined) });
+            // «4:1–5:6» es una sección: sus extremos no son menciones de 4:1 ni de 5:6 (Adamson h. 200).
+            const deVersiculos = !opciones.rangosDeSeccion || (ultimo === capitulo + 1 && Number(finVersStr) <= DESBORDE_DE_CAPITULO);
+            citas.push({ texto: cita, libro, capitulo, versiculos: deVersiculos || ultimo === capitulo ? versiculosDe(versStr, undefined) : [] });
             for (let c = capitulo + 1; c < ultimo; c++) citas.push({ texto: cita, libro, capitulo: c, versiculos: [] });
-            if (ultimo > capitulo) citas.push({ texto: cita, libro, capitulo: ultimo, versiculos: versiculosDe(finVersStr, undefined) });
+            if (ultimo > capitulo) citas.push({ texto: cita, libro, capitulo: ultimo, versiculos: deVersiculos ? versiculosDe(finVersStr, undefined) : [] });
         } else {
             citas.push({ texto: cita, libro, capitulo, versiculos: versiculosDe(versStr, finMismoStr) });
         }
@@ -247,13 +304,14 @@ function continuacion(plano: string, desde: number, libro: string, capituloInici
 }
 
 /** Las claves de unas citas, sin repetir y con tope. */
-function claves(citas: ReadonlyArray<Cita>): string[] {
+function claves(citas: ReadonlyArray<Cita>, rangosDeSeccion = false): string[] {
     const refs = new Set<string>();
     for (const c of citas) {
         const tope = VERSICULOS_DE_UN_CAPITULO[c.libro];
-        const versiculos = tope === undefined ? c.versiculos : c.versiculos.filter(v => v <= tope);
+        const enRango = tope === undefined ? c.versiculos : c.versiculos.filter(v => v <= tope);
+        const versiculos = rangosDeSeccion && enRango.length > RANGO_DE_SECCION ? [] : enRango;
         // Sólo versículos imposibles («Filemon 1:27»): la cita entera no es de ese libro.
-        if (c.versiculos.length > 0 && versiculos.length === 0) continue;
+        if (c.versiculos.length > 0 && enRango.length === 0) continue;
         refs.add(`${c.libro}.${c.capitulo}`);
         for (const v of versiculos) refs.add(`${c.libro}.${c.capitulo}.${v}`);
         if (refs.size >= REFS_POR_FRAGMENTO) break;
@@ -263,7 +321,7 @@ function claves(citas: ReadonlyArray<Cita>): string[] {
 
 /** Los pasajes que nombra un texto, como `LIBRO.cap` y `LIBRO.cap.vers`, en orden de aparición. */
 export function refsDeTexto(texto: string, opciones: OpcionesDeRefs = {}): string[] {
-    return claves(citasDeTexto(texto, opciones));
+    return claves(citasDeTexto(texto, opciones), opciones.rangosDeSeccion);
 }
 
 /**
@@ -502,7 +560,7 @@ export function refsDeFragmento(
             contexto = { libro: contexto!.libro, capitulo: caps.size === 1 ? romano[0]!.capitulo : null, firme: true };
             continue;
         }
-        const propias = citasDeTexto(encabezado);
+        const propias = citasDeTexto(encabezado, { rangosDeSeccion: true });
         if (propias.length > 0) {
             citas.push(...propias);
             const ultima = propias[propias.length - 1]!;
@@ -521,7 +579,7 @@ export function refsDeFragmento(
         const caps = new Set(sueltas.map(c => c.capitulo));
         contexto = { ...contexto, capitulo: caps.size === 1 ? sueltas[0]!.capitulo : contexto.capitulo, firme: true };
     }
-    const propias = citasYTramos(texto);
+    const propias = citasYTramos(texto, { rangosDeSeccion: true });
     citas.push(...propias.citas);
     // Las cifras sueltas se leen con el contexto SIN las citas que ya tienen
     // libro: en un comentario de Santiago, el «5:14» de «Rom 5:14» es Romanos.
@@ -529,7 +587,7 @@ export function refsDeFragmento(
     // Las notas «N. lema.]» de un comentario clásico, con el capítulo de su
     // encabezado de página (A3).
     if (contexto?.firme) citas.push(...citasDeNotas(texto, contexto));
-    return claves(citas);
+    return claves(citas, true);
 }
 
 /**
