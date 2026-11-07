@@ -16,7 +16,7 @@ import {
 import { getFunctions,
     httpsCallable } from 'firebase/functions';
 import { db } from '../config/firebase';
-import { compactVersions, expandVersions, firestoreBytes, PAPER_BYTES_MAX, WRITE_COMPACT_VERSIONS } from './stepVersionStorage';
+import { compactVersions, expandVersions, firestoreBytes, PAPER_BYTES_MAX, recompactStoredStep, WRITE_COMPACT_VERSIONS } from './stepVersionStorage';
 import type {
     ExegeticalPaper,
     ExegeticalPaperDraft,
@@ -948,17 +948,30 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             // `accepted` como objetos— y lo que se escribe es la forma
             // guardada, con esas dos por referencia.
             let next = mutator(deserializeStep(steps[idx]!));
-            const conEste = (paso: ExegeticalStep) => steps.map((p, i) => (i === idx ? serializeStep(paso) : p));
+            let otros: unknown[] = steps;
+            const conEste = (paso: ExegeticalStep) => otros.map((p, i) => (i === idx ? serializeStep(paso) : p));
             const pesa = (pasos: unknown[]) => firestoreBytes({ ...data, steps: pasos });
             const cabe = (pasos: unknown[]) => pesa(pasos) <= PAPER_BYTES_MAX;
             let escritos = conEste(next);
+
+            // Los otros pasos van como se leyeron, y los guardados antes de compactar
+            // repiten el análisis en cada versión: compactarlos no pierde nada, así que
+            // va antes de quitar historial.
+            if (!cabe(escritos)) {
+                const compactos = steps.map(recompactStoredStep);
+                if (pesa(compactos) < pesa(steps)) {
+                    otros = compactos;
+                    escritos = conEste(next);
+                }
+            }
 
             // No cabría, y una generación ya está pagada a estas alturas: se quita lo
             // más viejo de este paso. Lo que casi no agrega peso no recorta nada: volver
             // a serializar ya suma unos bytes, y moverse por el historial no borra. El
             // cálculo es pesimista, así que nunca se rechaza aquí: la última palabra es
             // de Firestore, y su rechazo se le explica al autor (`avisarSiDocumentoLleno`).
-            if (!cabe(escritos) && pesa(escritos) > pesa(steps) + 1024) {
+            // Contra lo de antes ya compactado: si no, lo que ahorró compactar taparía lo que esta escritura agrega.
+            if (!cabe(escritos) && pesa(escritos) > pesa(otros) + 1024) {
                 const antes = new Map(deserializeStep(steps[idx]!).versions.map(v => [v.id, JSON.stringify(v)]));
                 const tocadas = next.versions.filter(v => antes.get(v.id) !== JSON.stringify(v)).map(v => v.id);
                 next = withoutOldestVersions(next, paso => cabe(conEste(paso)), tocadas);

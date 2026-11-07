@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { compactVersions, expandVersions, firestoreBytes, PAPER_BYTES_MAX, WRITE_COMPACT_VERSIONS } from '../stepVersionStorage';
+import { compactVersions, expandVersions, firestoreBytes, PAPER_BYTES_MAX, recompactStoredStep, WRITE_COMPACT_VERSIONS } from '../stepVersionStorage';
 
 /**
  * Guardar sin repetir lo que no cambió (TP #9: 205 de 912 KB eran análisis
@@ -192,7 +192,7 @@ describe('escribir cerca del límite', () => {
 
     it('si no cabría, quita lo más viejo, solo hasta que quepa', async () => {
         guardado = { ownerId: 'o', steps: [paso('s', pesadas(5, 190))] };
-        await editar();
+        await repo.saveManualEdit('o', 'p', 's', relleno(70));
         const ids = pasoDe('s').versions.map(x => x.id);
         expect(ids).not.toContain('v1');
         expect(ids).toContain('v2');
@@ -300,21 +300,24 @@ describe('lo que nunca se recorta', () => {
     });
 });
 
-describe('el despliegue en dos pasos', () => {
-    it('la escritura compacta sigue apagada: el código anterior no entiende las referencias', () => {
-        expect(WRITE_COMPACT_VERSIONS).toBe(false);
+describe('el segundo despliegue: la escritura compacta', () => {
+    it('está encendida: un paso con el análisis repetido lo guarda una vez', () => {
+        expect(WRITE_COMPACT_VERSIONS).toBe(true);
         const a = version('a', null, { canonicalAnalysis: ANALISIS });
         const b = version('b', 'a', { canonicalAnalysis: ANALISIS });
         const g = serializeStep(deserializeStep(paso('s', [a, b]))) as { versions: Array<Record<string, unknown>> };
-        expect(g.versions.every(x => x.canonicalAnalysis && !x.canonicalAnalysisIn)).toBe(true);
+        expect(g.versions[0]).toMatchObject({ canonicalAnalysisIn: 'b' });
+        expect(g.versions[0]!.canonicalAnalysis).toBeUndefined();
+        expect(g.versions[1]!.canonicalAnalysis).toEqual(ANALISIS);
     });
-    it('la función que usará el siguiente despliegue sí compacta un paso real', () => {
-        const a = version('a', null, { canonicalAnalysis: ANALISIS });
-        const b = version('b', 'a', { canonicalAnalysis: ANALISIS });
-        const g = compactVersions([a, b], [b.id, undefined, b.id]);
-        expect(g[0]!.canonicalAnalysisIn).toBe('b');
+    it('una edición del TP suma la prosa, no otra copia del análisis', async () => {
+        guardado = { ownerId: 'o', steps: [paso('s', [version('v1', null, { canonicalAnalysis: { notes: relleno(56) } })])] };
+        const antes = firestoreBytes(guardado);
+        await editar();
+        expect(firestoreBytes(guardado) - antes).toBeLessThan(2 * 1024);
+        expect(deserializeStep(pasoDe('s')).versions.map(x => x.canonicalAnalysis)).toEqual([{ notes: relleno(56) }, { notes: relleno(56) }]);
     });
-    it('la lectura ya entiende las referencias que escribirá el siguiente despliegue', () => {
+    it('la lectura entiende las referencias', () => {
         const leido = deserializeStep(paso('s', [
             version('a', null, { canonicalAnalysisIn: 'b', analysisVerdictsIn: 'b', citationVerdicts: deProsa('p') }),
             version('b', 'a', { canonicalAnalysis: ANALISIS, citationVerdicts: delAnalisis }),
@@ -322,4 +325,130 @@ describe('el despliegue en dos pasos', () => {
         expect(leido.versions[0]!.canonicalAnalysis).toMatchObject({ notes: 'análisis' });
         expect(leido.versions[0]!.citationVerdicts).toEqual([...delAnalisis, ...deProsa('p')]);
     });
+});
+
+describe('los otros pasos, cuando el documento no cabe', () => {
+    // Un paso guardado antes de compactar: el mismo análisis en cada versión.
+    const viejo = () => paso('viejo', [1, 2, 3, 4, 5, 6].map(n =>
+        version(`a${n}`, n > 1 ? `a${n - 1}` : null, { canonicalAnalysis: { notes: relleno(150) } })));
+
+    it('se compactan antes de quitar historial, y no pierden nada', async () => {
+        guardado = { ownerId: 'o', steps: [viejo(), paso('s', [version('v1', null)])] };
+        await repo.saveManualEdit('o', 'p', 's', relleno(200));
+        const v = pasoDe('viejo');
+        expect(v.versions.map(x => x.id)).toEqual(['a1', 'a2', 'a3', 'a4', 'a5', 'a6']);
+        expect(v.versions.filter(x => x.canonicalAnalysisIn === 'a6')).toHaveLength(5);
+        expect(deserializeStep(v).versions.every(x => (x.canonicalAnalysis as { notes: string }).notes === relleno(150))).toBe(true);
+        expect(pasoDe('s').versions).toHaveLength(2);
+        expect(firestoreBytes(guardado)).toBeLessThanOrEqual(PAPER_BYTES_MAX);
+    });
+
+    it('lo que ahorró compactar no tapa lo que la escritura agrega: si sigue sin caber, se recorta', async () => {
+        const repetido = paso('viejo', [version('a1', null, { canonicalAnalysis: { notes: relleno(115) } }), version('a2', 'a1', { canonicalAnalysis: { notes: relleno(115) } })]);
+        guardado = { ownerId: 'o', steps: [repetido, paso('s', [1, 2, 3, 4].map(n => version(`v${n}`, n > 1 ? `v${n - 1}` : null, { canonicalAnalysis: { notes: relleno(200, String(n)) } })))] };
+        await repo.saveManualEdit('o', 'p', 's', relleno(100));
+        expect(pasoDe('s').versions.map(x => x.id)).not.toContain('v1');
+        expect(firestoreBytes(guardado)).toBeLessThanOrEqual(PAPER_BYTES_MAX);
+    });
+
+    it('la forma vieja, con la aceptada y la vigente enteras y sin identificador, conserva sus copias', () => {
+        const a = version('a1', null, { canonicalAnalysis: ANALISIS });
+        const b = version('a2', 'a1', { canonicalAnalysis: ANALISIS });
+        const c = version('a3', 'a2', { canonicalAnalysis: ANALISIS });
+        const legado = { id: 'viejo', versions: [a, b, c], accepted: a, current: b };
+        const r = recompactStoredStep(legado) as { versions: Array<Record<string, unknown>> };
+        expect(r.versions.map(x => x.canonicalAnalysisIn ?? null)).toEqual([null, null, expect.any(String)]);
+        expect(deserializeStep(r).versions.every(x => x.canonicalAnalysis)).toBe(true);
+    });
+
+    it('mientras quepa, quedan como se leyeron', async () => {
+        const antes = paso('viejo', [version('a1', null, { canonicalAnalysis: ANALISIS }), version('a2', 'a1', { canonicalAnalysis: ANALISIS })]);
+        guardado = { ownerId: 'o', steps: [antes, paso('s', [version('v1', null)])] };
+        await editar();
+        expect(pasoDe('viejo')).toEqual(antes);
+    });
+});
+
+/**
+ * Barrido: operaciones al azar sobre un trabajo cerca del límite, con pasos
+ * guardados antes de compactar. Después de cada una, lo que se lee de vuelta no
+ * perdió nada y ninguna referencia queda colgada.
+ */
+describe('barrido de operaciones al azar', () => {
+    function azar(semilla: number) {
+        let a = semilla;
+        return () => {
+            a = (a + 0x6d2b79f5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+    type Guardado = { id: string; currentId?: string | null; acceptedId?: string | null; lastAcceptedVersionId?: string | null; versions: Array<Record<string, unknown> & { id: string }> };
+    const pasos = () => guardado.steps as Guardado[];
+    const leido = () => new Map(pasos().flatMap(s => deserializeStep(s).versions.map(x => [`${s.id}/${x.id}`, x] as const)));
+
+    function sinColgadas() {
+        for (const s of pasos()) {
+            const porId = new Map(s.versions.map(x => [x.id, x]));
+            for (const x of s.versions) {
+                for (const campo of ['canonicalAnalysisIn', 'analysisVerdictsIn'] as const) {
+                    const destino = x[campo];
+                    if (typeof destino !== 'string') continue;
+                    expect(porId.get(destino), `${s.id}/${x.id}.${campo}`).toBeDefined();
+                    expect(porId.get(destino)![campo], 'apunta a otra referencia').toBeUndefined();
+                }
+            }
+            // Quien lee sin pasar por aquí encuentra entera la aceptada y la vigente.
+            for (const id of [s.currentId, s.acceptedId, s.lastAcceptedVersionId]) {
+                const x = id ? porId.get(id) : undefined;
+                if (x) expect(x.canonicalAnalysisIn, `${s.id}/${id} entera`).toBeUndefined();
+            }
+        }
+    }
+
+    for (const semilla of [1, 2, 3, 4, 5]) {
+        it(`semilla ${semilla}: 120 operaciones sin perder nada`, async () => {
+            const r = azar(semilla);
+            const elige = <T>(xs: readonly T[]) => xs[Math.floor(r() * xs.length)]!;
+            const analisis = Array.from({ length: 4 }, (_, i) => ({ notes: relleno(40 + i * 30, String(i)) }));
+            const legado = (id: string) => paso(id, [1, 2, 3, 4].map(n =>
+                version(`${id}${n}`, n > 1 ? `${id}${n - 1}` : null, { canonicalAnalysis: analisis[n % 2], citationVerdicts: [...delAnalisis, ...deProsa(`${id}${n}`)] })));
+            guardado = { ownerId: 'o', steps: [legado('s'), legado('t'), legado('u')] };
+            let recortes = 0;
+
+            for (let n = 0; n < 120; n++) {
+                const antes = leido();
+                const s = elige(pasos());
+                const ids = s.versions.map(x => x.id);
+                const op = elige(['editar', 'generar', 'mover', 'aceptar', 'reabrir', 'verificar', 'revisar'] as const);
+                const tocada = op === 'verificar' || op === 'revisar' ? elige(ids) : null;
+                if (op === 'editar') await repo.saveManualEdit('o', 'p', s.id, relleno(Math.floor(r() * 30), 'e'));
+                if (op === 'generar') await repo.appendStepVersion('o', 'p', s.id, {
+                    markdown: 'generada', origin: 'generated', parentVersionId: s.currentId ?? null, modelId: null, regenerationHint: null, tokensUsed: null,
+                    verifications: { lastRunAt: fecha } as never,
+                    canonicalAnalysis: (r() < 0.5 ? elige(analisis) : { notes: relleno(Math.floor(r() * 120), 'g') }) as never,
+                });
+                if (op === 'mover') await repo.moveToStepVersion('o', 'p', s.id, elige(ids));
+                if (op === 'aceptar') await repo.acceptStepVersion('o', 'p', s.id, elige(ids));
+                if (op === 'reabrir') await repo.reopenStep('o', 'p', s.id);
+                if (op === 'verificar') await repo.setStepVersionVerifications('o', 'p', s.id, tocada!, { lastRunAt: fecha } as never,
+                    [{ origin: 'analysis', raw: `a${n}` }, { origin: 'prose', raw: `p${n}` }] as never);
+                if (op === 'revisar') await repo.setCitationReview('o', 'p', s.id, tocada!, { path: 'x', note: `nota ${n}`, reviewedAt: fecha });
+
+                sinColgadas();
+                const despues = leido();
+                if (despues.size < antes.size + (op === 'editar' || op === 'generar' ? 1 : 0)) recortes++;
+                for (const [clave, x] of despues) {
+                    const previa = antes.get(clave);
+                    if (!previa) continue;
+                    expect(x.markdown, `${op} ${clave}`).toBe(previa.markdown);
+                    expect(x.canonicalAnalysis, `${op} ${clave}`).toEqual(previa.canonicalAnalysis);
+                    if (clave !== `${s.id}/${tocada}` || op !== 'verificar') expect(x.citationVerdicts, `${op} ${clave}`).toEqual(previa.citationVerdicts);
+                }
+            }
+            // El barrido de verdad llegó al límite: si nunca recorta, no prueba el resguardo.
+            expect(recortes).toBeGreaterThan(0);
+        });
+    }
 });

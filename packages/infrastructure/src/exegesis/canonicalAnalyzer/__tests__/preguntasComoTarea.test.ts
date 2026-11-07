@@ -114,10 +114,14 @@ describe('mapToCanonicalVerseAnalysis — questionAnswers', () => {
         expect(conCita.sources).toHaveLength(1);
     });
 
-    it('P2 sigue apagado: el esquema pide la forma de siempre', () => {
-        const criterio = JSON.stringify(canonicalVerseAnalysisSchema(voiceFor('JAS'), { withQuestions: true })).match(/"decisiveCriterion":\{.*?"required":\[[^\]]*\]/)?.[0] ?? '';
-        expect(criterio).toContain('"text"');
-        expect(criterio).not.toContain('"premises"');
+    it('P2 encendido (2026-11-06): el criterio pide la inferencia y las premisas', () => {
+        // El `required` del criterio mismo, no el primero anidado (el de cada premisa).
+        let criterio: { required?: string[] } | undefined;
+        JSON.stringify(canonicalVerseAnalysisSchema(voiceFor('JAS'), { withQuestions: true }), (k, v) => {
+            if (k === 'decisiveCriterion') criterio = v;
+            return v;
+        });
+        expect(criterio?.required).toEqual(['inference', 'whyThisOverThat', 'premises']);
     });
 
     it('sin preguntas no agrega el campo', () => {
@@ -239,7 +243,7 @@ describe('el aparato llega al criterio', () => {
         expect(userMessage + systemInstruction).toContain('dilo en el criterio: sobre qué lectura decide y por qué esa');
         const en = buildAnalyzerPrompt(entrada({ sectionQuestions: preguntas, language: 'en' } as never));
         expect(en.userMessage + en.systemInstruction).toContain('which reading it decides on and why that one');
-        // P2 sigue apagado: el analizador no pide premisas todavía.
-        expect(userMessage + systemInstruction).not.toContain('`premises`');
+        // P2 encendido: el analizador separa premisas e inferencia.
+        expect(userMessage + systemInstruction).toContain('`premises`');
     });
 });
