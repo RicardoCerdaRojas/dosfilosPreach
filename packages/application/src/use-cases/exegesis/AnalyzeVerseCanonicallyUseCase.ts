@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod
+import { usesExtractedExcerpts, stepCorpusQuery, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod
 } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
@@ -328,13 +328,15 @@ export class AnalyzeVerseCanonicallyUseCase {
         paper: ExegeticalPaper,
         verseRef: PassageReference,
         originalLanguageText: string | null,
+        stepId: string,
     ): Promise<CuratedCorpusResult | null> {
         if (!this.corpusRetriever) return null;
-        // Toda fuente con algo que consultar (`retrievalScopeOf`), no sólo las
-        // de páginas elegidas: el documento completo y los fragmentos también
-        // se buscan por versículo.
+        // Toda fuente con algo que consultar, no sólo las de páginas elegidas:
+        // el documento completo y los fragmentos también se buscan por
+        // versículo. Con lo fijado para ESTE paso (`effectiveScope`).
+        const entry = paper.stepPlan.perStep[stepId];
         const scopes = paper.sources.flatMap(s => {
-            const scope = retrievalScopeOf(s);
+            const scope = effectiveScope(s, entry);
             return scope ? [{
                 resourceId: s.sourceLibraryResourceId ?? s.corpusId,
                 sheetRanges: scope.sheetRanges,
@@ -344,7 +346,8 @@ export class AnalyzeVerseCanonicallyUseCase {
         if (scopes.length === 0) return null;
 
         const label = formatPassageReference(verseRef, paper.displayLanguage);
-        const brief = briefForQuery(paper.assignmentBrief);
+        const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
+        const step = paper.steps.find(s => s.id === stepId);
         // The verse's own words lead the query.
         //
         // Without them the query was the reference plus the assignment
@@ -355,18 +358,19 @@ export class AnalyzeVerseCanonicallyUseCase {
         // 1:2 nothing matched, and the retriever returned the previous
         // verse's pages while every aggregate counter said it had
         // answered.
-        const greek = originalLanguageText?.trim() ?? '';
-        const query = [label, greek, brief].filter(Boolean).join(' — ');
+        // Y las preguntas DEL PASO, no el encuadre entero (`stepCorpusQuery`).
+        const query = stepCorpusQuery({
+            label,
+            originalText: originalLanguageText,
+            stepQuestions: step ? questionsOfStep(step, preguntas) : [],
+            brief: paper.assignmentBrief,
+        });
         try {
             return await this.corpusRetriever.retrieve({
                 userId: paper.ownerId,
                 query,
                 sources: scopes,
-                verseKeys: stepVerseKeys(
-                    { kind: 'verse', verseRef },
-                    parseBriefQuestions(paper.assignmentBrief, paper.passage),
-                    paper.passage.bookId,
-                ),
+                verseKeys: stepVerseKeys({ kind: 'verse', verseRef }, preguntas, paper.passage.bookId),
                 budgetChars: CURATED_CORPUS_BUDGET_CHARS,
             });
         } catch (err) {
@@ -502,7 +506,7 @@ export class AnalyzeVerseCanonicallyUseCase {
         originalLanguageText: string | null,
         numberings: ReadonlyMap<string, PageNumbering | null>,
     ): Promise<ExegesisSourceContext[]> {
-        const curated = await this.retrieveCurated(paper, verseRef, originalLanguageText);
+        const curated = await this.retrieveCurated(paper, verseRef, originalLanguageText, stepId);
         // Mirrors GenerateStepUseCase.loadSourceContexts: pin-aware,
         // primary-first ordering, and async content fetch via the
         // injected `IResourceContentReader` for full-document sources.
@@ -524,7 +528,7 @@ export class AnalyzeVerseCanonicallyUseCase {
             const plannedRole = plannedRoles[source.id];
             const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
             const retrieved = curated?.byResource[resourceId];
-            const scope = retrievalScopeOf(source);
+            const scope = effectiveScope(source, plan);
             if (retrieved && retrieved.length > 0) {
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt y el verificador de citas no tienen por qué notar de

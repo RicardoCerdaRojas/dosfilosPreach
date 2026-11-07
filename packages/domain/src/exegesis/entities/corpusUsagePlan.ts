@@ -161,16 +161,21 @@ export function stepPlanWithoutSource<E extends {
     pinnedSources?: ReadonlyArray<string>;
     suppressedSources?: ReadonlyArray<string>;
     pinnedSourceRoles?: Readonly<Record<string, string>>;
+    pinnedSheets?: Readonly<Record<string, unknown>>;
 }>(perStep: Readonly<Record<string, E>>, sourceId: string): Record<string, E> {
     const out: Record<string, E> = {};
     for (const [stepId, entry] of Object.entries(perStep)) {
         const roles = entry.pinnedSourceRoles ? { ...entry.pinnedSourceRoles } : undefined;
         if (roles) delete roles[sourceId];
+        // Las hojas fijadas a un paso tampoco quedan apuntando a la fuente que salió.
+        const hojas = entry.pinnedSheets ? { ...entry.pinnedSheets } : undefined;
+        if (hojas) delete hojas[sourceId];
         out[stepId] = {
             ...entry,
             ...(entry.pinnedSources ? { pinnedSources: entry.pinnedSources.filter(id => id !== sourceId) } : {}),
             ...(entry.suppressedSources ? { suppressedSources: entry.suppressedSources.filter(id => id !== sourceId) } : {}),
             ...(roles ? { pinnedSourceRoles: roles } : {}),
+            ...(hojas ? { pinnedSheets: hojas } : {}),
         };
     }
     return out;

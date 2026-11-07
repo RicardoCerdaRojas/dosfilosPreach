@@ -981,20 +981,26 @@
             "failed": "{{source}} could not be reviewed. Reopen this tab to try again."
           },
           "action": {
-            "adjust": "Adjust pages",
             "removeConfirm": "Remove? Click again",
-            "addAndPin": "Add and pin",
             "remove": "Remove from corpus",
-            "calibrate": "Resolve numbering"
+            "calibrate": "Resolve numbering",
+            "pinForQuestion_one": "Pin for the question",
+            "pinForQuestion_other": "Pin for the questions"
           },
           "chip": {
-            "pinned": "{{page}}: pinned, goes into every step",
-            "inCorpus": "{{page}}: in the corpus. Click to pin it",
-            "outside": "{{page}}: outside the corpus. Click to add and pin it"
+            "pinned": "{{page}}: pinned for the whole paper, goes into every step",
+            "inCorpus": "{{page}}: in the corpus. Click to pin it for this question",
+            "outside": "{{page}}: outside the corpus. Click to pin it for this question",
+            "stepPinned": "{{page}}: pinned for this question. Click to release it"
           },
           "toast": {
-            "added": "Added and pinned {{pages}} from {{source}}.",
-            "addFailed": "The page could not be added. Try again."
+            "addFailed": "The page could not be pinned. Try again.",
+            "pinnedForQuestion_one": "Pinned {{pages}} from {{source}} for question {{questions}}.",
+            "pinnedForQuestion_other": "Pinned {{pages}} from {{source}} for questions {{questions}}.",
+            "releasedForQuestion_one": "Released {{pages}} from {{source}} from question {{questions}}.",
+            "releasedForQuestion_other": "Released {{pages}} from {{source}} from questions {{questions}}.",
+            "noStep_one": "Question {{questions}} does not fall on any step's verse: there is nowhere to pin the page.",
+            "noStep_other": "Questions {{questions}} do not fall on any step's verse: there is nowhere to pin the page."
           },
           "uncovered": {
             "label": "Sources with nothing for this question",

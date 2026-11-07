@@ -338,7 +338,7 @@ describe('los otros pasos, cuando el documento no cabe', () => {
         const v = pasoDe('viejo');
         expect(v.versions.map(x => x.id)).toEqual(['a1', 'a2', 'a3', 'a4', 'a5', 'a6']);
         expect(v.versions.filter(x => x.canonicalAnalysisIn === 'a6')).toHaveLength(5);
-        expect(deserializeStep(v).versions.every(x => (x.canonicalAnalysis as { notes: string }).notes === relleno(150))).toBe(true);
+        expect(deserializeStep(v).versions.every(x => (x.canonicalAnalysis as unknown as { notes: string }).notes === relleno(150))).toBe(true);
         expect(pasoDe('s').versions).toHaveLength(2);
         expect(firestoreBytes(guardado)).toBeLessThanOrEqual(PAPER_BYTES_MAX);
     });

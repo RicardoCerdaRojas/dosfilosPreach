@@ -155,6 +155,10 @@ describe('refsDeTexto — revisión adversarial', () => {
     it('rangos de capítulos y rangos que cruzan de capítulo', () => {
         expect(refsDeTexto('Mateo 5-7')).toEqual(['MAT.5', 'MAT.6', 'MAT.7']);
         expect(refsDeTexto('Romanos 1:18-3:20')).toEqual(['ROM.1', 'ROM.1.18', 'ROM.2', 'ROM.3', 'ROM.3.20']);
+        // Al indexar, una sección: sus extremos no son menciones de 1:18 ni de 3:20 (PR 2, Adamson h. 200).
+        expect(refsDeTexto('Romanos 1:18-3:20', { rangosDeSeccion: true })).toEqual(['ROM.1', 'ROM.2', 'ROM.3']);
+        // Lo que entra apenas en el capítulo siguiente sigue siendo de versículos.
+        expect(refsDeTexto('Romanos 1:31-2:2', { rangosDeSeccion: true })).toEqual(['ROM.1', 'ROM.1.31', 'ROM.2', 'ROM.2.2']);
     });
 
     it('una cita no cruza de renglón', () => {
@@ -354,5 +358,81 @@ describe('refsDeFragmento · capítulo en romanos con coma (Ropes)', () => {
         expect(refsDeFragmento('', ['JAMES', 'VI, 2'])).toEqual([]);
         // Sin libro en el contexto, no se adivina.
         expect(refsDeFragmento('', ['Ⅳ, 9–11'])).toEqual([]);
+    });
+});
+
+/**
+ * PR 2, unidad 3 (2026-11-07): Ropes (ICC) escribe el versículo en superíndice y
+ * separa la lista con espacios. Textos tomados de sus hojas 291, 294 y 298.
+ */
+describe('versículos en superíndice (Ropes)', () => {
+    it('con libro: «Mt. 19¹⁷» y la lista separada por espacios «Rom. 2¹ 14⁴»', () => {
+        expect(refsDeTexto('Cf. Mt. 19¹⁷ εἷς ἐστὶν ὁ ἀγαθός.')).toEqual(['MAT.19', 'MAT.19.17']);
+        expect(refsDeTexto('the thought of Rom. 2¹ 14⁴, but')).toEqual(['ROM.2', 'ROM.2.1', 'ROM.14', 'ROM.14.4']);
+        expect(refsDeTexto('So nearly always in N. T., cf. Jas. 2⁷ 3¹³, Mt. 5¹⁶')).toEqual(['JAS.2', 'JAS.2.7', 'JAS.3', 'JAS.3.13', 'MAT.5', 'MAT.5.16']);
+    });
+
+    it('rango «2¹⁻⁶» y «1¹⁰ ᶠ˙»', () => {
+        expect(refsDeTexto('Jas. 2¹⁻⁶')).toEqual(['JAS.2', 'JAS.2.1', 'JAS.2.2', 'JAS.2.3', 'JAS.2.4', 'JAS.2.5', 'JAS.2.6']);
+        expect(refsDeTexto('Jas. 1¹⁰ ᶠ˙ the rich man')).toEqual(['JAS.1', 'JAS.1.10']);
+    });
+
+    it('sin libro, con el del encabezado: «cf. on 4¹³» y «5⁹» en Santiago', () => {
+        expect(refsDeFragmento('**1. ἄγε νῦν οἱ πλούσιοι,** *cf.* on 4¹³. ὁ κριτής in 5⁹', ['JAMES', 'CHAPTER V.', 'Ⅳ, 17–Ⅴ, 1']))
+            .toEqual(expect.arrayContaining(['JAS.4.13', 'JAS.5.9']));
+    });
+
+    it('REGRESIÓN (revisión del PR 2): la nota al pie tras «v. 4» o «p. 4» no es versículo', () => {
+        expect(refsDeFragmento('In v. 4¹ he says', ['James 4'])).toContain('JAS.4.4');
+        expect(refsDeFragmento('In v. 4¹ he says', ['James 4'])).not.toContain('JAS.4.1');
+        expect(refsDeFragmento('see v. 14² below', ['James 5'])).toContain('JAS.5.14');
+        expect(refsDeFragmento('cited at p. 4²', ['James 4'])).not.toContain('JAS.4.2');
+        expect(refsDeFragmento('the word 4² here', ['James 4'])).not.toContain('JAS.4.2');
+    });
+
+    it('lo demás queda igual: año con superíndice, nota al pie tras una palabra, cita de siempre', () => {
+        expect(refsDeTexto('Mayor, 1910², p. 4')).toEqual([]);
+        expect(refsDeTexto('the rich¹ were Christians')).toEqual([]);
+        expect(refsDeTexto('Santiago 5:14-15')).toEqual(['JAS.5', 'JAS.5.14', 'JAS.5.15']);
+    });
+});
+
+/** PR 2, unidad 3: el aviso falso de Mayor h. 441 (B82). */
+describe('capítulo en romanos tras el libro (Mayor)', () => {
+    it('«1 Pet. v. 1» es 1 Pedro 5:1, y no deja un «v. 1» de Santiago', () => {
+        const refs = refsDeFragmento('as in 1 Pet. v. 1, where the elder', ['NOTES', 'V 1] NOTES'], 'JAS');
+        expect(refs).toContain('1PE.5.1');
+        expect(refs.filter(r => r.startsWith('JAS'))).toEqual(['JAS.5', 'JAS.5.1']);
+        expect(refsDeFragmento('as in 1 Pet. v. 3, where', ['NOTES', 'IV 2] NOTES'], 'JAS')).not.toContain('JAS.4.3');
+    });
+    it('«Rom. viii. 28» y la mayúscula «Jas. IV. 12»', () => {
+        expect(refsDeTexto('cf. Rom. viii. 28')).toEqual(['ROM.8', 'ROM.8.28']);
+        expect(refsDeTexto('Jas. IV. 12')).toEqual(['JAS.4', 'JAS.4.12']);
+    });
+    it('sin libro, «cf. v. 1» sigue siendo el versículo', () => {
+        expect(refsDeFragmento('cf. v. 3 and i. 5', ['NOTES', 'IV 2] NOTES'], 'JAS')).toContain('JAS.4.3');
+        for (const prosa of ['read in v. 3 here', 'this is v. 3', 'as v. 3 shows']) expect(refsDeTexto(prosa)).toEqual([]);
+        // En el buscador no se exige mayúscula: ahí la salvaguarda es la única.
+        expect(refsDeTexto('this is v. 3', { exigirMayuscula: false })).not.toContain('ISA.5.3');
+    });
+});
+
+/** PR 2, unidad 3: los avisos falsos de Adamson (B82), con causa cerrada. */
+describe('un rango de sección deja el capítulo, no sus versículos', () => {
+    it('h. 199: el titulillo «5:1–18 CONCLUSION» no nombra 5:6', () => {
+        const refs = refsDeFragmento('else." Thus the phrase can be related', ['CHAPTER 5', '5:1–18 CONCLUSION'], 'JAS');
+        expect(refs).toEqual(['JAS.5']);
+    });
+    it('h. 200: «in 4:1–5:6» de paso no nombra 5:6', () => {
+        expect(refsDeFragmento('From the stern rebukes of others in 4:1–5:6, James turns', ['CHAPTER 5'], 'JAS')).not.toContain('JAS.5.6');
+    });
+    it('hasta diez versículos siguen siendo de versículos: «5:1–6», «4:1-10»', () => {
+        expect(refsDeFragmento('Santiago 5:1-6', [])).toContain('JAS.5.6');
+        expect(refsDeFragmento('Santiago 4:1-10', [])).toContain('JAS.4.10');
+        expect(refsDeFragmento('Santiago 4:1-11', [])).toEqual(['JAS.4']);
+    });
+    it('REGRESIÓN (revisión del PR 2): la consulta de una perícopa sí pide sus versículos', () => {
+        expect(refsDeConsulta('santiago 3:1-12')).toHaveLength(13);
+        expect(refsDeConsulta('santiago 5:1-18')).toContain('JAS.5.6');
     });
 });

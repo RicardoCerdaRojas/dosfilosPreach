@@ -34,13 +34,14 @@ import type {
     ProjectSourceExcerpt,
     SourceType,
     StepSourcePlan,
+    StepSourcePlanEntry,
     VerificationSummary,
     VerifiedCitation,
     CitationReview,
     CitationCorrection,
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
-import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, isProsePath, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy,
+import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, isProsePath, stepPinsForQuestion, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy,
     resolveExegeticalMethod, stepAfterVersionMove, stepPlanWithoutSource, swapPreviousProse, trimStepVersions, versionsToKeepOnAppend, versionUnderReview, withoutOldestVersions, withRecomposedProse } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
@@ -287,13 +288,75 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
     async setStepPlan(ownerId: string, paperId: string, plan: StepSourcePlan): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
         const now = new Date();
-        await updateDoc(this.docRef(paperId), {
-            stepPlan: { ...plan, updatedAt: now },
-            updatedAt: now,
+        // Lo fijado por paso no viaja en el plan que se escribe: se conserva lo
+        // guardado. Proponer el plan tarda segundos, y sin esto una hoja fijada
+        // mientras tanto se perdía al escribir la copia leída antes (revisión del PR 2).
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(this.docRef(paperId));
+            const guardado = deserializeStepPlan(snap.data()?.stepPlan).perStep;
+            const perStep: Record<string, StepSourcePlanEntry> = {};
+            for (const [stepId, entrada] of Object.entries(plan.perStep)) {
+                const { pinnedSheets: _ignorada, ...sinHojas } = entrada;
+                const hojas = guardado[stepId]?.pinnedSheets;
+                perStep[stepId] = hojas ? { ...sinHojas, pinnedSheets: hojas } : sinHojas;
+            }
+            tx.update(this.docRef(paperId), {
+                stepPlan: { ...plan, perStep, updatedAt: now },
+                updatedAt: now,
+            });
         });
         const fresh = await this.getPaper(ownerId, paperId);
         if (!fresh) throw new Error(`Paper ${paperId} not found after setStepPlan`);
         return fresh;
+    }
+
+    async changeStepPinnedSheets(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        sourceId: string,
+        change: { pin: boolean; sheets: ReadonlyArray<number> },
+    ): Promise<StepSourcePlanEntry> {
+        const ref = this.docRef(paperId);
+        let entrada: StepSourcePlanEntry | null = null;
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists()) throw new Error(`Paper ${paperId} not found`);
+            const data = snap.data();
+            if (data.ownerId !== ownerId) throw new Error(`Paper ${paperId} not owned by ${ownerId}`);
+            const step = (Array.isArray(data.steps) ? data.steps : []).find((s: { id?: string }) => s.id === stepId);
+            if (!step) throw new Error(`Step ${stepId} not found in paper ${paperId}`);
+            if (!(Array.isArray(data.sources) ? data.sources : []).some((s: { id?: string }) => s.id === sourceId)) {
+                throw new Error(`Source ${sourceId} not in paper ${paperId}`);
+            }
+            const plan = deserializeStepPlan(data.stepPlan);
+            const antes: StepSourcePlanEntry = plan.perStep[stepId] ?? {
+                stepId, kind: step.kind, pinnedSources: [], suppressedSources: [], note: null,
+                emphasis: { emphasizedTypes: [], deemphasizedTypes: [], citationOverrides: [] },
+            };
+            const hojas = { ...(antes.pinnedSheets ?? {}) };
+            // El cambio sobre lo guardado, no sobre la copia del navegador.
+            const limpias = stepPinsForQuestion({
+                plan, stepsOfQuestion: [stepId], sourceId, sheets: change.sheets, pin: change.pin,
+            })[0]!.ranges;
+            if (limpias.length > 0) hojas[sourceId] = limpias; else delete hojas[sourceId];
+            const { pinnedSheets: _viejas, ...sinHojas } = antes;
+            entrada = Object.keys(hojas).length > 0 ? { ...sinHojas, pinnedSheets: hojas } : sinHojas;
+            const now = new Date();
+            // Campo por campo: el plan leído trae `proposalCorpusSourceIds: undefined`
+            // cuando no hubo propuesta, y Firestore rechaza `undefined` también anidado.
+            tx.update(ref, {
+                stepPlan: {
+                    perStep: { ...plan.perStep, [stepId]: entrada },
+                    defaults: plan.defaults,
+                    updatedAt: now,
+                    ...(plan.proposedAt !== undefined && { proposedAt: plan.proposedAt }),
+                    ...(plan.proposalCorpusSourceIds !== undefined && { proposalCorpusSourceIds: plan.proposalCorpusSourceIds }),
+                },
+                updatedAt: now,
+            });
+        });
+        return entrada!;
     }
 
     async setRubric(ownerId: string, paperId: string, rubric: PaperRubric | null): Promise<ExegeticalPaper> {

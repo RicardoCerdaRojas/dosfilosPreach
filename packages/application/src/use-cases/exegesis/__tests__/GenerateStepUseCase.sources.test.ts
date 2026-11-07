@@ -216,3 +216,34 @@ describe('GenerateStepUseCase — se busca por paso también sin páginas', () =
         expect(enviada.textContent).not.toContain('PORTADA');
     });
 });
+
+/** PR 2, unidad 4: la generación también consulta lo fijado para su paso. */
+describe('GenerateStepUseCase — lo fijado por paso', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('suma las hojas del paso a la receta, como fijadas', async () => {
+        const base = makePaper([makeSource('McComiskey', 'res-a')]);
+        const paper = {
+            ...base,
+            stepPlan: { ...EMPTY_STEP_SOURCE_PLAN, perStep: { 'step-1': { stepId: 'step-1', kind: 'verse', emphasis: EMPTY_STEP_SOURCE_PLAN.defaults.verse, pinnedSources: [], suppressedSources: [], note: null, pinnedSheets: { 'src-McComiskey': [{ start: 200, end: 201 }] } } } },
+        } as ExegeticalPaper;
+        const { useCase, retriever } = buildUseCase({ paper, retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(retriever.retrieve.mock.calls[0][0].sources[0]).toMatchObject({
+            sheetRanges: [{ start: 98, end: 102 }, { start: 200, end: 201 }],
+            pinnedRanges: [{ start: 200, end: 201 }],
+        });
+    });
+});
+
+describe('GenerateStepUseCase — la consulta lleva las preguntas de su paso (PR 2, unidad 5)', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+    it('la de 4:1 sí; la de 4:5, no', async () => {
+        const paper = { ...makePaper([makeSource('McComiskey', 'res-a')]), assignmentBrief: '1. En 4:1, ¿por qué se enoja Jonás?\n2. En 4:5, ¿qué espera ver?' } as ExegeticalPaper;
+        const { useCase, retriever } = buildUseCase({ paper, retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const { query } = retriever.retrieve.mock.calls[0][0];
+        expect(query).toContain('se enoja');
+        expect(query).not.toContain('espera ver');
+    });
+});

@@ -265,6 +265,15 @@ export const MAX_ENTRY_SHEETS = 8;
 /** Una línea que abre una entrada: el lema en negrita, o un título markdown. */
 const LINEA_DE_ENTRADA = /^[ \t]*(?:\*\*([^*\n]{1,120})\*\*|#{1,6}[ \t]+([^\n]{1,120}))/gm;
 const PRIMERA_PALABRA_ORIGINAL = /[\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F\u00B5]+/;
+/**
+ * Un artículo que abre sin negrita ni título, con la familia de palabras y su
+ * glosa entre corchetes: «σήπω [pudrir], σαπρός [podrido]» (Kittel y
+ * Friedrich, edición abreviada). Abre la entrada de cada palabra que lleva su
+ * glosa. Sin esto se hallaban 2 de los 12 lemas de los TP #8 a #10 (medido).
+ * Una glosa no lleva cifras: «θησαυρίζω [Mt 6:19]» es una cita, no un artículo.
+ */
+const LINEA_DE_FAMILIA = /^[ \t]*[\u0590-\u05FF\u0370-\u03FF\u1F00-\u1FFF][^\n]{0,160}\[[^\]\n\d]{1,60}\][^\n]{0,160}$/gm;
+const PALABRA_CON_GLOSA = /([\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F\u00B5]+)[ \t]*\[[^\]\n\d]{1,60}\]/g;
 
 /**
  * Las entradas de un léxico o diccionario: dónde empieza la de cada lema y
@@ -286,21 +295,31 @@ export function lemmaEntriesIn(
 ): Record<string, { startSheet: number; endSheet: number }> {
     const buscadas = new Set(claves.filter(Boolean));
     const ordenados = [...chunks].sort((a, b) => a.chunkIndex - b.chunkIndex);
-    const cabezas: Array<{ clave: string; sheet: number }> = [];
+    // Una cabeza abre un artículo; la de familia, uno para todas sus palabras.
+    const cabezas: Array<{ claves: string[]; sheet: number }> = [];
+    const claveDe = (palabra: string) => (/[\u05D0-\u05EA]/.test(palabra) ? soloConsonantes(palabra) : griegoPlegado(palabra));
     for (const chunk of ordenados) {
-        LINEA_DE_ENTRADA.lastIndex = 0;
-        for (const m of chunk.text.normalize('NFC').matchAll(LINEA_DE_ENTRADA)) {
-            const palabra = (m[1] ?? m[2] ?? '').match(PRIMERA_PALABRA_ORIGINAL)?.[0] ?? '';
-            const clave = /[\u05D0-\u05EA]/.test(palabra) ? soloConsonantes(palabra) : griegoPlegado(palabra);
-            if (clave) cabezas.push({ clave, sheet: chunk.sheet });
+        const texto = chunk.text.normalize('NFC');
+        // En orden de aparición dentro del fragmento: la siguiente cabeza cierra la entrada.
+        const enEste: Array<{ claves: string[]; at: number }> = [];
+        for (const m of texto.matchAll(LINEA_DE_ENTRADA)) {
+            const clave = claveDe((m[1] ?? m[2] ?? '').match(PRIMERA_PALABRA_ORIGINAL)?.[0] ?? '');
+            if (clave) enEste.push({ claves: [clave], at: m.index ?? 0 });
         }
+        for (const linea of texto.matchAll(LINEA_DE_FAMILIA)) {
+            const claves = [...linea[0].matchAll(PALABRA_CON_GLOSA)].map(m => claveDe(m[1]!)).filter(Boolean);
+            if (claves.length > 0) enEste.push({ claves, at: linea.index ?? 0 });
+        }
+        for (const c of enEste.sort((a, b) => a.at - b.at)) cabezas.push({ claves: c.claves, sheet: chunk.sheet });
     }
     const out: Record<string, { startSheet: number; endSheet: number }> = {};
     cabezas.forEach((cabeza, i) => {
-        if (!buscadas.has(cabeza.clave) || out[cabeza.clave]) return;
-        const siguiente = cabezas.slice(i + 1).find(c => c.clave !== cabeza.clave);
-        const fin = siguiente ? Math.max(cabeza.sheet, siguiente.sheet) : cabeza.sheet;
-        out[cabeza.clave] = { startSheet: cabeza.sheet, endSheet: Math.min(fin, cabeza.sheet + maxSheets - 1) };
+        for (const clave of cabeza.claves) {
+            if (!buscadas.has(clave) || out[clave]) continue;
+            const siguiente = cabezas.slice(i + 1).find(c => !c.claves.includes(clave));
+            const fin = siguiente ? Math.max(cabeza.sheet, siguiente.sheet) : cabeza.sheet;
+            out[clave] = { startSheet: cabeza.sheet, endSheet: Math.min(fin, cabeza.sheet + maxSheets - 1) };
+        }
     });
     return out;
 }

@@ -43,10 +43,10 @@ const removeSource = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/hooks/exegesis/useExegesisPapers', () => ({
     useExegesisPapers: () => ({ removeSource: { mutateAsync: removeSource, isPending: false } }),
 }));
-const selectPages = vi.fn().mockResolvedValue({ excerptCount: 1, emptySheets: 0, expectedChunks: 1, incomplete: false });
-vi.mock('@/hooks/exegesis/useSelectSourcePages', () => ({
-    useSelectSourcePages: () => ({ mutateAsync: selectPages, isPending: false }),
-}));
+// PR 2: la tarjeta fija para los pasos de la pregunta, no en la receta.
+const setStepPinnedSheets = vi.fn().mockResolvedValue({});
+vi.mock('@dosfilos/application', () => ({ exegesisService: { setStepPinnedSheets: { execute: setStepPinnedSheets } } }));
+vi.mock('@/context/firebase-context', () => ({ useFirebase: () => ({ user: { uid: 'yo' } }) }));
 vi.mock('@/i18n', () => ({
     useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k} ${JSON.stringify(o)}` : k) }),
 }));
@@ -71,12 +71,14 @@ const fuente = (id: string, sourceType: string, sheetRanges: Array<{ start: numb
 
 const BRIEF = '1. ¿Qué significa el sustantivo μέλεσιν (Stg. 4:1)?\n2. ¿Por qué αἰτεῖτε en voz activa (Stg. 4:3)?';
 
-const trabajo = (sources: unknown[], assignmentBrief: string | null = BRIEF) => ({
+const verso = (verse: number) => ({ id: `v${verse}`, kind: 'verse', verseRef: { bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: verse, verseEnd: verse } });
+const trabajo = (sources: unknown[], assignmentBrief: string | null = BRIEF, perStep: Record<string, unknown> = {}) => ({
     id: 'tp8',
     passage: { bookId: 'JAS', chapterStart: 4, chapterEnd: 4, verseStart: 1, verseEnd: 10 },
     assignmentBrief,
     displayLanguage: 'es',
-    steps: [],
+    steps: [verso(1), verso(3)],
+    stepPlan: { perStep, defaults: {}, updatedAt: new Date() },
     sources,
 }) as unknown as ExegeticalPaper;
 
@@ -99,22 +101,23 @@ beforeEach(() => {
 });
 
 describe('«¿Qué responde cada pregunta?»', () => {
-    it('avisa la nota de Mayor sobre 4:3 con su página impresa, y la agrega y fija SOLA', async () => {
+    it('avisa la nota de Mayor sobre 4:3 con su página impresa, y la fija SOLA y solo para el paso de esa pregunta', async () => {
         montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 410 }])]));
         const aviso = await screen.findByText(/warning\.missingSheets/);
         expect(aviso.textContent).toContain('"pages":"paperSetup.subSteps.corpus.questionReview.page {\\"page\\":\\"133\\"}"');
         expect(aviso.textContent).toContain('"verses":"4:3"');
-        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.addAndPin'));
-        await waitFor(() => expect(selectPages).toHaveBeenCalled());
-        // Suma sobre lo que el trabajo declara AHORA (lo hace el caso de uso).
-        expect(selectPages.mock.calls[0]![0]).toMatchObject({
-            paperId: 'tp8',
-            libraryResourceId: 'r-mayor',
-            sheetRanges: [{ start: 411, end: 411 }],
-            pinnedRanges: [{ start: 411, end: 411 }],
-            selectionMode: 'manual',
-            mergeWithExisting: true,
-        });
+        fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.pinForQuestion {"count":1}'));
+        await waitFor(() => expect(setStepPinnedSheets).toHaveBeenCalledTimes(1));
+        expect(setStepPinnedSheets).toHaveBeenCalledWith({ ownerId: 'yo', paperId: 'tp8', stepId: 'v3', sourceId: 'mayor', sheets: [411], pin: true });
+    });
+
+    it('una hoja fijada para la pregunta se suelta desde la tarjeta', async () => {
+        montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }])], BRIEF, {
+            v3: { stepId: 'v3', kind: 'verse', pinnedSources: [], suppressedSources: [], note: null, pinnedSheets: { mayor: [{ start: 411, end: 411 }] } },
+        }));
+        fireEvent.click(await screen.findByText('paperSetup.subSteps.corpus.questionReview.byQuestion'));
+        fireEvent.click(screen.getByRole('button', { name: /chip\.stepPinned/ }));
+        await waitFor(() => expect(setStepPinnedSheets).toHaveBeenCalledWith(expect.objectContaining({ stepId: 'v3', sourceId: 'mayor', sheets: [411], pin: false })));
     });
 
     it('avisa la entrada de μέλος incompleta en Tuggy: falta la 584', async () => {
@@ -148,20 +151,20 @@ describe('«¿Qué responde cada pregunta?»', () => {
         expect(searchDocumentByReference).not.toHaveBeenCalledWith('r-subida', expect.anything());
     });
 
-    it('un documento completo no se toca desde la tarjeta: sus páginas no se pulsan (revisión de 8a)', async () => {
+    it('un documento completo se fija para la pregunta sin tocar su alcance: no se reduce a la hoja pulsada (revisión de 8a)', async () => {
         const entero = { ...fuente('mayor', 'commentary-critical', []), mode: 'full-document', excerptRecipe: null };
         montar(trabajo([entero]));
         await screen.findByText('paperSetup.subSteps.corpus.questionReview.allGood');
         fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.byQuestion'));
-        expect(screen.queryAllByRole('button', { name: /chip\./ })).toEqual([]);
+        fireEvent.click(screen.getAllByRole('button', { name: /chip\./ })[0]!);
+        await waitFor(() => expect(setStepPinnedSheets).toHaveBeenCalledWith(expect.objectContaining({ stepId: 'v1', sourceId: 'mayor', sheets: [407], pin: true })));
     });
 
-    it('una fuente de fragmentos sin receta ofrece «Ajustar páginas», no «Agregar y fijar»', async () => {
+    it('una fuente de fragmentos sin receta también se fija para la pregunta, sin perder sus fragmentos', async () => {
         const vieja = { ...fuente('mayor', 'commentary-critical', []), excerptRecipe: null, excerpts: [{ text: 'x', sheet: 407 }] };
         montar(trabajo([vieja]));
-        fireEvent.click(await screen.findByText('paperSetup.subSteps.corpus.questionReview.action.adjust'));
-        expect(navigate).toHaveBeenCalledWith('/dashboard/exegesis/tp8/fuentes/mayor/paginas');
-        expect(selectPages).not.toHaveBeenCalled();
+        fireEvent.click(await screen.findByText('paperSetup.subSteps.corpus.questionReview.action.pinForQuestion {"count":1}'));
+        await waitFor(() => expect(setStepPinnedSheets).toHaveBeenCalledWith(expect.objectContaining({ stepId: 'v3', sourceId: 'mayor' })));
     });
 
     it('un libro sin índice no se da por inútil: se dice que no se pudo revisar', async () => {

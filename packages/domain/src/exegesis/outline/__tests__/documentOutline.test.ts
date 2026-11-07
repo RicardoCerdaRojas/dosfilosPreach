@@ -475,3 +475,82 @@ describe('outlineStructureQuality', () => {
         expect(outlineStructureQuality(resolved).usable).toBe(false);
     });
 });
+
+/** PR 2, unidad 3: Adamson (NICNT), TP #10. Encabezados reales de su miga. */
+describe('Adamson: el libro en la miga y sus dos formas de encabezado', () => {
+    it('la referencia al comienzo, con el título detrás', () => {
+        expect(parseHeadingReference('5:1–18 CONCLUSION', 'JAS')).toEqual(ref('James 5:1-18'));
+        expect(parseHeadingReference('3:1 WHO WOULD BE A TEACHER?', 'JAS')).toEqual(ref('James 3:1'));
+        expect(parseHeadingReference('5:1–18 CONCLUSION', null)).toBeNull();
+        expect(parseHeadingReference('1:1-3, 5', 'JAS')).toBeNull();
+    });
+
+    it('el paréntesis final dentro de la cursiva', () => {
+        expect(parseHeadingReference('*a. In testing, in training, and in fruition (1:2–4)*', 'JAS')).toEqual(ref('James 1:2-4'));
+    });
+
+    it('«THE EPISTLE OF JAMES» en la miga da el libro, y sus encabezados se leen', () => {
+        const resolved = resolveOutlineReferences([
+            entry(0, 'THE EPISTLE OF JAMES', ['CHAPTER 5', 'THE EPISTLE OF JAMES'], 197),
+            entry(1, '5:1–18 CONCLUSION', ['CHAPTER 5', '5:1–18 CONCLUSION'], 198),
+            entry(2, '*a. The judgment of the faithless rich (5:1–6)*', ['CHAPTER 5', 'THE EPISTLE OF JAMES', '*a. The judgment of the faithless rich (5:1–6)*'], 198),
+            entry(3, 'THE EPISTLE OF JAMES', ['CHAPTER 5', 'THE EPISTLE OF JAMES'], 199),
+        ]);
+        expect(resolved.map(e => e.resolution)).toEqual(['none', 'heading', 'heading', 'inherited']);
+        expect(resolved[3]!.reference).toEqual(ref('James 5:1-6'));
+    });
+
+    it('un libro distinto en la miga sigue cortando la herencia', () => {
+        const resolved = resolveOutlineReferences([
+            entry(0, '5:1–18 CONCLUSION', ['THE EPISTLE OF JAMES', '5:1–18 CONCLUSION']),
+            entry(1, 'Texto', ['THE EPISTLE TO THE HEBREWS']),
+        ]);
+        expect(resolved[1]!.reference).toBeNull();
+    });
+});
+
+describe('el titulillo de página no pisa la subsección (Adamson, TP #10)', () => {
+    const adamson = [
+        entry(354, '*a. The judgment of the faithless rich (5:1–6)*', ['CHAPTER 5', 'THE EPISTLE OF JAMES', '*a. The judgment of the faithless rich (5:1–6)*'], 186),
+        entry(355, '5:1–18 CONCLUSION', ['CHAPTER 5', '5:1–18 CONCLUSION'], 187),
+        entry(357, 'THE EPISTLE OF JAMES', ['CHAPTER 5', 'THE EPISTLE OF JAMES'], 188),
+        entry(367, '5:1–18 CONCLUSION', ['CHAPTER 5', '5:1–18 CONCLUSION'], 193),
+        entry(368, '*b. Patience, a little (5:7–11)*', ['CHAPTER 5', '*b. Patience, a little (5:7–11)*'], 193),
+        entry(371, '5:1–18 CONCLUSION', ['CHAPTER 5', '5:1–18 CONCLUSION'], 195),
+    ];
+
+    it('lo que envuelve a la subsección en curso la hereda', () => {
+        const r = resolveOutlineReferences(adamson);
+        expect(r.map(e => `${e.reference?.verseStart}-${e.reference?.verseEnd}`)).toEqual(['1-6', '1-6', '1-6', '1-6', '7-11', '7-11']);
+        const sel = selectChunksForPassage(r, ref('James 5:1-6'));
+        expect(sel.ranges[0]).toMatchObject({ start: expect.any(Number) });
+        expect(Math.max(...sel.ranges.map(x => x.end))).toBeGreaterThanOrEqual(367);
+    });
+
+    it('el encabezado de página en romanos manda siempre: «Ⅳ, 11» y luego «Ⅳ, 11–13» (Ropes)', () => {
+        const r = resolveOutlineReferences([
+            entry(0, 'Ⅳ, 11', ['JAMES', 'Ⅳ, 11']),
+            entry(1, 'Ⅳ, 11–13', ['JAMES', 'Ⅳ, 11–13']),
+        ]);
+        expect(r[1]!.reference).toEqual(ref('James 4:11-13'));
+        expect(r[1]!.resolution).toBe('heading');
+    });
+
+    it('REGRESIÓN (revisión del PR 2): una sección más amplia que aparece una sola vez sí reemplaza', () => {
+        const r = resolveOutlineReferences([
+            entry(0, '2:14–17 Faith without works', ['THE EPISTLE OF JAMES', '2:14–17 Faith without works']),
+            entry(1, '2:14–17 Faith without works', ['THE EPISTLE OF JAMES', '2:14–17 Faith without works']),
+            entry(2, '2:14–26 Theology of faith and works', ['THE EPISTLE OF JAMES', '2:14–26 Theology of faith and works']),
+            entry(3, '2:14–26 Theology of faith and works', ['THE EPISTLE OF JAMES', '2:14–26 Theology of faith and works']),
+        ]);
+        expect(r.map(e => e.reference?.verseEnd)).toEqual([17, 17, 26, 26]);
+    });
+
+    it('una sección hermana, que no envuelve, sí reemplaza', () => {
+        const r = resolveOutlineReferences([
+            entry(0, '1:2–4 Testing', ['THE EPISTLE OF JAMES', '1:2–4 Testing']),
+            entry(1, '1:5–8 Prayer', ['THE EPISTLE OF JAMES', '1:5–8 Prayer']),
+        ]);
+        expect(r[1]!.reference).toEqual(ref('James 1:5-8'));
+    });
+});

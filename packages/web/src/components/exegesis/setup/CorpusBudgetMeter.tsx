@@ -19,7 +19,7 @@ export function CorpusBudgetMeter({ paper }: { paper: ExegeticalPaper }) {
     const { t, i18n } = useTranslation('exegesis');
     const n = (x: number) => x.toLocaleString(i18n.language);
 
-    const { perStepChars, admittedChars, pending } = useCorpusFootprint(paper.sources);
+    const { perStepChars, admittedChars, pending } = useCorpusFootprint(paper.sources, undefined, paper.stepPlan);
     const percent = Math.round((perStepChars / VERSE_CORPUS_SPACE_CHARS) * 100);
     const over = perStepChars > VERSE_CORPUS_SPACE_CHARS;
     // Los análisis ya aceptados ocupan el mismo mensaje: al final del pasaje

@@ -1,5 +1,6 @@
 import type { SourceType } from './SourceType';
 import type { ExegeticalStepKind } from './ExegeticalStep';
+import type { SheetRange } from './ProjectSource';
 
 /**
  * Per-step source-emphasis plan — the "how should the orchestrator
@@ -121,6 +122,15 @@ export interface StepSourcePlanEntry {
      * borra.
      */
     sourcesEditedAfterNote?: boolean;
+    /**
+     * Hojas fijadas SOLO para este paso, por `ProjectSource.id` (fase «Del corpus
+     * al texto», PR 2). Lo fijado en la receta de la fuente viaja a todos los
+     * pasos y se paga entero en cada uno: en el TP #8 ocupaba el 79 % del
+     * espacio de cada versículo, aunque la hoja fuera de otra pregunta. Esto
+     * llega con espacio reservado a su paso y a ningún otro; no obliga a
+     * citarla. No escribe en `excerptRecipe`: lo lee `effectiveScope`.
+     */
+    pinnedSheets?: Readonly<Record<string, ReadonlyArray<SheetRange>>>;
 }
 
 /**

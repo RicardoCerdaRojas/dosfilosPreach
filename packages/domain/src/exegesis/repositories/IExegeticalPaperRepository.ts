@@ -15,7 +15,7 @@ import type {
 } from '../entities/ExegeticalStep';
 import type { PaperRubric } from '../entities/PaperRubric';
 import type { ProjectSource } from '../entities/ProjectSource';
-import type { StepSourcePlan } from '../entities/StepSourcePlan';
+import type { StepSourcePlan, StepSourcePlanEntry } from '../entities/StepSourcePlan';
 
 /**
  * Campos de una fuente que `updateSource` puede cambiar. Vive como tipo
@@ -113,6 +113,21 @@ export interface IExegeticalPaperRepository {
      * not-owned papers.
      */
     setStepPlan(ownerId: string, paperId: string, plan: StepSourcePlan): Promise<ExegeticalPaper>;
+
+    /**
+     * Fija o suelta hojas de UNA fuente para UN paso (`pinnedSheets`). El cambio
+     * se aplica sobre lo guardado, dentro de una transacción: calcularlo con la
+     * copia del navegador perdía lo que otra pestaña acababa de fijar. Es el
+     * único que escribe `pinnedSheets`: `setStepPlan` las conserva. Devuelve la
+     * entrada como quedó.
+     */
+    changeStepPinnedSheets(
+        ownerId: string,
+        paperId: string,
+        stepId: string,
+        sourceId: string,
+        change: { pin: boolean; sheets: ReadonlyArray<number> },
+    ): Promise<StepSourcePlanEntry>;
 
     /**
      * Replaces the paper's `rubric` wholesale. Pass null to clear it

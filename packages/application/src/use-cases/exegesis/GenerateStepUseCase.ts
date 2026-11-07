@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, stepVerseKeys } from '@dosfilos/domain';
+import { usesExtractedExcerpts, stepCorpusQuery, questionsOfStep, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, stepVerseKeys } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -230,10 +230,12 @@ export class GenerateStepUseCase {
         step: ExegeticalStep,
     ): Promise<CuratedCorpusResult | null> {
         if (!this.corpusRetriever) return null;
-        // Toda fuente con algo que consultar (`retrievalScopeOf`): también el
-        // documento completo y los fragmentos se buscan para este paso.
+        // Toda fuente con algo que consultar: también el documento completo y
+        // los fragmentos se buscan para este paso, con lo fijado para él
+        // (`effectiveScope`).
+        const entry = paper.stepPlan.perStep[step.id];
         const scopes = paper.sources.flatMap(s => {
-            const scope = retrievalScopeOf(s);
+            const scope = effectiveScope(s, entry);
             return scope ? [{
                 resourceId: s.sourceLibraryResourceId ?? s.corpusId,
                 sheetRanges: scope.sheetRanges,
@@ -244,13 +246,14 @@ export class GenerateStepUseCase {
 
         const target = step.verseRef ?? paper.passage;
         const label = formatPassageReference(target, paper.displayLanguage);
-        const brief = briefForQuery(paper.assignmentBrief);
+        const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
         try {
             return await this.corpusRetriever.retrieve({
                 userId: paper.ownerId,
-                query: brief ? `${label} — ${brief}` : label,
+                // La misma consulta que el análisis: las preguntas del paso, o el encuadre si no tiene.
+                query: stepCorpusQuery({ label, stepQuestions: questionsOfStep(step, preguntas), brief: paper.assignmentBrief }),
                 sources: scopes,
-                verseKeys: stepVerseKeys(step, parseBriefQuestions(paper.assignmentBrief, paper.passage), paper.passage.bookId),
+                verseKeys: stepVerseKeys(step, preguntas, paper.passage.bookId),
                 budgetChars: CURATED_CORPUS_BUDGET_CHARS,
             });
         } catch (err) {
@@ -287,7 +290,7 @@ export class GenerateStepUseCase {
                 pinnedIds.has(source.id) ? 'primary' : 'secondary';
             const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
             const retrieved = curated?.byResource[resourceId];
-            const scope = retrievalScopeOf(source);
+            const scope = effectiveScope(source, paper.stepPlan.perStep[stepId]);
             if (retrieved && retrieved.length > 0) {
                 const numbering = numberings.get(source.id) ?? null;
                 const anchor = (c: { sheet: number | null; section: string | null }) =>

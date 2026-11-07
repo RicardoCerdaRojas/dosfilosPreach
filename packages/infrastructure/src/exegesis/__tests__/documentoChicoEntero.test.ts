@@ -46,6 +46,16 @@ describe('documento completo chico: viaja entero', () => {
         expect(rankeadas.flat()).toEqual(['libro']);
     });
 
+    it('REGRESIÓN (revisión del PR 2): con una hoja fijada para el paso, sigue viajando entero', async () => {
+        tamanos.chico = 6_000;
+        const r = await new CallableCuratedCorpusRetriever().retrieve({
+            userId: 'u', query: 'Jonás 4:6', budgetChars: 100_000,
+            sources: [{ resourceId: 'chico', sheetRanges: [WHOLE_DOCUMENT_RANGE], pinnedRanges: [{ start: 1, end: 1 }] }],
+        } as never);
+        expect(r.byResource.chico!.map(c => c.text)).toEqual(['chico parte 1', 'chico parte 2']);
+        expect(rankeadas.flat()).toEqual([]);
+    });
+
     it('justo sobre el umbral: se consulta como un libro', async () => {
         tamanos.mediano = SMALL_DOCUMENT_CHARS + 1;
         await new CallableCuratedCorpusRetriever().retrieve({

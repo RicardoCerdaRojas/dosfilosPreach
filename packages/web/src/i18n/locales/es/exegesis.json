@@ -981,20 +981,26 @@
             "failed": "No se pudo revisar {{source}}. Vuelve a abrir esta pestaña para intentarlo de nuevo."
           },
           "action": {
-            "adjust": "Ajustar páginas",
             "removeConfirm": "¿Quitar? Pulsa de nuevo",
-            "addAndPin": "Agregar y fijar",
             "remove": "Quitar del corpus",
-            "calibrate": "Resolver numeración"
+            "calibrate": "Resolver numeración",
+            "pinForQuestion_one": "Fijar para la pregunta",
+            "pinForQuestion_other": "Fijar para las preguntas"
           },
           "chip": {
-            "pinned": "{{page}}: fijada, entra a todos los pasos",
-            "inCorpus": "{{page}}: en el corpus. Pulsa para fijarla",
-            "outside": "{{page}}: fuera del corpus. Pulsa para agregarla y fijarla"
+            "pinned": "{{page}}: fijada para todo el trabajo, entra a todos los pasos",
+            "inCorpus": "{{page}}: en el corpus. Pulsa para fijarla para esta pregunta",
+            "outside": "{{page}}: fuera del corpus. Pulsa para fijarla para esta pregunta",
+            "stepPinned": "{{page}}: fijada para esta pregunta. Pulsa para soltarla"
           },
           "toast": {
-            "added": "Se agregó y fijó {{pages}} de {{source}}.",
-            "addFailed": "No se pudo agregar la página. Inténtalo de nuevo."
+            "addFailed": "No se pudo fijar la página. Inténtalo de nuevo.",
+            "pinnedForQuestion_one": "Se fijó {{pages}} de {{source}} para la pregunta {{questions}}.",
+            "pinnedForQuestion_other": "Se fijó {{pages}} de {{source}} para las preguntas {{questions}}.",
+            "releasedForQuestion_one": "Se soltó {{pages}} de {{source}} de la pregunta {{questions}}.",
+            "releasedForQuestion_other": "Se soltó {{pages}} de {{source}} de las preguntas {{questions}}.",
+            "noStep_one": "La pregunta {{questions}} no cae en el versículo de ningún paso: no hay dónde fijar la página.",
+            "noStep_other": "Las preguntas {{questions}} no caen en el versículo de ningún paso: no hay dónde fijar la página."
           },
           "uncovered": {
             "label": "Fuentes sin aporte para esta pregunta",
