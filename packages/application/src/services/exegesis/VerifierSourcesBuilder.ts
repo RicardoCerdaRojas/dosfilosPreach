@@ -9,8 +9,9 @@ import type {
     VerifierSourceChunk,
 } from '@dosfilos/domain';
 import { usesExtractedExcerpts, citationAnchorFor, hasCuratedScope, isCitableSourceType, relabelExcerptAnchor,
-    readFullText,
+    readFullText, normalizeSheetRanges, pinnedSheetsInAnyStep,
 } from '@dosfilos/domain';
+import type { SheetRange } from '@dosfilos/domain';
 
 /**
  * La evidencia con la que se verifica un trabajo: qué texto de cada fuente
@@ -47,7 +48,9 @@ export class VerifierSourcesBuilder {
             const numbering = await this.numberingFor(
                 source.sourceLibraryResourceId ?? source.corpusId,
             );
-            const chunks = await this.buildChunks(source, numbering);
+            // Lo fijado solo en algún paso también es evidencia con página: una cita
+            // de ese paso puede apuntar ahí (PR 2). Se lee la unión de los pasos.
+            const chunks = await this.buildChunks(source, numbering, pinnedSheetsInAnyStep(paper.stepPlan, source.id));
             // Una fuente con receta entra aunque su evidencia no se haya
             // podido leer: así el verificador la RECONOCE y puede decir que no
             // pudo comprobar, en vez de dejar la cita sin fuente coincidente
@@ -87,9 +90,9 @@ export class VerifierSourcesBuilder {
         }
     }
 
-    private async readAdmitted(source: ProjectSource): Promise<VerifierSourceChunk[] | null> {
-        const ranges = source.excerptRecipe?.sheetRanges;
-        if (!this.corpusReader || !ranges || ranges.length === 0) return null;
+    private async readAdmitted(source: ProjectSource, extra: ReadonlyArray<SheetRange> = []): Promise<VerifierSourceChunk[] | null> {
+        const ranges = normalizeSheetRanges([...(source.excerptRecipe?.sheetRanges ?? []), ...extra]);
+        if (!this.corpusReader || ranges.length === 0) return null;
         const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
 
         try {
@@ -128,13 +131,27 @@ export class VerifierSourcesBuilder {
     private async buildChunks(
         source: ProjectSource,
         numbering: PageNumbering | null,
+        stepPins: ReadonlyArray<SheetRange> = [],
     ): Promise<VerifierSourceChunk[]> {
         // Fuentes con receta: la evidencia con página son las hojas admitidas,
         // no los `excerpts` —que a partir del corpus consultable ya no son lo
         // que el paso recibió, y en algún momento dejan de guardarse.
-        const admitted = await this.readAdmitted(source);
-        if (admitted) return admitted;
+        if (hasCuratedScope(source)) {
+            const admitted = await this.readAdmitted(source, stepPins);
+            if (admitted) return admitted;
+        }
+        // Sin receta, lo fijado por paso va delante de la evidencia de siempre:
+        // sin él, una cita a esas hojas perdía su página.
+        const fijadas = !hasCuratedScope(source) && stepPins.length > 0 ? await this.readAdmitted(source, stepPins) : null;
+        const resto = await this.chunksWithoutRecipe(source, numbering);
+        // `readAdmitted` ya trae el texto completo al final: no se repite.
+        return fijadas ? [...fijadas.filter(c => c.pageHint !== null), ...resto] : resto;
+    }
 
+    private async chunksWithoutRecipe(
+        source: ProjectSource,
+        numbering: PageNumbering | null,
+    ): Promise<VerifierSourceChunk[]> {
         // Una fuente con receta no se verifica contra el libro entero.
         //
         // Debajo, una fuente `full-document` cae al texto completo como UN

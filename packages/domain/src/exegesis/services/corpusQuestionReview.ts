@@ -28,6 +28,11 @@ export interface QuestionReviewSource {
     /** Las hojas fijadas (entran a todos los pasos sin competir). */
     pinned: ReadonlyArray<SheetRange>;
     /**
+     * Las fijadas solo en el paso de cada pregunta (`pinnedSheets`, PR 2), por
+     * número de pregunta. Cuentan como fijadas en esa pregunta y en ninguna otra.
+     */
+    pinnedByQuestion?: Readonly<Record<number, ReadonlyArray<SheetRange>>>;
+    /**
      * Las hojas del libro que nombran versículos del capítulo del pasaje, con
      * los versículos que nombra cada una (A1/A3). `null`: no se pudo buscar
      * (todavía cargando, o la búsqueda falló); la fuente no se juzga.
@@ -208,14 +213,16 @@ export function reviewCorpusByQuestion(input: {
         }
         algunaFuenteJuzgada = true;
 
+        let preguntaEnCurso = 0;
         const estado = (sheet: number): QuestionSheet['state'] =>
-            inRanges(sheet, source.pinned) ? 'pinned'
+            inRanges(sheet, source.pinned) || inRanges(sheet, source.pinnedByQuestion?.[preguntaEnCurso] ?? []) ? 'pinned'
                 : source.selected === null || inRanges(sheet, source.selected) ? 'in-corpus'
                     : 'outside';
 
         let tocaAlguna = false;
 
         for (const row of rows) {
+            preguntaEnCurso = row.number;
             const aportesAntes = row.sources.length;
             // En un léxico manda la entrada del lema: con la de αἰτέω en el
             // corpus, la hoja de otra palabra que cita 4:3 (Tuggy 209,

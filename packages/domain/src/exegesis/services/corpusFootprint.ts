@@ -1,6 +1,7 @@
 import type { ProjectSource } from '../entities/ProjectSource';
+import type { StepSourcePlan } from '../entities/StepSourcePlan';
 import { countChars, type PageIndexEntry } from '../outline/documentPageIndex';
-import { retrievalScopeOf, wholeDocumentTravelsEntire } from './curatedScope';
+import { retrievalScopeOf, stepPinnedSheets, wholeDocumentTravelsEntire } from './curatedScope';
 
 /**
  * Cuánto corpus llega al prompt de UN paso (un versículo).
@@ -47,6 +48,11 @@ export interface CorpusFootprint {
     admittedChars: number;
     /** Hojas fijadas («siempre incluir»): viajan completas. */
     pinnedChars: number;
+    /**
+     * Lo fijado solo para un paso, en el paso que más trae (`pinnedSheets`).
+     * Cuenta el máximo y no la suma: cada paso paga solo lo suyo.
+     */
+    stepPinnedChars?: number;
     /** Fuentes sin páginas ni fragmentos: se consulta el libro entero. */
     wholeDocuments: number;
     /** Lo que llega, como mucho, al prompt de un versículo. */
@@ -75,7 +81,10 @@ export interface CorpusFootprint {
 export function corpusFootprint(
     sources: ReadonlyArray<Pick<ProjectSource, 'id' | 'sourceType' | 'mode' | 'excerpts' | 'excerptRecipe'>>,
     indexBySource: ReadonlyMap<string, ReadonlyArray<PageIndexEntry> | null>,
+    /** El plan por paso, para lo fijado solo en un paso. Sin él, como antes. */
+    plan?: Pick<StepSourcePlan, 'perStep'> | null,
 ): CorpusFootprint {
+    const stepPinnedChars = maxStepPinnedChars(sources, indexBySource, plan);
     let excerptChars = 0;
     let admittedChars = 0;
     let pinnedChars = 0;
@@ -114,13 +123,37 @@ export function corpusFootprint(
         admittedChars += countChars(index, scope.sheetRanges);
         pinnedChars += countChars(index, scope.pinnedRanges);
     }
-    return finish({ excerptChars, admittedChars, pinnedChars, wholeDocuments, pending });
+    return finish({ excerptChars, admittedChars, pinnedChars, wholeDocuments, pending, ...(stepPinnedChars > 0 ? { stepPinnedChars } : {}) });
+}
+
+/** Lo fijado solo para un paso que no está ya fijado en la receta, en el paso que más trae. */
+function maxStepPinnedChars(
+    sources: ReadonlyArray<Pick<ProjectSource, 'id' | 'sourceType' | 'mode' | 'excerpts' | 'excerptRecipe'>>,
+    indexBySource: ReadonlyMap<string, ReadonlyArray<PageIndexEntry> | null>,
+    plan: Pick<StepSourcePlan, 'perStep'> | null | undefined,
+): number {
+    let max = 0;
+    for (const entry of Object.values(plan?.perStep ?? {})) {
+        let paso = 0;
+        for (const s of sources) {
+            const index = indexBySource.get(s.id);
+            const delPaso = stepPinnedSheets(entry, s.id);
+            if (!index || delPaso.length === 0) continue;
+            // Un documento chico ya viaja entero y está contado: no se cuenta dos veces.
+            if (retrievalScopeOf(s)?.kind === 'whole-document' && wholeDocumentTravelsEntire(index)) continue;
+            const global = s.excerptRecipe?.pinnedRanges ?? [];
+            const enGlobal = (sheet: number) => global.some(r => sheet >= r.start && sheet <= r.end);
+            paso += countChars(index.filter(p => !enGlobal(p.sheet)), delPaso);
+        }
+        max = Math.max(max, paso);
+    }
+    return max;
 }
 
 function finish(f: Omit<CorpusFootprint, 'perStepChars'>): CorpusFootprint {
     // Con un documento completo en el grupo, lo consultado llena el tope.
     const consultado = f.wholeDocuments > 0 ? Math.max(f.admittedChars, CURATED_CORPUS_BUDGET_CHARS) : f.admittedChars;
-    return { ...f, perStepChars: f.excerptChars + curatedCharsPerStep(consultado, f.pinnedChars) };
+    return { ...f, perStepChars: f.excerptChars + curatedCharsPerStep(consultado, f.pinnedChars + (f.stepPinnedChars ?? 0)) };
 }
 
 /**

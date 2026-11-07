@@ -216,3 +216,22 @@ describe('GenerateStepUseCase — se busca por paso también sin páginas', () =
         expect(enviada.textContent).not.toContain('PORTADA');
     });
 });
+
+/** PR 2, unidad 4: la generación también consulta lo fijado para su paso. */
+describe('GenerateStepUseCase — lo fijado por paso', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('suma las hojas del paso a la receta, como fijadas', async () => {
+        const base = makePaper([makeSource('McComiskey', 'res-a')]);
+        const paper = {
+            ...base,
+            stepPlan: { ...EMPTY_STEP_SOURCE_PLAN, perStep: { 'step-1': { stepId: 'step-1', kind: 'verse', emphasis: EMPTY_STEP_SOURCE_PLAN.defaults.verse, pinnedSources: [], suppressedSources: [], note: null, pinnedSheets: { 'src-McComiskey': [{ start: 200, end: 201 }] } } } },
+        } as ExegeticalPaper;
+        const { useCase, retriever } = buildUseCase({ paper, retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        expect(retriever.retrieve.mock.calls[0][0].sources[0]).toMatchObject({
+            sheetRanges: [{ start: 98, end: 102 }, { start: 200, end: 201 }],
+            pinnedRanges: [{ start: 200, end: 201 }],
+        });
+    });
+});

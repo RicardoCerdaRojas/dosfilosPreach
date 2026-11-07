@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, retrievalScopeOf, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod
+import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod
 } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
@@ -328,13 +328,15 @@ export class AnalyzeVerseCanonicallyUseCase {
         paper: ExegeticalPaper,
         verseRef: PassageReference,
         originalLanguageText: string | null,
+        stepId: string,
     ): Promise<CuratedCorpusResult | null> {
         if (!this.corpusRetriever) return null;
-        // Toda fuente con algo que consultar (`retrievalScopeOf`), no sólo las
-        // de páginas elegidas: el documento completo y los fragmentos también
-        // se buscan por versículo.
+        // Toda fuente con algo que consultar, no sólo las de páginas elegidas:
+        // el documento completo y los fragmentos también se buscan por
+        // versículo. Con lo fijado para ESTE paso (`effectiveScope`).
+        const entry = paper.stepPlan.perStep[stepId];
         const scopes = paper.sources.flatMap(s => {
-            const scope = retrievalScopeOf(s);
+            const scope = effectiveScope(s, entry);
             return scope ? [{
                 resourceId: s.sourceLibraryResourceId ?? s.corpusId,
                 sheetRanges: scope.sheetRanges,
@@ -502,7 +504,7 @@ export class AnalyzeVerseCanonicallyUseCase {
         originalLanguageText: string | null,
         numberings: ReadonlyMap<string, PageNumbering | null>,
     ): Promise<ExegesisSourceContext[]> {
-        const curated = await this.retrieveCurated(paper, verseRef, originalLanguageText);
+        const curated = await this.retrieveCurated(paper, verseRef, originalLanguageText, stepId);
         // Mirrors GenerateStepUseCase.loadSourceContexts: pin-aware,
         // primary-first ordering, and async content fetch via the
         // injected `IResourceContentReader` for full-document sources.
@@ -524,7 +526,7 @@ export class AnalyzeVerseCanonicallyUseCase {
             const plannedRole = plannedRoles[source.id];
             const resourceId = source.sourceLibraryResourceId ?? source.corpusId;
             const retrieved = curated?.byResource[resourceId];
-            const scope = retrievalScopeOf(source);
+            const scope = effectiveScope(source, plan);
             if (retrieved && retrieved.length > 0) {
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt y el verificador de citas no tienen por qué notar de

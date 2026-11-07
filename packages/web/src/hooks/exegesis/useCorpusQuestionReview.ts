@@ -7,6 +7,8 @@ import {
     normalizeSheetRanges,
     parseBriefQuestions,
     questionLemmas,
+    questionsOfStep,
+    stepPinnedSheets,
     reviewCorpusByQuestion,
     type CorpusQuestionReview,
     type ExegeticalPaper,
@@ -150,6 +152,7 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
                 sourceType: f.source.sourceType,
                 selected: f.selected,
                 pinned: f.source.excerptRecipe?.pinnedRanges ?? [],
+                pinnedByQuestion: fijadoPorPregunta(paper, questions, f.source.id),
                 verseHits: pasaje.isSuccess && indexado
                     ? pasaje.data.proposals.map(h => ({ sheet: h.sheet, count: h.count, verses: h.verses, snippet: h.snippet }))
                     : null,
@@ -188,4 +191,19 @@ function selectedSheetsOf(source: ProjectSource): SheetRange[] | null | undefine
 function printedPagesOf(f: ReviewedSource): QuestionReviewSource['printedPages'] {
     if (declaresNoFolios(f.resource.pageNumbering)) return 'none';
     return hasResolvedNumbering(f.resource.pageNumbering) ? 'resolved' : 'unresolved';
+}
+
+/** Lo fijado solo en un paso, por pregunta de ese paso (PR 2). */
+function fijadoPorPregunta(
+    paper: ExegeticalPaper | null | undefined,
+    questions: ReturnType<typeof parseBriefQuestions>,
+    sourceId: string,
+): Record<number, SheetRange[]> {
+    const out: Record<number, SheetRange[]> = {};
+    for (const step of paper?.steps ?? []) {
+        const hojas = stepPinnedSheets(paper!.stepPlan.perStep[step.id], sourceId);
+        if (hojas.length === 0) continue;
+        for (const q of questionsOfStep(step, questions)) out[q.number] = normalizeSheetRanges([...(out[q.number] ?? []), ...hojas]);
+    }
+    return out;
 }

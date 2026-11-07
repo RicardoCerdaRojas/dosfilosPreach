@@ -168,6 +168,8 @@ export class ProposeStepCorpusAllocationsUseCase {
                 note: allocation.rationale.trim() || sinAvisoDeEvidencia(existing?.note ?? null),
                 // «Mi lectura» es del estudiante: proponer el plan no la borra.
                 ...(existing?.studentReading ? { studentReading: existing.studentReading } : {}),
+                // Lo fijado para el paso es del estudiante: reasignar fuentes no lo borra (PR 2).
+                ...(existing?.pinnedSheets ? { pinnedSheets: existing.pinnedSheets } : {}),
             };
         }
 

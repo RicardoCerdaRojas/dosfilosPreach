@@ -769,3 +769,33 @@ describe('AnalyzeVerseCanonicallyUseCase — reglas del curso', () => {
         expect(b.versiones[0]).not.toHaveProperty('analysisMethod');
     });
 });
+
+/** PR 2, unidad 4: lo fijado para un paso llega a ese paso, y solo a ese. */
+describe('lo fijado por paso', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+    const conPlan = (pinnedSheets: Record<string, Array<{ start: number; end: number }>>, stepId = 'step-1') => {
+        const paper = makePaper([makeSource('Tuggy', 'res-a'), makeSource('Kittel', 'res-b')]);
+        return {
+            ...paper,
+            stepPlan: { ...EMPTY_STEP_SOURCE_PLAN, perStep: { [stepId]: { stepId, kind: 'verse', emphasis: EMPTY_STEP_SOURCE_PLAN.defaults.verse, pinnedSources: [], suppressedSources: [], note: null, pinnedSheets } } },
+        } as ExegeticalPaper;
+    };
+
+    it('el recuperador recibe las hojas del paso como fijadas, sumadas a la receta', async () => {
+        const { useCase, retriever } = buildUseCase({ paper: conPlan({ 'src-Kittel': [{ start: 137, end: 143 }] }), analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const scopes = retriever.retrieve.mock.calls[0][0].sources as Array<{ resourceId: string; sheetRanges: unknown; pinnedRanges: unknown }>;
+        expect(scopes.find(s => s.resourceId === 'res-b')).toMatchObject({
+            sheetRanges: [{ start: 137, end: 143 }, { start: 148, end: 151 }],
+            pinnedRanges: [{ start: 137, end: 143 }],
+        });
+        expect(scopes.find(s => s.resourceId === 'res-a')!.pinnedRanges).toEqual([]);
+    });
+
+    it('lo fijado para otro paso no viaja a este', async () => {
+        const { useCase, retriever } = buildUseCase({ paper: conPlan({ 'src-Kittel': [{ start: 137, end: 143 }] }, 'otro-paso'), analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const scopes = retriever.retrieve.mock.calls[0][0].sources as Array<{ resourceId: string; pinnedRanges: unknown; sheetRanges: unknown }>;
+        expect(scopes.find(s => s.resourceId === 'res-b')).toMatchObject({ sheetRanges: [{ start: 148, end: 151 }], pinnedRanges: [] });
+    });
+});

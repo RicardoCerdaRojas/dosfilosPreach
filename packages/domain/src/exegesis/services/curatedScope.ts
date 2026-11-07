@@ -1,6 +1,7 @@
 import { usesExtractedExcerpts, type ProjectSource, type ProjectSourceExcerpt, type SheetRange } from '../entities/ProjectSource';
 import { normalizeSheetRanges } from '../outline/documentPageIndex';
 import { emptySourceReason, isCitableSourceType } from '../entities/SourceType';
+import type { StepSourcePlan, StepSourcePlanEntry } from '../entities/StepSourcePlan';
 
 /**
  * ¿Esta fuente declara qué hojas admitió el trabajo?
@@ -170,4 +171,47 @@ export function retrievalScopeOf(
         return { kind: 'whole-document', sheetRanges: [WHOLE_DOCUMENT_RANGE], pinnedRanges: [] };
     }
     return null;
+}
+
+/** Lo fijado de una fuente solo para un paso; vacío si el paso la suprime. */
+export function stepPinnedSheets(
+    entry: Pick<StepSourcePlanEntry, 'pinnedSheets' | 'suppressedSources'> | null | undefined,
+    sourceId: string,
+): SheetRange[] {
+    if (!entry || entry.suppressedSources?.includes(sourceId)) return [];
+    return normalizeSheetRanges(entry.pinnedSheets?.[sourceId] ?? []);
+}
+
+/**
+ * Dónde buscar una fuente en UN paso: su alcance (`retrievalScopeOf`) más lo
+ * fijado para ese paso (`pinnedSheets`), que entra también como fijado. No
+ * escribe en la receta: así una hoja de un paso no compite en los demás.
+ *
+ * Una fuente sin nada que consultar pero con hojas del paso deja de quedar
+ * fuera: se consultan esas hojas. Sin hojas del paso, es `retrievalScopeOf`
+ * tal cual, y un trabajo que nunca fijó por paso funciona como antes.
+ */
+export function effectiveScope(
+    source: Pick<ProjectSource, 'id' | 'sourceType' | 'excerptRecipe' | 'mode' | 'excerpts'>,
+    entry: Pick<StepSourcePlanEntry, 'pinnedSheets' | 'suppressedSources'> | null | undefined,
+): RetrievalScope | null {
+    const base = retrievalScopeOf(source);
+    const delPaso = stepPinnedSheets(entry, source.id);
+    if (delPaso.length === 0) return base;
+    const con = (ranges: ReadonlyArray<SheetRange>) => normalizeSheetRanges([...ranges, ...delPaso]);
+    if (!base) return { kind: 'recipe', sheetRanges: delPaso, pinnedRanges: delPaso };
+    if (base.kind === 'whole-document') return { ...base, pinnedRanges: con(base.pinnedRanges) };
+    return { ...base, sheetRanges: con(base.sheetRanges), pinnedRanges: con(base.pinnedRanges) };
+}
+
+/**
+ * Lo fijado de una fuente en TODOS los pasos. El verificador lee la unión: una
+ * cita de un paso puede apuntar a una hoja fijada solo en ese paso, y sin ella
+ * perdía la detección de página.
+ */
+export function pinnedSheetsInAnyStep(
+    plan: Pick<StepSourcePlan, 'perStep'> | null | undefined,
+    sourceId: string,
+): SheetRange[] {
+    return normalizeSheetRanges(Object.values(plan?.perStep ?? {}).flatMap(e => stepPinnedSheets(e, sourceId)));
 }

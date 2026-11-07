@@ -160,7 +160,7 @@ export function ExegesisSourcePagesPage() {
     const numbering = usePageNumbering(resourceId);
 
     // Lo que aportan las otras fuentes a cada versículo (ver `corpusFootprint`).
-    const otherSources = useCorpusFootprint(paper?.sources ?? [], source?.id);
+    const otherSources = useCorpusFootprint(paper?.sources ?? [], source?.id, paper?.stepPlan);
 
     const back = () => navigate(`/dashboard/exegesis/${paperId}/setup?tab=corpus`);
 

@@ -119,7 +119,9 @@ export class CallableCuratedCorpusRetriever implements ICuratedCorpusRetriever {
     private async smallDocumentAsPinned(
         s: RetrieveCuratedCorpusInput['sources'][number],
     ): Promise<RetrieveCuratedCorpusInput['sources'][number]> {
-        if (!isWholeDocumentScope(s.sheetRanges) || s.pinnedRanges.length > 0) return s;
+        // Con hojas fijadas para el paso también: el documento entero las contiene,
+        // y sin esto dejaba de viajar entero en ese paso (revisión del PR 2).
+        if (!isWholeDocumentScope(s.sheetRanges) || isWholeDocumentScope(s.pinnedRanges)) return s;
         try {
             const index = await fetchDocumentPageIndex(s.resourceId);
             return wholeDocumentTravelsEntire(index.pages) ? { ...s, pinnedRanges: [WHOLE_DOCUMENT_RANGE] } : s;

@@ -141,6 +141,8 @@ export class UpdateStepCorpusAllocationUseCase {
             // «Mi lectura» es del estudiante, no del corpus: editar las fuentes
             // del paso no la borra (etapa 2, capa 3).
             ...(existing?.studentReading ? { studentReading: existing.studentReading } : {}),
+            // Lo fijado para el paso es del estudiante: reasignar fuentes no lo borra (PR 2).
+            ...(existing?.pinnedSheets ? { pinnedSheets: existing.pinnedSheets } : {}),
         };
 
         const nextPlan: StepSourcePlan = {
