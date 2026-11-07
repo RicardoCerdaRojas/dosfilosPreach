@@ -799,3 +799,15 @@ describe('lo fijado por paso', () => {
         expect(scopes.find(s => s.resourceId === 'res-b')).toMatchObject({ sheetRanges: [{ start: 148, end: 151 }], pinnedRanges: [] });
     });
 });
+
+describe('la consulta del análisis lleva solo las preguntas de su paso (PR 2, unidad 5)', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+    it('la pregunta de 1:1 sí; la de 1:3, no', async () => {
+        const paper = { ...makePaper([makeSource('Tuggy', 'res-a')]), assignmentBrief: '1. En 1:1, ¿qué significa δοῦλος?\n2. En 1:3, ¿qué produce la prueba?' } as ExegeticalPaper;
+        const { useCase, retriever } = buildUseCase({ paper, analysis: analysisCiting(['Tuggy']), retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const { query } = retriever.retrieve.mock.calls[0][0];
+        expect(query).toContain('δοῦλος');
+        expect(query).not.toContain('produce la prueba');
+    });
+});

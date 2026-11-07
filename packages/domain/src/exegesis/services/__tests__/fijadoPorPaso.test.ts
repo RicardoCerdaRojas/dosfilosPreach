@@ -96,3 +96,14 @@ describe('la revisión por pregunta ve lo fijado en el paso de cada pregunta', (
         expect(estado(1)).toBe('outside');
     });
 });
+
+describe('stepCorpusQuery: la consulta lleva las preguntas del paso', async () => {
+    const { stepCorpusQuery } = await import('../assignmentBriefWindows');
+    it('versículo, griego y la pregunta del paso, no el encuadre entero', () => {
+        expect(stepCorpusQuery({ label: 'Santiago 4:1', originalText: 'πόθεν πόλεμοι', stepQuestions: [{ text: '¿Qué es μέλος?' }], brief: '1. ¿Qué es μέλος? 2. ¿Quién mata?' }))
+            .toBe('Santiago 4:1 — πόθεν πόλεμοι — ¿Qué es μέλος?');
+    });
+    it('sin preguntas propias, el encuadre como antes', () => {
+        expect(stepCorpusQuery({ label: 'Santiago 4', stepQuestions: [], brief: '  Encuadre  ' })).toBe('Santiago 4 — Encuadre');
+    });
+});

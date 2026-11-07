@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod
+import { usesExtractedExcerpts, stepCorpusQuery, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod
 } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
@@ -346,7 +346,8 @@ export class AnalyzeVerseCanonicallyUseCase {
         if (scopes.length === 0) return null;
 
         const label = formatPassageReference(verseRef, paper.displayLanguage);
-        const brief = briefForQuery(paper.assignmentBrief);
+        const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
+        const step = paper.steps.find(s => s.id === stepId);
         // The verse's own words lead the query.
         //
         // Without them the query was the reference plus the assignment
@@ -357,18 +358,19 @@ export class AnalyzeVerseCanonicallyUseCase {
         // 1:2 nothing matched, and the retriever returned the previous
         // verse's pages while every aggregate counter said it had
         // answered.
-        const greek = originalLanguageText?.trim() ?? '';
-        const query = [label, greek, brief].filter(Boolean).join(' — ');
+        // Y las preguntas DEL PASO, no el encuadre entero (`stepCorpusQuery`).
+        const query = stepCorpusQuery({
+            label,
+            originalText: originalLanguageText,
+            stepQuestions: step ? questionsOfStep(step, preguntas) : [],
+            brief: paper.assignmentBrief,
+        });
         try {
             return await this.corpusRetriever.retrieve({
                 userId: paper.ownerId,
                 query,
                 sources: scopes,
-                verseKeys: stepVerseKeys(
-                    { kind: 'verse', verseRef },
-                    parseBriefQuestions(paper.assignmentBrief, paper.passage),
-                    paper.passage.bookId,
-                ),
+                verseKeys: stepVerseKeys({ kind: 'verse', verseRef }, preguntas, paper.passage.bookId),
                 budgetChars: CURATED_CORPUS_BUDGET_CHARS,
             });
         } catch (err) {

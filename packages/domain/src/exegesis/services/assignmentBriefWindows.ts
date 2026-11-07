@@ -54,6 +54,26 @@ export function briefForQuery(brief: string | null | undefined): string {
     return (brief ?? '').trim().slice(0, BRIEF_QUERY_CHARS);
 }
 
+/**
+ * La consulta con que un paso busca en el corpus: el versículo, sus palabras
+ * originales y LAS PREGUNTAS DE ESE PASO (PR 2, unidad 5). Buscaba con el
+ * encuadre entero, todas las preguntas del trabajo, y la hoja de una pregunta
+ * competía con las de las demás: sin fijar nada, de 47 hojas que necesitaban
+ * cuatro preguntas de los TP #8 y #9 llegaban 35; con las del paso, 39, y
+ * Kittel μέλος (4:1) pasa de 0 a 3 (medido). Un paso sin preguntas propias
+ * busca con el encuadre, como antes. Análisis y generación la arman igual.
+ */
+export function stepCorpusQuery(input: {
+    label: string;
+    originalText?: string | null;
+    stepQuestions: ReadonlyArray<{ text: string }>;
+    brief: string | null | undefined;
+}): string {
+    const preguntas = input.stepQuestions.map(q => q.text.trim()).filter(Boolean).join(' ');
+    const contexto = preguntas ? preguntas.slice(0, BRIEF_QUERY_CHARS) : briefForQuery(input.brief);
+    return [input.label, input.originalText?.trim() ?? '', contexto].filter(Boolean).join(' — ');
+}
+
 /** El encuadre tal como lo ve una instrucción. Entero, salvo desmesura. */
 export function briefForInstruction(brief: string | null | undefined): string {
     return (brief ?? '').trim().slice(0, BRIEF_INSTRUCTION_CHARS);

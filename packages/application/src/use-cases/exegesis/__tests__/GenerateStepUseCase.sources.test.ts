@@ -235,3 +235,15 @@ describe('GenerateStepUseCase — lo fijado por paso', () => {
         });
     });
 });
+
+describe('GenerateStepUseCase — la consulta lleva las preguntas de su paso (PR 2, unidad 5)', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+    it('la de 4:1 sí; la de 4:5, no', async () => {
+        const paper = { ...makePaper([makeSource('McComiskey', 'res-a')]), assignmentBrief: '1. En 4:1, ¿por qué se enoja Jonás?\n2. En 4:5, ¿qué espera ver?' } as ExegeticalPaper;
+        const { useCase, retriever } = buildUseCase({ paper, retrievedFor: ['res-a'] });
+        await useCase.execute({ ownerId: 'owner-1', paperId: 'paper-1', stepId: 'step-1' });
+        const { query } = retriever.retrieve.mock.calls[0][0];
+        expect(query).toContain('se enoja');
+        expect(query).not.toContain('espera ver');
+    });
+});

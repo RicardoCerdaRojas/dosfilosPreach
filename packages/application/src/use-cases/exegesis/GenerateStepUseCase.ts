@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, briefForQuery, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, stepVerseKeys } from '@dosfilos/domain';
+import { usesExtractedExcerpts, stepCorpusQuery, questionsOfStep, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, stepVerseKeys } from '@dosfilos/domain';
 import type {
     IPageNumberingReader,
     PageNumbering,
@@ -246,13 +246,14 @@ export class GenerateStepUseCase {
 
         const target = step.verseRef ?? paper.passage;
         const label = formatPassageReference(target, paper.displayLanguage);
-        const brief = briefForQuery(paper.assignmentBrief);
+        const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
         try {
             return await this.corpusRetriever.retrieve({
                 userId: paper.ownerId,
-                query: brief ? `${label} — ${brief}` : label,
+                // La misma consulta que el análisis: las preguntas del paso, o el encuadre si no tiene.
+                query: stepCorpusQuery({ label, stepQuestions: questionsOfStep(step, preguntas), brief: paper.assignmentBrief }),
                 sources: scopes,
-                verseKeys: stepVerseKeys(step, parseBriefQuestions(paper.assignmentBrief, paper.passage), paper.passage.bookId),
+                verseKeys: stepVerseKeys(step, preguntas, paper.passage.bookId),
                 budgetChars: CURATED_CORPUS_BUDGET_CHARS,
             });
         } catch (err) {
