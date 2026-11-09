@@ -43,7 +43,10 @@ async function main(): Promise<void> {
     base = base.orderBy(admin.firestore.FieldPath.documentId()).select('text', 'metadata', 'refs', 'resourceTitle');
 
     const escritor = ESCRIBIR ? db.bulkWriter() : null;
-    let leidos = 0, conPasaje = 0, aEscribir = 0, refsTotales = 0, escritos = 0;
+    let leidos = 0, conPasaje = 0, aEscribir = 0, refsTotales = 0, escritos = 0, pierden = 0;
+    // Un reconocedor nuevo también quita claves (los rangos de sección dejan solo
+    // el capítulo): se cuentan y se muestran aparte para revisarlas antes de escribir.
+    const perdidas: string[] = [];
     const fallas = new Map<string, number>();
     // Sólo se reintentan los errores pasajeros; «no existe» (5) y «cambió» (9) no.
     escritor?.onWriteError(e => e.failedAttempts < 3 && e.code !== 5 && e.code !== 9);
@@ -59,6 +62,12 @@ async function main(): Promise<void> {
             if (refs.length > 0) { conPasaje++; refsTotales += refs.length; }
             if (iguales(d.get('refs') as string[] | undefined, refs)) continue;
             aEscribir++;
+            const nuevas = new Set(refs);
+            const quitadas = ((d.get('refs') as string[] | undefined) ?? []).filter(r => !nuevas.has(r));
+            if (quitadas.length > 0) {
+                pierden++;
+                if (perdidas.length < 12) perdidas.push(`${d.id}: −${quitadas.slice(0, 6).join(', ')}${quitadas.length > 6 ? ' …' : ''}`);
+            }
             if (muestras.length < 8 && refs.length > 0) muestras.push(`${d.id}: ${refs.slice(0, 6).join(', ')}${refs.length > 6 ? ' …' : ''}`);
             escritor?.update(d.ref, { refs }, { lastUpdateTime: d.updateTime })
                 .then(() => { escritos++; })
@@ -75,6 +84,8 @@ async function main(): Promise<void> {
     console.log(ESCRIBIR ? `${escritos} de ${aEscribir} escritos.` : `${aEscribir} se escribirían (correr con --escribir).`);
     for (const [motivo, n] of fallas) console.log(`  sin escribir (${motivo}): ${n}`);
     for (const m of muestras) console.log(`  ${m}`);
+    console.log(`${pierden} de ${aEscribir} pierden alguna clave:`);
+    for (const p of perdidas) console.log(`  ${p}`);
 }
 
 main().catch(err => { console.error(err); process.exit(1); });

@@ -91,7 +91,9 @@ function armarPatron() {
         'giu',
     );
     // «1 Pet. v. 1», «Rom. viii. 28»: el capítulo en romanos, como cita Mayor.
-    const conRomano = new RegExp(`(?<![\\p{L}\\p{N}])(${alternancia})(\\.?${H})([ivxl]{1,6})\\.${H}(\\d{1,3})(?!\\d)`, 'giu');
+    // El romano no va pegado a una letra: en «Sal. 34:8» la «l» es de «Sal»,
+    // no el capítulo L de «Sa» (relleno en seco, 2026-11-08).
+    const conRomano = new RegExp(`(?<![\\p{L}\\p{N}])(${alternancia})(\\.?${H})(?<!\\p{L})([ivxl]{1,6})\\.${H}(\\d{1,3})(?!\\d)`, 'giu');
     // El superíndice es versículo solo tras un libro o tras «on», «in», «cf.»:
     // tras «v. 4» o «p. 4» es una nota al pie (revisión del PR 2).
     const superindice = new RegExp(

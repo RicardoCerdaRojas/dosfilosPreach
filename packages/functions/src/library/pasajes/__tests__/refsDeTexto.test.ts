@@ -409,6 +409,15 @@ describe('capítulo en romanos tras el libro (Mayor)', () => {
         expect(refsDeTexto('cf. Rom. viii. 28')).toEqual(['ROM.8', 'ROM.8.28']);
         expect(refsDeTexto('Jas. IV. 12')).toEqual(['JAS.4', 'JAS.4.12']);
     });
+    // Relleno en seco tras el despliegue (2026-11-08): «Sal. 34:8» daba PSA.50.34
+    // porque «Sa» + «l» se leía como libro y capítulo L.
+    it('la letra final de una abreviatura no es un capítulo en romanos', () => {
+        expect(refsDeTexto('el Salmo (Sal. 34:8) tenga')).toEqual(['PSA.34', 'PSA.34.8']);
+        expect(refsDeTexto('Sal. 89:26; Mal. 1:6')).toEqual(['PSA.89', 'PSA.89.26', 'MAL.1', 'MAL.1.6']);
+        expect(refsDeTexto('Lev. 19:18, Gal. 5:14, Phil. 2:5, Rev. 3:20, Col. 1:15')).toEqual([
+            'LEV.19', 'LEV.19.18', 'GAL.5', 'GAL.5.14', 'PHP.2', 'PHP.2.5', 'REV.3', 'REV.3.20', 'COL.1', 'COL.1.15',
+        ]);
+    });
     it('sin libro, «cf. v. 1» sigue siendo el versículo', () => {
         expect(refsDeFragmento('cf. v. 3 and i. 5', ['NOTES', 'IV 2] NOTES'], 'JAS')).toContain('JAS.4.3');
         for (const prosa of ['read in v. 3 here', 'this is v. 3', 'as v. 3 shows']) expect(refsDeTexto(prosa)).toEqual([]);
