@@ -314,10 +314,15 @@ export function verseStructure(ch: ChapterStructure, verse: number): StructureNo
             if (relation === 'condition' && madre !== null) apodosis.add(madre);
         }
         // Un nodo que sólo trae su conector (envoltorio de coordinación) no es
-        // una cláusula nominal: su verbo está en las hijas.
-        const verbless = ch.lang === 'gr'
-            ? !sub.some(w => w.pos?.startsWith('V'))
-            : !sub.some(w => piezas(w).some(x => esVerboHe(x.m)));
+        // una cláusula nominal: su verbo está en las hijas. Pero si la fila trae
+        // su PREDICADO (rol «p») y ningún verbo propio, es nominal aunque una
+        // hija tenga verbo: «ἡ γὰρ κρίσις ἀνέλεος τῷ μὴ ποιήσαντι» (Stg 2:13) no
+        // salía nominal por el participio de la hija, ni «πιστὸς ὁ θεός, δι’ οὗ
+        // ἐκλήθητε» (1 Co 1:9) por su relativa (revisión del profesor, 2026-11).
+        const conVerbo = (xs: readonly StructureWord[]) => ch.lang === 'gr'
+            ? xs.some(w => w.pos?.startsWith('V'))
+            : xs.some(w => piezas(w).some(x => esVerboHe(x.m)));
+        const verbless = !conVerbo(ws) && (ws.some(w => w.role === 'p') || !conVerbo(sub));
         return { relation, connector, conditionalClass, verbless };
     };
     // Una palabra hebrea de varias piezas lleva el rol de la primera (לְ = Prep);

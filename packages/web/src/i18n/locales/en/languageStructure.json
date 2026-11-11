@@ -7,6 +7,7 @@
   "protasis": "Protasis",
   "apodosis": "Apodosis",
   "verbless": "Verbless",
+  "verblessNote": "No finite verb: the copula (\"is\", \"will be\") is understood, and what is said of the subject is the predicate (Pred).",
   "fronted": "Before the verb: {{roles}}.",
   "frontedNote": "It may be focus or frame; context decides.",
   "attribution": "Syntactic structure: MACULA {{lang}} (Clear Bible, CC BY 4.0).",

@@ -220,6 +220,8 @@ describe('StructureSection', () => {
         render(<Seccion lang="gr" book="MAT" chapter={1} verse={1} />);
         await waitFor(() => expect(screen.getAllByTestId('structure-row')).toHaveLength(1));
         expect(screen.getByText('verbless')).toBeInTheDocument();
+        // Y dice cómo se reconoce (pregunta del fundador sobre Stg 2:13).
+        expect(screen.getByText(/verblessNote/)).toBeInTheDocument();
     });
 
     it('sin lectura del asistente avisa por qué y ofrece pedirla', async () => {

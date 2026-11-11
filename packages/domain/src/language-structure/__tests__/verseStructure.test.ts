@@ -39,6 +39,16 @@ describe('verseStructure — griego', () => {
         expect(fila(ns, 'ὡς')).toMatchObject({ relation: 'comparison', verbless: true });
     });
 
+    it('nominal aunque una hija tenga verbo: Stg 2:13 «ἡ γὰρ κρίσις ἀνέλεος», 1 Co 1:9 «πιστὸς ὁ θεός» (profesor, 2026-11)', () => {
+        expect(fila(verseStructure(cargar('gr/JAS/2.json'), 13), 'ἡ')).toMatchObject({ relation: 'ground', verbless: true });
+        expect(fila(verseStructure(cargar('gr/1CO/1.json'), 9), 'πιστὸς')).toMatchObject({ verbless: true });
+        // Lo que no cambia: la fila con su verbo, y la que sólo trae el conector (su verbo está abajo).
+        expect(fila(verseStructure(cargar('gr/JAS/2.json'), 13), 'κατακαυχᾶται').verbless).toBe(false);
+        expect(fila(verseStructure(cargar('gr/JAS/2.json'), 14), 'ἐὰν').verbless).toBe(false);
+        // Predicado con su cópula: verbal («νεκρά ἐστιν», Stg 2:17).
+        expect(fila(verseStructure(cargar('gr/JAS/2.json'), 17), 'οὕτως').verbless).toBe(false);
+    });
+
     it('Stg 2:7: οὐκ y τό se funden en su cláusula; sólo el sujeto cuenta como adelantado (no la negación)', () => {
         const ns = verseStructure(stg2, 7);
         expect(ns.map(texto)).toEqual(['οὐκ αὐτοὶ βλασφημοῦσιν τὸ καλὸν ὄνομα', 'τὸ ἐπικληθὲν ἐφ ὑμᾶς']);

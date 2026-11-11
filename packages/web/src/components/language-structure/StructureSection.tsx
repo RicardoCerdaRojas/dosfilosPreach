@@ -102,6 +102,8 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                 const roles = n.fronted.map(f => t(`roleNames.${f.role}`)).join(', ');
                 const notas = [
                     n.conditionalClass ? t(`classNotes.${n.conditionalClass}`) : null,
+                    // Cómo se reconoce (pregunta del fundador, Stg 2:13): no hay verbo y la cópula se suple.
+                    n.verbless ? t('verblessNote') : null,
                     // Si el asistente eligió, la nota de la ambigüedad ya no hace falta: la dice la elección.
                     CON_NOTA.has(n.relation) && !lectura?.resolved ? t(`notes.${n.relation}`) : null,
                     n.fronted.length && !lectura?.fronting ? `${t('fronted', { roles })} ${t('frontedNote')}` : null,

@@ -7,6 +7,7 @@
   "protasis": "Prótasis",
   "apodosis": "Apódosis",
   "verbless": "Nominal (sin verbo)",
+  "verblessNote": "Sin verbo finito: la cópula («es», «será») se sobreentiende, y lo que se dice del sujeto es el predicado (Pred).",
   "fronted": "Antepuesto al verbo: {{roles}}.",
   "frontedNote": "Puede ser foco o marco; lo decide el contexto.",
   "attribution": "Estructura sintáctica: MACULA {{lang}} (Clear Bible, CC BY 4.0).",
