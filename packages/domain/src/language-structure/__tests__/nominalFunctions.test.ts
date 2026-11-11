@@ -59,6 +59,25 @@ describe('G3 — artículo anafórico', () => {
         expect(greekAnaphora(cargar('JHN/10.json'), 11)).toHaveLength(1);
     });
 
+    it('Stg 2:14 «ἡ πίστις» retoma πίστιν del mismo versículo (Wallace p. 219 lo pone de ejemplo)', () => {
+        const ch = cargar('JAS/2.json');
+        expect(greekAnaphora(ch, 14).map(x => [texto(ch, 14, x.headOrdinal), x.antecedent])).toEqual([['πίστις', { text: 'πίστιν', verse: 14 }]]);
+    });
+
+    it('NO es anáfora (medido a mano, revisión 2026-11): monádicos οὐρανός (Mt 24:30, Hch 1:11), otro número (Ap 2:8 tras «ταῖς ἐκκλησίαις»), otro de una serie (1 Co 15:47, Ap 4:7)', () => {
+        const nucleos = (rel: string, v: number) => { const ch = cargar(rel); return greekAnaphora(ch, v).map(x => texto(ch, v, x.headOrdinal)); };
+        expect(nucleos('MAT/24.json', 30)).not.toContain('οὐρανῷ');
+        expect(nucleos('ACT/1.json', 11)).not.toContain('οὐρανόν');
+        expect(nucleos('REV/2.json', 8)).not.toContain('ἐκκλησίας');
+        expect(nucleos('1CO/15.json', 47)).not.toContain('ἄνθρωπος');
+        expect(nucleos('REV/4.json', 7)).not.toContain('ζῷον');
+        // Lo que sigue siendo anáfora: mismo número (Lc 5:3 «ἓν τῶν πλοίων», v. 2 «δύο πλοῖα»)
+        // y el MISMO ordinal en el antecedente (Mt 27:46 «τὴν ἐνάτην ὥραν», Ap 9:14 «τῷ ἕκτῳ ἀγγέλῳ»).
+        expect(nucleos('LUK/5.json', 3)).toContain('πλοίων');
+        expect(nucleos('MAT/27.json', 46)).toContain('ὥραν');
+        expect(nucleos('REV/9.json', 14)).toContain('ἀγγέλῳ');
+    });
+
     it('dentro del mismo versículo (Jn 1:1, los dos ὁ λόγος que siguen al primero); θεός es monádico, no anáfora', () => {
         const ch = cargar('JHN/1.json');
         const a = greekAnaphora(ch, 1);
@@ -129,6 +148,9 @@ describe('G3 — aplicado al mostrar', () => {
     });
     it('respeta «monádico» o «por antonomasia» si el asistente lo eligió (lo dijo el profesor)', () => {
         expect(applyNominalRules([{}, {}, { articleUse: 'monadic' }], [], anafora)[2]).toEqual({ articleUse: 'monadic' });
+    });
+    it('«con abstracto» no tapa la anáfora: retoma y particulariza a la vez (Wallace p. 219, Stg 2:14)', () => {
+        expect(applyNominalRules([{}, {}, { articleUse: 'abstract' }], [], anafora)[2]).toEqual({ articleUse: 'anaphoric', antecedent: 'νόμον, v. 8', nominalRule: 'anaphoraLemma' });
     });
     it('el prompt da los hechos para explicarlos, no para decidirlos', () => {
         const t = buildNominalFactsTask(agencia, anafora, ['ἐλεγχόμενοι', 'ὑπὸ', 'τοῦ', 'νόμου']);

@@ -198,7 +198,16 @@ export function greekAutos(ch: ChapterStructure, verse: number): AutosFact[] {
     return out;
 }
 
-const MONADICOS: ReadonlySet<string> = new Set(['θεός', 'κύριος']);
+/**
+ * Monádicos (Wallace p. 223): llevan artículo por ser únicos, no por retomar.
+ * οὐρανός, κόσμος, γῆ, ἥλιος, σελήνη se sumaron tras medir la regla a mano
+ * (revisión del profesor, 2026-11): «ἐν τῷ οὐρανῷ» (Mt 24:30) y «εἰς τὸν
+ * οὐρανόν» (Hch 1:11) salían «retoma».
+ */
+const MONADICOS: ReadonlySet<string> = new Set(['θεός', 'κύριος', 'οὐρανός', 'κόσμος', 'γῆ', 'ἥλιος', 'σελήνη']);
+/** Ordinales: marcan otro de una serie (ver `greekAnaphora`). */
+const ORDINALES: ReadonlySet<string> = new Set(['πρῶτος', 'δεύτερος', 'τρίτος', 'τέταρτος', 'πέμπτος', 'ἕκτος', 'ἕβδομος', 'ὄγδοος', 'ἔνατος', 'δέκατος', 'ἔσχατος']);
+const numero = (w: StructureWord) => w.parse?.[5] ?? '';
 
 /** El sustantivo al que acompaña un artículo: el primero que concuerda, antes de otro artículo. */
 function nucleoDe(ws: readonly StructureWord[], i: number): number | undefined {
@@ -225,17 +234,34 @@ export function greekAnaphora(ch: ChapterStructure, verse: number): AnaphoraFact
         if (lema[0] && lema[0] === lema[0].toUpperCase() && lema[0] !== lema[0].toLowerCase()) return;
         // Sustantivos monádicos (Wallace): ὁ θεός, ὁ κύριος llevan artículo por ser únicos, no por retomar.
         if (MONADICOS.has(lema)) return;
-        const enEste = [...ws.slice(0, i)].reverse().find(x => x.l === lema && x.pos?.startsWith('N'));
-        const enAnterior = [...anterior].reverse().find(x => x.l === lema && x.pos?.startsWith('N'));
+        // Mismo NÚMERO: «ταῖς ἐκκλησίαις» (Ap 2:7) no es «τῆς … ἐκκλησίας» de Esmirna (2:8),
+        // ni «ὁ γραμματεύς» los escribas (Mc 12:32, 35).
+        const mismo = (x: StructureWord) => x.l === lema && !!x.pos?.startsWith('N') && numero(x) === numero(ws[n]!);
+        const enEste = [...ws.slice(0, i)].reverse().find(mismo);
+        const enAnterior = [...anterior].reverse().find(mismo);
         const ante = enEste ?? enAnterior;
         if (!ante) return;
+        // Un ordinal marca OTRO de la serie («ὁ δεύτερος ἄνθρωπος» tras «ὁ πρῶτος», 1 Co 15:47;
+        // Ap 4:7), salvo que el antecedente lleve el MISMO ordinal: «τὴν ἐνάτην ὥραν» retoma
+        // «ὥρας ἐνάτης» (Mt 27:45-46), «τῷ ἕκτῳ ἀγγέλῳ» a «ὁ ἕκτος ἄγγελος» (Ap 9:13-14).
+        const ordinal = ws.slice(i + 1, n).find(x => ORDINALES.has(x.l));
+        if (ordinal) {
+            const donde = enEste ? ws : anterior;
+            const k = donde.indexOf(ante);
+            if (!donde.slice(Math.max(0, k - 3), k + 3).some(x => x.l === ordinal.l)) return;
+        }
         out.push({ ordinal: i, headOrdinal: n, antecedent: { text: limpio(ante.t), verse: enEste ? verse : verse - 1 } });
     });
     return out;
 }
 
-/** Los usos que la regla NO corrige: los que el profesor dijo respetar. */
-const USOS_QUE_SE_RESPETAN: ReadonlySet<string> = new Set(['monadic', 'parExcellence', 'withProperName', 'deictic', 'substantivizer', 'possessive', 'abstract']);
+/**
+ * Los usos que la regla NO corrige: los que el profesor dijo respetar.
+ * «Con abstracto» ya no está: el artículo puede retomar Y particularizar un
+ * abstracto a la vez, y entonces es anafórico (Wallace p. 219, con Stg 2:14
+ * «ἡ πίστις»; el profesor insistió en Stg 2:17 y 2:20, revisión 2026-11).
+ */
+const USOS_QUE_SE_RESPETAN: ReadonlySet<string> = new Set(['monadic', 'parExcellence', 'withProperName', 'deictic', 'substantivizer', 'possessive']);
 
 /**
  * Los hechos de G3 aplicados al mostrar sobre las palabras del análisis: la
