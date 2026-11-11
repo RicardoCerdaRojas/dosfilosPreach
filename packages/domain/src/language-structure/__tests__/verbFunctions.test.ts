@@ -180,6 +180,17 @@ describe('G2 — regresiones de la revisión adversarial', () => {
         // μηδείς también prohíbe; μή/μήποτε dependiente es «no sea que».
         ['1CO/3.json', 18, 'ἐξαπατάτω', 'prohibition'],
         ['1CO/10.json', 12, 'πέσῃ', 'lest'],
+        // «No sea que» sólo bajo un verbo de temor o advertencia (Wallace p. 477): Hch 5:26, Lc 21:8.
+        ['ACT/5.json', 26, 'λιθασθῶσιν', 'lest'],
+        ['LUK/21.json', 8, 'πλανηθῆτε', 'lest'],
+        ['HEB/2.json', 1, 'παραρυῶμεν', 'lest'],
+        ['MAT/5.json', 25, 'παραδῷ', 'lest'],
+        // Una cita bajo un verbo de decir es prohibición (Wallace p. 469 lista Stg 2:11 y Heb 3:8;
+        // revisión del profesor, 2026-11). En Hch 18:9 φοβέομαι está en la madre, pero rige λάλει.
+        ['JAS/2.json', 11, 'φονεύσῃς', 'prohibition'],
+        ['HEB/3.json', 8, 'σκληρύνητε', 'prohibition'],
+        ['LUK/18.json', 20, 'κλέψῃς', 'prohibition'],
+        ['ACT/18.json', 9, 'σιωπήσῃς', 'prohibition'],
     ])('%s %i %s → %s (regla)', (rel, v, t, f) => {
         expect(verbo(rel, v, t).decided).toBe(f);
     });
@@ -192,6 +203,8 @@ describe('G2 — regresiones de la revisión adversarial', () => {
         ['LUK/15.json', 7, 'μετανοοῦντι', 'periphrastic'],
         ['ACT/10.json', 24, 'συγκαλεσάμενος', 'periphrastic'],
         ['1PE/3.json', 22, 'πορευθεὶς', 'periphrastic'],
+        // «δῶμεν ἢ μὴ δῶμεν;» es deliberativo, no temor (Mc 12:14).
+        ['MRK/12.json', 14, 'δῶμεν', 'lest'],
     ])('%s %i %s NO es %s', (rel, v, t, f) => {
         expect(verbo(rel, v, t).decided).not.toBe(f);
     });

@@ -119,6 +119,31 @@ const INDEFINIDOS: ReadonlySet<string> = new Set(['ὅταν', 'ἄν', 'ἕως
 const NEGACION_DE_PROHIBICION: ReadonlySet<string> = new Set(['μή', 'μηδέ', 'μηδείς', 'μηκέτι', 'μήτε']);
 const conProhibicion = (c: Contexto) => c.clausula.some(x => NEGACION_DE_PROHIBICION.has(x.l));
 
+/**
+ * Verbos de temor o advertencia que rigen un μή «no sea que» (Wallace p. 477,
+ * «Subjunctive with Verbs of Fearing, Etc.»): «βλεπέτω μὴ πέσῃ» (1 Co 10:12),
+ * «ἐφοβοῦντο … μὴ λιθασθῶσιν» (Hch 5:26), «Βλέπετε μὴ πλανηθῆτε» (Lc 21:8).
+ */
+const TEMOR_O_ADVERTENCIA: ReadonlySet<string> = new Set(['φοβέομαι', 'βλέπω', 'ὁράω', 'προσέχω', 'σκοπέω', 'φυλάσσω', 'εὐλαβέομαι', 'δείδω']);
+const esFinito = (w: StructureWord | undefined) => ['I', 'S', 'D', 'O'].includes(modo(w));
+
+/**
+ * μή dependiente = «no sea que» SÓLO bajo un verbo de temor o advertencia: el
+ * verbo finito más cercano ANTES del μή. Antes bastaba con que la cláusula
+ * madre tuviera verbo, y una cita («εἶπεν· Μὴ φονεύσῃς», Stg 2:11; los
+ * mandamientos de Lc 18:20 y Mc 10:19; Heb 3:8) salía «no sea que» cuando es
+ * subjuntivo prohibitivo — Wallace p. 469 lista Stg 2:11 y Heb 3:8 ahí
+ * (revisión del profesor, 2026-11). Se mira el más cercano y no toda la madre:
+ * en Hch 18:9 «μὴ φοβοῦ, ἀλλὰ λάλει καὶ μὴ σιωπήσῃς» la madre tiene φοβέομαι
+ * pero rige λάλει.
+ */
+function bajoTemor(c: Contexto): boolean {
+    if (c.clausula[0]?.l !== 'μή' || !c.madreConVerbo) return false;
+    const mh = c.ws.indexOf(c.clausula[0]);
+    for (let k = mh - 1; k >= 0; k--) if (esFinito(c.ws[k])) return TEMOR_O_ADVERTENCIA.has(c.ws[k]!.l);
+    return false;
+}
+
 /** οὐ μή delante del verbo, aunque haya palabras entre medio («οὐ μή με ἴδητε», Mt 23:39). */
 function ouMe(c: Contexto): boolean {
     for (let k = Math.max(0, c.i - 5); k < c.i - 1; k++) if (c.ws[k]!.l === 'οὐ' && c.ws[k + 1]!.l === 'μή') return true;
@@ -262,7 +287,7 @@ export const VERB_RULES: readonly ReglaVerbo[] = [
     { rule: 'afterIna', form: 'subjunctive', when: c => ['ἵνα', 'ὅπως'].includes(subordinanteCercano(c) ?? ''), allowed: ['inaClause'] },
     { rule: 'conditionalEan', form: 'subjunctive', when: c => subordinanteCercano(c) === 'ἐάν' || subordinanteCercano(c) === 'εἰ', allowed: ['conditional'] },
     { rule: 'indefinite', form: 'subjunctive', when: c => INDEFINIDOS.has(subordinanteCercano(c) ?? ''), allowed: ['indefinite'] },
-    { rule: 'lest', form: 'subjunctive', when: c => subordinanteCercano(c) === 'μήποτε' || (c.clausula[0]?.l === 'μή' && !!c.madreConVerbo), allowed: ['lest'] },
+    { rule: 'lest', form: 'subjunctive', when: c => subordinanteCercano(c) === 'μήποτε' || bajoTemor(c), allowed: ['lest'] },
     { rule: 'prohibition', form: 'subjunctive', when: c => conProhibicion(c) && c.tiempo === 'A' && c.persona === '2', allowed: ['prohibition'] },
     { rule: 'hortatory', form: 'subjunctive', when: c => c.persona === '1' && c.plural && !c.clausula.some(x => x.pos === 'RR'), allowed: ['hortatory', 'deliberative'] },
     // Imperativo y optativo
@@ -363,7 +388,7 @@ const REGLA_ES: Record<VerbRule, string> = {
     eisTo: 'εἰς τό + infinitivo', prosTo: 'πρὸς τό + infinitivo', enToi: 'ἐν τῷ + infinitivo (simultáneo)', metaTo: 'μετὰ τό + infinitivo (anterior)',
     proTou: 'πρὸ τοῦ + infinitivo (posterior)', diaTo: 'διὰ τό + infinitivo', tou: 'τοῦ + infinitivo', articularNominal: 'infinitivo con artículo',
     afterIna: 'dentro de una cláusula con ἵνα/ὅπως', conditionalEan: 'prótasis con ἐάν', ouMe: 'οὐ μή + subjuntivo', prohibition: 'μή + subjuntivo aoristo',
-    indefinite: 'con ἄν (relativo o temporal indefinido)', lest: 'μή o μήποτε en una cláusula dependiente', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
+    indefinite: 'con ἄν (relativo o temporal indefinido)', lest: 'μήποτε, o μή tras un verbo de temor o advertencia (βλέπω, φοβέομαι)', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
 };
 
 /** El tramo del prompt con la tarea de los verbos. Vacío si no hay verbos. */
