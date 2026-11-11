@@ -106,6 +106,10 @@ describe('Ficha hebrea — paridad: ningún dato se pierde', () => {
         for (const v of ['אֲכָלְךָ', 'TRADUCCION tu comer', 'QAL · verseAnalyzer.verbForms.INF_CONSTRUCT · 2MS', 'verseAnalyzer.infinitive.functions.genitive', 'wordFicha.origin.rule']) {
             expect(t, v).toContain(v);
         }
+        // La raíz con su transliteración (pedido del profesor, revisión 2026-11), sin su significado.
+        expect(t).toContain('אכל');
+        expect(t).toContain('RAIZ-TR-ʾ-k-l');
+        expect(t).not.toContain('SIGNIFICADO-RAIZ');
         // Lo largo no entra al resumen.
         expect(t).not.toContain('EXPLICACION-PEDAGOGICA');
         expect(t).not.toContain('PISTA-1');

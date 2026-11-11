@@ -15,7 +15,7 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 4 | `he.apertura` | «Apertura» narrativa (וַיְהִי) | tarjeta | Encabezado | — | regla |
 | 5 | `he.oshb` | Sello de validación con OSHB (al tocarlo, código y correcciones) | tarjeta | Encabezado | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
 | 6 | `he.traduccion` | Traducción en contexto (con respaldo: glosa, raíz…) | tarjeta, tooltip, panel | Encabezado | sí | asistente |
-| 7 | `he.raiz` | Raíz, su transliteración y su significado | tarjeta, tooltip | La palabra | — | asistente |
+| 7 | `he.raiz` | Raíz, su transliteración y su significado | tarjeta, tooltip | La palabra | sí | asistente |
 | 8 | `he.lexico` | Léxico (glosa) | tarjeta, tooltip | La palabra | — | asistente |
 | 9 | `he.celdas` | Binyan, forma, tipo de raíz, persona, género, número, estado y valor temporal | tarjeta, tooltip | La forma | sí | asistente |
 | 10 | `he.correccionesOshb` | Correcciones de OSHB (cada diferencia) | tooltip | La forma | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |

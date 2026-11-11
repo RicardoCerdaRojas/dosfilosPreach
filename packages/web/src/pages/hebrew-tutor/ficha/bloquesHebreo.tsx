@@ -76,6 +76,18 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
             const { t } = useTranslation('hebrewTutor');
             return <FichaFilas filas={[[t('verseAnalyzer.ficha.root'), <>{he(d.word.root!, 'text-lg')} {d.word.rootTransliteration && <span className="italic text-muted-foreground">{d.word.rootTransliteration}</span>}{d.word.rootMeaning && <> · <strong className="font-semibold">{d.word.rootMeaning}</strong></>}</>]]} />;
         },
+        // En el tooltip, la raíz con su transliteración (pedido del profesor, revisión 2026-11):
+        // estaba antes del rediseño de la ficha y se había quedado sólo en la ficha completa.
+        Corto: function RaizCorta({ d }) {
+            const { t } = useTranslation('hebrewTutor');
+            return (
+                <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-sm text-foreground">
+                    <span className="text-muted-foreground">{t('verseAnalyzer.ficha.root')}</span>
+                    {he(d.word.root!, 'text-base')}
+                    {d.word.rootTransliteration && <span className="italic text-muted-foreground">{d.word.rootTransliteration}</span>}
+                </p>
+            );
+        },
     },
     {
         id: 'he.lexico', dato: 'Léxico (glosa)', seccion: 'palabra', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
