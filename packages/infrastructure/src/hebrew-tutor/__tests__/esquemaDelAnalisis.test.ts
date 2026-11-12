@@ -78,6 +78,12 @@ describe('el servicio manda el esquema', () => {
         expect(runLlmPrompt.mock.calls[1]![0].responseSchema).toEqual(hebrewAnalysisResponseSchema(false));
     });
 
+    it('los versículos vecinos llegan al prompt (banco: Gn 18:18 se entiende por 18:17)', async () => {
+        const neighbors = { previous: { reference: 'Rut 1:16', hebrewText: 'אַל־תִּפְגְּעִי' } };
+        await new HebrewAnalysisService().analyzeVerse(verse as never, 'es', [], [fila], [], [], [], [], neighbors);
+        expect(runLlmPrompt.mock.calls[0]![0].prompt).toContain('Anterior (Rut 1:16): אַל־תִּפְגְּעִי');
+    });
+
     it('lee "n" numérico y "resolved"/"fronting" en null sin inventar valores', async () => {
         runLlmPrompt.mockResolvedValue(JSON.stringify({
             words: [], verbTable: [],

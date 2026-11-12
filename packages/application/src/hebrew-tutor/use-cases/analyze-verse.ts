@@ -30,6 +30,7 @@ import type {
   HebrewInfinitiveCandidate,
   HebrewParticipleCandidate,
   HebrewKiCandidate,
+  NeighborVerses,
 } from '@dosfilos/domain';
 import { applyOshbMorphology, checkClauseConnections, hebrewInfinitiveCandidates, hebrewKiCandidates, hebrewParticipleCandidates, hebrewSpeechFacts, markOathFormula, reconcileGlobalWords, verseStructure } from '@dosfilos/domain';
 
@@ -82,7 +83,8 @@ export class AnalyzeVerseUseCase {
     // 5. Perform the analysis via Gemini + knowledge base + lexical context,
     // con las filas de «Estructura» para que el asistente las lea.
     const { nodes: estructura, speech, infinitives, participles, kis } = await this.structureOf(morphhbKey, chapter, verse);
-    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries, estructura, speech, infinitives, participles, kis);
+    const raw = await this.analysisService.analyzeVerse(hebrewVerse, language, lexicalEntries, estructura, speech, infinitives, participles, kis,
+      this.neighborsOf(morphhbKey, chapter, verse));
 
     // 6. Persist to cache for future requests. Se guarda lo que dio el
     // asistente, SIN las reglas: aplicadas antes de guardar, la próxima
@@ -110,6 +112,32 @@ export class AnalyzeVerseUseCase {
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
+
+  /**
+   * El versículo anterior y el siguiente, cruzando de capítulo si hace falta
+   * (Gn 18:18 se entiende por 18:17; 2 S 6:23 cierra antes de 7:1). Sólo
+   * contexto para el asistente: si algo falla, se analiza sin vecinos.
+   */
+  private neighborsOf(morphhbKey: string, chapter: number, verse: number): NeighborVerses {
+    const leer = (c: number, v: number) => {
+      try {
+        const h = this.bibleProvider.getVerse(morphhbKey, c, v);
+        return h.hebrewText ? { reference: h.displayReference, hebrewText: h.hebrewText } : undefined;
+      } catch {
+        return undefined;
+      }
+    };
+    const contar = (f: () => number) => { try { return f(); } catch { return 0; } };
+    const enCapitulo = contar(() => this.bibleProvider.getVerseCount(morphhbKey, chapter));
+    const capitulos = contar(() => this.bibleProvider.getChapterCount(morphhbKey));
+    const previous = verse > 1
+      ? leer(chapter, verse - 1)
+      : chapter > 1 ? leer(chapter - 1, contar(() => this.bibleProvider.getVerseCount(morphhbKey, chapter - 1))) : undefined;
+    const next = verse < enCapitulo
+      ? leer(chapter, verse + 1)
+      : chapter < capitulos ? leer(chapter + 1, 1) : undefined;
+    return { ...(previous ? { previous } : {}), ...(next ? { next } : {}) };
+  }
 
   /**
    * Las filas de «Estructura» del versículo. Sin datos (o si no se pudieron

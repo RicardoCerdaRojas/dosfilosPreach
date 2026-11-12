@@ -71,6 +71,19 @@ describe('el prompt con las filas de «Estructura»', () => {
         expect(texto).toMatch(/"resolved": "string — only where the clause says ELEGIR \\"resolved\\": exactly one of the values listed there/);
     });
 
+    it('los versículos vecinos van sólo como contexto, después del versículo a analizar (Gn 18:18 por 18:17)', () => {
+        const vecinos = { previous: { reference: 'Gn 18:17', hebrewText: 'הַמְכַסֶּה אֲנִי' }, next: { reference: 'Gn 18:19', hebrewText: 'כִּי יְדַעְתִּיו' } };
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [fila], [], [], [], [], vecinos);
+        expect(texto).toContain('VERSÍCULOS VECINOS — SÓLO CONTEXTO, NO LOS ANALICES NI LOS TRADUZCAS');
+        expect(texto).toContain('Anterior (Gn 18:17): הַמְכַסֶּה אֲנִי');
+        expect(texto).toContain('Siguiente (Gn 18:19): כִּי יְדַעְתִּיו');
+        expect(texto.indexOf('Texto hebreo:')).toBeLessThan(texto.indexOf('VERSÍCULOS VECINOS'));
+        // Sin vecinos (primer versículo de un libro sin anterior y sin siguiente), no hay sección.
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [fila])).not.toContain('VERSÍCULOS VECINOS');
+        const soloSiguiente = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [fila], [], [], [], [], { next: vecinos.next });
+        expect(soloSiguiente).not.toContain('Anterior (');
+    });
+
     it('con quién habla (Rut 1:16), el prompt lo da como hecho decidido', () => {
         const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [{ ordinal: 1, text: 'תִּפְגְּעִי', kind: 'verb', speaker: 'רוּת', speakerOrdinals: [0] }]);
         expect(texto).toContain('## QUIÉN HABLA');

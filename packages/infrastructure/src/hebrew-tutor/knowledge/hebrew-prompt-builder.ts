@@ -13,7 +13,7 @@
  * cross-validation but is explicitly NOT presented as authoritative.
  */
 
-import type { HebrewInfinitiveCandidate, HebrewKiCandidate, HebrewParticipleCandidate, HebrewVerse, SpeechFact, StructureNode } from '@dosfilos/domain';
+import type { HebrewInfinitiveCandidate, HebrewKiCandidate, HebrewParticipleCandidate, HebrewVerse, NeighborVerses, SpeechFact, StructureNode } from '@dosfilos/domain';
 import { buildClauseReadingTask, buildHebrewInfinitiveTask, buildHebrewKiTask, buildHebrewParticipleTask, buildSpeechFactsTask } from '@dosfilos/domain';
 import type { LexicalEntry } from '@dosfilos/domain';
 import type { KnowledgeChunk } from '../knowledge/farfan-chunks.js';
@@ -124,6 +124,30 @@ CRITICAL RULES:
 - MAQAF (Unicode U+05BE, the Hebrew hyphen that joins words): Words connected by a maqaf MUST be split into separate word objects in the "words" array, one object per lexical unit. Ensure the "hebrewText" of the FIRST word includes the maqaf at the end, but DO NOT duplicate the maqaf if the source text already has it.
 - SOF PASUQ (Unicode U+05C3 ׃) and PASEQ (Unicode U+05C0 ׀) are verse-level punctuation marks, NOT part of any individual word. Do NOT include them in any word's "hebrewText" or in any morpheme "text" field. They are handled separately by the rendering pipeline.
 `;
+
+// ── Versículos vecinos ────────────────────────────────────────────────────────
+
+/**
+ * El asistente veía el versículo solo. El banco fuera de muestra de la waw
+ * disyuntiva (2026-11-11) falló donde el valor depende de lo que rodea al
+ * versículo: Gn 18:18 es causal por 18:17 («¿encubriré a Abraham…?») y 2 S 6:23
+ * cierra el episodio (Putnam §3.2.2a(3)). Van sólo como contexto: ni se
+ * analizan ni se traducen.
+ */
+function formatNeighbors(neighbors: NeighborVerses): string {
+  const filas = [
+    neighbors.previous ? `Anterior (${neighbors.previous.reference}): ${neighbors.previous.hebrewText}` : '',
+    neighbors.next ? `Siguiente (${neighbors.next.reference}): ${neighbors.next.hebrewText}` : '',
+  ].filter(Boolean);
+  if (!filas.length) return '';
+  return `
+### VERSÍCULOS VECINOS — SÓLO CONTEXTO, NO LOS ANALICES NI LOS TRADUZCAS
+${filas.join('\n')}
+Úsalos para decidir cómo se une ESTE versículo con lo que lo rodea (contraste con
+lo anterior, causa, apertura o cierre de una escena) y para traducirlo. Las
+palabras, las cláusulas y las traducciones son SÓLO del versículo a analizar.
+`;
+}
 
 // ── Lectura de cláusulas (G1 + G5) ────────────────────────────────────────────
 
@@ -324,6 +348,8 @@ export function buildVerseAnalysisPrompt(
   participles: readonly HebrewParticipleCandidate[] = [],
   /** R4: la función de cada כִּי (Arnold y Choi §4.3.4). */
   kis: readonly HebrewKiCandidate[] = [],
+  /** El versículo anterior y el siguiente, sólo como contexto (banco de la waw, 2026-11-11). */
+  neighbors: NeighborVerses = {},
 ): string {
   const lectura = buildClauseReadingTask(structure);
   const habla = buildSpeechFactsTask(speech);
@@ -570,7 +596,7 @@ ${lexicalContext}
 
 Referencia: ${verse.displayReference}
 Texto hebreo: ${verse.hebrewText}
-
+${formatNeighbors(neighbors)}
 ## FORMATO DE RESPUESTA
 
 ${lectura ? conLectura(OUTPUT_SCHEMA) : OUTPUT_SCHEMA}
