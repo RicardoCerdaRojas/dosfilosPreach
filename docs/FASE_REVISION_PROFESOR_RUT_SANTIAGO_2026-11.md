@@ -310,6 +310,12 @@ Lectura (medido):
 - **Límite del prompt:** no trae los versículos vecinos; apertura, cierre y el contraste con lo anterior dependen de ellos.
 - **«Estructura»:** en 2 S 6:23 corta el tema antepuesto (וּלְמִיכַל בַּת שָׁאוּל) en fila propia (anotado).
 
+**G0 + vecinos (2026-11-12), decididos por el fundador («1 y luego 2»):**
+- `aa029ac7` Esquema estricto. Con esquema: **19 de 19 respuestas completas**, cero repeticiones, cero valores omitidos, ningún rechazo de OpenAI (antes: 7 de 22 repetidas, 5 al tope). Acierto de la waw 15 de 19. El respaldo Gemini (2.5-flash) acepta el esquema y elige concesiva en Gn 18:27. Validado contra 21 respuestas reales: la forma es la de hoy salvo `null` en lugar de clave ausente (la web compara por verdadero o falso). Primera corrida: la raíz en `null` subió en nombres propios y en אִישׁ, אֱלֹהִים; con descripción en el esquema, todos los sustantivos y nombres propios la llevan y el `null` queda en partículas.
+- `0641d6f8` Versículo anterior y siguiente como contexto. Waw: 14 de 19 con vecinos, 15 de 19 sin ellos; **sin mejora medible** (2 R 8:7, Jue 16:15 y Rut 2:13 cambian de una corrida a otra aun sin vecinos). Las explicaciones nombran el contexto (1 S 3:1 → «apertura de escena»). Costo: ~900 fichas de entrada. Commit aparte para poder quitarlo.
+- Fallos que quedan, de criterio entre valores vecinos: fondo frente a circunstancial (2 R 8:7), contraste frente a cierre (2 S 6:23) o concesiva (Jue 16:15, Rut 2:13 según la corrida), fondo frente a causal (Gn 18:18).
+- Despliegue: sólo web. El proxy y `esquemaEstricto` ya están en producción.
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
