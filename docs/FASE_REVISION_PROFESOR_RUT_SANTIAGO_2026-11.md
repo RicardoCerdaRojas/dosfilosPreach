@@ -404,6 +404,24 @@ Lectura (medido):
 - La prótasis va en un bloque con barra y flecha a la apódosis.
 - La lógica es pura, en el dominio (`diagramLines`).
 
+**Revisión adversarial (2026-11-12), `36c06434` + protección de caché.** Cuatro revisores por zona (griego, hebreo, estructura, ficha) con las 14 preguntas de `docs/REVISION_ADVERSARIAL.md`. Se corrigieron 21 hallazgos verificados, cada uno con su prueba y su mutación. Los de más peso:
+- **Partitivo (alta, salía como «Regla»):** ahora se exige Louw-Nida 63.20 cuando MACULA lo da. Los 48 casos con 63.20 son todos partitivos, y los falsos traían otro código (Hch 9:33 «ἐξ ἐτῶν ὀκτώ», Lc 16:31 «τις ἐκ νεκρῶν»). Ap 17:1 marca ἀγγέλων y no ἑπτά.
+- **Tooltips:** el del versículo y el de «Estructura», en griego y hebreo, no recibían los bloques nuevos. Ahora usan los mismos datos que la tarjeta.
+- **Apertura de sección:** solo en las cartas (Hch 16:30 era diálogo). Pasa de 151 a 67 versículos.
+- **Verbo hebreo:** una respuesta fuera de la lista de su forma ya no sale como «otra lectura».
+- **Aviso de análisis viejo:** dice el motivo solo si el versículo lo tiene.
+- **Estructura:** la cita alrededor de «φησίν» ya no se funde (Hch 25:5). Grupo de prótasis con la condición primero, solo miembros que coordinan y ninguno marcado apódosis, con invariante sobre el corpus. El corchete ya no se parte. El rol de la frase se hereda del grupo que la envuelve (247 frases griegas).
+- **Caché del navegador:** un JSON de datos viejo, sin `phrases`, no apaga la marca de frase del hebreo; vuelve a la heurística de antes. Firebase Hosting guarda esos JSON hasta 1 h.
+
+**Quedan abiertos (anotados, sin corregir):**
+- Plausible: el valor de la 3.ª clase con dos condiciones en un versículo (1 Co 7:36).
+- Plausible: el mapa de una palabra unida por maqaf en el hebreo.
+- Hay 230 frases griegas omitidas por un δέ/γάρ dentro de la frase.
+- La sangría máxima es 6 en el diagrama y 5 en las tarjetas; solo afecta 2 versículos.
+- La fecha de cotejo de `PDF()` no se ve en la interfaz.
+- Defectos previos fuera del diff: Mt 17:9, Lc 2:15, Hch 27:29, Mt 24:4 y el orden de filas de Mc 12:19.
+- `yarn banco` solo monta tarjetas del trabajo exegético, así que la ficha y «Estructura» se vieron en el recorrido del fundador en el navegador.
+
 **Diferencias que quedan con el profesor (leído):**
 - Stg 2:18 «κἀγώ σοι δείξω» sigue sangrado: MACULA lo cuelga de δεῖξον como objeto, y el profesor lo pone al margen.
 - El quiasmo de 2:18 queda para una etapa posterior.

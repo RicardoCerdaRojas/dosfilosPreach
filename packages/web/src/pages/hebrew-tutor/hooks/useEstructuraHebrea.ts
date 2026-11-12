@@ -209,6 +209,8 @@ export function useEstructuraHebrea(
      */
     const frases = React.useMemo(() => {
         const m = new Map<number, PhraseKind | null>();
+        // Datos sin frases (un JSON viejo en la caché del navegador): sin dato, la marca sale como antes.
+        if (!estructura.phrasesKnown) return m;
         const indice = alinear(estructura.words);
         const porRef = frasePorRef(estructura.phrases ?? []);
         estructura.words.forEach((w, o) => {

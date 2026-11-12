@@ -4,8 +4,9 @@ import { renderHook } from '@testing-library/react';
 /** Revisión de G1 + G5: «sin lectura» distingue análisis viejo de lectura vacía. */
 let filas: unknown[] | null = [{}];
 let verbos: unknown[] = [{}];
+let datosFrases: { words: unknown[]; phrases: unknown[]; phrasesKnown: boolean } = { words: [], phrases: [], phrasesKnown: true };
 vi.mock('@/components/language-structure/useVerseStructure', () => ({
-    useVerseStructure: () => ({ loading: false, unavailable: false, nodes: filas, words: [], ordinal: new Map(), frontedByOrdinal: new Map(), hebrewVerbs: verbos }),
+    useVerseStructure: () => ({ loading: false, unavailable: false, nodes: filas, ordinal: new Map(), frontedByOrdinal: new Map(), hebrewVerbs: verbos, ...datosFrases }),
     conLectura: () => new Map(),
 }));
 const { useEstructuraHebrea } = await import('../useEstructuraHebrea');
@@ -48,5 +49,16 @@ describe('por qué no hay lectura de cláusulas (hebreo)', () => {
         expect(renderHook(() => useEstructuraHebrea(analisis({ promptVersion: 5, clauseReadings: [{}] }), ref)).result.current.sinLectura).toBeNull();
         filas = [];
         expect(renderHook(() => useEstructuraHebrea(analisis({ promptVersion: 5 }), ref)).result.current.sinLectura).toBeNull();
+    });
+
+    it('U11b: la frase preposicional del dato; con un JSON viejo sin frases, sin dato (la marca sale como antes)', () => {
+        const palabras = [{ r: '1!1', t: 'בְּאֶרֶץ', l: 'b/776', role: '' }, { r: '1!2', t: 'מוֹאָב', l: '4124', role: '' }, { r: '1!3', t: 'וַיֵּלֶךְ', l: 'c/1980', role: '' }];
+        const an = analisis({ promptVersion: 5, words: palabras.map(w => ({ hebrewText: w.t })) });
+        datosFrases = { words: palabras, phrases: [{ rs: ['1!1', '1!2'], kind: 'a' }], phrasesKnown: true };
+        const { frases } = renderHook(() => useEstructuraHebrea(an, ref)).result.current;
+        expect([frases.get(0), frases.get(1), frases.get(2)]).toEqual(['a', 'a', null]);
+        datosFrases = { words: palabras, phrases: [], phrasesKnown: false };
+        expect(renderHook(() => useEstructuraHebrea(an, ref)).result.current.frases.size).toBe(0);
+        datosFrases = { words: [], phrases: [], phrasesKnown: true };
     });
 });

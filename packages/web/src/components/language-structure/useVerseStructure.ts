@@ -85,6 +85,8 @@ export interface VerseStructureState {
     sameLemma: readonly SameLemmaFact[];
     /** U11b (Stg 2:16, 2:18): las frases preposicionales de MACULA, en los dos idiomas. */
     phrases: readonly VersePhrase[];
+    /** ¿El capítulo trae frases? Un JSON viejo en caché (sin `phrases`) no dice que no haya: dice que no se sabe. */
+    phrasesKnown: boolean;
 }
 
 /**
@@ -137,10 +139,11 @@ export function useVerseStructure(
         const opening = griego ? greekSectionOpening(griego, verse) : undefined;
         const sameLemma = griego ? greekSameLemma(griego, verse) : [];
         const phrases = actual?.chapter ? versePhrases(actual.chapter, verse) : [];
+        const phrasesKnown = !!actual?.chapter?.phrases;
         const articles = actual?.chapter && lang === 'he' ? hebrewArticleAntecedents(actual.chapter, verse) : [];
         const hebrewVerbs = actual?.chapter && lang === 'he' ? hebrewFiniteVerbCandidates(actual.chapter, verse) : [];
         const hebrewPrepositions = actual?.chapter && lang === 'he' ? hebrewPrepositionCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, sameLemma, phrases, ...(opening ? { opening } : {}) };
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, sameLemma, phrases, phrasesKnown, ...(opening ? { opening } : {}) };
     }, [actual, key, verse, lang]);
 }
 
