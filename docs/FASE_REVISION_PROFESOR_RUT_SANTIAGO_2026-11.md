@@ -278,9 +278,41 @@ Cada commit queda completo y probable en la interfaz. Push pocas veces, para aho
 
 **Límite de método:** 1:22, 2:1, 2:10 y 2:13 son ejemplos DENTRO del prompt; acertar ahí prueba poco. Falta un banco con versículos fuera del prompt.
 
+**Banco fuera de muestra (2026-11-11, 22 llamadas + 9 pruebas de rechazo con tope 16).** El valor esperado sale del libro, no de criterio propio: Putnam §3.2.2 y A&C 4.3.3, 5.2.11 y 5.2.12; Mal 2:14 y Jue 16:15 por las traducciones (reserva para la concesiva). Ningún versículo está en el prompt (comprobado con grep). Script: `banco-waw2.ts` en el scratchpad de la sesión.
+
+| Versículo | Fuente | Acepta | v4 | v4 + arreglo |
+|---|---|---|---|---|
+| Gn 6:8 | A&C 4.3.3a | contraste | ✓ | ✓ |
+| Gn 17:21 | A&C 4.3.3a | contraste | ✓ (repitió hasta el tope) | — |
+| 2 S 7:2 | A&C 4.3.3a | contraste | sin valor (plantilla) | JSON roto al repetir |
+| 1 S 1:2 | Putnam 3.2.2b | contraste | ✓ | ✓ (repitió hasta el tope) |
+| 1 S 20:39 | Putnam 3.2.2a(4) | contraste | ✓ | fondo ✗ |
+| Jue 13:9 | A&C 4.3.3e | circunstancial | ✓ | — |
+| Gn 18:1 | A&C 5.2.11 | circunstancial | rechazado por OpenAI | — |
+| 2 R 8:7 | A&C 5.2.11 | circunstancial | ✓ (repitió hasta el tope) | — |
+| Gn 24:56 | A&C 5.2.11 | circ./causal | rechazado por OpenAI | — |
+| Gn 18:18 | A&C 5.2.11 | circ./causal | fondo ✗ (la causa está en 18:17) | — |
+| Gn 18:27 | A&C 5.2.12 | concesiva | sin valor; traduce «aunque» | sin valor; traduce «aunque» |
+| 1 S 3:1 | Putnam 3.2.2a(1) | apertura/fondo | ✓ | — |
+| Gn 22:1 | Putnam 3.2.2a(1) | apertura/fondo | ✓ | — |
+| 1 S 3:7 | Putnam 3.2.2a(2) | fondo/causal | ✓ | — |
+| 1 S 3:19 | Putnam 3.2.2a(2) | fondo/circ. | ✓ | — |
+| 2 S 6:23 | Putnam 3.2.2a(3) | cierre/fondo | contraste ✗ | — |
+| Mal 2:14 | reserva | concesiva/circ. | — | ✓ concesiva |
+| Jue 16:15 | reserva | concesiva/circ. | — | contraste ✗ (traduce «si no») |
+| Rut 2:13 | profesor (en muestra) | concesiva | contraste ✗ | ✓ |
+
+Lectura (medido):
+- **Cuando elige, acierta 14 de 18** (78 %). Los cuatro fallos: dos piden el versículo vecino (Gn 18:18, 2 S 6:23) y dos son de criterio (1 S 20:39, Jue 16:15), y en esos la traducción quedó bien.
+- **Plantilla:** decía `"resolved": "ground | content"` → arreglado (`890ea396`). Aun así Gn 18:27 omite el valor dos veces; el campo opcional se salta.
+- **Repetición:** 7 de 22 respuestas repiten el JSON; 5 llegan a 32.768 fichas (`incomplete`) → producción paga y cae a Gemini; una salió rota. Es el 23 % de las llamadas.
+- **Rechazo de OpenAI:** intermitente. Rechazó Rut 1:14 dos veces, Gn 18:1 y Gn 24:56 una vez; los tres pasaron 9 de 9 reintentos con el mismo texto, con el anterior y con los parámetros de producción. La moderación gratuita no marca el prompt entero. No lo causa el texto; producción lo cubre con Gemini.
+- **Límite del prompt:** no trae los versículos vecinos; apertura, cierre y el contraste con lo anterior dependen de ellos.
+- **«Estructura»:** en 2 S 6:23 corta el tema antepuesto (וּלְמִיכַל בַּת שָׁאוּל) en fila propia (anotado).
+
 **Hallazgos de producción, anteriores a esta fase:**
-- gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0).
-- Rut 1:14 lo rechaza la política de OpenAI; producción cae a Gemini en silencio.
+- gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
+- El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
 
 **Antes del PR:** recorrido en el navegador con los versículos del profesor (Rut 2:1, 3:3, 3:6; Stg 2:10, 2:11, 2:13, 2:14, 2:17) y la revisión adversarial.
 
