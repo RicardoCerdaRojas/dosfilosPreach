@@ -355,6 +355,11 @@ Lectura (medido):
     - Con la pista empeoró en dos casos: Gá 3:27 «bautizados en cuanto a Cristo» y Ro 1:4 «en cuanto al Espíritu». En la palabra suelta el efecto fue mixto, y la literal no siempre conservó el sentido base.
     - Se descartó: Louw-Nida queda como dato de estudio en la ficha y no entra al prompt.
 
+**U9 (2026-11-12), `4020a9a7`:** un vocativo entre las 6 primeras palabras del versículo, junto a un imperativo o una pregunta, es una SEÑAL de apertura de sección. Así la muestra la ficha del vocativo; no se rotula como Regla.
+- Medido a mano: 23 de 29 (Santiago 11/15, Filipenses 5/6, 1 Juan 5/6, 1 Tesalonicenses 2/2).
+- Falla dentro de una unidad ya abierta (Stg 5:9, 5:10) y en el control del profesor, Stg 3:12 (pregunta retórica en medio del argumento).
+- Stg 3:1, el caso del profesor, queda cubierto: el vocativo está en la 5.ª palabra, después del imperativo.
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
