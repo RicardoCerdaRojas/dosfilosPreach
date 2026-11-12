@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VerseStructureState } from './useVerseStructure';
 import { frasePorRef, SUBRAYADO_FRASE } from './frases';
+import { StructureDiagram } from './StructureDiagram';
 import type { PhraseKind } from '@dosfilos/domain';
 
 /** Las relaciones que llevan una nota de la regla (`notes.*` en el locale). */
@@ -254,6 +255,18 @@ export const LeyendaFrases: React.FC = () => {
     );
 };
 
+/** U11c: la vista elegida («tarjetas» o «diagrama»), recordada en este navegador. */
+function useVistaEstructura(): ['cards' | 'diagram', (v: 'cards' | 'diagram') => void] {
+    const [vista, setVista] = React.useState<'cards' | 'diagram'>(() => {
+        try { return localStorage.getItem('estructura.vista') === 'diagram' ? 'diagram' : 'cards'; } catch { return 'cards'; }
+    });
+    const cambiar = (v: 'cards' | 'diagram') => {
+        setVista(v);
+        try { localStorage.setItem('estructura.vista', v); } catch { /* sin almacenamiento */ }
+    };
+    return [vista, cambiar];
+}
+
 interface SectionProps {
     lang: StructureLanguage;
     structure: VerseStructureState;
@@ -272,10 +285,31 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
     const mapear = links?.toPageIndex;
     const pageIndex = React.useMemo(() => (mapear ? mapear(words) : undefined), [mapear, words]);
     const frases = React.useMemo(() => (showPhrases ? frasePorRef(structure.phrases) : undefined), [showPhrases, structure.phrases]);
+    const [vista, cambiarVista] = useVistaEstructura();
 
     return (
         <section className="rounded-xl border border-border bg-card p-5 print:break-inside-avoid">
-            <h3 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t('title')}</h3>
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t('title')}</h3>
+                {/* U11c: la misma estructura en tarjetas (con roles y lecturas) o en diagrama (como el profesor). */}
+                <span role="group" aria-label={t('viewLabel')} className="inline-flex items-center rounded-md border border-border/60 bg-background print:hidden">
+                    {(['cards', 'diagram'] as const).map((v, i) => (
+                        <button
+                            key={v}
+                            type="button"
+                            onClick={() => cambiarVista(v)}
+                            aria-pressed={vista === v}
+                            className={cn(
+                                'min-h-[32px] px-2.5 py-1 text-xs transition-colors',
+                                i > 0 && 'border-l border-border/60',
+                                vista === v ? 'bg-muted/60 font-medium text-foreground' : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            {t(`view.${v}`)}
+                        </button>
+                    ))}
+                </span>
+            </div>
             <p className="mb-3 text-[12.5px] text-muted-foreground">{t('intro')}</p>
             {loading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -302,8 +336,17 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
                             )}
                         </div>
                     )}
-                    <StructureFlow lang={lang} nodes={nodes} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} phrases={frases} />
-                    <Leyenda frases={!!frases} />
+                    {vista === 'diagram' ? (
+                        <>
+                            <StructureDiagram lang={lang} nodes={nodes} phrases={structure.phrases} underline={frases} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} />
+                            <p className="mt-3 text-[11px] text-muted-foreground">{t('diagramNote')}</p>
+                        </>
+                    ) : (
+                        <>
+                            <StructureFlow lang={lang} nodes={nodes} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} phrases={frases} />
+                            <Leyenda frases={!!frases} />
+                        </>
+                    )}
                 </>
             )}
             <p className="mt-2 text-[11px] text-muted-foreground">

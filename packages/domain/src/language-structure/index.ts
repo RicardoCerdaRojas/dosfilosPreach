@@ -14,6 +14,7 @@ export * from './hebrewPreposition.js';
 export * from './louwNida.js';
 export * from './greekSectionOpening.js';
 export * from './greekSameLemma.js';
+export * from './phrasing.js';
 export type { RuleChoiceView } from './hebrewRuleChoice.js';
 export { hebrewSuffix, type HebrewSuffix } from './hebrewMorph.js';
 export * from './greekConditionals.js';

@@ -11,6 +11,7 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (k: string) => k }),
 }));
 const { LeyendaFrases, StructureFlow, StructureSection } = await import('../StructureSection');
+const { StructureDiagram } = await import('../StructureDiagram');
 const { useVerseStructure } = await import('../useVerseStructure');
 const { TooltipProvider } = await import('@/components/ui/tooltip');
 
@@ -63,6 +64,30 @@ describe('StructureFlow (G1 + G5)', () => {
     it('U11b: la leyenda de las frases dice la forma de cada línea', () => {
         render(<LeyendaFrases />);
         expect(screen.getByTestId('phrases-legend').textContent).toBe('legendPhraseVerblegendPhraseNoun');
+    });
+
+    it('U11c Diagrama, Stg 2:14: la prótasis de dos miembros va en UN bloque con su barra y la flecha a la apódosis', () => {
+        render(<StructureDiagram lang="gr" nodes={verseStructure(santiago2, 14)} phrases={versePhrases(santiago2, 14)} />);
+        const bloque = screen.getByTestId('diagram-protasis');
+        expect(bloque.querySelectorAll('[data-testid="diagram-line"]')).toHaveLength(2);
+        expect(bloque.textContent).toContain('ἐὰν πίστιν λέγῃ τις ἔχειν');
+        expect(bloque.textContent).toContain('protasis · classLabel.3');
+        expect(bloque.textContent).toContain('protasisMember');
+        expect(bloque.textContent).toContain('diagramToApodosis');
+        expect(bloque.className).toContain('border-l-2');
+    });
+
+    it('U11c Diagrama, Stg 2:18: las frases con el verbo en su línea, marcadas y subrayadas; hebreo sangra a la derecha', () => {
+        const { unmount } = render(<StructureDiagram lang="gr" nodes={verseStructure(santiago2, 18)} phrases={versePhrases(santiago2, 18)} />);
+        const frases = screen.getAllByTestId('diagram-line').filter(l => l.dataset.kind === 'phrase');
+        expect(frases.map(l => l.textContent)).toEqual(['└χωρὶς τῶν ἔργων,', '└ἐκ τῶν ἔργων μου']);
+        expect(screen.getByText('χωρὶς').className).toContain('underline');
+        unmount();
+        const rut = cargar('he/Ruth/1.json');
+        render(<StructureDiagram lang="he" nodes={verseStructure(rut, 1)} phrases={versePhrases(rut, 1)} />);
+        const sangrada = screen.getAllByTestId('diagram-line').find(l => l.style.marginRight && l.style.marginRight !== '0rem');
+        expect(sangrada).toBeDefined();
+        expect(screen.getAllByTestId('diagram-line').every(l => !l.style.marginLeft)).toBe(true);
     });
 
     it('la sangría sigue la profundidad, relativa a la fila menos profunda', () => {
@@ -227,6 +252,21 @@ describe('StructureSection', () => {
         expect(screen.getByText('loading')).toBeInTheDocument();
         await waitFor(() => expect(screen.getAllByTestId('structure-row')).toHaveLength(2));
         expect(pedidos).toEqual(['/language-data/v1/gr/JAS/2.json']);
+    });
+
+    it('U11c: el selector Tarjetas | Diagrama cambia la vista y se recuerda', async () => {
+        localStorage.removeItem('estructura.vista');
+        const { unmount } = render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);
+        await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
+        expect(screen.getByText('view.cards').getAttribute('aria-pressed')).toBe('true');
+        fireEvent.click(screen.getByText('view.diagram'));
+        expect(screen.queryByTestId('structure-row')).toBeNull();
+        expect(screen.getByTestId('structure-diagram')).toBeInTheDocument();
+        expect(localStorage.getItem('estructura.vista')).toBe('diagram');
+        unmount();
+        render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);
+        await waitFor(() => expect(screen.getByTestId('structure-diagram')).toBeInTheDocument());
+        localStorage.removeItem('estructura.vista');
     });
 
     it('al cambiar de capítulo no muestra las filas del anterior mientras llega el nuevo', async () => {
