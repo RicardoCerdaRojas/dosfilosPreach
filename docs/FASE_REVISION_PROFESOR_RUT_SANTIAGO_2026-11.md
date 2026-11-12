@@ -244,6 +244,25 @@ Principios, los mismos de las fases anteriores: **dato → regla → asistente**
 
 Cada commit queda completo y probable en la interfaz. Push pocas veces, para ahorrar minutos de Actions.
 
+**Estado (2026-11-11): primera tanda HECHA**, 8 commits en `feat/revision-profesor-rut-santiago`, sin push. Suite completa en verde (dominio 3.841, web 2.466) y chequeos de CI sin nada nuevo.
+
+| Commit | Unidad | Medido |
+|---|---|---|
+| `48adfb74` | U1-a «no sea que» | 48 → 26 decisiones; las 21 citas pasan a prohibición (Wallace p. 469) |
+| `0fe0aab2` | U1-b nominal | +1.215 filas nominales, 0 perdidas |
+| `4922c451` | U1-c anáfora | 2.267 → 1.932; versículo anterior 25/25 en la muestra nueva |
+| `131960de` | U12 raíz en el tooltip | — |
+| `dde425ae` | U6 ketiv/qere | datos regenerados: sólo las marcas nuevas (1.278 qere, 6 ketiv sin qere) |
+| `e6f880d8` | U13 sufijo | 45.974 sufijos del AT reconocidos |
+| `b940e646` | U7 Stg 2:10 | +2 indefinidos (los de Stg 2:10); proléptico 5/5 |
+| `826ad736` | U8 condicional | 3.ª clase: 74 presente general (11/11), 89 futuro más probable |
+
+**Pasa a la segunda tanda** (necesita el prompt): la pista del antecedente en el párrafo (Stg 2:17, 2:20) y la del perfecto en la apódosis de 1.ª clase (Stg 2:11 γέγονας).
+
+**Anotado, viene de antes:** «Ὅ τι ἐάν» (Mc 6:23) sale como condición en «Estructura».
+
+**Antes del PR:** recorrido en el navegador con los versículos del profesor (Rut 2:1, 3:3, 3:6; Stg 2:10, 2:11, 2:13, 2:14, 2:17) y la revisión adversarial.
+
 **Lo que hay que cuidar para no romper.**
 - Cachés globales. `greek_insight_cache` usa `promptVersion` y `hebrew_analysis_cache/<Ref>_v2` guarda las traducciones del usuario en `userTranslations`. Subir la versión muestra «anterior» a todos los usuarios; no se borra nada.
 - Invariante del corpus en CI: cada palabra del versículo, exactamente una vez. Alineación por identificador y no por posición: la regeneración de datos (U3, U10, U11) pasa por `build.mjs`, que falla si algo no calza.
