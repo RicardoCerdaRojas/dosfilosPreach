@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { verseWords, type ChapterStructure } from '../chapterStructure';
-import { applyNominalRules, buildNominalFactsTask, greekAgency, greekAnaphora, greekAutos } from '../nominalFunctions';
+import { applyNominalRules, buildNominalFactsTask, greekAgency, greekAnaphora, greekAnaphoraHints, greekAutos } from '../nominalFunctions';
 import { greekDiscourseCandidates } from '../discourseFunctions';
 
 /** G3 — agencia (#G5) y artículo anafórico (#G6), los casos del profesor. */
@@ -165,5 +165,54 @@ describe('G3 — aplicado al mostrar', () => {
         expect(applyNominalRules([{ text: 'αὐτὸς', autosUse: 'intensive' as const, nominalRule: 'autosIntensive' as const }], [], [])[0]).toEqual({ text: 'αὐτὸς' });
         expect(buildNominalFactsTask([], [], ['ὅτι', 'αὐτὸς', 'ὁ', 'κύριος,'], autos)).toMatch(/2\. αὐτὸς: αὐτός INTENSIVO \(fuera del artículo, junto a κύριος\): «él mismo», realza a κύριος.*concordando con la palabra ESPAÑOLA que traduce κύριος/);
         expect(buildNominalFactsTask([], [], ['ἐπὶ', 'τὸ', 'αὐτό'], [{ ordinal: 2, use: 'identical', rule: 'autosIdentical', together: true }])).toMatch(/MODISMO: «juntos/);
+    });
+});
+
+/** Revisión del profesor (2026-11, Stg 2:17 y 2:20): el antecedente en el párrafo, como PISTA para el asistente. */
+describe('la pista del artículo que retoma algo del párrafo', () => {
+    const jas2 = cargar('JAS/2.json');
+    const pista = (v: number, palabra: string) => {
+        const ws = verseWords(jas2, v);
+        return greekAnaphoraHints(jas2, v).find(h => ws[h.ordinal + 1]?.t.replace(/[,.·;]/g, '') === palabra);
+    };
+
+    it('Stg 2:17 ἡ πίστις → la fe de 2:14; Stg 2:20 ἡ πίστις → la de 2:18', () => {
+        expect(pista(17, 'πίστις')?.antecedent).toEqual({ text: 'πίστις', verse: 14 });
+        expect(pista(20, 'πίστις')?.antecedent).toEqual({ text: 'πίστιν', verse: 18 });
+    });
+
+    it('no repite lo que ya decide la regla (mismo versículo o el anterior), ni busca más de cinco atrás', () => {
+        for (let v = 1; v <= 26; v++) {
+            const regla = new Set(greekAnaphora(jas2, v).map(a => a.ordinal));
+            for (const h of greekAnaphoraHints(jas2, v)) {
+                expect(regla.has(h.ordinal)).toBe(false);
+                expect(v - h.antecedent.verse).toBeGreaterThanOrEqual(2);
+                expect(v - h.antecedent.verse).toBeLessThanOrEqual(5);
+            }
+        }
+    });
+
+    it('la REGLA tampoco: «τοῦ θανάτου τοῦ δευτέρου» (Ap 2:11) no retoma 2:10; «τοὺς πατέρας ἡμῶν πρῶτον» (Hch 7:12, adverbial) sí', () => {
+        const rev2 = cargar('REV/2.json');
+        expect(greekAnaphora(rev2, 11).some(a => verseWords(rev2, 11)[a.headOrdinal]!.l === 'θάνατος')).toBe(false);
+        const act7 = cargar('ACT/7.json');
+        expect(greekAnaphora(act7, 12).map(a => verseWords(act7, 12)[a.headOrdinal]!.l)).toContain('πατήρ');
+    });
+
+    it('NO con un ordinal detrás del sustantivo: «ὁ θάνατος ὁ δεύτερος» (Ap 21:8) no retoma la muerte de 21:4', () => {
+        const rev = cargar('REV/21.json');
+        const ws = verseWords(rev, 8);
+        const i = ws.findIndex((w, k) => w.t.startsWith('θάνατος') && ws[k + 2]?.l === 'δεύτερος');
+        expect(i).toBeGreaterThan(0);
+        expect(greekAnaphoraHints(rev, 8).some(h => h.headOrdinal === i)).toBe(false);
+    });
+
+    it('el prompt la da como PISTA (decide el asistente), separada de los hechos', () => {
+        const ws = verseWords(jas2, 17).map(w => w.t);
+        const t = buildNominalFactsTask([], [], ws, [], greekAnaphoraHints(jas2, 17));
+        expect(t).toContain('PISTAS DEL TEXTO (decide tú con el contexto):');
+        expect(t).toMatch(/POSIBLE artículo anafórico — el mismo sustantivo aparece antes en el párrafo: πίστις \(v\. 14\)/);
+        expect(t).not.toContain('HECHOS QUE DA EL TEXTO');
+        expect(buildNominalFactsTask([], [], ws, [], [])).toBe('');
     });
 });

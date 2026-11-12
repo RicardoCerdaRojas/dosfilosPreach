@@ -54,6 +54,8 @@ export interface AutosFact {
 export interface NominalFacts {
     readonly agency: readonly AgencyFact[];
     readonly anaphora: readonly AnaphoraFact[];
+    /** Pistas: el sustantivo apareció 2 a 5 versículos antes (Stg 2:17 → 2:14). El asistente decide. */
+    readonly anaphoraHints?: readonly AnaphoraFact[];
     readonly autos?: readonly AutosFact[];
 }
 
@@ -244,13 +246,51 @@ export function greekAnaphora(ch: ChapterStructure, verse: number): AnaphoraFact
         // Un ordinal marca OTRO de la serie («ὁ δεύτερος ἄνθρωπος» tras «ὁ πρῶτος», 1 Co 15:47;
         // Ap 4:7), salvo que el antecedente lleve el MISMO ordinal: «τὴν ἐνάτην ὥραν» retoma
         // «ὥρας ἐνάτης» (Mt 27:45-46), «τῷ ἕκτῳ ἀγγέλῳ» a «ὁ ἕκτος ἄγγελος» (Ap 9:13-14).
-        const ordinal = ws.slice(i + 1, n).find(x => ORDINALES.has(x.l));
+        // También detrás del sustantivo, si CONCUERDA con él: «τοῦ θανάτου τοῦ δευτέρου» (Ap 2:11, 20:14) no es la
+        // muerte del versículo anterior; «τοὺς πατέρας ἡμῶν πρῶτον» (Hch 7:12, adverbial) sí retoma (2026-11-12).
+        const ordinal = ws.slice(i + 1, n + 3).find((x, k) => ORDINALES.has(x.l) && (k < n - i - 1 || concuerda(x, ws[n]!)));
         if (ordinal) {
             const donde = enEste ? ws : anterior;
             const k = donde.indexOf(ante);
             if (!donde.slice(Math.max(0, k - 3), k + 3).some(x => x.l === ordinal.l)) return;
         }
         out.push({ ordinal: i, headOrdinal: n, antecedent: { text: limpio(ante.t), verse: enEste ? verse : verse - 1 } });
+    });
+    return out;
+}
+
+/**
+ * PISTA (no regla): el mismo sustantivo apareció entre 2 y 5 versículos antes,
+ * dentro del capítulo, y la regla (mismo versículo o el anterior) no encontró
+ * antecedente. Revisión del profesor (2026-11): en Stg 2:17 «ἡ πίστις» retoma
+ * la fe de 2:14, y en 2:20 la de 2:18. Como regla, ampliar la ventana acertaba
+ * ~55 % (medido a mano, 2026-11-11); por eso va al asistente como POSIBLE
+ * anáfora y él decide con el contexto. Mismos filtros que `greekAnaphora`.
+ */
+export function greekAnaphoraHints(ch: ChapterStructure, verse: number): AnaphoraFact[] {
+    if (ch.lang !== 'gr') return [];
+    const ws = verseWords(ch, verse);
+    const previas: Array<{ v: number; ws: StructureWord[] }> = [];
+    for (let v = verse - 2; v >= Math.max(1, verse - 5); v--) previas.push({ v, ws: verseWords(ch, v) });
+    const out: AnaphoraFact[] = [];
+    ws.forEach((w, i) => {
+        if (w.pos !== 'RA') return;
+        const n = nucleoDe(ws, i);
+        if (n === undefined) return;
+        const lema = ws[n]!.l;
+        if (lema[0] && lema[0] === lema[0].toUpperCase() && lema[0] !== lema[0].toLowerCase()) return;
+        if (MONADICOS.has(lema)) return;
+        // Un ordinal marca OTRO de la serie (ver `greekAnaphora`): como pista, se descarta siempre. También
+        // detrás del sustantivo: «ὁ θάνατος ὁ δεύτερος» (Ap 21:8) no es la muerte de 21:4 (banco 2026-11-12).
+        if (ws.slice(i + 1, n + 3).some((x, k) => ORDINALES.has(x.l) && (k < n - i - 1 || concuerda(x, ws[n]!)))) return;
+        const mismo = (x: StructureWord) => x.l === lema && !!x.pos?.startsWith('N') && numero(x) === numero(ws[n]!);
+        // Tampoco si el mismo sustantivo ya está en este versículo o el anterior: eso lo decide la regla.
+        const cerca = [...ws.slice(0, i), ...(verse > 1 ? verseWords(ch, verse - 1) : [])].some(mismo);
+        if (cerca) return;
+        for (const p of previas) {
+            const ante = [...p.ws].reverse().find(mismo);
+            if (ante) { out.push({ ordinal: i, headOrdinal: n, antecedent: { text: limpio(ante.t), verse: p.v } }); return; }
+        }
     });
     return out;
 }
@@ -306,8 +346,8 @@ export function applyNominalRules<T extends { text?: string; articleUse?: string
 }
 
 /** Los hechos para el prompt: el asistente los EXPLICA, no los decide. */
-export function buildNominalFactsTask(agency: readonly AgencyFact[], anaphora: readonly AnaphoraFact[], words: readonly string[], autos: readonly AutosFact[] = []): string {
-    if (!agency.length && !anaphora.length && !autos.length) return '';
+export function buildNominalFactsTask(agency: readonly AgencyFact[], anaphora: readonly AnaphoraFact[], words: readonly string[], autos: readonly AutosFact[] = [], hints: readonly AnaphoraFact[] = []): string {
+    if (!agency.length && !anaphora.length && !autos.length && !hints.length) return '';
     const AUTOS: Record<AutosUse, (h: string) => string> = {
         intensive: h => `αὐτός INTENSIVO (fuera del artículo${h ? `, junto a ${h}` : ''}): «él mismo»${h ? `, realza a ${h}` : ''}; NO es el pronombre «él». En su "translation" pon «mismo/misma/mismos/mismas» concordando con la palabra ESPAÑOLA${h ? ` que traduce ${h}` : ''}, y explícalo así.`,
         identical: h => `αὐτός IDENTIFICADOR (con el artículo delante): «el mismo». En su "translation" pon «el mismo/la misma/los mismos/las mismas/lo mismo» concordando con la palabra ESPAÑOLA${h ? ` que traduce ${h}` : ''}, y explícalo así.`,
@@ -322,7 +362,10 @@ export function buildNominalFactsTask(agency: readonly AgencyFact[], anaphora: r
         ...autos.map(a => `- ${a.ordinal + 1}. ${words[a.ordinal]}: ${a.together ? '«ἐπὶ τὸ αὐτό» es MODISMO: «juntos, en el mismo lugar». Tradúcelo así, no «sobre lo mismo».' : AUTOS[a.use](a.headOrdinal !== undefined ? limpio(words[a.headOrdinal] ?? '') : '')}`),
         ...anaphora.map(a => `- ${a.ordinal + 1}. ${words[a.ordinal]}: artículo ANAFÓRICO — retoma ${a.antecedent.text} (v. ${a.antecedent.verse}). Devuelve "articleUse": "anaphoric" y "antecedent": "${a.antecedent.text}, v. ${a.antecedent.verse}", salvo que sea monádico o por antonomasia.`),
     ];
-    return `
+    const pistas = hints.map(a => `- ${a.ordinal + 1}. ${words[a.ordinal]}: POSIBLE artículo anafórico — el mismo sustantivo aparece antes en el párrafo: ${a.antecedent.text} (v. ${a.antecedent.verse}). El artículo puede retomar algo ya nombrado aunque esté varios versículos atrás. Si el contexto muestra que habla de lo mismo, devuelve "articleUse": "anaphoric" y "antecedent": "${a.antecedent.text}, v. ${a.antecedent.verse}"; si es otro referente o un uso genérico, elige el uso que corresponda.`);
+    return `${lineas.length ? `
 HECHOS QUE DA EL TEXTO (no los cambies; explícalos donde corresponda):
-${lineas.join('\n')}`;
+${lineas.join('\n')}` : ''}${pistas.length ? `
+PISTAS DEL TEXTO (decide tú con el contexto):
+${pistas.join('\n')}` : ''}`;
 }

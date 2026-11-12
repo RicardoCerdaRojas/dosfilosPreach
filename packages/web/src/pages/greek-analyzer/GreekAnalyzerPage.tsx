@@ -137,7 +137,9 @@ export function GreekAnalyzerPage() {
         : !insight
           ? { message: tEstructura('readingMissing.generate') }
           : insight.promptVersion !== GREEK_INSIGHT_PROMPT_VERSION
-            ? { message: tEstructura('readingMissing.stale'), action: reanalizar }
+            // Desde v11 el análisis SÍ tiene lectura de cláusulas: lo que le falta es lo posterior (v15:
+            // las pistas del perfecto proléptico y del artículo que retoma algo del párrafo).
+            ? { message: tEstructura((insight.promptVersion ?? 0) >= 11 ? 'readingMissing.staleNewer' : 'readingMissing.stale'), action: reanalizar }
             : !lecturas?.length && (estructura.nodes?.length ?? 0) > 0
               ? { message: tEstructura('readingMissing.empty'), action: reanalizar }
               : undefined;

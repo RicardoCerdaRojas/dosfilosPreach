@@ -144,8 +144,10 @@ export interface GreekKeyInsight {
  * v12: + verbFunction/tenseUse/verbNote — la función de cada verbo (G2, Wallace).
  * v13: + hechos de G3 (agencia, artículo anafórico) en el prompt; claves por posición; más funciones de caso.
  * v14: + función en el argumento acotada por regla (G4, Runge) y pronombre explícito.
+ * v15: revisión del profesor (2026-11) — pistas del artículo que retoma algo del párrafo
+ *      (Stg 2:17, 2:20) y del perfecto proléptico en la apódosis de 1.ª clase (Stg 2:11).
  */
-export const GREEK_INSIGHT_PROMPT_VERSION = 14;
+export const GREEK_INSIGHT_PROMPT_VERSION = 15;
 
 export interface GreekVerseInsight {
     /** "JAS 1:2" — la clave del caché. */

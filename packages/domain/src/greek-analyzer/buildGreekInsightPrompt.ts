@@ -67,7 +67,7 @@ export function buildGreekInsightPrompt(input: {
     const lectura = buildClauseReadingTask(input.structure ?? []);
     const verbos = buildVerbFunctionTask(input.verbs ?? [], input.tokens.map(t => t.text));
     const discurso = buildDiscourseTask(input.discourse ?? [], input.tokens.map(t => t.text));
-    const hechos = buildNominalFactsTask(input.nominal?.agency ?? [], input.nominal?.anaphora ?? [], input.tokens.map(t => t.text), input.nominal?.autos ?? []);
+    const hechos = buildNominalFactsTask(input.nominal?.agency ?? [], input.nominal?.anaphora ?? [], input.tokens.map(t => t.text), input.nominal?.autos ?? [], input.nominal?.anaphoraHints ?? []);
     const lista = input.tokens
         .map((t, i) => `${i + 1}. ${t.text} — lema ${t.lemma} — ${describirTag(t)}`)
         .join('\n');

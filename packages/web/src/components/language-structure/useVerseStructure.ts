@@ -3,6 +3,7 @@ import {
     greekDiscourseCandidates,
     greekAgency,
     greekAnaphora,
+    greekAnaphoraHints,
     greekAutos,
     greekVerbCandidates,
     hebrewSpeechFacts,
@@ -105,6 +106,7 @@ export function useVerseStructure(
         const nominal = {
             agency: griego ? greekAgency(griego, verse) : [],
             anaphora: griego ? greekAnaphora(griego, verse) : [],
+            anaphoraHints: griego ? greekAnaphoraHints(griego, verse) : [],
             autos: griego ? greekAutos(griego, verse) : [],
         };
         const discourse = griego ? greekDiscourseCandidates(griego, verse) : [];

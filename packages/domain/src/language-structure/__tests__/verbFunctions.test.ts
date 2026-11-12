@@ -258,3 +258,24 @@ describe('R0 — la regla no dice más que el libro que cita', () => {
 });
 
 });
+
+/** Revisión del profesor (2026-11, Stg 2:11 γέγονας): el perfecto en la apódosis de 1.ª clase, como PISTA. */
+describe('la pista del perfecto proléptico en la 1.ª clase', () => {
+    it('Stg 2:11 γέγονας lleva la pista; Stg 2:10 γέγονεν (3.ª clase) sigue con la regla que acota', async () => {
+        const { readFileSync } = await import('node:fs');
+        const { fileURLToPath } = await import('node:url');
+        const { greekVerbCandidates, buildVerbFunctionTask } = await import('../verbFunctions');
+        const { verseWords } = await import('../chapterStructure');
+        const ch = JSON.parse(readFileSync(fileURLToPath(new URL('../../../../web/public/language-data/v1/gr/JAS/2.json', import.meta.url)), 'utf8'));
+        const de = (v: number, t: string) => greekVerbCandidates(ch, v).find(c => verseWords(ch, v)[c.ordinal]!.t.replace(/[,.·;]/g, '') === t)!;
+        const g11 = de(11, 'γέγονας');
+        expect(g11.tenseHint).toBe('prolepticFirstClass');
+        expect(g11.tenseRule).toBeUndefined();
+        const g10 = de(10, 'γέγονεν');
+        expect(g10.tenseRule).toBe('prolepticPerfect');
+        expect(g10.tenseHint).toBeUndefined();
+        const tarea = buildVerbFunctionTask([g11], verseWords(ch, 11).map(w => w.t));
+        expect(tarea).toMatch(/PISTA: perfecto en la apódosis de una condición de 1\.ª clase/);
+        expect(tarea).toContain('"intensive" o "extensive"');
+    });
+});

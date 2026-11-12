@@ -68,6 +68,12 @@ export interface VerbCandidate {
     readonly tenseUses: readonly TenseUseId[];
     /** Una regla acotó los usos del tiempo (el asistente elige entre ellos). */
     readonly tenseRule?: TenseRule;
+    /**
+     * Pista (no regla): perfecto de indicativo en la apódosis de una condición de 1.ª clase.
+     * Medido en el NT (2026-11-12): 14 casos, 4 prolépticos o gnómicos (Stg 2:11, 1 Ti 5:8,
+     * 1 Co 8:3, 2 P 2:20) y 10 intensivos o extensivos (1 Co 15:13); la forma no los separa.
+     */
+    readonly tenseHint?: 'prolepticFirstClass';
 }
 
 /**
@@ -392,7 +398,9 @@ export function greekVerbCandidates(ch: ChapterStructure, verse: number): VerbCa
         const tenseUses = proleptico
             ? (['proleptic', 'gnomic'] as TenseUseId[])
             : form === 'indicative' ? [...(TENSE_USES[c.tiempo as keyof typeof TENSE_USES] ?? [])] : [];
-        const acota = proleptico ? { tenseRule: 'prolepticPerfect' as const } : {};
+        const acota = proleptico ? { tenseRule: 'prolepticPerfect' as const }
+            : form === 'indicative' && c.tiempo === 'X' && !!c.fila?.isApodosis && filas.some(f => f.relation === 'condition' && f.conditionalClass === 1)
+                ? { tenseHint: 'prolepticFirstClass' as const } : {};
         const regla = VERB_RULES.find(r => r.form === form && r.when(c));
         // «Predicativo» sólo si hay un sustantivo o pronombre del que predicar,
         // en su cláusula o en la madre. Con el sujeto implícito en el verbo
@@ -457,6 +465,7 @@ export function buildVerbFunctionTask(candidates: readonly VerbCandidate[], word
         if (c.decided) partes.push(`FUNCIÓN YA DECIDIDA por regla (${REGLA_ES[c.rule!]}): "${c.decided}" = ${FUNCION_ES[c.decided]}; sólo explícala en "verbNote"`);
         else if (c.allowed.length) partes.push(`"verbFunction", elige de: ${c.allowed.map(f => `"${f}" (${FUNCION_ES[f]})`).join('; ')}${c.rule ? ` [acotado porque ${REGLA_ES[c.rule]}]` : ''}`);
         if (c.tenseUses.length) partes.push(`"tenseUse", elige de: ${c.tenseUses.map(u => `"${u}" (${USO_ES[u]})`).join('; ')}`);
+        if (c.tenseHint) partes.push('PISTA: perfecto en la apódosis de una condición de 1.ª clase. Si la prótasis plantea un caso general (τις, un «tú» que vale para cualquiera) y el perfecto dice el estado que de ahí resulta, es "proleptic" (Wallace p. 581); si afirma un hecho ya ocurrido, es "intensive" o "extensive"');
         return partes.join(' — ');
     });
     return `
