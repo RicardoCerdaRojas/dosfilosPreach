@@ -321,6 +321,13 @@ Lectura (medido):
 - Rol: el bloque de función muestra el rol de MACULA y avisa si el asistente lo contradice (Rut 3:6: «objeto directo» contra adv). Con el prompt actual hubo 0 choques en 19 análisis; sirve para lo guardado antes.
 - Putnam entra al registro de fuentes, citado por sección.
 
+**U5 (2026-11-12), `2685e20c`:** la función del verbo finito hebreo (A&C cap. 3), con el cohortativo por función; prompt hebreo v5.
+- Cada verbo finito lleva la lista de su forma; al yiqtol de 1.ª persona se le suman las funciones del cohortativo (Putnam §2.2.4a). אַל + yusivo da prohibición por regla (15/15). El asistente elige sólo de esa lista.
+- Banco (valor tomado del libro): 7/14 con rótulos de una palabra; 24/30 con las definiciones de A&C y la lista cerrada (desarrollo 11/14, validación 13/16). Cohortativos y yiqtol de 1.ª persona: 9/9, con Éx 4:12 en «futuro» como control. Waw con la sección nueva: 5/6.
+- Errores que quedan, de criterio entre categorías vecinas: proverbial o estado, obligación o habitual, mandato o futuro, y performativo, futuro retórico y progresivo, que cambian de una corrida a otra.
+- La ficha sólo muestra el bloque si hay función elegida; un v4 avisa «anterior a la función de cada verbo».
+- El rol de MACULA se rotula «Función en la oración (según el análisis sintáctico del texto)» y dice de dónde sale.
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
