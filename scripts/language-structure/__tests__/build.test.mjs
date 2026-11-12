@@ -137,3 +137,12 @@ describe('U11b: las frases preposicionales de MACULA (Stg 2:16 ἐξ ὑμῶν,
     });
 });
 
+describe('U11b: el rol de la frase que lo trae el grupo que la envuelve (Mt 23:34 «ἀπὸ πόλεως εἰς πόλιν»)', () => {
+    it('sin rol propio, lo hereda del grupo; dentro de un sintagma nominal, adnominal', () => {
+        const x = `<wg class="cl"><wg rule="2Pp" role="adv"><wg class="pp" rule="PrepNp"><w xml:id="f1" ref="X 23:34!1">ἀπὸ</w><w xml:id="f2" ref="X 23:34!2">πόλεως</w></wg>
+          <wg class="pp" rule="PrepNp"><w xml:id="f3" ref="X 23:34!3">εἰς</w><w xml:id="f4" ref="X 23:34!4">πόλιν</w></wg></wg>
+          <wg class="np" role="s"><w xml:id="f5" ref="X 23:34!5">τις</w><wg class="pp" rule="PrepNp"><w xml:id="f6" ref="X 23:34!6">ἐξ</w><w xml:id="f7" ref="X 23:34!7">ὑμῶν</w></wg></wg></wg>`;
+        expect(leerLowfat(x).frases.map(f => f.role)).toEqual(['adv', 'adv', '']);
+    });
+});
+

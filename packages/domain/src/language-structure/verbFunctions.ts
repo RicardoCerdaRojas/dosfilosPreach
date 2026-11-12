@@ -89,6 +89,9 @@ export interface VerbCandidate {
  */
 export type TenseRule = 'prolepticPerfect';
 
+/** Los perfectos que significan un estado PRESENTE (lema de MorphGNT): ni regla ni pista de proléptico. */
+const PERFECTO_DE_PRESENTE: ReadonlySet<string> = new Set(['οἶδα', 'ἔοικα', 'πείθω', 'ἵστημι', 'μιμνῄσκω']);
+
 const MODO: Record<string, GreekVerbForm> = { P: 'participle', N: 'infinitive', S: 'subjunctive', D: 'imperative', O: 'optative', I: 'indicative' };
 const modo = (w: StructureWord | undefined) => (w?.pos?.startsWith('V') ? w.parse?.[3] ?? '' : '');
 const caso = (w: StructureWord | undefined) => w?.parse?.[4] ?? '';
@@ -393,13 +396,16 @@ export function greekVerbCandidates(ch: ChapterStructure, verse: number): VerbCa
             madreConVerbo: (arriba[0] ?? []).some(x => x.role === 'v' && y_finito(x)),
             tiempo: w.parse?.[1] ?? '', persona: w.parse?.[0] ?? '', plural: w.parse?.[5] === 'P',
         };
-        const proleptico = form === 'indicative' && c.tiempo === 'X'
+        // Perfecto con sentido de presente (οἶδα «sé», ἔοικα «se parece», πέποιθα «confío», ἕστηκα
+        // «estoy de pie», μέμνημαι «recuerdo»): no es proléptico (revisión adversarial, Stg 1:23 ἔοικεν).
+        const perfectoDePresente = PERFECTO_DE_PRESENTE.has(w.l);
+        const proleptico = form === 'indicative' && c.tiempo === 'X' && !perfectoDePresente
             && ((!!c.fila?.isApodosis && filas.some(f => f.relation === 'condition' && f.conditionalClass === 3)) || sujetoIndefinido(propia));
         const tenseUses = proleptico
             ? (['proleptic', 'gnomic'] as TenseUseId[])
             : form === 'indicative' ? [...(TENSE_USES[c.tiempo as keyof typeof TENSE_USES] ?? [])] : [];
         const acota = proleptico ? { tenseRule: 'prolepticPerfect' as const }
-            : form === 'indicative' && c.tiempo === 'X' && !!c.fila?.isApodosis && filas.some(f => f.relation === 'condition' && f.conditionalClass === 1)
+            : form === 'indicative' && c.tiempo === 'X' && !perfectoDePresente && !!c.fila?.isApodosis && filas.some(f => f.relation === 'condition' && f.conditionalClass === 1)
                 ? { tenseHint: 'prolepticFirstClass' as const } : {};
         const regla = VERB_RULES.find(r => r.form === form && r.when(c));
         // «Predicativo» sólo si hay un sustantivo o pronombre del que predicar,
@@ -453,7 +459,7 @@ const REGLA_ES: Record<VerbRule, string> = {
     eisTo: 'εἰς τό + infinitivo', prosTo: 'πρὸς τό + infinitivo', enToi: 'ἐν τῷ + infinitivo (simultáneo)', metaTo: 'μετὰ τό + infinitivo (anterior)',
     proTou: 'πρὸ τοῦ + infinitivo (posterior)', diaTo: 'διὰ τό + infinitivo', tou: 'τοῦ + infinitivo', articularNominal: 'infinitivo con artículo',
     afterIna: 'dentro de una cláusula con ἵνα/ὅπως', conditionalEan: 'prótasis con ἐάν', ouMe: 'οὐ μή + subjuntivo', prohibition: 'μή + subjuntivo aoristo',
-    indefinite: 'con ἄν, ὅταν o ἕως (relativo o temporal indefinido)', indefiniteRelative: 'ὅστις + subjuntivo, con o sin ἄν: «quienquiera que…»; plantea un caso general, como una condición', lest: 'μήποτε, o μή tras un verbo de temor o advertencia (βλέπω, φοβέομαι)', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
+    indefinite: 'con ἄν, ὅταν, ἕως, ἄχρι, μέχρι o πρίν (relativo o temporal indefinido)', indefiniteRelative: 'ὅστις + subjuntivo, con o sin ἄν: «quienquiera que…»; plantea un caso general, como una condición', lest: 'μήποτε, o μή tras un verbo de temor o advertencia (βλέπω, φοβέομαι)', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
 };
 
 /** El tramo del prompt con la tarea de los verbos. Vacío si no hay verbos. */

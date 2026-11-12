@@ -211,7 +211,7 @@ export const TENSE_USE_SOURCES: { readonly [T in keyof typeof TENSE_USES]: Reado
  * Ro 14:23); la relativa indefinida equivale a una condición, p. 478; el profesor, Stg 2:10-11.
  */
 export const TENSE_RULE_SOURCES: Readonly<Record<TenseRule, readonly RuleSource[]>> = {
-    prolepticPerfect: [W(PERF, 'Proleptic (Futuristic) Perfect', '581'), W(SUBJ, 'Subjunctive in Indefinite Relative Clause', '478'), P('2026-11 · Stg 2:10 γέγονεν, 2:11 γέγονας')],
+    prolepticPerfect: [W(PERF, 'Proleptic (Futuristic) Perfect', '581'), W(SUBJ, 'Subjunctive in Indefinite Relative Clause', '478'), P('2026-11 · Stg 2:10 γέγονεν')],
 };
 
 /** Las fuentes de un uso del tiempo para el tiempo del verbo (código de MorphGNT). */

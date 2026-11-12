@@ -243,6 +243,18 @@ describe('el genitivo partitivo con ἐκ/ἀπό', () => {
         expect(terminos('ACT/19.json', 34)).toEqual([]);
     });
 
+    it('NO si MACULA da a la preposición otro sentido que 63.20 (revisión adversarial): tiempo (Hch 9:33 «ἐξ ἐτῶν ὀκτώ»), separación (Lc 16:31 «τις ἐκ νεκρῶν ἀναστῇ»)', () => {
+        expect(terminos('ACT/9.json', 33)).toEqual([]);
+        expect(terminos('LUK/8.json', 43)).toEqual([]);
+        expect(terminos('LUK/16.json', 31)).toEqual([]);
+        expect(terminos('LUK/16.json', 30)).toEqual([]);
+    });
+
+    it('el numeral que concuerda con su sustantivo no es el todo: Ap 17:1 «εἷς ἐκ τῶν ἑπτὰ ἀγγέλων» → ἀγγέλων', () => {
+        expect(terminos('REV/17.json', 1)).toEqual(['ἀγγέλων']);
+        expect(terminos('REV/15.json', 7)).toEqual(['ζῴων']);
+    });
+
     it('al mostrar, el término queda «partitive» por regla; y el prompt lo da como hecho', () => {
         const ch = cargar('JAS/2.json');
         const ws = verseWords(ch, 16);

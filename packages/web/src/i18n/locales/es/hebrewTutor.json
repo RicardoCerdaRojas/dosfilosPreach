@@ -257,7 +257,7 @@
         "adv": "complemento adverbial (lugar, dirección, tiempo o modo)",
         "p": "predicado",
         "conflict": "El asistente lo describe de otra manera. Los datos de MACULA lo leen como {{role}}.",
-        "adverbialHint": "Con un verbo de movimiento, el complemento adverbial se traduce con «a» o «hacia» (Putnam §2.4.2a)."
+        "adverbialHint": "Con un verbo de movimiento, el complemento adverbial se traduce con «a» o «hacia»."
       },
       "recognizedBy": {
         "bInf": "Lleva la preposición בְּ pegada: temporal («cuando»), causal o instrumental.",

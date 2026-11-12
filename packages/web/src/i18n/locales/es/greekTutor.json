@@ -881,7 +881,7 @@
     "louwNida": {
       "title": "Sentido en este versículo (Louw-Nida)",
       "note": "Dato de MACULA: el sentido que el análisis del texto da a esta preposición aquí, según los dominios semánticos de Louw y Nida. El régimen dice qué sentidos admite el caso; esto dice cuál se lee en este versículo.",
-      "twoReadings": "Dato de MACULA: aquí deja abiertas dos lecturas. El contexto decide entre ellas."
+      "twoReadings": "Dato de MACULA: aquí deja abiertas {{count}} lecturas. El contexto decide entre ellas."
     },
     "caseRule": {
       "partitiveEk": "ἐκ o ἀπό + genitivo plural junto a una palabra que toma una parte (τις, εἷς, οὐδείς, πολλοί, un numeral): el genitivo es el todo del que se toma esa parte («alguno de entre ustedes»)."
@@ -1105,7 +1105,7 @@
         "conditionalEan": "prótasis con ἐάν",
         "ouMe": "οὐ μή + subjuntivo",
         "prohibition": "μή + subjuntivo aoristo",
-        "indefinite": "con ἄν, ὅταν o ἕως",
+        "indefinite": "con ἄν, ὅταν, ἕως, ἄχρι, μέχρι o πρίν",
         "indefiniteRelative": "ὅστις + subjuntivo, con o sin ἄν: «quienquiera que…». Plantea un caso general, como una condición (Wallace).",
         "hortatory": "1.ª persona plural",
         "meGenoito": "μὴ γένοιτο",

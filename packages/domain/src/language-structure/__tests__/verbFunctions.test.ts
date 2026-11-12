@@ -234,6 +234,9 @@ describe('revisión del profesor (2026-11) — Stg 2:10-11', () => {
         expect(verbo('1CO/15.json', 13, 'ἐγήγερται').tenseRule).toBeUndefined();
         expect(verbo('JAS/2.json', 11, 'γέγονας').tenseRule).toBeUndefined();
         expect(verbo('1JN/5.json', 15, 'οἴδαμεν').tenseRule).toBeUndefined();
+        // Tampoco la pista (revisión adversarial): Stg 1:23 «εἴ τις… οὗτος ἔοικεν» es un perfecto con sentido de presente.
+        expect(verbo('1JN/5.json', 15, 'οἴδαμεν').tenseHint).toBeUndefined();
+        expect(verbo('JAS/1.json', 23, 'ἔοικεν').tenseHint).toBeUndefined();
     });
     it('al mostrar: la elección válida queda; si no, las opciones y lo del asistente como otra lectura', () => {
         const c = [verbo('JAS/2.json', 10, 'γέγονεν')];

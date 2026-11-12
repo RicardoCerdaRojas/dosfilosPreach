@@ -300,6 +300,7 @@ export function GreekAnalyzerPage() {
                             seleccion={seleccion}
                             onSeleccion={abrirFicha}
                             frontedDe={frontedDe}
+                            datosDe={datosGriego}
                             // U11b (Stg 2:16, 2:21): las frases preposicionales de MACULA, si las palabras calzan.
                             {...(alineados ? { showPhrases: frases, onTogglePhrases: alternarFrases, frases: frasePorOrdinal(estructura.words, estructura.phrases) } : {})}
                         />
@@ -330,21 +331,8 @@ export function GreekAnalyzerPage() {
                             links={{
                                 toPageIndex: alinear,
                                 renderText: (i) => (data.tokens[i] ? pintarPalabraGriega(data.tokens[i]!, colorMode) : null),
-                                renderTooltip: (i) => {
-                                    const tok = data.tokens[i];
-                                    return tok ? (
-                                        <GreekWordTooltip
-                                            token={tok}
-                                            insight={insight?.words[i]}
-                                            keyInsight={claveDe(tok.text, i)}
-                                            relations={relacionesDe(i)}
-                                            objectCase={casoDelTermino(i)}
-                                            bookCount={lemmaCounts[tok.lemma]}
-                                            bookName={libroActual ? nombre(libroActual) : book}
-                                            fronted={frontedDe(i)}
-                                        />
-                                    ) : null;
-                                },
+                                // Los mismos datos que la tarjeta y la ficha (revisión adversarial: faltaban los nuevos).
+                                renderTooltip: (i) => { const d = datosGriego(i); return d ? <GreekWordTooltip {...d} /> : null; },
                                 onSelect: (i) => abrirFicha(i),
                                 selected: seleccion,
                             }}

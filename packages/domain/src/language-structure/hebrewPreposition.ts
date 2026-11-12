@@ -132,6 +132,9 @@ export interface HebrewPrepositionCandidate {
 /** La preposición de la palabra (la primera, si trae varias), o ninguna. */
 export function prepositionOf(w: StructureWord): HebrewPreposition | undefined {
     if (!w.m?.startsWith('H')) return undefined;
+    // OSHB tiene que marcarla preposición (un segmento R): por el lema solo, אַחַר ADVERBIO («después»,
+    // `HD`) recibía la lista (48 de 52.777 candidatas, revisión adversarial 2026-11-12).
+    if (!w.m.slice(1).split('/').some(x => x.startsWith('R'))) return undefined;
     const partes = w.l.split('/');
     const lema = partes[partes.length - 1]!.trim().split(' ')[0]!;
     if (LEMA[lema]) return LEMA[lema];

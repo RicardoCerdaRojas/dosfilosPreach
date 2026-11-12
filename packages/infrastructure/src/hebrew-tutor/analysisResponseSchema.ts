@@ -26,7 +26,7 @@
  */
 import {
     Binyan, VerbForm, VerbType, GrammaticalCategory, MorphemeRole, NominalState,
-    RESOLVED_RELATIONS, FRONTING_FUNCTIONS,
+    RESOLVED_RELATIONS, FRONTING_FUNCTIONS, LEXICAL_NOTE_TYPES,
 } from '@dosfilos/domain';
 import { SchemaType } from '../llm/schemaType';
 
@@ -136,7 +136,7 @@ const lexicalNote = objeto({
     literalMeaning: texto(),
     idiomaticMeaning: texto(),
     explanation: texto(),
-    type: lista(['idiom', 'semantic_range', 'cultural_note', 'false_friend', 'grammatical_note']),
+    type: lista(LEXICAL_NOTE_TYPES),
 });
 
 /** El esquema según el prompt: con filas de «Estructura», "clauseReadings"; sin ellas, "clauses". */

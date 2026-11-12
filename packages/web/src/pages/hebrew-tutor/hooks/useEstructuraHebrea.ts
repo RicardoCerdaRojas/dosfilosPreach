@@ -69,10 +69,14 @@ export function useEstructuraHebrea(
      * re-analizar (la traducción corregida se conserva).
      */
     const version = analysis.promptVersion ?? 1;
-    const sinLectura: 'stale' | 'staleWaw' | 'staleVerb' | 'empty' | null =
+    // El motivo se dice sólo si el versículo lo tiene (revisión adversarial, 2026-11-12: en Rut, 53 de
+    // 85 versículos v3 decían «la traducía "pero"» sin ninguna waw disyuntiva). Si no, el aviso genérico.
+    const conWaw = (estructura.nodes ?? []).some(n => n.relation === 'disjunctive');
+    const conVerbo = (estructura.hebrewVerbs?.length ?? 0) > 0;
+    const sinLectura: 'stale' | 'staleWaw' | 'staleVerb' | 'staleHebrew' | 'empty' | null =
         version < 3 ? 'stale'
-            : version < 4 ? 'staleWaw'
-            : version < HEBREW_ANALYSIS_PROMPT_VERSION ? 'staleVerb'
+            : version < 4 && conWaw ? 'staleWaw'
+            : version < HEBREW_ANALYSIS_PROMPT_VERSION ? (conVerbo ? 'staleVerb' : 'staleHebrew')
                 : !analysis.clauseReadings?.length && (estructura.nodes?.length ?? 0) > 0 ? 'empty'
                     : null;
     /**

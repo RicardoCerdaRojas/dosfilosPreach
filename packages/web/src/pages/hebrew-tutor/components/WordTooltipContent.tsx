@@ -9,33 +9,17 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TooltipContent } from '@/components/ui/tooltip';
-import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact, ResolvedRelation, WordAnalysis } from '@dosfilos/domain';
-import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaResumen } from '@/components/word-ficha/Ficha';
-import type { SpeechView } from '../hooks/useEstructuraHebrea';
-import { BLOQUES_HEBREO } from '../ficha/bloquesHebreo';
+import { BLOQUES_HEBREO, type DatosHebreo } from '../ficha/bloquesHebreo';
 
-interface WordTooltipContentProps {
-  word: WordAnalysis;
-  side?: 'top' | 'bottom';
-  /** Antepuesta al verbo (dato de MACULA, vista «Estructura»). */
-  fronted?: FrontedInfo;
-  speech?: SpeechView;
-  /** R4: la función del infinitivo. */
-  infinitive?: HebrewInfinitiveView;
-  /** R4: la función del participio (Arnold y Choi §3.4.3). */
-  participle?: HebrewParticipleView;
-  /** R4: la función de כִּי (Arnold y Choi §4.3.4). */
-  ki?: HebrewKiView;
-  /** Ketiv y qere (revisión del profesor, 2026-11). */
-  ketivQere?: KetivQereFact;
-  /** El sufijo pronominal (OSHB). */
-  suffix?: HebrewSuffix;
-  /** Waw disyuntiva y su valor. */
-  disjunctive?: { resolved?: ResolvedRelation };
-}
+/**
+ * Los MISMOS datos que la ficha y la tarjeta (`useDatosHebreo`): el tooltip no
+ * arma su propio subconjunto. Antes le faltaban el verbo y la preposición
+ * (revisión adversarial, 2026-11-12) y decía otra cosa que la tarjeta.
+ */
+type WordTooltipContentProps = DatosHebreo & { side?: 'top' | 'bottom' };
 
-export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({ word, side = 'bottom', fronted, speech, infinitive, participle, ki, ketivQere, suffix, disjunctive }) => {
+export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({ side = 'bottom', ...d }) => {
   const { t } = useTranslation('languageStructure');
   return (
     <TooltipContent
@@ -44,7 +28,7 @@ export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({ word, si
       collisionPadding={16}
       className="z-50 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-0 text-card-foreground shadow-2xl [&>svg]:bg-card [&>svg]:fill-card"
     >
-      <FichaResumen registro={BLOQUES_HEBREO} d={{ word, fronted, speech, infinitive, participle, ki, ketivQere, suffix, disjunctive }} pie={t('wordFicha.openFicha')} />
+      <FichaResumen registro={BLOQUES_HEBREO} d={d} pie={t('wordFicha.openFicha')} />
     </TooltipContent>
   );
 };

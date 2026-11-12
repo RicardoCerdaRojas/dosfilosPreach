@@ -23,6 +23,10 @@ describe('la función de la preposición hebrea (U3a, revisión del profesor)', 
         expect(b.allowed[0]).toBe('spatial');
     });
 
+    it('fuera: אַחַר ADVERBIO («y después», Gn 30:21 וְאַחַר, OSHB HC/D) — sólo lo que OSHB marca preposición', () => {
+        expect(de('he/Gen/30.json', 21).some(x => x.startsWith('ואחר'))).toBe(false);
+    });
+
     it('fuera: la que rige un infinitivo (לֵאמֹר, lo cubre el infinitivo) y לִפְנֵי', () => {
         // Rut 2:4: «וַיֹּאמֶר לַקּוֹצְרִים» sí; Rut 4:4 «לֵאמֹר» no. Gn 23:17 «לִפְנֵי מַמְרֵא» no.
         expect(de('he/Ruth/4.json', 4)).not.toContain('לאמר:l');

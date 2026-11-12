@@ -31,6 +31,11 @@ describe('estructura — invariante sobre todo el corpus', () => {
                     const grupos = new Map<number, string[]>();
                     for (const n of nodos) if (n.conditionGroup !== undefined) grupos.set(n.conditionGroup, [...(grupos.get(n.conditionGroup) ?? []), n.relation]);
                     for (const rs of grupos.values()) if (rs.length < 2 || !rs.includes('condition')) malos.push(`${libro} ${archivo} ${v} (grupo)`);
+                    // Revisión adversarial: la condición va PRIMERO en su grupo y ningún miembro es apódosis.
+                    for (const g of grupos.keys()) {
+                        const ms = nodos.filter(n => n.conditionGroup === g);
+                        if (ms[0]!.relation !== 'condition' || ms.some(n => n.isApodosis)) malos.push(`${libro} ${archivo} ${v} (grupo: orden o apódosis)`);
+                    }
                 }
             }
         }

@@ -298,7 +298,7 @@
         "adv": "adverbial complement (place, direction, time or manner)",
         "p": "predicate",
         "conflict": "The assistant describes it differently. The MACULA data read it as {{role}}.",
-        "adverbialHint": "With a verb of motion, the adverbial complement is translated with “to” or “toward” (Putnam §2.4.2a)."
+        "adverbialHint": "With a verb of motion, the adverbial complement is translated with “to” or “toward”."
       },
       "recognizedBy": {
         "bInf": "Has the preposition בְּ attached: temporal (“when”), causal or instrumental.",

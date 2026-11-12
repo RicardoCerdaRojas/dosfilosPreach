@@ -77,6 +77,15 @@ describe('StructureFlow (G1 + G5)', () => {
         expect(bloque.className).toContain('border-l-2');
     });
 
+    it('U11c Diagrama, 1 Jn 4:20: la línea más profunda entre dos miembros («ὅτι Ἀγαπῶ τὸν θεόν») va DENTRO del corchete, que no se parte', () => {
+        const juan = cargar('gr/1JN/4.json');
+        render(<StructureDiagram lang="gr" nodes={verseStructure(juan, 20)} phrases={versePhrases(juan, 20)} />);
+        const bloques = screen.getAllByTestId('diagram-protasis');
+        expect(bloques).toHaveLength(1);
+        expect(bloques[0]!.querySelectorAll('[data-testid="diagram-line"]')).toHaveLength(3);
+        expect(bloques[0]!.textContent).toContain('ὅτι Ἀγαπῶ τὸν θεόν');
+    });
+
     it('U11c Diagrama, Stg 2:18: las frases con el verbo en su línea, marcadas y subrayadas; hebreo sangra a la derecha', () => {
         const { unmount } = render(<StructureDiagram lang="gr" nodes={verseStructure(santiago2, 18)} phrases={versePhrases(santiago2, 18)} />);
         const frases = screen.getAllByTestId('diagram-line').filter(l => l.dataset.kind === 'phrase');

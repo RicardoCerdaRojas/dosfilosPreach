@@ -156,7 +156,6 @@ const FUNCION_ES: Readonly<Record<HebrewVerbFunction, string>> = {
     volitional: 'volitivo: continúa un mandato o un deseo',
     apodictic: 'apodíctico: ley o instrucción',
 };
-const FUNCIONES: ReadonlySet<string> = new Set(Object.keys(FUNCION_ES));
 const FORMA_ES: Readonly<Record<HebrewVerbForm, string>> = {
     perfect: 'perfecto (qatal)', imperfect: 'imperfecto (yiqtol)', wayyiqtol: 'wayyiqtol', weqatal: 'weqatal',
     jussive: 'yusivo', imperative: 'imperativo', cohortative: 'cohortativo',
@@ -180,7 +179,9 @@ ${lineas.join('\n')}`;
 export type HebrewVerbView = RuleChoiceView<HebrewVerbCandidate, HebrewVerbFunction>;
 
 export function applyHebrewFiniteVerb(candidate: HebrewVerbCandidate, choice: string | undefined): HebrewVerbView {
-    return applyRuleChoice<HebrewVerbFunction, HebrewVerbCandidate>(candidate, choice, FUNCIONES);
+    // La lista de la forma es COMPLETA (ver arriba): una respuesta fuera de ella es un error de categoría
+    // y no se muestra como «otra lectura» (revisión adversarial, 2026-11-12: Rut 3:5 «promise» salía en la ficha).
+    return applyRuleChoice<HebrewVerbFunction, HebrewVerbCandidate>(candidate, choice, new Set(candidate.allowed));
 }
 
 /** ¿Es cohortativo por función? Un yiqtol (forma) con una función del cohortativo. */

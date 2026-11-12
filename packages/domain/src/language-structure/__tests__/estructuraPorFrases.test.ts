@@ -64,6 +64,20 @@ describe('Estructura por frases (U11a, revisión del profesor)', () => {
         expect(fila(filas('gr/MRK/12.json', 19), 'καταλίπῃ').isApodosis).toBe(false);
     });
 
+    it('revisión adversarial: la cita alrededor de un «φησίν» parentético sigue en su fila, con su apódosis (Hch 25:5)', () => {
+        const ns = filas('gr/ACT/25.json', 5);
+        expect(fila(ns, 'Οἱ ἐν ὑμῖν').isApodosis).toBe(true);
+        expect(ns.some(n => texto(n).startsWith('φησίν'))).toBe(true);
+    });
+
+    it('revisión adversarial: en el grupo no entra lo que no coordina («ἄρα», 1 Co 15:14) ni lo que va antes de la condición (2 S 14:32); 1 S 17:9 «וְהִכָּנִי» es miembro, no apódosis', () => {
+        expect(fila(filas('gr/1CO/15.json', 14), 'ἄρα').conditionGroup).toBeUndefined();
+        expect(filas('he/2Sam/14.json', 32).some(n => n.conditionGroup !== undefined)).toBe(false);
+        const s = filas('he/1Sam/17.json', 9);
+        const miembro = s.find(n => n.conditionGroup !== undefined && n.relation !== 'condition')!;
+        expect(miembro.isApodosis).toBe(false);
+    });
+
     it('hebreo: אִם puede envolver la oración entera — la apódosis no entra al grupo (Am 9:3); Lv 13:28, prótasis de tres', () => {
         expect(filas('he/Amos/9.json', 3).some(n => n.conditionGroup !== undefined)).toBe(false);
         const lv = filas('he/Lev/13.json', 28);

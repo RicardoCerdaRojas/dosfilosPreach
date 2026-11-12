@@ -34,6 +34,13 @@ describe('la función del verbo finito hebreo (U5, revisión del profesor)', () 
         expect(isCohortativeByFunction(applyHebrewFiniteVerb(c, 'future'))).toBe(false);
     });
 
+    it('fuera de la lista de su forma no es «otra lectura»: Rut 3:5 «promise» (del imperativo) no se muestra', () => {
+        const c = candidato('he/Ruth/3.json', 5, 'אעשה')!;
+        const v = applyHebrewFiniteVerb(c, 'promise');
+        expect(v.fn).toBeUndefined();
+        expect(v.assistantReading).toBeUndefined();
+    });
+
     it('un yiqtol de 3.ª persona NO suma el cohortativo (Rut 3:4 יַגִּיד «él te dirá»)', () => {
         const c = candidato('he/Ruth/3.json', 4, 'יגיד')!;
         expect(c.rule).toBe('vfImperfecto');

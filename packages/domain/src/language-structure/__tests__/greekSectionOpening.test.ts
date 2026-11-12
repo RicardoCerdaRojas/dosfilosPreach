@@ -35,6 +35,11 @@ describe('la apertura de sección: vocativo + imperativo o pregunta (U9, revisi�
         expect(greekSectionOpening(cargar('../he/Ruth/1.json' as never), 1)).toBeUndefined();
     });
 
+    it('sólo en las cartas: en Hechos un vocativo con pregunta es diálogo (Hch 16:30 «Κύριοι, τί με δεῖ ποιεῖν»)', () => {
+        expect(greekSectionOpening(cargar('ACT/16.json'), 30)).toBeUndefined();
+        expect(greekSectionOpening(cargar('ACT/2.json'), 22)).toBeUndefined();
+    });
+
     it('ES SEÑAL, NO REGLA: Stg 3:12 (pregunta retórica en medio del argumento) también la da — por eso la ficha dice «suele»', () => {
         expect(greekSectionOpening(jas(3), 12)).toBeDefined();
     });

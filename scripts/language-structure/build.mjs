@@ -109,7 +109,14 @@ export function leerLowfat(xml) {
             } else {
                 const tope = pila[pila.length - 1];
                 const cons = tope && tope.cls === 'cl' ? rol(a.role) : (tope?.cons ?? '');
-                pila.push({ cl: null, role: a.role ?? '', cls: a.class ?? '', cons, ...(a.class === 'pp' ? { pp: { role: rol(a.role), rule: a.rule ?? '', refs: [] } } : {}) });
+                // Una frase sin rol propio lo toma del grupo que la envuelve («ἀπὸ πόλεως εἰς πόλιν», Mt 23:34:
+                // el rol está en el grupo `2Pp`), salvo que la envuelva un sintagma nominal: ahí es adnominal.
+                const rolDeFrase = () => {
+                    if (rol(a.role)) return rol(a.role);
+                    for (const x of [...pila].reverse()) { if (x.cl !== null || x.cls === 'np') return ''; if (x.role) return rol(x.role); }
+                    return '';
+                };
+                pila.push({ cl: null, role: a.role ?? '', cls: a.class ?? '', cons, ...(a.class === 'pp' ? { pp: { role: rolDeFrase(), rule: a.rule ?? '', refs: [] } } : {}) });
             }
             continue;
         }
@@ -165,7 +172,7 @@ export function frasesDelCapitulo(frases, cap, orden) {
  * «see to it» 13.134). Quedan fuera las palabras de función y los nombres
  * propios (93.x: dos Judas no son dos sentidos).
  *
- * Medido (2026-11-12) en el NT: 179 versículos. A mano, en una muestra de 50,
+ * Medido (2026-11-12) en el NT: 157 versículos. A mano, en una muestra de 50,
  * la mitad son sentidos de verdad distintos (Lc 12:42 κύριος «Lord» / «master»,
  * Ro 8:3 ἁμαρτία, Ga 4:6 υἱός) y la otra mitad, sinónimos («now» / «already»).
  * Por eso es un DATO y una PISTA para el asistente, nunca un aviso: la glosa en

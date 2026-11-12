@@ -52,8 +52,8 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 10 | `gr.celdas` | Tiempo, voz, modo, persona, caso, número, género, grado | tarjeta, tooltip | La forma | sí | datos (OSHB, MorphGNT, MACULA o conteo propio) |
 | 11 | `gr.pistas` | Cómo se reconoce: la forma (pistas y su fuente) | tarjeta, tooltip | La forma | — | regla |
 | 12 | `gr.funcionVerbo` | Función del verbo | tarjeta, tooltip | Su función | sí | regla + asistente |
-| 13 | `gr.usoTiempo` | Uso del tiempo (indicativo) | tarjeta, tooltip | Su función | — | asistente |
-| 14 | `gr.caso` | Función del caso, su puente de traducción y la función sintáctica | tarjeta, tooltip | Su función | sí | asistente |
+| 13 | `gr.usoTiempo` | Uso del tiempo (indicativo) | tarjeta, tooltip | Su función | — | regla + asistente |
+| 14 | `gr.caso` | Función del caso, su puente de traducción y la función sintáctica | tarjeta, tooltip | Su función | sí | regla + asistente |
 | 15 | `gr.funcionSintactica` | Función sintáctica (texto del asistente) y puente de traducción | tarjeta, tooltip | Su función | sí | asistente |
 | 16 | `gr.preposicion` | Régimen de la preposición | tarjeta, tooltip | Su función | — | regla |
 | 17 | `gr.apertura` | Vocativo al comienzo con imperativo o pregunta: señal de apertura de sección |  | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |

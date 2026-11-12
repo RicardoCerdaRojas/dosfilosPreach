@@ -339,6 +339,7 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
                     {vista === 'diagram' ? (
                         <>
                             <StructureDiagram lang={lang} nodes={nodes} phrases={structure.phrases} underline={frases} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} />
+                            {frases && <div className="mt-1.5"><LeyendaFrases /></div>}
                             <p className="mt-3 text-[11px] text-muted-foreground">{t('diagramNote')}</p>
                         </>
                     ) : (

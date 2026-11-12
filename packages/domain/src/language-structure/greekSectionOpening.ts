@@ -22,11 +22,21 @@ export interface SectionOpeningFact {
     readonly question: boolean;
 }
 
+/**
+ * Sólo en las CARTAS: ahí se midió (23/29) y ahí lo dice la ficha. En los Evangelios y Hechos un
+ * vocativo con imperativo o pregunta es diálogo (Hch 16:30 «Κύριοι, τί με δεῖ ποιεῖν»), no una
+ * unidad nueva: 82 de los 151 versículos que daba en todo el NT (revisión adversarial, 2026-11-12).
+ */
+export const GREEK_EPISTLES: ReadonlySet<string> = new Set([
+    'ROM', '1CO', '2CO', 'GAL', 'EPH', 'PHP', 'COL', '1TH', '2TH', '1TI', '2TI', 'TIT', 'PHM',
+    'HEB', 'JAS', '1PE', '2PE', '1JN', '2JN', '3JN', 'JUD',
+]);
+
 /** Hasta qué palabra cuenta como «al comienzo»: Stg 3:1 lo trae en la 5.ª, tras el imperativo; Stg 3:10, en la 11.ª. */
 const VENTANA = 6;
 
 export function greekSectionOpening(ch: ChapterStructure, verse: number): SectionOpeningFact | undefined {
-    if (ch.lang !== 'gr') return undefined;
+    if (ch.lang !== 'gr' || !GREEK_EPISTLES.has(ch.book)) return undefined;
     const ws = verseWords(ch, verse);
     const voc = ws.findIndex(w => w.parse?.[4] === 'V');
     if (voc < 0 || voc >= VENTANA) return undefined;

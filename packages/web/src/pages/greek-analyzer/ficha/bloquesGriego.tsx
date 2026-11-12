@@ -143,15 +143,18 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
         },
     },
     {
-        id: 'gr.usoTiempo', dato: 'Uso del tiempo (indicativo)', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
+        // Mixto: la regla del perfecto proléptico acota y el asistente elige (U7).
+        id: 'gr.usoTiempo', dato: 'Uso del tiempo (indicativo)', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
         hay: (d) => !!(d.insight?.tenseUse || d.insight?.tenseUseOptions), Completo: UsoTiempo,
     },
     {
-        id: 'gr.caso', dato: 'Función del caso, su puente de traducción y la función sintáctica', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
+        // Mixto: el partitivo con ἐκ/ἀπό lo decide la regla (U3b); lo demás lo elige el asistente.
+        id: 'gr.caso', dato: 'Función del caso, su puente de traducción y la función sintáctica', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
         hay: (d) => !!(d.insight?.caseFunction && d.token.tag.case), Completo: FuncionCaso,
         Corto: function Corto({ d }) {
             const { t } = useTranslation('greekTutor');
-            return <p className="m-0 flex flex-wrap items-center gap-x-2"><FichaOrigenRotulo origen="eleccion" /><strong className="font-bold">{t(`analyzer.caseFn.${d.token.tag.case}.${d.insight!.caseFunction}`)}</strong></p>;
+            // El mismo origen que la ficha completa (revisión adversarial): el partitivo es regla.
+            return <p className="m-0 flex flex-wrap items-center gap-x-2"><FichaOrigenRotulo origen={d.insight!.nominalRule === 'partitiveEk' ? 'regla' : 'eleccion'} /><strong className="font-bold">{t(`analyzer.caseFn.${d.token.tag.case}.${d.insight!.caseFunction}`)}</strong></p>;
         },
     },
     {

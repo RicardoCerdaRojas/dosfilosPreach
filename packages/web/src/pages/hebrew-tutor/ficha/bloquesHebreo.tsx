@@ -190,7 +190,8 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
         Corto: function WawDisyuntivaCorta({ d }) {
             const { t } = useTranslation('languageStructure');
             const r = d.disjunctive!.resolved;
-            return <p className="m-0 font-medium text-foreground/85">{t('relations.disjunctive')}{r ? ` · ${t(`resolved.${r}`)}` : ''}</p>;
+            // El valor lo elige el asistente: el resumen lo dice como los bloques vecinos (revisión adversarial).
+            return <p className="m-0 flex flex-wrap items-center gap-x-2 font-medium text-foreground/85">{r && <FichaOrigenRotulo origen="eleccion" />}{t('relations.disjunctive')}{r ? ` · ${t(`resolved.${r}`)}` : ''}</p>;
         },
     },
     {

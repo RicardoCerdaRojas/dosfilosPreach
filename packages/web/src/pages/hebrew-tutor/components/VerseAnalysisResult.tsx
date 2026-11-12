@@ -426,7 +426,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
                     )}
                   </span>
                 </TooltipTrigger>
-                <WordTooltipContent word={w} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} infinitive={infinitivos.get(i)} participle={participios.get(i)} ki={kis.get(i)} ketivQere={ketivQere.get(i)} suffix={sufijos.get(i)} disjunctive={disyuntivas.get(i)} />
+                <WordTooltipContent side="bottom" {...(datosFicha(i) ?? { word: w })} />
               </Tooltip>
             );
           })}
@@ -574,7 +574,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
             toPageIndex: alinear,
             renderText: i => (analysis.words[i] ? pintarPalabra(analysis.words[i]!) : null),
             renderTooltip: i =>
-              analysis.words[i] ? <WordTooltipContent word={analysis.words[i]!} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} infinitive={infinitivos.get(i)} participle={participios.get(i)} ki={kis.get(i)} ketivQere={ketivQere.get(i)} suffix={sufijos.get(i)} disjunctive={disyuntivas.get(i)} /> : null,
+              datosFicha(i) ? <WordTooltipContent side="bottom" {...datosFicha(i)!} /> : null,
             onSelect: handleHeaderWordClick,
             selected: activeWordIndex,
           }}
@@ -809,6 +809,7 @@ const TYPE_STYLES: Record<LexicalNoteType, { badge: string; label: string }> = {
   semantic_range: { badge: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300',            label: 'Rango Semántico' },
   cultural_note:  { badge: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300',        label: 'Nota Cultural' },
   false_friend:   { badge: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',        label: 'Falso Amigo' },
+  grammatical_note: { badge: 'bg-muted text-foreground',                                              label: 'Nota Gramatical' },
 };
 
 interface LexicalNotesSectionProps {

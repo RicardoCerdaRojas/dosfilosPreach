@@ -5,7 +5,7 @@
     "cards": "Cards",
     "diagram": "Diagram"
   },
-  "diagramToApodosis": "→ apodosis: {{text}}…",
+  "diagramToApodosis": "→ apodosis:",
   "diagramNote": "One line per clause, indented under the one that contains it; the prepositional phrase that goes with the verb on its own line (└); a protasis with several members joined by the bar. The assistant's readings and each clause's notes are under «Cards».",
   "intro": "Each clause sits under the one that contains it, with its connector and its relation: that comes from the text and fixed rules. What is marked «Assistant» is its reading.",
   "loading": "Loading the structure…",
@@ -101,6 +101,7 @@
   "legendFronted": "Before the verb (focus or frame)",
   "legendPhraseVerb": "Prepositional phrase with the verb",
   "legendPhraseNoun": "Prepositional phrase with a noun",
+  "legendPhraseLine": "Prepositional phrase with the verb, on its own line",
   "legendIndent": "Indentation shows which clause depends on which.",
   "cardFronted": "Placed before the verb as {{role}}: it may mark focus (emphasis) or frame (the topic); context decides.",
   "cardFrontedTitle": "Position",
@@ -131,6 +132,7 @@
     "staleWaw": "This analysis predates the values of the disjunctive waw: it translated it “but” by default. Re-analyze the verse to update the reading and the translations (your corrected translation is kept).",
     "staleNewer": "This analysis comes from an earlier version. Re-analyze the verse to see the latest (for example, the proleptic perfect, the article that refers back to something named earlier in the paragraph, and the word repeated with another sense).",
     "staleVerb": "This analysis predates the function of each verb (for example, a cohortative the form does not show). Re-analyze the verse to see it (your corrected translation is kept).",
+    "staleHebrew": "This analysis comes from an earlier version. Re-analyze the verse to see the latest, for example the function of each preposition (your corrected translation is kept).",
     "reanalyze": "Re-analyze",
     "generateButton": "Generate analysis",
     "empty": "The assistant did not return the clause reading in this analysis. Re-analyze the verse to request it."

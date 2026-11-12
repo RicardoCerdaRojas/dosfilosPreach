@@ -31,6 +31,8 @@ interface Props {
     onSeleccion: (i: number | null) => void;
     /** Rol con que la palabra va antepuesta al verbo (vista «Estructura»). */
     frontedDe?: (i: number) => FrontedInfo | undefined;
+    /** Los datos de la ficha de cada palabra (los mismos de la tarjeta); sin ellos, el tooltip arma los básicos. */
+    datosDe?: (i: number) => DatosGriego | null;
     /** U11b: el interruptor «Frases» y, prendido, la clase de la frase de cada palabra (por posición). */
     showPhrases?: boolean;
     onTogglePhrases?: () => void;
@@ -101,6 +103,7 @@ export function GreekVerseBoard({
     seleccion,
     onSeleccion,
     frontedDe,
+    datosDe,
     showPhrases,
     onTogglePhrases,
     frases,
@@ -150,6 +153,7 @@ export function GreekVerseBoard({
                         </TooltipTrigger>
                         {/* Mismo patrón que el hebreo: tooltip con contenido rico. */}
                         <GreekWordTooltip
+                            {...(datosDe?.(i) ?? {})}
                             token={tok}
                             insight={insight?.words[i]}
                             keyInsight={claveDe(tok.text, i)}

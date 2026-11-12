@@ -34,13 +34,19 @@ interface Props {
 type Tramo = { grupo?: number; lineas: DiagramLine[] };
 
 function tramos(lineas: readonly DiagramLine[], filas: ReadonlyMap<number, StructureNode>): Tramo[] {
+    // Un grupo abarca de su primera a su última línea: lo más profundo que cae entre dos miembros (una
+    // relativa, un infinitivo) va DENTRO del corchete, que no se parte (revisión adversarial, 1 Co 15:14, 1 S 17:9).
+    const hasta = new Map<number, number>();
+    lineas.forEach((l, k) => { const g = filas.get(l.row)?.conditionGroup; if (g !== undefined) hasta.set(g, k); });
     const out: Tramo[] = [];
-    for (const l of lineas) {
+    let abierto: { grupo: number; fin: number } | null = null;
+    lineas.forEach((l, k) => {
+        if (abierto && k <= abierto.fin) { out[out.length - 1]!.lineas.push(l); return; }
+        abierto = null;
         const g = filas.get(l.row)?.conditionGroup;
-        const ultimo = out[out.length - 1];
-        if (g !== undefined && ultimo?.grupo === g) ultimo.lineas.push(l);
-        else out.push({ ...(g !== undefined ? { grupo: g } : {}), lineas: [l] });
-    }
+        if (g !== undefined) { abierto = { grupo: g, fin: hasta.get(g)! }; out.push({ grupo: g, lineas: [l] }); }
+        else out.push({ lineas: [l] });
+    });
     return out;
 }
 
@@ -136,6 +142,7 @@ export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underl
 
     let k = 0;
     return (
+        <>
         <div className="space-y-1" data-testid="structure-diagram">
             {tramos(lineas, filas).map(tr =>
                 tr.grupo === undefined ? (
@@ -151,7 +158,11 @@ export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underl
                             const ap = apodosisDe(tr.grupo!);
                             return ap ? (
                                 <p className="m-0 text-[11px] text-muted-foreground" dir="ltr">
-                                    {t('diagramToApodosis', { text: ap.words.slice(0, 3).map(w => w.t).join(' ') })}
+                                    {t('diagramToApodosis')}{' '}
+                                    {/* El texto griego o hebreo con su dirección propia dentro de la frase en español. */}
+                                    <span lang={he ? 'he' : 'grc'} dir={he ? 'rtl' : 'ltr'} className={he ? 'font-hebrew' : undefined}>
+                                        {ap.words.slice(0, 3).map(w => w.t).join(' ')}…
+                                    </span>
                                 </p>
                             ) : null;
                         })()}
@@ -159,5 +170,12 @@ export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underl
                 ),
             )}
         </div>
+        {/* Las marcas del diagrama, con las mismas clases que las palabras (revisión adversarial: no tenía leyenda). */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground" data-testid="diagram-legend">
+            <span className="inline-flex items-center gap-1.5"><span aria-hidden className="inline-block h-2.5 w-2.5 rounded-sm bg-primary" />{t('legendConnector')}</span>
+            <span className="inline-flex items-center gap-1.5"><span aria-hidden className="inline-block h-3.5 w-6 rounded bg-warning/15 outline outline-1 outline-warning/40" />{t('legendFronted')}</span>
+            <span className="inline-flex items-center gap-1.5"><span aria-hidden className="text-muted-foreground">{he ? '┘' : '└'}</span>{t('legendPhraseLine')}</span>
+        </div>
+        </>
     );
 };

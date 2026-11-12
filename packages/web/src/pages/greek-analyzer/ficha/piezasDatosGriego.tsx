@@ -29,7 +29,7 @@ export function SentidoLouwNida({ d }: { d: DatosGriego }) {
                 ))}
             </ul>
             <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">
-                {t(sentidos.length > 1 ? 'analyzer.louwNida.twoReadings' : 'analyzer.louwNida.note')}
+                {sentidos.length > 1 ? t('analyzer.louwNida.twoReadings', { count: sentidos.length }) : t('analyzer.louwNida.note')}
             </p>
         </FichaCaja>
     );

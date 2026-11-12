@@ -305,8 +305,15 @@ export function greekAnaphoraHints(ch: ChapterStructure, verse: number): Anaphor
  * πολλοί o un numeral— sin verbo ni otro sustantivo en medio. Fuera: derecha,
  * izquierda y puntos cardinales («εἷς ἐκ δεξιῶν», «πολλοὶ ἀπὸ ἀνατολῶν»: lugar),
  * y el neutro τι («τι ὡς ἐξ αὑτῶν», 2 Co 3:5). Medido en el NT (2026-11-12): sin
- * esos filtros, 18 de 25; con ellos, 68 casos y 23 de 25 en la muestra, y la concordancia de
+ * esos filtros, 18 de 25; con ellos, 64 casos y 23 de 25 en la muestra, y la concordancia de
  * género descartó los 2 que fallaban (Lc 7:21, Hch 19:34).
+ *
+ * Revisión adversarial (2026-11-12): la muestra no tenía «ἐξ ἐτῶν ὀκτώ» (Hch 9:33, «hace ocho
+ * años») ni «τις ἐκ νεκρῶν ἀναστῇ» (Lc 16:31, separación). El DATO los separa: MACULA da a la
+ * preposición su sentido de Louw-Nida, y los 48 casos con 63.20 («parte de un todo») son todos
+ * partitivos; los falsos traen otro (67.131 tiempo, 89.121 y 90.15). Con código, se exige 63.20;
+ * sin código (9, casi todos del Apocalipsis) queda la regla. Y si el término es un numeral seguido
+ * de su sustantivo («εἷς ἐκ τῶν ἑπτὰ ἀγγέλων», Ap 17:1), el término es el sustantivo.
  */
 export interface PartitiveFact {
     /** El término en genitivo (el todo). */
@@ -317,6 +324,8 @@ export interface PartitiveFact {
     readonly partOrdinal: number;
 }
 const PARTE: ReadonlySet<string> = new Set(['τις', 'εἷς', 'οὐδείς', 'μηδείς', 'πολύς', 'δύο', 'τρεῖς', 'τέσσαρες', 'πέντε', 'ἕξ', 'ἑπτά', 'ὀκτώ', 'ἐννέα', 'δέκα', 'δώδεκα']);
+/** Louw-Nida 63.20: ἐκ/ἀπό «parte de un todo» (el sentido que MACULA da a Stg 2:16 ἐξ ὑμῶν). */
+const SENTIDO_PARTITIVO = '63.20';
 const LUGAR: ReadonlySet<string> = new Set(['δεξιός', 'εὐώνυμος', 'ἀριστερός', 'ἀνατολή', 'δυσμή', 'βορρᾶς', 'νότος']);
 export function greekPartitive(ch: ChapterStructure, verse: number): PartitiveFact[] {
     if (ch.lang !== 'gr') return [];
@@ -328,8 +337,12 @@ export function greekPartitive(ch: ChapterStructure, verse: number): PartitiveFa
         && !(x.l === 'τις' && x.parse?.[6] === 'N');
     ws.forEach((w, i) => {
         if (w.l !== 'ἐκ' && w.l !== 'ἀπό') return;
+        if (w.ln && !w.ln.split(/\s+/).includes(SENTIDO_PARTITIVO)) return;
         let k = i + 1;
         if (ws[k]?.pos === 'RA') k++;
+        // «ἐκ τῶν ἑπτὰ ἀγγέλων»: el numeral o adjetivo concuerda con el sustantivo que sigue; el todo es el sustantivo.
+        const sig = ws[k + 1];
+        if (ws[k]?.pos?.startsWith('A') && sig?.pos?.startsWith('N') && sig.parse?.[4] === ws[k]!.parse?.[4] && sig.parse?.[5] === ws[k]!.parse?.[5]) k++;
         const term = ws[k];
         if (!term || term.parse?.[4] !== 'G' || term.parse?.[5] !== 'P' || !/^(N|R|A)/.test(term.pos ?? '') || LUGAR.has(term.l)) return;
         // Antes: hasta 3 palabras, sin verbo ni sustantivo en medio. Después: justo detrás del término (o tras un sustantivo).

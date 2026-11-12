@@ -857,7 +857,7 @@
     "louwNida": {
       "title": "Sense in this verse (Louw-Nida)",
       "note": "From MACULA: the sense the analysis of the text gives this preposition here, by Louw and Nida's semantic domains. The case shows which senses are possible; this shows which one is read in this verse.",
-      "twoReadings": "From MACULA: it leaves two readings open here. Context decides between them."
+      "twoReadings": "From MACULA: it leaves {{count}} readings open here. Context decides between them."
     },
     "caseRule": {
       "partitiveEk": "ἐκ or ἀπό + plural genitive next to a word that takes a part (τις, εἷς, οὐδείς, πολλοί, a numeral): the genitive is the whole from which that part is taken (“one of you”)."
@@ -1081,7 +1081,7 @@
         "conditionalEan": "protasis with ἐάν",
         "ouMe": "οὐ μή + subjunctive",
         "prohibition": "μή + aorist subjunctive",
-        "indefinite": "with ἄν, ὅταν or ἕως",
+        "indefinite": "with ἄν, ὅταν, ἕως, ἄχρι, μέχρι or πρίν",
         "indefiniteRelative": "ὅστις + subjunctive, with or without ἄν: “whoever…”. It sets up a general case, like a condition (Wallace).",
         "hortatory": "1st person plural",
         "meGenoito": "μὴ γένοιτο",
