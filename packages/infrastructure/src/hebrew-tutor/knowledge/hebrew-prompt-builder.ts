@@ -155,7 +155,7 @@ function conLectura(schema: string): string {
   if (inicio === -1 || fin === -1) return schema;
   return schema.slice(0, inicio)
     + `  "clauseReadings": [
-    { "n": "number — the clause number from CLÁUSULAS", "value": "string — 2 to 5 words in Spanish", "explanation": "string — one sentence", "resolved": "ground | content — only where asked", "fronting": "focus | frame — only where asked" }
+    { "n": "number — the clause number from CLÁUSULAS", "value": "string — 2 to 5 words in Spanish", "explanation": "string — one sentence", "resolved": "string — only where the clause says ELEGIR \\"resolved\\": exactly one of the values listed there, nothing else", "fronting": "focus | frame — only where asked" }
   ],
 `
     + schema.slice(fin)

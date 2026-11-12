@@ -60,6 +60,17 @@ describe('el prompt con las filas de «Estructura»', () => {
         expect(texto).toMatch(/"exegeticalNotes" y la función de cada palabra usan los MISMOS nombres/);
     });
 
+    it('REGRESIÓN (banco fuera de muestra, 2026-11-11): el esquema NO limita "resolved" a ground | content', () => {
+        // La plantilla decía «"resolved": "ground | content"» mientras la fila disyuntiva
+        // pedía elegir entre siete valores: en 2 Sam 7:2 el asistente omitió el valor y en
+        // Gn 18:27 escribió su duda dentro del JSON.
+        const disy = { ...fila, relation: 'disjunctive' as const, connector: '16!1' };
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [disy]);
+        expect(texto).toMatch(/ELEGIR "resolved": "contrast" o "circumstantial" o "ground" o "concessive"/);
+        expect(texto).not.toMatch(/"resolved": "ground \| content/);
+        expect(texto).toMatch(/"resolved": "string — only where the clause says ELEGIR \\"resolved\\": exactly one of the values listed there/);
+    });
+
     it('con quién habla (Rut 1:16), el prompt lo da como hecho decidido', () => {
         const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [{ ordinal: 1, text: 'תִּפְגְּעִי', kind: 'verb', speaker: 'רוּת', speakerOrdinals: [0] }]);
         expect(texto).toContain('## QUIÉN HABLA');

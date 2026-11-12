@@ -59,6 +59,9 @@ describe('lectura de cláusulas — validación', () => {
         const tarea = buildClauseReadingTask(rut);
         expect(tarea.split('\n').find(l => l.startsWith(`${n}. `))).toContain('ELEGIR "resolved"');
         expect(tarea).toContain('NO siempre');
+        // Banco fuera de muestra (2026-11-11): la concesiva se define (A&C 5.2.12) y se separa del contraste.
+        expect(tarea).toMatch(/«concessive» \(la cláusula dice algo que haría esperar que lo principal NO\s+ocurriera/);
+        expect(tarea).toMatch(/contraste opone DOS sujetos o hechos paralelos/);
     });
 
     it('«fronting» donde nada va antepuesto se descarta (Stg 2:9, la fila de δέ)', () => {

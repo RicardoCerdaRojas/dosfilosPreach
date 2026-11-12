@@ -99,10 +99,15 @@ cambies ni la discutas; léela. Por cada cláusula numerada abajo devuelve:
   traducciones —«contrast» (dos protagonistas o hechos opuestos: «pero», «mas»),
   «circumstantial» (la situación en que ocurre lo principal: gerundio o
   «mientras», «siendo yo…»), «ground» (la razón: «porque», «ya que»),
-  «concessive» (a pesar de: «aunque»), «background» (paréntesis o dato de fondo
+  «concessive» (la cláusula dice algo que haría esperar que lo principal NO
+  ocurriera, y aun así ocurre: «aunque», «siendo que»; suele ser el hablante
+  hablando de sí con humildad), «background» (paréntesis o dato de fondo
   para el lector: «y», o sin conjunción), «opening» (abre una escena: sin
-  conjunción o «y») o «closing» (cierra o resume un episodio: «y»). Ante la
-  duda entre contraste y otro valor, NO elijas contraste;
+  conjunción o «y») o «closing» (cierra o resume un episodio: «y»). El
+  contraste opone DOS sujetos o hechos paralelos (Orfa besó / Rut se quedó); si
+  la cláusula habla del mismo que recibe lo principal y explica por qué no se lo
+  esperaba, es «concessive». Ante la duda entre contraste y otro valor, NO
+  elijas contraste;
 - "fronting": SÓLO donde dice ELEGIR "fronting". «focus» si lo antepuesto es
   lo nuevo, lo contrastado o lo enfatizado; «frame» si fija el tema, el tiempo
   o el escenario de lo que sigue. En las demás, omítelo.
