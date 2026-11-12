@@ -36,7 +36,7 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 25 | `he.explicacion` | Explicación pedagógica (con su formato) | tarjeta, panel | Para estudiar | — | asistente |
 | 26 | `he.investigar` | Investigar la palabra paso a paso (detective) | tarjeta | Acciones | — | — |
 
-## Griego (25 bloques)
+## Griego (26 bloques)
 
 | # | Bloque | Dato | Antes | Sección | Resumen | De dónde sale |
 |---|---|---|---|---|---|---|
@@ -55,13 +55,14 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 13 | `gr.caso` | Función del caso, su puente de traducción y la función sintáctica | tarjeta, tooltip | Su función | sí | asistente |
 | 14 | `gr.funcionSintactica` | Función sintáctica (texto del asistente) y puente de traducción | tarjeta, tooltip | Su función | sí | asistente |
 | 15 | `gr.preposicion` | Régimen de la preposición | tarjeta, tooltip | Su función | — | regla |
-| 16 | `gr.sentidoLouwNida` | Sentido de la preposición en el versículo (Louw-Nida, dato de MACULA) |  | Su función | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 17 | `gr.articulo` | Uso del artículo, su antecedente y la regla de anáfora | tarjeta, tooltip | Su función | — | regla + asistente |
-| 18 | `gr.condicional` | Clase de la condicional y su valor (Wallace) |  | Su función | sí | regla |
-| 19 | `gr.particulas` | Partículas y pronombre explícito | tarjeta, tooltip | Su función | — | regla + asistente |
-| 20 | `gr.agencia` | Agencia (agente de la pasiva) | tarjeta, tooltip | Su función | — | regla + asistente |
-| 21 | `gr.autos` | Uso de αὐτός | tarjeta, tooltip | Su función | — | regla + asistente |
-| 22 | `gr.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 23 | `gr.relaciones` | Relaciones con otras palabras | tarjeta, tooltip | En el contexto | — | asistente |
-| 24 | `gr.significancia` | Significancia (palabra clave) | tarjeta, tooltip | Para estudiar | — | asistente |
-| 25 | `gr.guardar` | Guardar hallazgo para el sermón | tarjeta | Acciones | — | — |
+| 16 | `gr.apertura` | Vocativo al comienzo con imperativo o pregunta: señal de apertura de sección |  | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 17 | `gr.sentidoLouwNida` | Sentido de la preposición en el versículo (Louw-Nida, dato de MACULA) |  | Su función | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 18 | `gr.articulo` | Uso del artículo, su antecedente y la regla de anáfora | tarjeta, tooltip | Su función | — | regla + asistente |
+| 19 | `gr.condicional` | Clase de la condicional y su valor (Wallace) |  | Su función | sí | regla |
+| 20 | `gr.particulas` | Partículas y pronombre explícito | tarjeta, tooltip | Su función | — | regla + asistente |
+| 21 | `gr.agencia` | Agencia (agente de la pasiva) | tarjeta, tooltip | Su función | — | regla + asistente |
+| 22 | `gr.autos` | Uso de αὐτός | tarjeta, tooltip | Su función | — | regla + asistente |
+| 23 | `gr.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 24 | `gr.relaciones` | Relaciones con otras palabras | tarjeta, tooltip | En el contexto | — | asistente |
+| 25 | `gr.significancia` | Significancia (palabra clave) | tarjeta, tooltip | Para estudiar | — | asistente |
+| 26 | `gr.guardar` | Guardar hallazgo para el sermón | tarjeta | Acciones | — | — |

@@ -438,3 +438,6 @@ export function louwNidaSources(s: LouwNidaSense): readonly RuleSource[] {
     const sub = s.subdomain ? LOUW_NIDA_SUBDOMAIN_SOURCES[`${s.subdomain.domain}.${s.subdomain.from}`] : undefined;
     return [sub ?? LOUW_NIDA_DOMAIN_SOURCES[s.domain.n]!];
 }
+
+/** U9 — la apertura de sección (vocativo + imperativo o pregunta): señal medida, indicada por el profesor (Stg 3:1). */
+export const SECTION_OPENING_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 3:1 ἀδελφοί μου')];

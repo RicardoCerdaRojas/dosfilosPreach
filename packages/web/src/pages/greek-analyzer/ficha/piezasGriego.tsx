@@ -25,6 +25,8 @@ export interface DatosGriego {
     readonly conditional?: ConditionalFact;
     /** U3c: el código de Louw-Nida de la preposición (MACULA), p. ej. «89.5»; a veces dos. */
     readonly ln?: string;
+    /** U9: este vocativo abre el versículo con un imperativo (su texto) o una pregunta: señal de apertura. */
+    readonly opening?: { readonly question: boolean; readonly imperative?: string };
     /** Guardar el hallazgo para el sermón. */
     readonly onSaveFinding?: () => void;
     readonly saved?: boolean;

@@ -3,7 +3,7 @@ import { BookmarkPlus, Check, Star } from 'lucide-react';
 import { greekRecognitionClues, louwNidaSenses, STRUCTURE_RULE_SOURCES, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
-import { SentidoLouwNida } from './piezasLouwNida';
+import { AperturaSeccion, SentidoLouwNida } from './piezasDatosGriego';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
 import { cn } from '@/lib/utils';
 import { GreekAgencyBlock, GreekAnaphoraRuleNote, GreekAutosBlock } from '../GreekNominalRuleBlock';
@@ -161,6 +161,11 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
     {
         id: 'gr.preposicion', dato: 'Régimen de la preposición', seccion: 'funcion', origen: 'regla', antes: ['tarjeta', 'tooltip'],
         hay: (d) => !!regimenDe(d), Completo: ({ d }) => <GreekPrepositionBlock lemma={d.token.lemma} usage={regimenDe(d)!} />,
+    },
+    {
+        // U9 (revisión del profesor, Stg 3:1): vocativo + imperativo o pregunta al comienzo. Señal, no regla (23/29 medido).
+        id: 'gr.apertura', dato: 'Vocativo al comienzo con imperativo o pregunta: señal de apertura de sección', seccion: 'contexto', origen: 'datos', antes: [],
+        hay: (d) => !!d.opening, Completo: AperturaSeccion,
     },
     {
         // U3c (revisión del profesor, Stg 2:10 «ἐν ἑνί» = 89.5, especificación): el sentido EN ESTE VERSÍCULO según

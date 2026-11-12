@@ -865,6 +865,12 @@
         "address": "Vocativo de invocación"
       }
     },
+    "opening": {
+      "title": "Apertura de sección (señal)",
+      "withImperative": "Vocativo al comienzo del versículo, con el imperativo {{imp}}: en las cartas, el autor suele abrir así una nueva unidad (en Santiago: 1:2, 1:19, 2:1, 3:1, 4:11, 5:7).",
+      "withQuestion": "Vocativo al comienzo del versículo, con una pregunta: en las cartas, el autor suele abrir así una nueva unidad (Stg 2:14).",
+      "note": "Es una señal, no una regla: también aparece en medio de un argumento (Stg 3:12, 5:9). Confírmalo con el contenido."
+    },
     "louwNida": {
       "title": "Sentido en este versículo (Louw-Nida)",
       "note": "Dato de MACULA: el sentido que el análisis del texto da a esta preposición aquí, según los dominios semánticos de Louw y Nida. El régimen dice qué sentidos admite el caso; esto dice cuál se lee en este versículo.",

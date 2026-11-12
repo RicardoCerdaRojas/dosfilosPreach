@@ -841,6 +841,12 @@
         "address": "Vocative of address"
       }
     },
+    "opening": {
+      "title": "Section opening (signal)",
+      "withImperative": "Vocative at the start of the verse, with the imperative {{imp}}: in the letters, the author often opens a new unit this way (in James: 1:2, 1:19, 2:1, 3:1, 4:11, 5:7).",
+      "withQuestion": "Vocative at the start of the verse, with a question: in the letters, the author often opens a new unit this way (Jas 2:14).",
+      "note": "It is a signal, not a rule: it also appears in the middle of an argument (Jas 3:12, 5:9). Confirm it with the content."
+    },
     "louwNida": {
       "title": "Sense in this verse (Louw-Nida)",
       "note": "From MACULA: the sense the analysis of the text gives this preposition here, by Louw and Nida's semantic domains. The case shows which senses are possible; this shows which one is read in this verse.",

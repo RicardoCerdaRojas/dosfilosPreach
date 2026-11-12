@@ -217,3 +217,24 @@ describe('Ficha griega — el sentido de Louw-Nida (U3c)', () => {
         expect(screen.queryByTestId('louw-nida')).toBeNull();
     });
 });
+
+/** U9 (revisión del profesor, Stg 3:1): la señal de apertura de sección en la ficha del vocativo. */
+describe('Ficha griega — apertura de sección (U9)', () => {
+    const VOC: GreekWordToken = { text: 'ἀδελφοί', lemma: 'ἀδελφός', pos: 'N' as never, transliteration: 'adelphoi', tag: { case: 'V', number: 'P' } as never };
+
+    it('con imperativo: lo nombra, dice «señal» y cita la indicación del profesor', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VOC, opening: { question: false, imperative: 'γίνεσθε,' } } as never} />);
+        const b = screen.getByTestId('apertura-seccion');
+        expect(b.textContent).toContain('analyzer.opening.withImperative');
+        expect(b.textContent).toContain('analyzer.opening.note');
+        expect(b.textContent).toContain('Stg 3:1');
+    });
+
+    it('con pregunta (Stg 2:14), el texto de la pregunta; sin señal, no hay bloque', () => {
+        const { unmount } = render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VOC, opening: { question: true } } as never} />);
+        expect(screen.getByTestId('apertura-seccion').textContent).toContain('analyzer.opening.withQuestion');
+        unmount();
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VOC } as never} />);
+        expect(screen.queryByTestId('apertura-seccion')).toBeNull();
+    });
+});

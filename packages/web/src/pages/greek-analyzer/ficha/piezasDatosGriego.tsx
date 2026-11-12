@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { louwNidaSenses, louwNidaSources } from '@dosfilos/domain';
+import { louwNidaSenses, louwNidaSources, SECTION_OPENING_SOURCES } from '@dosfilos/domain';
 import { SourceNote } from '@/components/language-structure/SourceNote';
 import { FichaCaja } from '@/components/word-ficha/FichaPiezas';
 import type { DatosGriego } from './piezasGriego';
@@ -31,6 +31,24 @@ export function SentidoLouwNida({ d }: { d: DatosGriego }) {
             <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">
                 {t(sentidos.length > 1 ? 'analyzer.louwNida.twoReadings' : 'analyzer.louwNida.note')}
             </p>
+        </FichaCaja>
+    );
+}
+
+/**
+ * U9 (revisión del profesor, Stg 3:1 «Μὴ πολλοὶ διδάσκαλοι γίνεσθε, ἀδελφοί μου»): el vocativo al comienzo,
+ * con un imperativo o una pregunta, suele abrir una unidad nueva en las cartas. Es una señal (23 de 29 medido):
+ * la ficha lo dice así y pide confirmarlo con el contenido.
+ */
+export function AperturaSeccion({ d }: { d: DatosGriego }) {
+    const { t } = useTranslation('greekTutor');
+    const o = d.opening!;
+    return (
+        <FichaCaja titulo={t('analyzer.opening.title')} pie={<SourceNote sources={SECTION_OPENING_SOURCES} />} testId="apertura-seccion">
+            <p className="m-0 text-[13.5px] leading-relaxed">
+                {o.imperative ? t('analyzer.opening.withImperative', { imp: o.imperative }) : t('analyzer.opening.withQuestion')}
+            </p>
+            <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">{t('analyzer.opening.note')}</p>
         </FichaCaja>
     );
 }

@@ -5,6 +5,8 @@ import {
     greekAnaphora,
     greekAnaphoraHints,
     greekPartitive,
+    greekSectionOpening,
+    type SectionOpeningFact,
     greekAutos,
     greekVerbCandidates,
     hebrewSpeechFacts,
@@ -73,6 +75,8 @@ export interface VerseStructureState {
     hebrewVerbs: readonly HebrewVerbCandidate[];
     /** Sólo hebreo (U3a, Rut 2:1, 2:7): cada preposición con las funciones de A&C §4.1. */
     hebrewPrepositions: readonly HebrewPrepositionCandidate[];
+    /** Sólo griego (U9, Stg 3:1): vocativo + imperativo o pregunta al comienzo, señal de apertura de sección. */
+    opening?: SectionOpeningFact;
 }
 
 /**
@@ -122,10 +126,11 @@ export function useVerseStructure(
         const kis = actual?.chapter && lang === 'he' ? hebrewKiCandidates(actual.chapter, verse) : [];
         const ketivQere = actual?.chapter && lang === 'he' ? ketivQereOfVerse(actual.chapter, verse) : [];
         const conditionals = griego ? greekConditionals(griego, verse) : [];
+        const opening = griego ? greekSectionOpening(griego, verse) : undefined;
         const articles = actual?.chapter && lang === 'he' ? hebrewArticleAntecedents(actual.chapter, verse) : [];
         const hebrewVerbs = actual?.chapter && lang === 'he' ? hebrewFiniteVerbCandidates(actual.chapter, verse) : [];
         const hebrewPrepositions = actual?.chapter && lang === 'he' ? hebrewPrepositionCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions };
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, ...(opening ? { opening } : {}) };
     }, [actual, key, verse, lang]);
 }
 
