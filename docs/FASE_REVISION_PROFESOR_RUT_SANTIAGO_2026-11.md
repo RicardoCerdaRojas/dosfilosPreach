@@ -261,6 +261,27 @@ Cada commit queda completo y probable en la interfaz. Push pocas veces, para aho
 
 **Anotado, viene de antes:** «Ὅ τι ἐάν» (Mc 6:23) sale como condición en «Estructura».
 
+**Segunda tanda, en curso (2026-11-11):**
+- `38115abe` U2: waw disyuntiva con lista cerrada de valores; prompt hebreo v4.
+- `d7b37bc8`: el parseo lee el primer objeto JSON completo.
+
+**Banco del asistente para U2** (script fuera del repo, gpt-6-luna; 8 llamadas; no escribe en la caché):
+
+| Rut | Profesor | Eligió | Resultado |
+|---|---|---|---|
+| 1:21 | causal/circunstancial | causal | ✓ |
+| 1:22 | «y» | fondo + cierre | ✓ |
+| 2:1 | fondo | fondo (2.ª fila sin valor) | ✓ a medias |
+| 2:10 | circunstancial | circunstancial | ✓ |
+| 2:13 | concesiva | contraste | ✗ |
+| 1:14 | contraste | rechazado por OpenAI («flagged») | — |
+
+**Límite de método:** 1:22, 2:1, 2:10 y 2:13 son ejemplos DENTRO del prompt; acertar ahí prueba poco. Falta un banco con versículos fuera del prompt.
+
+**Hallazgos de producción, anteriores a esta fase:**
+- gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0).
+- Rut 1:14 lo rechaza la política de OpenAI; producción cae a Gemini en silencio.
+
 **Antes del PR:** recorrido en el navegador con los versículos del profesor (Rut 2:1, 3:3, 3:6; Stg 2:10, 2:11, 2:13, 2:14, 2:17) y la revisión adversarial.
 
 **Lo que hay que cuidar para no romper.**
