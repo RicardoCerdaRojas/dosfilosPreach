@@ -110,6 +110,20 @@ describe('Ficha griega — el bloque de función', () => {
         expect(n).toContain('wordFicha.origin.assistant');
         expect(screen.queryByTestId('verb-function')).toBeNull();
     });
+    it('uso del tiempo acotado por regla (Stg 2:10 γέγονεν, Wallace p. 581): el porqué, las opciones y la otra lectura del asistente', () => {
+        const insight = { ...INSIGHT_VERBO, verbFunction: undefined, verbRule: undefined, tenseUse: undefined, tenseRule: 'prolepticPerfect', tenseUseOptions: ['proleptic', 'gnomic'], tenseUseOutside: 'intensive' };
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VERBO, insight } as never} />);
+        const n = screen.getByTestId('tense-use').textContent!;
+        for (const v of ['analyzer.verbFn.tenseRules.prolepticPerfect', 'analyzer.verbFn.tenseUses.proleptic', 'analyzer.verbFn.tenseUses.gnomic', 'Proleptic (Futuristic) Perfect']) expect(n, v).toContain(v);
+        expect(n).toContain('analyzer.verbFn.tenseUses.intensive');
+    });
+    it('uso del tiempo acotado y elegido: el nombre, sin opciones', () => {
+        const insight = { ...INSIGHT_VERBO, verbFunction: undefined, verbRule: undefined, tenseUse: 'proleptic', tenseRule: 'prolepticPerfect' };
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VERBO, insight } as never} />);
+        const n = screen.getByTestId('tense-use').textContent!;
+        expect(n).toContain('analyzer.verbFn.tenseUses.proleptic');
+        expect(n).not.toContain('wordFicha.options');
+    });
     it('el caso lleva su función sintáctica adentro; sin caso, la sintáctica va sola', () => {
         render(<FichaCompleta registro={BLOQUES_GRIEGO} d={DATOS_NOMBRE as never} />);
         expect(screen.getByTestId('case-function').textContent).toContain('FUNCION-SINT-N complemento');

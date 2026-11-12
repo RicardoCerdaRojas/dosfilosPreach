@@ -220,6 +220,30 @@ describe('G2 — regresiones de la revisión adversarial', () => {
         expect(verbo('ACT/21.json', 16, 'ξενισθῶμεν').rule).toBeUndefined();
     });
 
+describe('revisión del profesor (2026-11) — Stg 2:10-11', () => {
+    it('ὅστις + subjuntivo sin ἄν es relativo indefinido, también el coordinado «πταίσῃ δέ» (Wallace p. 478)', () => {
+        expect(verbo('JAS/2.json', 10, 'τηρήσῃ')).toMatchObject({ decided: 'indefinite', rule: 'indefinite' });
+        expect(verbo('JAS/2.json', 10, 'πταίσῃ')).toMatchObject({ decided: 'indefinite', rule: 'indefinite' });
+    });
+    it('perfecto en la apódosis de una 3.ª clase o con sujeto indefinido: proléptico o gnómico (Wallace p. 581)', () => {
+        for (const [rel, v, t] of [['JAS/2.json', 10, 'γέγονεν'], ['ROM/7.json', 2, 'κατήργηται'], ['ROM/14.json', 23, 'κατακέκριται'], ['1CO/13.json', 1, 'γέγονα']] as const) {
+            expect(verbo(rel, v, t), `${rel} ${v}`).toMatchObject({ tenseRule: 'prolepticPerfect', tenseUses: ['proleptic', 'gnomic'] });
+        }
+    });
+    it('NO acota: 1.ª clase (1 Co 15:13 ἐγήγερται; Stg 2:11 γέγονας, que elige el asistente) ni un perfecto con sentido de presente (1 Jn 5:15 οἴδαμεν)', () => {
+        expect(verbo('1CO/15.json', 13, 'ἐγήγερται').tenseRule).toBeUndefined();
+        expect(verbo('JAS/2.json', 11, 'γέγονας').tenseRule).toBeUndefined();
+        expect(verbo('1JN/5.json', 15, 'οἴδαμεν').tenseRule).toBeUndefined();
+    });
+    it('al mostrar: la elección válida queda; si no, las opciones y lo del asistente como otra lectura', () => {
+        const c = [verbo('JAS/2.json', 10, 'γέγονεν')];
+        const conOrdinal = (x: object) => Array.from({ length: c[0]!.ordinal + 1 }, (_, i) => (i === c[0]!.ordinal ? x : {}));
+        expect(applyVerbRules(conOrdinal({ tenseUse: 'proleptic' }) as never[], c)[c[0]!.ordinal]).toEqual({ tenseUse: 'proleptic', tenseRule: 'prolepticPerfect' });
+        expect(applyVerbRules(conOrdinal({ tenseUse: 'intensive' }) as never[], c)[c[0]!.ordinal])
+            .toEqual({ tenseRule: 'prolepticPerfect', tenseUseOptions: ['proleptic', 'gnomic'], tenseUseOutside: 'intensive' });
+    });
+});
+
 describe('R0 — la regla no dice más que el libro que cita', () => {
     it('ἐν τῷ + infinitivo acota tiempo o medio, y πρὸς τό propósito o resultado (Wallace p. 611): no deciden solos', () => {
         const co = cargar('1CO/11.json');

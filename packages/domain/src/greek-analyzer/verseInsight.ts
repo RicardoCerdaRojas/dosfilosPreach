@@ -77,6 +77,14 @@ export interface GreekWordInsight {
     readonly verbRule?: import('../language-structure/verbFunctions').VerbRule;
     /** El uso del tiempo en el indicativo («presente habitual», «aoristo ingresivo»). */
     readonly tenseUse?: import('../language-structure/verbFunctions').TenseUseId;
+    /**
+     * Una regla ACOTÓ el uso del tiempo (perfecto proléptico, Wallace p. 581). Sin una
+     * elección válida quedan las opciones, y lo que eligió el asistente fuera de ellas.
+     * Lo pone `applyVerbRules` al mostrar; no lo devuelve el asistente.
+     */
+    readonly tenseRule?: import('../language-structure/verbFunctions').TenseRule;
+    readonly tenseUseOptions?: readonly import('../language-structure/verbFunctions').TenseUseId[];
+    readonly tenseUseOutside?: import('../language-structure/verbFunctions').TenseUseId;
     /** Por qué esa función o ese uso, en una frase. */
     readonly verbNote?: string;
     /**

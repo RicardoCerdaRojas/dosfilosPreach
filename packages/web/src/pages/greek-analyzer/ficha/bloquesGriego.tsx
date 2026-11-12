@@ -137,7 +137,7 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
     },
     {
         id: 'gr.usoTiempo', dato: 'Uso del tiempo (indicativo)', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.insight?.tenseUse, Completo: UsoTiempo,
+        hay: (d) => !!(d.insight?.tenseUse || d.insight?.tenseUseOptions), Completo: UsoTiempo,
     },
     {
         id: 'gr.caso', dato: 'Función del caso, su puente de traducción y la función sintáctica', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
@@ -267,6 +267,9 @@ export const DESTINO_INSIGHT: Readonly<Record<keyof GreekWordInsight, Destino>> 
     verbFunction: 'gr.funcionVerbo',
     verbRule: 'gr.funcionVerbo',
     tenseUse: 'gr.usoTiempo',
+    tenseRule: 'gr.usoTiempo',
+    tenseUseOptions: 'gr.usoTiempo',
+    tenseUseOutside: 'gr.usoTiempo',
     verbNote: 'gr.funcionVerbo',
     agency: 'gr.agencia',
     nominalRule: 'gr.agencia',

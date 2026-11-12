@@ -969,6 +969,9 @@
     "verbFn": {
       "title": "Verb function",
       "tenseTitle": "Tense use",
+      "tenseRules": {
+        "prolepticPerfect": "Perfect in the apodosis of a future-looking condition (ἐάν + subjunctive) or with an indefinite subject (“whoever…”): it treats as done a state that has not yet come about. Wallace calls it proleptic and also allows gnomic (a general truth)."
+      },
       "functions": {
         "attributive": "Attributive participle",
         "substantival": "Substantival participle",

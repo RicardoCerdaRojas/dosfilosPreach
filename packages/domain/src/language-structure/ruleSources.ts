@@ -1,5 +1,5 @@
 import type { ClauseRelation } from './verseStructure.js';
-import type { GreekVerbForm, TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
+import type { GreekVerbForm, TenseRule, TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
 import type { TENSE_USES } from './verbFunctions.js';
 import type { NominalRule } from './nominalFunctions.js';
 import type { DiscourseRule } from './discourseFunctions.js';
@@ -194,6 +194,14 @@ export const TENSE_USE_SOURCES: { readonly [T in keyof typeof TENSE_USES]: Reado
         proleptic: [W(PERF, 'Proleptic (Futuristic) Perfect', '581')], gnomic: [W(PERF, 'Gnomic Perfect', '580')],
     },
     Y: { intensive: [W(PLUP, 'Intensive Pluperfect (Resultative Pluperfect)', '584')], extensive: [W(PLUP, 'Extensive Pluperfect (Consummative Pluperfect)', '585')] },
+};
+
+/**
+ * Reglas que ACOTAN el uso del tiempo. El perfecto proléptico: Wallace p. 581 (con Stg 2:10 y
+ * Ro 14:23); la relativa indefinida equivale a una condición, p. 478; el profesor, Stg 2:10-11.
+ */
+export const TENSE_RULE_SOURCES: Readonly<Record<TenseRule, readonly RuleSource[]>> = {
+    prolepticPerfect: [W(PERF, 'Proleptic (Futuristic) Perfect', '581'), W(SUBJ, 'Subjunctive in Indefinite Relative Clause', '478'), P('2026-11 · Stg 2:10 γέγονεν, 2:11 γέγονας')],
 };
 
 /** Las fuentes de un uso del tiempo para el tiempo del verbo (código de MorphGNT). */

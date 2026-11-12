@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    prepositionUsage, tenseUseSources, translationBridge, VERB_RULE_SOURCES, verbFunctionSources,
+    prepositionUsage, TENSE_RULE_SOURCES, tenseUseSources, translationBridge, VERB_RULE_SOURCES, verbFunctionSources,
     type GreekCase, type GreekKeyInsight, type GreekVerbForm, type GreekWordInsight, type GreekWordToken,
 } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
@@ -60,10 +60,28 @@ export function FuncionVerbo({ d }: { d: DatosGriego }) {
 export function UsoTiempo({ d }: { d: DatosGriego }) {
     const { t } = useTranslation('greekTutor');
     const i = d.insight!;
+    const uso = (u: string) => t(`analyzer.verbFn.tenseUses.${u}`);
+    // Una regla acota el uso (perfecto proléptico, Wallace p. 581; revisión del profesor, Stg 2:10):
+    // dice por qué, cita su fuente y, si el asistente no eligió entre las opciones, las muestra.
+    if (i.tenseRule) {
+        return (
+            <FichaFuncion
+                titulo={t('analyzer.verbFn.tenseTitle')}
+                {...(i.tenseUse ? { nombre: uso(i.tenseUse) } : {})}
+                origen={i.tenseUse ? 'eleccion' : 'opciones'}
+                reconoce={t(`analyzer.verbFn.tenseRules.${i.tenseRule}`)}
+                {...(i.tenseUseOptions ? { opciones: { lista: i.tenseUseOptions.map(uso), reanalizar: true } } : {})}
+                {...(i.tenseUseOutside ? { otra: uso(i.tenseUseOutside) } : {})}
+                texto={i.verbFunction ? undefined : i.verbNote}
+                fuentes={TENSE_RULE_SOURCES[i.tenseRule]}
+                testId="tense-use"
+            />
+        );
+    }
     return (
         <FichaFuncion
             titulo={t('analyzer.verbFn.tenseTitle')}
-            nombre={t(`analyzer.verbFn.tenseUses.${i.tenseUse}`)}
+            nombre={uso(i.tenseUse!)}
             origen="eleccion"
             texto={i.verbFunction ? undefined : i.verbNote}
             fuentes={tenseUseSources(i.tenseUse!, d.token.tag.tense)}

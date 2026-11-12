@@ -993,6 +993,9 @@
     "verbFn": {
       "title": "Función del verbo",
       "tenseTitle": "Uso del tiempo",
+      "tenseRules": {
+        "prolepticPerfect": "Perfecto en la apódosis de una condición que mira al futuro (ἐάν + subjuntivo) o con un sujeto indefinido («quien…»): da por hecho un estado que todavía no ocurre. Wallace lo llama proléptico y admite también gnómico (una verdad general)."
+      },
       "functions": {
         "attributive": "Participio adjetival atributivo",
         "substantival": "Participio sustantival",
