@@ -29,6 +29,8 @@ export interface StructureWord {
     /** Griego: categoría y código de 8 posiciones de MorphGNT. */
     readonly pos?: string;
     readonly parse?: string;
+    /** Griego (U3c): el sentido de Louw-Nida que MACULA da a una PREPOSICIÓN («89.5»; a veces dos). */
+    readonly ln?: string;
     /** Hebreo: código de OSHB y piezas. */
     readonly m?: string;
     readonly parts?: readonly StructurePart[];

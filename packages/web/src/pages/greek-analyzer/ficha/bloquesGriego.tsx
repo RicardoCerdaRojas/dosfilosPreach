@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { BookmarkPlus, Check, Star } from 'lucide-react';
-import { greekRecognitionClues, STRUCTURE_RULE_SOURCES, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
+import { greekRecognitionClues, louwNidaSenses, STRUCTURE_RULE_SOURCES, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
+import { SentidoLouwNida } from './piezasLouwNida';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
 import { cn } from '@/lib/utils';
 import { GreekAgencyBlock, GreekAnaphoraRuleNote, GreekAutosBlock } from '../GreekNominalRuleBlock';
@@ -160,6 +161,12 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
     {
         id: 'gr.preposicion', dato: 'Régimen de la preposición', seccion: 'funcion', origen: 'regla', antes: ['tarjeta', 'tooltip'],
         hay: (d) => !!regimenDe(d), Completo: ({ d }) => <GreekPrepositionBlock lemma={d.token.lemma} usage={regimenDe(d)!} />,
+    },
+    {
+        // U3c (revisión del profesor, Stg 2:10 «ἐν ἑνί» = 89.5, especificación): el sentido EN ESTE VERSÍCULO según
+        // Louw-Nida, dato de MACULA. El régimen dice qué sentidos admite el caso; esto, cuál lee el dato aquí.
+        id: 'gr.sentidoLouwNida', dato: 'Sentido de la preposición en el versículo (Louw-Nida, dato de MACULA)', seccion: 'funcion', origen: 'datos', antes: [],
+        hay: (d) => d.token.pos === 'P' && louwNidaSenses(d.ln).length > 0, Completo: SentidoLouwNida,
     },
     {
         id: 'gr.articulo', dato: 'Uso del artículo, su antecedente y la regla de anáfora', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],

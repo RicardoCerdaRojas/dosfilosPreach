@@ -1,5 +1,6 @@
 import { HEBREW_VERB_FUNCTIONS, type HebrewVerbForm, type HebrewVerbFunction } from './hebrewFiniteVerb.js';
 import type { HebrewPreposition, HebrewPrepositionFunction } from './hebrewPreposition.js';
+import { LOUW_NIDA_DOMAINS, LOUW_NIDA_SUBDOMAINS, type LouwNidaSense } from './louwNida.js';
 import type { ClauseRelation } from './verseStructure.js';
 import type { GreekVerbForm, TenseRule, TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
 import type { TENSE_USES } from './verbFunctions.js';
@@ -30,7 +31,7 @@ import type { HebrewKiFunction } from './hebrewKi.js';
  * sección con `verified` sólo después de cotejarla con el ejemplar.
  */
 
-export type WorkId = 'wallace' | 'runge' | 'arnoldChoi' | 'putnam' | 'professor';
+export type WorkId = 'wallace' | 'runge' | 'arnoldChoi' | 'putnam' | 'louwNida' | 'professor';
 
 export interface Work {
     readonly author: string;
@@ -46,6 +47,8 @@ export const WORKS: Readonly<Record<WorkId, Work>> = {
     runge: { author: 'Steven E. Runge', title: 'Discourse Grammar of the Greek New Testament', year: 2010, publisher: 'Hendrickson' },
     // 1.ª edición: la del ejemplar de la biblioteca (la 2.ª, de 2018, pagina distinto).
     arnoldChoi: { author: 'Bill T. Arnold y John H. Choi', title: 'A Guide to Biblical Hebrew Syntax', year: 2003, publisher: 'Cambridge University Press', isbn: '978-0-521-82609-9' },
+    // Vol. 1 (Introduction & Domains), 1.ª ed. 1988; ISBN-10 0-8267-0341-0. Cotejado con el escaneo del fundador (2026-11-12).
+    louwNida: { author: 'Johannes P. Louw y Eugene A. Nida', title: 'Greek-English Lexicon of the New Testament Based on Semantic Domains', year: 1988, publisher: 'United Bible Societies', isbn: '978-0-8267-0341-5' },
     // La obra que usa el profesor (revisión 2026-11). Se cita por sección: el PDF del fundador no trae páginas impresas.
     putnam: { author: 'Frederick C. Putnam', title: 'Clave Putnam: La Biblia hebrea', year: 1996, publisher: 'Stylus Publishing (Ridley Park, PA)' },
     // Lo ven todos los usuarios: «profesor del fundador» no les dice nada.
@@ -410,4 +413,28 @@ export const HEBREW_PREPOSITION_SOURCES: Readonly<Record<HebrewPreposition, Read
 export function hebrewPrepositionSources(p: HebrewPreposition, fn?: HebrewPrepositionFunction): readonly RuleSource[] {
     const s = fn ? HEBREW_PREPOSITION_SOURCES[p][fn] : undefined;
     return s ? [s] : [];
+}
+
+/**
+ * U3c — Louw-Nida: el dominio con la página donde empieza, y el subdominio con la página donde está su
+ * línea del «Outline of Subdomains» (cotejadas con el ejemplar, 2026-11-12; el desfase hoja → página es 30).
+ */
+const LN = (section: string, page: number): RuleSource => ({ work: 'louwNida', section, topic: 'los dominios semánticos', verified: { page: String(page), method: 'pdf', on: '2026-11-12' } });
+/** El esquema de subdominios que sigue en la página siguiente. */
+const LN_PAGINA_SUB: Readonly<Record<string, number>> = {
+    '67.118': 629, '67.136': 629, '67.142': 629, '67.163': 629, '67.201': 629,
+    // El dominio 90 empieza en la p. 796; su esquema está en la 797.
+    ...Object.fromEntries(['90.1', '90.8', '90.14', '90.17', '90.20', '90.21', '90.29', '90.31', '90.36', '90.43', '90.45', '90.51', '90.56', '90.85'].map(k => [k, 797])),
+};
+export const LOUW_NIDA_DOMAIN_SOURCES: Readonly<Record<number, RuleSource>> =
+    Object.fromEntries(LOUW_NIDA_DOMAINS.map(d => [d.n, LN(`${d.n} ${d.en}`, d.page)]));
+export const LOUW_NIDA_SUBDOMAIN_SOURCES: Readonly<Record<string, RuleSource>> =
+    Object.fromEntries(LOUW_NIDA_SUBDOMAINS.map(s => {
+        const d = LOUW_NIDA_DOMAINS.find(x => x.n === s.domain)!;
+        const rango = s.from === s.to ? `${s.domain}.${s.from}` : `${s.domain}.${s.from}-${s.domain}.${s.to}`;
+        return [`${s.domain}.${s.from}`, LN(`${s.domain} ${d.en} › ${s.en} (${rango})`, LN_PAGINA_SUB[`${s.domain}.${s.from}`] ?? d.page)];
+    }));
+export function louwNidaSources(s: LouwNidaSense): readonly RuleSource[] {
+    const sub = s.subdomain ? LOUW_NIDA_SUBDOMAIN_SOURCES[`${s.subdomain.domain}.${s.subdomain.from}`] : undefined;
+    return [sub ?? LOUW_NIDA_DOMAIN_SOURCES[s.domain.n]!];
 }

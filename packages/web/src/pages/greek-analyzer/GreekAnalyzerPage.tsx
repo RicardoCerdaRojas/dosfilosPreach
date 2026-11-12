@@ -218,6 +218,8 @@ export function GreekAnalyzerPage() {
             bookName: libroActual ? nombre(libroActual) : book,
             fronted: frontedDe(i),
             conditional: alineados ? estructura.conditionals.find(c => c.ordinal === i) : undefined,
+            // U3c (Stg 2:10 ἐν ἑνί): el sentido de Louw-Nida que MACULA da a la preposición.
+            ln: alineados ? estructura.words[i]?.ln : undefined,
             onSaveFinding: insight && user?.uid && (claveDe(tok.text, i) || insight.words[i]) ? () => void guardarHallazgo(i) : undefined,
             saved: guardados.has(tok.lemma),
         };

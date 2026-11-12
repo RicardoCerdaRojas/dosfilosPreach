@@ -34,14 +34,25 @@ for f in F:
     leaf=re.sub(r'^\s*[\d.]+\s+','',leaf); leaf=re.sub(r'^\s*\([a-z](?:\.\d+)?\)\s*','',leaf)
     lw=set(lat(re.sub(r'\(a\.k\.a\.[^)]*\)','',leaf)))
     crudas=re.sub(r'-\n\s*','',hojas[p+off-1]).split('\n')
-    if len(lw)<=2:
+    rango=re.search(r'\((\d{1,2}\.\d+(?:-\d{1,2}\.\d+)?)\)\s*$',f['section'])
+    if rango:
+        # Louw-Nida (U3c): el «Outline of Subdomains» no lleva marca de nivel; se exige el NOMBRE y el RANGO
+        # en la misma línea o en dos seguidas de la página («Specification (89.4-89.7)»).
+        sin_esp=lambda x: re.sub(r'\s','',x)
+        lw=set(lat(re.sub(r'\([^)]*\)\s*$','',leaf)))
+        # A dos columnas, unir el guion de fin de línea pega la columna derecha con la izquierda («…artiDivide»).
+        crudas=hojas[p+off-1].split('\n')
+        hallado=any(sin_esp(rango.group(0)) in sin_esp(crudas[i]+crudas[i+1] if i+1<len(crudas) else crudas[i]) and lw<=(set(lat(crudas[i]))|set(lat(crudas[i-1] if i else ''))|set(lat(crudas[i+1] if i+1<len(crudas) else ''))) for i in range(len(crudas)))
+    elif len(lw)<=2:
         # Encabezado corto («Cause»): la línea tiene que EMPEZAR con su marca de nivel y la palabra.
         primera=lat(leaf)[0] if lat(leaf) else ''
         # Encabezado que empieza en griego («ἵνα + the Subjunctive»): el OCR lo lee «“Iva»; se admiten
         # hasta tres palabras antes de la primera latina.
         griego=r'(?:\S+\s+){0,3}?' if re.match(r'\s*[\u0370-\u03ff\u1f00-\u1fff]',leaf) else ''
         # Ruido del OCR tolerado: basura antes de la marca («a> 5.»), «ID.» por «D.», «Asan» por «As an».
-        marca=re.compile(r'^\W*(?:\w\W+)?(?:\d+(?:\.\d+)+\.?|[IVX]+\.|[A-L]{1,2}[.,]|\d{1,2}[.,]|[a-l][.,]|\d{1,2}\)|\([a-z](?:\.\d+)?\))\s+(?:as\s?an\s*)?'+griego+re.escape(primera),re.I)
+        # Louw-Nida: el dominio se encabeza «89 Relations», con el número sin punto.
+        ln_dom=r'|\d{1,2}' if f['work']=='louwNida' else ''
+        marca=re.compile(r'^\W*(?:\w\W+)?(?:\d+(?:\.\d+)+\.?|[IVX]+\.|[A-L]{1,2}[.,]|\d{1,2}[.,]|[a-l][.,]|\d{1,2}\)|\([a-z](?:\.\d+)?\)'+ln_dom+r')\s+(?:as\s?an\s*)?'+griego+re.escape(primera),re.I)
         hallado=any(marca.match(l) and lw<=set(lat(l)) for l in crudas)
     else:
         hallado=any(lw<=l for l in pares)

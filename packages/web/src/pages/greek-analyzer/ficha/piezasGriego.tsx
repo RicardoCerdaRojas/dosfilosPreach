@@ -23,6 +23,8 @@ export interface DatosGriego {
     readonly fronted?: FrontedInfo;
     /** En εἰ/ἐάN: la clase de la condicional y, en la 3.ª, su valor (Wallace p. 696). */
     readonly conditional?: ConditionalFact;
+    /** U3c: el código de Louw-Nida de la preposición (MACULA), p. ej. «89.5»; a veces dos. */
+    readonly ln?: string;
     /** Guardar el hallazgo para el sermón. */
     readonly onSaveFinding?: () => void;
     readonly saved?: boolean;

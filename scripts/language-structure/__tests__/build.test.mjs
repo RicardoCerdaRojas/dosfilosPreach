@@ -64,5 +64,11 @@ describe('cláusulas del capítulo', () => {
         const { palabras } = leerLowfat(x);
         expect(palabras.map(p => p.role)).toEqual(['s', 'v', 'o', 'o']);
     });
+
+    it('U3c (revisión del profesor, Stg 2:10): se lee el sentido de Louw-Nida (`ln`) de MACULA, también doble', () => {
+        const x = `<wg class="cl"><w xml:id="c1" ref="X 2:10!9" class="prep" ln="89.5">ἐν</w><w xml:id="c2" ref="X 2:21!6" class="prep" ln="89.25 89.77">ἐξ</w><w xml:id="c3" ref="X 2:10!10">ἑνί</w></wg>`;
+        const { palabras } = leerLowfat(x);
+        expect(palabras.map(p => p.ln)).toEqual(['89.5', '89.25 89.77', '']);
+    });
 });
 

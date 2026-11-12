@@ -1,0 +1,36 @@
+import { useTranslation } from 'react-i18next';
+import { louwNidaSenses, louwNidaSources } from '@dosfilos/domain';
+import { SourceNote } from '@/components/language-structure/SourceNote';
+import { FichaCaja } from '@/components/word-ficha/FichaPiezas';
+import type { DatosGriego } from './piezasGriego';
+
+/**
+ * U3c (revisión del profesor, Stg 2:10 «ἐν ἑνί»): el sentido de la preposición EN ESTE VERSÍCULO según
+ * Louw-Nida, tal como lo da MACULA (89.5 → Relaciones › especificación: «con respecto a»). Es un dato:
+ * con dos códigos («89.25 89.77», Stg 2:21), MACULA deja abiertas las dos lecturas y así se muestran.
+ */
+export function SentidoLouwNida({ d }: { d: DatosGriego }) {
+    const { t, i18n } = useTranslation('greekTutor');
+    const sentidos = louwNidaSenses(d.ln);
+    const en = (i18n?.language ?? 'es').startsWith('en');
+    return (
+        <FichaCaja
+            titulo={t('analyzer.louwNida.title')}
+            pie={<SourceNote sources={sentidos.flatMap(louwNidaSources)} />}
+            testId="louw-nida"
+        >
+            <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[13.5px] leading-relaxed">
+                {sentidos.map(s => (
+                    <li key={s.code} data-testid="louw-nida-sentido">
+                        <span className="font-mono text-[12px] text-muted-foreground">{s.code}</span>{' '}
+                        <strong className="font-semibold">{en ? s.domain.en : s.domain.es}</strong>
+                        {s.subdomain && <> › {en ? s.subdomain.en : s.subdomain.es}</>}
+                    </li>
+                ))}
+            </ul>
+            <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">
+                {t(sentidos.length > 1 ? 'analyzer.louwNida.twoReadings' : 'analyzer.louwNida.note')}
+            </p>
+        </FichaCaja>
+    );
+}

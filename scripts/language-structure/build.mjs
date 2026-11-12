@@ -109,7 +109,8 @@ export function leerLowfat(xml) {
         const cl = [...pila].reverse().find(x => x.cl !== null)?.cl ?? null;
         const tope = pila[pila.length - 1];
         const cons = tope && tope.cls !== 'cl' ? tope.cons : '';
-        palabras.push({ id: a['xml:id'], ref: a.ref, text: m[3], role: rol(a.role) || cons, morph: a.morph ?? '', clause: cl });
+        // `ln`: el sentido de Louw-Nida que MACULA da a la palabra (revisión del profesor, U3c: el de las preposiciones griegas).
+        palabras.push({ id: a['xml:id'], ref: a.ref, text: m[3], role: rol(a.role) || cons, morph: a.morph ?? '', clause: cl, ln: a.ln ?? '' });
     }
     return { clausulas, palabras };
 }
@@ -185,7 +186,9 @@ async function griego(only, informe) {
             const m = maculaPorVers.get(cv)?.[i];
             if (!m || m.n !== i + 1 || sinMarcas(m.text) !== sinMarcas(text)) distintas++;
             const lista = capitulos.get(cap) ?? [];
-            lista.push({ r: `${vers}!${i + 1}`, t: sinAparato(text), l: lemma, pos, parse, role: m?.role ?? '' });
+            // U3c (Stg 2:10 ἐν ἑνί = 89.5, «especificación»): sólo las preposiciones llevan su sentido de Louw-Nida.
+            const ln = pos === 'P-' && m && m.n === i + 1 && sinMarcas(m.text) === sinMarcas(text) ? (m.ln ?? '').trim() : '';
+            lista.push({ r: `${vers}!${i + 1}`, t: sinAparato(text), l: lemma, pos, parse, role: m?.role ?? '', ...(ln ? { ln } : {}) });
             capitulos.set(cap, lista);
         }
         // Palabras de MACULA de versículos que SBLGNT sí tiene y que nadie usó.

@@ -841,6 +841,11 @@
         "address": "Vocative of address"
       }
     },
+    "louwNida": {
+      "title": "Sense in this verse (Louw-Nida)",
+      "note": "From MACULA: the sense the analysis of the text gives this preposition here, by Louw and Nida's semantic domains. The case shows which senses are possible; this shows which one is read in this verse.",
+      "twoReadings": "From MACULA: it leaves two readings open here. Context decides between them."
+    },
     "caseRule": {
       "partitiveEk": "ἐκ or ἀπό + plural genitive next to a word that takes a part (τις, εἷς, οὐδείς, πολλοί, a numeral): the genitive is the whole from which that part is taken (“one of you”)."
     },

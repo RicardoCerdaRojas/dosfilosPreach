@@ -191,3 +191,29 @@ describe('Ficha griega — el genitivo partitivo por regla (U3b)', () => {
         expect(screen.getByTestId('case-function').querySelector('[data-testid="ficha-origen-eleccion"]')).not.toBeNull();
     });
 });
+
+/** U3c (revisión del profesor, Stg 2:10 «ἐν ἑνί»): el sentido de Louw-Nida de la preposición, dato de MACULA. */
+describe('Ficha griega — el sentido de Louw-Nida (U3c)', () => {
+    const EN: GreekWordToken = { text: 'ἐν', lemma: 'ἐν', pos: 'P' as never, transliteration: 'en', tag: {} as never };
+
+    it('Stg 2:10 89.5: Relaciones › especificación, como dato, con la cita del léxico', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: EN, ln: '89.5' } as never} />);
+        const b = screen.getByTestId('louw-nida');
+        expect(b.textContent).toContain('89.5');
+        expect(b.textContent).toContain('relaciones');
+        expect(b.textContent).toContain('especificación');
+        expect(b.textContent).toContain('Louw');
+        expect(b.textContent).toContain('analyzer.louwNida.note');
+    });
+
+    it('Stg 2:21 «89.25 89.77»: las dos lecturas que deja el dato (causa y medio)', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: EN, ln: '89.25 89.77' } as never} />);
+        expect(screen.getAllByTestId('louw-nida-sentido').map(e => e.textContent)).toEqual([expect.stringContaining('causa'), expect.stringContaining('medio')]);
+        expect(screen.getByTestId('louw-nida').textContent).toContain('analyzer.louwNida.twoReadings');
+    });
+
+    it('sin código (14 % de las preposiciones) o en otra palabra, no hay bloque', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: EN } as never} />);
+        expect(screen.queryByTestId('louw-nida')).toBeNull();
+    });
+});
