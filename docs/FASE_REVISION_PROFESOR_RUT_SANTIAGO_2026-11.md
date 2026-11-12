@@ -339,6 +339,16 @@ Lectura (medido):
 - La ל de posesión como regla no sirve. Con ל + rol «predicado» de MACULA en una cláusula sin verbo hay 1.263 candidatos y 3 de 20 son posesión. Exigiendo sujeto indefinido o אֵין/יֵשׁ/היה quedan 329, con 3 o 4 de 20. El resto son títulos de salmos, finalidad, listas e interés. Propuesta: la función de cada preposición hebrea la ELIGE el asistente de la lista de A&C cap. 4, con las definiciones del libro, igual que el verbo en U5.
 - MACULA griego trae el código de Louw-Nida de cada preposición (Stg 2:16 ἐν = 13.8), pero no el nombre de los dominios. Para mostrarlo hay que regenerar los datos y tener una fuente de los nombres: falta decidir.
 
+**U3a (2026-11-12), `fd96eb25`:** la función de la preposición hebrea la elige el asistente de la lista de A&C §4.1, con la definición del libro. Son 12 preposiciones y 52.777 candidatas en el AT; quedan fuera las que rigen un infinitivo y לִפְנֵי.
+- La literal conserva el sentido base de la preposición. Rut 2:7 queda «en las gavillas», con una nota que da la lectura «entre».
+- Banco: 25/27 en los casos de ajuste y ~6/9 en los de validación, ~31/36 en total.
+- Rut 2:1 sale «posesión» (וּלְנָעֳמִי) y «genitival» (לְאִישָׁהּ, la ל en lugar del constructo).
+- Lo que falla son las funciones vecinas de la ל (posesión, genitival, interés, agente). La ficha lo muestra como elección, no como regla.
+
+**U3b (2026-11-12), `3e66d813`:** genitivo partitivo con ἐκ/ἀπό por regla (Wallace p. 84). Son 64 casos en el NT; la muestra dio 23/25, y el filtro de concordancia de género quitó los 2 que fallaban. Stg 2:16 ὑμῶν queda «partitivo» como Regla.
+- **Fuentes:** las de U5 y U3a no se habían cotejado. Eran funciones, y `listar-fuentes` tenía la lista de tablas escrita a mano (le faltaba también la del proléptico de U7). Ahora cada función cita su categoría de A&C con la página de su encabezado, y el cotejo da 235/235.
+- **U3c, Louw-Nida de las preposiciones griegas:** en espera de una fuente con los nombres de los dominios.
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
