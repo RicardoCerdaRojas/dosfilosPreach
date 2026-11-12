@@ -316,6 +316,11 @@ Lectura (medido):
 - Fallos que quedan, de criterio entre valores vecinos: fondo frente a circunstancial (2 R 8:7), contraste frente a cierre (2 S 6:23) o concesiva (Jue 16:15, Rut 2:13 según la corrida), fondo frente a causal (Gn 18:18).
 - Despliegue: sólo web. El proxy y `esquemaEstricto` ya están en producción.
 
+**U4 (2026-11-12), `5489fcf4`:** el artículo hebreo y el rol de MACULA, como DATOS de la ficha (al mostrar, sin re-análisis).
+- Artículo: «X ya se nombró en el v. N; el artículo puede retomarlo» (Putnam §1.4.3a), hasta cinco versículos atrás. Medido a mano sobre el AT: 18/25 en el mismo versículo, 20/24 a uno, 22/24 a dos y 15/24 a tres. No llega al nivel de «Regla» (en griego se exigió 25/25): los fallos son de sentido. Se descarta por forma: arameo, únicos, tiempo, כֹּל, direcciones, ordinal detrás, distributivo y título tras nombre propio. Resultado: 7.901 sustantivos con antecedente.
+- Rol: el bloque de función muestra el rol de MACULA y avisa si el asistente lo contradice (Rut 3:6: «objeto directo» contra adv). Con el prompt actual hubo 0 choques en 19 análisis; sirve para lo guardado antes.
+- Putnam entra al registro de fuentes, citado por sección.
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
