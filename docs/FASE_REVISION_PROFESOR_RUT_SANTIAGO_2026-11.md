@@ -328,6 +328,13 @@ Lectura (medido):
 - La ficha sólo muestra el bloque si hay función elegida; un v4 avisa «anterior a la función de cada verbo».
 - El rol de MACULA se rotula «Función en la oración (según el análisis sintáctico del texto)» y dice de dónde sale.
 
+**Pistas del griego (2026-11-12), `03e30d67`, prompt griego v15:**
+- Artículo que retoma algo del párrafo (2 a 5 versículos atrás): pista, no regla. Son 1.489 en el NT; una muestra dio 11 de 15 anáforas reales.
+- Perfecto en la apódosis de 1.ª clase: pista. Hay 14 en el NT: 4 prolépticos o gnómicos y 10 intensivos o extensivos.
+- La regla de anáfora mira también el ordinal detrás del sustantivo si concuerda con él (Ap 2:11 y 20:14 «la muerte segunda» ya no se toman como anáfora). Pasa de 1.932 a 1.930.
+- Banco: 10 de 11 con pistas contra 5 de 10 sin ellas. Stg 2:17, 2:20 y 2:11 quedan como pidió el profesor; 1 Co 15:13 sigue intensivo. Ap 21:8 lo elige anafórico el asistente por su cuenta, sin pista: es variación del modelo.
+- El griego no tiene el problema de repetición del hebreo: 3 caídas a Gemini en 30 días, ninguna por tope de fichas.
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
