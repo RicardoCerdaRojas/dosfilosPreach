@@ -28,7 +28,7 @@ import type { HebrewKiFunction } from './hebrewKi.js';
  * sección con `verified` sólo después de cotejarla con el ejemplar.
  */
 
-export type WorkId = 'wallace' | 'runge' | 'arnoldChoi' | 'professor';
+export type WorkId = 'wallace' | 'runge' | 'arnoldChoi' | 'putnam' | 'professor';
 
 export interface Work {
     readonly author: string;
@@ -44,6 +44,8 @@ export const WORKS: Readonly<Record<WorkId, Work>> = {
     runge: { author: 'Steven E. Runge', title: 'Discourse Grammar of the Greek New Testament', year: 2010, publisher: 'Hendrickson' },
     // 1.ª edición: la del ejemplar de la biblioteca (la 2.ª, de 2018, pagina distinto).
     arnoldChoi: { author: 'Bill T. Arnold y John H. Choi', title: 'A Guide to Biblical Hebrew Syntax', year: 2003, publisher: 'Cambridge University Press', isbn: '978-0-521-82609-9' },
+    // La obra que usa el profesor (revisión 2026-11). Se cita por sección: el PDF del fundador no trae páginas impresas.
+    putnam: { author: 'Frederick C. Putnam', title: 'Clave Putnam: La Biblia hebrea', year: 1996, publisher: 'Stylus Publishing (Ridley Park, PA)' },
     // Lo ven todos los usuarios: «profesor del fundador» no les dice nada.
     professor: { author: 'Revisión docente', title: 'Dos Filos Preach', year: 2026 },
 };
@@ -76,6 +78,8 @@ const W = (topic: string, section: string, page?: string): RuleSource => ({ work
 const R = (topic: string, section: string): RuleSource => ({ work: 'runge', section, topic });
 const AC = (topic: string, section: string, page?: string): RuleSource => ({ work: 'arnoldChoi', section, topic, ...(page ? { verified: PDF(page) } : {}) });
 const P = (note: string): RuleSource => ({ work: 'professor', section: 'Indicación del profesor', topic: 'indicación docente', note });
+/** Putnam, sin `verified`: el PDF del fundador no trae página impresa; la sección se leyó en él (2026-11-12). */
+const PU = (topic: string, section: string): RuleSource => ({ work: 'putnam', section, topic });
 
 // Temas generales (lo que se ve sin verificación).
 const PART = 'el participio', INF = 'el infinitivo', SUBJ = 'el subjuntivo', OPT = 'el optativo', IMPV = 'el imperativo';
@@ -346,3 +350,12 @@ export function hebrewInfinitiveSources(fn: HebrewInfinitiveFunction, form: 'con
     const propias = todas.filter(x => !x.section.startsWith(form === 'construct' ? IA : IC));
     return propias.length ? propias : todas;
 }
+
+/**
+ * U4 (revisión del profesor, Rut 3:6): el antecedente del artículo hebreo y el
+ * rol de la palabra en su oración, como DATOS de la ficha.
+ */
+export const HEBREW_WORD_DATA_SOURCES = {
+    articleAntecedent: [PU('el artículo', '1.4.3a El artículo anafórico'), P('2026-10-14 · Rut 3:6 הַגֹּרֶן')],
+    roleAdverbial: [PU('el complemento adverbial', '2.4.2a Objetivo o meta')],
+} as const satisfies Readonly<Record<string, readonly RuleSource[]>>;

@@ -62,6 +62,7 @@ const DATOS = {
     fronted: { role: 'adv' as const, fronting: 'focus' as never },
     ketivQere: { ordinal: 9, qere: 'אֲכָלְךָ', ketiv: 'KETIV-אכלך' },
     disjunctive: { resolved: 'circumstantial' as const },
+    article: { ordinal: 9, antecedent: { text: 'ANTECEDENTE-הַגֹּרֶן', verse: 3 }, sameVerse: false },
     onInvestigate: vi.fn(),
 };
 
@@ -281,5 +282,36 @@ describe('Ficha hebrea — lo que la revisión encontró perdido', () => {
         render(<FichaPanel registro={BLOQUES_HEBREO} d={DATOS} abierto onCerrar={() => {}} referencia="REF-Gn 2:17" rtl />);
         await waitFor(() => expect(document.activeElement?.textContent).toBe('REF-Gn 2:17'));
         expect(document.activeElement?.tagName).not.toBe('BUTTON');
+    });
+});
+
+/** U4 (revisión del profesor, Rut 3:6 הַגֹּרֶן): el artículo y el rol de MACULA como datos. */
+describe('Ficha hebrea — el artículo y el rol de la palabra (U4)', () => {
+    const SUSTANTIVO = { hebrewText: 'הַגֹּרֶן', category: 'NOUN', morphemes: [], translation: 'la era' };
+
+    it('Rut 3:6: «objeto directo» contra el adv de MACULA se avisa, con la pista de «a» o «hacia»', () => {
+        const d = { word: { ...SUSTANTIVO, syntacticFunction: 'Objeto directo de וַתֵּרֶד' }, role: 'adv' };
+        render(<FichaCompleta registro={BLOQUES_HEBREO} d={d as never} />);
+        expect(screen.getByTestId('ficha-rol-macula').textContent).toContain('verseAnalyzer.ficha.role.adv');
+        expect(screen.getByTestId('ficha-rol-choque')).toBeTruthy();
+        expect(screen.getByTestId('ficha-funcion').textContent).toContain('verseAnalyzer.ficha.role.adverbialHint');
+    });
+
+    it('si coinciden, el rol se muestra sin aviso; un rol que no se nombra (frase preposicional) no se muestra', () => {
+        const { unmount } = render(<FichaCompleta registro={BLOQUES_HEBREO} d={{ word: { ...SUSTANTIVO, syntacticFunction: 'Complemento adverbial de dirección' }, role: 'adv' } as never} />);
+        expect(screen.getByTestId('ficha-rol-macula')).toBeTruthy();
+        expect(screen.queryByTestId('ficha-rol-choque')).toBeNull();
+        unmount();
+        render(<FichaCompleta registro={BLOQUES_HEBREO} d={{ word: { ...SUSTANTIVO, syntacticFunction: 'Complemento' }, role: 'pp' } as never} />);
+        expect(screen.queryByTestId('ficha-rol-macula')).toBeNull();
+    });
+
+    it('el antecedente del artículo: «ya se nombró en el v. 3», con la palabra en hebreo y la fuente de Putnam', () => {
+        const d = { word: SUSTANTIVO, article: { ordinal: 1, antecedent: { text: 'הַגֹּרֶן', verse: 3 }, sameVerse: false } };
+        render(<FichaCompleta registro={BLOQUES_HEBREO} d={d as never} />);
+        const caja = screen.getByTestId('ficha-articulo');
+        expect(caja.textContent).toContain('הַגֹּרֶן');
+        expect(caja.textContent).toContain('verseAnalyzer.ficha.article.seenBefore');
+        expect(caja.textContent).toContain('Putnam');
     });
 });

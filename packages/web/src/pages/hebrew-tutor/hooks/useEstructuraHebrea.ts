@@ -1,5 +1,5 @@
 import React from 'react';
-import { applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, readingFor, type HebrewSuffix, type ResolvedRelation, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, readingFor, type HebrewSuffix, type HebrewArticleFact, type ResolvedRelation, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
@@ -152,7 +152,30 @@ export function useEstructuraHebrea(
         }
         return m;
     }, [estructura, alinear, analysis.clauseReadings]);
-    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, sinLectura };
+    /**
+     * Índice del análisis → el sustantivo con artículo que ya apareció poco antes (U4, Rut 3:6
+     * הַגֹּרֶן, nombrada en 3:3): un DATO; si el artículo la retoma, lo decide quien lee.
+     */
+    const articulos = React.useMemo(() => {
+        const m = new Map<number, HebrewArticleFact>();
+        const indice = alinear(estructura.words);
+        for (const f of estructura.articles ?? []) {
+            const i = indice[f.ordinal];
+            if (i !== undefined) m.set(i, f);
+        }
+        return m;
+    }, [estructura, alinear]);
+    /** Índice del análisis → el rol de la palabra en su oración según MACULA (s, o, adv…). */
+    const roles = React.useMemo(() => {
+        const m = new Map<number, string>();
+        const indice = alinear(estructura.words);
+        estructura.words.forEach((w, o) => {
+            const i = indice[o];
+            if (i !== undefined && w.role && !m.has(i)) m.set(i, w.role);
+        });
+        return m;
+    }, [estructura, alinear]);
+    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, articulos, roles, sinLectura };
 }
 
 /**

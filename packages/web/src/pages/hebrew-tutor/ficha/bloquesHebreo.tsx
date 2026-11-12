@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { STRUCTURE_RULE_SOURCES, type WordAnalysis } from '@dosfilos/domain';
+import { ArticuloAntecedente, FuncionSintactica } from './piezasDatosHebreo';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
@@ -190,12 +191,18 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
         // Sin regla para esta palabra, la función la da el asistente (con regla, va dentro de su bloque).
         id: 'he.funcionSintactica', dato: 'Función sintáctica (texto del asistente)', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip', 'panel'],
         hay: (d) => !!d.word.syntacticFunction && !funcionDeRegla(d),
-        Completo: ({ d }) => <FichaFuncion origen="asistente" texto={d.word.syntacticFunction} testId="ficha-funcion" />,
+        Completo: FuncionSintactica,
         Corto: ({ d }) => <p className="m-0 flex items-start gap-2"><FichaOrigenRotulo origen="asistente" /><span className="line-clamp-2">{d.word.syntacticFunction}</span></p>,
     },
 
     // EN EL CONTEXTO
     { id: 'he.quienHabla', dato: 'Quién habla y a quién', seccion: 'contexto', origen: 'regla', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.speech, Completo: ({ d }) => <SpeechNote speech={d.speech} /> },
+    {
+        // U4 (revisión del profesor, Rut 3:6 הַגֹּרֶן, nombrada en 3:3): un DATO, no una regla —
+        // medido a mano, el artículo retoma al antecedente en 72–92 % de los casos según la distancia.
+        id: 'he.articulo', dato: 'El sustantivo con artículo ya se nombró antes (posible artículo anafórico)', seccion: 'contexto', origen: 'datos', antes: [],
+        hay: (d) => !!d.article, Completo: ArticuloAntecedente,
+    },
     { id: 'he.antepuesta', dato: 'Antepuesta al verbo', seccion: 'contexto', origen: 'datos', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.fronted, Completo: ({ d }) => <FrontedNote fronted={d.fronted} /> },
 
     // PARA ESTUDIAR
@@ -252,3 +259,4 @@ export const DESTINO_NOMBRE: Readonly<Record<keyof NonNullable<WordAnalysis['nom
     gender: 'he.celdas', number: 'he.celdas', state: 'he.celdas', person: 'he.celdas',
     suffix: { fuera: 'Se muestra el de OSHB (celda «Sufijo», revisión del profesor 2026-11), no el que escribe el asistente.' },
 };
+

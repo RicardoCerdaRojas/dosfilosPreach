@@ -12,3 +12,4 @@ export * from './hebrewKi.js';
 export type { RuleChoiceView } from './hebrewRuleChoice.js';
 export { hebrewSuffix, type HebrewSuffix } from './hebrewMorph.js';
 export * from './greekConditionals.js';
+export * from './hebrewArticle.js';

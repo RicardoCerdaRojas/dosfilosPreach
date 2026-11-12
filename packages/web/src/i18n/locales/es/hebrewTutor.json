@@ -153,6 +153,21 @@
         "onlyQere": "Se lee sin estar escrita (qere sin ketiv): los masoretas indican leer esta palabra aunque no está en el texto consonántico.",
         "marker": "Esta palabra se lee distinta de como está escrita (ketiv y qere)"
       },
+      "article": {
+        "title": "Artículo",
+        "seenBefore": "ya se nombró en el v. {{verse}}. El artículo puede retomarlo (artículo anafórico): míralo en el contexto, porque también puede ser genérico o señalar algo conocido.",
+        "seenSameVerse": "ya se nombró antes en este versículo. El artículo puede retomarlo (artículo anafórico): míralo en el contexto, porque también puede ser genérico o señalar algo conocido."
+      },
+      "role": {
+        "label": "En la oración (MACULA)",
+        "s": "sujeto",
+        "o": "objeto directo",
+        "o2": "segundo objeto",
+        "adv": "complemento adverbial (lugar, dirección, tiempo o modo)",
+        "p": "predicado",
+        "conflict": "El asistente lo describe de otra manera. Los datos de MACULA lo leen como {{role}}.",
+        "adverbialHint": "Con un verbo de movimiento, el complemento adverbial se traduce con «a» o «hacia» (Putnam §2.4.2a)."
+      },
       "recognizedBy": {
         "bInf": "Lleva la preposición בְּ pegada: temporal («cuando»), causal o instrumental.",
         "kInf": "Lleva la preposición כְּ pegada: «en cuanto», «mientras» o comparación.",

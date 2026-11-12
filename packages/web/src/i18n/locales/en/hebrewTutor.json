@@ -194,6 +194,21 @@
         "onlyQere": "Read but not written (qere without ketiv): the Masoretes say to read this word although it is not in the consonantal text.",
         "marker": "This word is read differently from how it is written (ketiv and qere)"
       },
+      "article": {
+        "title": "Article",
+        "seenBefore": "was already mentioned in v. {{verse}}. The article may refer back to it (anaphoric article): check the context, since it may also be generic or point to something known.",
+        "seenSameVerse": "was already mentioned earlier in this verse. The article may refer back to it (anaphoric article): check the context, since it may also be generic or point to something known."
+      },
+      "role": {
+        "label": "In the clause (MACULA)",
+        "s": "subject",
+        "o": "direct object",
+        "o2": "second object",
+        "adv": "adverbial complement (place, direction, time or manner)",
+        "p": "predicate",
+        "conflict": "The assistant describes it differently. The MACULA data read it as {{role}}.",
+        "adverbialHint": "With a verb of motion, the adverbial complement is translated with “to” or “toward” (Putnam §2.4.2a)."
+      },
       "recognizedBy": {
         "bInf": "Has the preposition בְּ attached: temporal (“when”), causal or instrumental.",
         "kInf": "Has the preposition כְּ attached: “as soon as”, “while” or comparison.",

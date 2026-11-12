@@ -221,3 +221,27 @@ describe('la ficha en el panel lateral', () => {
         expect(screen.getByLabelText('wordFicha.next')).toBeDisabled();
     });
 });
+
+describe('el artículo y el rol del dato a la página (U4, revisión del profesor, Rut 3:6 הַגֹּרֶן)', () => {
+    it('la ficha de la era dice que ya se nombró en 3:3 y que MACULA la lee como complemento adverbial, y avisa el choque', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [], kis: [], ketivQere: [],
+            words: [
+                { r: '6!1', t: 'וַתֵּרֶד', l: 'c/3381', m: 'HC/Vqw3fs', role: 'v' },
+                { r: '6!2', t: 'הַגֹּרֶן', l: 'd/1637', m: 'HTd/Ncbsa', role: 'adv' },
+            ],
+            articles: [{ ordinal: 1, antecedent: { text: 'הַגֹּרֶן', verse: 3 }, sameVerse: false }],
+        } as never;
+        const analisis = { reference: 'Rut 3:6', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'וַתֵּרֶד', morphemes: [], category: 'VERB', translation: 'y descendió', syntacticFunction: 'Verbo principal' },
+                { hebrewText: 'הַגֹּרֶן', morphemes: [], category: 'NOUN', translation: 'la era', syntacticFunction: 'Objeto directo del verbo' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.3.6" /></TooltipProvider>);
+        abrirFicha(1);
+        const panel = screen.getByTestId('ficha-panel');
+        expect(panel.querySelector('[data-testid="ficha-articulo"]')?.textContent).toContain('verseAnalyzer.ficha.article.seenBefore');
+        expect(panel.querySelector('[data-testid="ficha-rol-macula"]')?.textContent).toContain('verseAnalyzer.ficha.role.adv');
+        expect(panel.querySelector('[data-testid="ficha-rol-choque"]')).not.toBeNull();
+    });
+});
