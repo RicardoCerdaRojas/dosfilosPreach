@@ -350,6 +350,10 @@ Lectura (medido):
 - **U3c (2026-11-12), `5ec8ddd5`:** cada preposición griega muestra su sentido de Louw-Nida, dato de MACULA. Stg 2:10 ἐν ἑνί = 89.5 (relaciones › especificación, «con respecto a»); Stg 2:16 ἐξ = 63.20 (parte), que respalda U3b.
   - Datos regenerados: 260 capítulos con cambios solo en `ln`; 9.323 de 10.877 preposiciones traen código.
   - Fuente: el vol. 1 del léxico (UBS 1988) que pasó el fundador. 172 citas cotejadas, 407/407 en total.
+  - **¿Debe Louw-Nida entrar a la traducción? Medido, no.** Banco de 18 versículos donde el sentido de MACULA no es el de base, con y sin pista en el prompt griego (gpt-6-luna, 2026-11-12).
+    - La fluida ya expresaba el sentido sin la pista: Ro 2:8 «por», Stg 1:6 «con fe», Ro 1:3 «en cuanto a», He 11:3 «de modo que».
+    - Con la pista empeoró en dos casos: Gá 3:27 «bautizados en cuanto a Cristo» y Ro 1:4 «en cuanto al Espíritu». En la palabra suelta el efecto fue mixto, y la literal no siempre conservó el sentido base.
+    - Se descartó: Louw-Nida queda como dato de estudio en la ficha y no entra al prompt.
 
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
