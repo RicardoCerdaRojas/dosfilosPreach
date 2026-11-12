@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { BookmarkPlus, Check, Star } from 'lucide-react';
-import { greekRecognitionClues, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
+import { greekRecognitionClues, STRUCTURE_RULE_SOURCES, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
@@ -174,6 +174,40 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
                     {i.antecedent && <p className="m-0 text-[13px]"><span className="text-muted-foreground">{t('analyzer.articleUse.pointsBack')}: </span>{grc(i.antecedent)}</p>}
                     <GreekAnaphoraRuleNote insight={i} />
                 </div>
+            );
+        },
+    },
+    {
+        // Revisión del profesor (2026-11, Stg 2:14): la clase sólo se veía en «Estructura». En la
+        // ficha de εἰ/ἐάν, la clase (por el modo del verbo) y, en la 3.ª, su valor según Wallace p. 696.
+        id: 'gr.condicional', dato: 'Clase de la condicional y su valor (Wallace)', seccion: 'funcion', origen: 'regla', antes: [],
+        hay: (d) => !!d.conditional,
+        Completo: function Condicional({ d }) {
+            const { t } = useTranslation('greekTutor');
+            const { t: tl } = useTranslation('languageStructure');
+            const c = d.conditional!;
+            return (
+                <FichaFuncion
+                    titulo={t('analyzer.conditional.title')}
+                    nombre={tl(`classLabel.${c.conditionalClass}`)}
+                    origen="regla"
+                    reconoce={tl(`classNotes.${c.conditionalClass}`)}
+                    {...(c.use ? { texto: t(`analyzer.conditional.uses.${c.use}`) } : {})}
+                    fuentes={STRUCTURE_RULE_SOURCES[`class${c.conditionalClass}`]}
+                    testId="conditional"
+                />
+            );
+        },
+        Corto: function CondicionalCorto({ d }) {
+            const { t } = useTranslation('greekTutor');
+            const { t: tl } = useTranslation('languageStructure');
+            const c = d.conditional!;
+            return (
+                <p className="m-0 flex flex-wrap items-center gap-x-2">
+                    <FichaOrigenRotulo origen="regla" />
+                    <strong className="font-bold">{t('analyzer.conditional.title')} · {tl(`classLabel.${c.conditionalClass}`)}</strong>
+                    {c.use && <span className="text-muted-foreground">{t(`analyzer.conditional.short.${c.use}`)}</span>}
+                </p>
             );
         },
     },

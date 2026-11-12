@@ -117,6 +117,15 @@ describe('Ficha griega — el bloque de función', () => {
         for (const v of ['analyzer.verbFn.tenseRules.prolepticPerfect', 'analyzer.verbFn.tenseUses.proleptic', 'analyzer.verbFn.tenseUses.gnomic', 'Proleptic (Futuristic) Perfect']) expect(n, v).toContain(v);
         expect(n).toContain('analyzer.verbFn.tenseUses.intensive');
     });
+    it('la condicional en la ficha de ἐάν (revisión del profesor, Stg 2:14): clase, qué es, su valor y la fuente; en el tooltip, una línea', () => {
+        const conj = { text: 'ἐὰν', lemma: 'ἐάν', pos: 'C' as never, transliteration: 'ean', tag: {} as never };
+        const conditional = { ordinal: 4, conditionalClass: 3 as const, use: 'presentGeneral' as const };
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: conj, conditional } as never} />);
+        const n = screen.getByTestId('conditional').textContent!;
+        for (const v of ['analyzer.conditional.title', 'classLabel.3', 'classNotes.3', 'analyzer.conditional.uses.presentGeneral', 'Third Class Condition']) expect(n, v).toContain(v);
+        const corto = render(<FichaResumen registro={BLOQUES_GRIEGO} d={{ token: conj, conditional } as never} />).container.textContent!;
+        expect(corto).toContain('analyzer.conditional.short.presentGeneral');
+    });
     it('uso del tiempo acotado y elegido: el nombre, sin opciones', () => {
         const insight = { ...INSIGHT_VERBO, verbFunction: undefined, verbRule: undefined, tenseUse: 'proleptic', tenseRule: 'prolepticPerfect' };
         render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VERBO, insight } as never} />);

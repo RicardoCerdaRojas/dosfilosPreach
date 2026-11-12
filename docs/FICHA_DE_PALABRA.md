@@ -32,7 +32,7 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 21 | `he.explicacion` | Explicación pedagógica (con su formato) | tarjeta, panel | Para estudiar | — | asistente |
 | 22 | `he.investigar` | Investigar la palabra paso a paso (detective) | tarjeta | Acciones | — | — |
 
-## Griego (23 bloques)
+## Griego (24 bloques)
 
 | # | Bloque | Dato | Antes | Sección | Resumen | De dónde sale |
 |---|---|---|---|---|---|---|
@@ -52,10 +52,11 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 14 | `gr.funcionSintactica` | Función sintáctica (texto del asistente) y puente de traducción | tarjeta, tooltip | Su función | sí | asistente |
 | 15 | `gr.preposicion` | Régimen de la preposición | tarjeta, tooltip | Su función | — | regla |
 | 16 | `gr.articulo` | Uso del artículo, su antecedente y la regla de anáfora | tarjeta, tooltip | Su función | — | regla + asistente |
-| 17 | `gr.particulas` | Partículas y pronombre explícito | tarjeta, tooltip | Su función | — | regla + asistente |
-| 18 | `gr.agencia` | Agencia (agente de la pasiva) | tarjeta, tooltip | Su función | — | regla + asistente |
-| 19 | `gr.autos` | Uso de αὐτός | tarjeta, tooltip | Su función | — | regla + asistente |
-| 20 | `gr.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 21 | `gr.relaciones` | Relaciones con otras palabras | tarjeta, tooltip | En el contexto | — | asistente |
-| 22 | `gr.significancia` | Significancia (palabra clave) | tarjeta, tooltip | Para estudiar | — | asistente |
-| 23 | `gr.guardar` | Guardar hallazgo para el sermón | tarjeta | Acciones | — | — |
+| 17 | `gr.condicional` | Clase de la condicional y su valor (Wallace) |  | Su función | sí | regla |
+| 18 | `gr.particulas` | Partículas y pronombre explícito | tarjeta, tooltip | Su función | — | regla + asistente |
+| 19 | `gr.agencia` | Agencia (agente de la pasiva) | tarjeta, tooltip | Su función | — | regla + asistente |
+| 20 | `gr.autos` | Uso de αὐτός | tarjeta, tooltip | Su función | — | regla + asistente |
+| 21 | `gr.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 22 | `gr.relaciones` | Relaciones con otras palabras | tarjeta, tooltip | En el contexto | — | asistente |
+| 23 | `gr.significancia` | Significancia (palabra clave) | tarjeta, tooltip | Para estudiar | — | asistente |
+| 24 | `gr.guardar` | Guardar hallazgo para el sermón | tarjeta | Acciones | — | — |

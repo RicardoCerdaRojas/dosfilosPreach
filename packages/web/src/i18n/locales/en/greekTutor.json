@@ -966,6 +966,17 @@
       "contrast": "With other cases the sense changes:",
       "noObject": "Could not identify the governed term."
     },
+    "conditional": {
+      "title": "Conditional",
+      "uses": {
+        "presentGeneral": "Here, present general: a truth that holds whenever the condition is met (“if anyone…, then…”), not a future event. Wallace calls it a “fifth class” when the apodosis is present.",
+        "moreProbableFuture": "Here, more probable future: something that may happen and is expected (“if anyone asks you, you shall say…”)."
+      },
+      "short": {
+        "presentGeneral": "present general",
+        "moreProbableFuture": "more probable future"
+      }
+    },
     "verbFn": {
       "title": "Verb function",
       "tenseTitle": "Tense use",

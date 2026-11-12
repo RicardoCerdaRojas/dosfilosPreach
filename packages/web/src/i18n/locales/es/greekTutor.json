@@ -990,6 +990,17 @@
       "contrast": "Con otros casos cambia el sentido:",
       "noObject": "No se identificó el término que rige."
     },
+    "conditional": {
+      "title": "Condicional",
+      "uses": {
+        "presentGeneral": "Aquí, presente general: una verdad que vale cada vez que se cumple la condición («si alguien…, entonces…»), no un hecho futuro. Wallace la llama «quinta clase» cuando la apódosis está en presente.",
+        "moreProbableFuture": "Aquí, futuro más probable: algo que puede pasar y se espera («si alguien les pregunta, dirán…»)."
+      },
+      "short": {
+        "presentGeneral": "presente general",
+        "moreProbableFuture": "futuro más probable"
+      }
+    },
     "verbFn": {
       "title": "Función del verbo",
       "tenseTitle": "Uso del tiempo",

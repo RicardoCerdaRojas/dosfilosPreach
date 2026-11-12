@@ -19,9 +19,19 @@ vi.mock('../GreekVerseBoard', () => ({ GreekVerseBoard: () => null, GreekWordToo
 vi.mock('../GreekInsightBlocks', () => ({ GreekInsightBlocks: () => null }));
 // La grilla y el panel, mínimos: alcanza con ver que tocar una tarjeta abre ESA ficha en el panel.
 vi.mock('../FichasGriego', () => ({
-    TarjetasResumenGriego: ({ onAbrir, activa }: { onAbrir: (i: number) => void; activa: number | null }) => <button type="button" data-testid="tarjeta-2" data-activa={String(activa)} onClick={() => onAbrir(2)} />,
-    FichaPanelGriego: ({ abierta, datos, onAbrir }: { abierta: number | null; onAbrir: (i: number | null) => void; datos: (i: number) => { token: { text: string } } | null }) =>
-        abierta === null ? null : <div data-testid="panel-abierto">{datos(abierta)?.token.text}<button type="button" data-testid="cerrar" onClick={() => onAbrir(null)} /></div>,
+    TarjetasResumenGriego: ({ onAbrir, activa }: { onAbrir: (i: number) => void; activa: number | null }) => (
+        <>
+            <button type="button" data-testid="tarjeta-2" data-activa={String(activa)} onClick={() => onAbrir(2)} />
+            <button type="button" data-testid="tarjeta-0" onClick={() => onAbrir(0)} />
+        </>
+    ),
+    FichaPanelGriego: ({ abierta, datos, onAbrir }: { abierta: number | null; onAbrir: (i: number | null) => void; datos: (i: number) => { token: { text: string }; conditional?: object } | null }) =>
+        abierta === null ? null : (
+            <>
+                <div data-testid="panel-abierto">{datos(abierta)?.token.text}<button type="button" data-testid="cerrar" onClick={() => onAbrir(null)} /></div>
+                <div data-testid="panel-condicional">{JSON.stringify(datos(abierta)?.conditional ?? null)}</div>
+            </>
+        ),
 }));
 vi.mock('@dosfilos/infrastructure', async (orig) => ({ ...(await orig<object>()), FirestoreGreekFindingsRepository: class {} }));
 const { GreekAnalyzerPage } = await import('../GreekAnalyzerPage');
@@ -46,5 +56,15 @@ describe('la ficha en el panel lateral (página griega)', () => {
         fireEvent.click(screen.getByTestId('cerrar'));
         expect(screen.queryByTestId('panel-abierto')).toBeNull();
         expect(screen.getByTestId('tarjeta-2').getAttribute('data-activa')).toBe('2');
+    });
+});
+
+describe('la condicional llega a la ficha de εἰ (revisión del profesor, 2026-11)', () => {
+    it('Stg 2:9 «εἰ δὲ προσωπολημπτεῖτε»: la ficha de εἰ recibe la 1.ª clase; la de otra palabra, nada', async () => {
+        render(<TooltipProvider><GreekAnalyzerPage /></TooltipProvider>);
+        fireEvent.click(await screen.findByTestId('tarjeta-0'));
+        await waitFor(() => expect(screen.getByTestId('panel-condicional').textContent).toContain('"conditionalClass":1'));
+        fireEvent.click(screen.getByTestId('tarjeta-2'));
+        expect(screen.getByTestId('panel-condicional').textContent).toBe('null');
     });
 });

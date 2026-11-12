@@ -214,6 +214,7 @@ export function GreekAnalyzerPage() {
             bookCount: lemmaCounts[tok.lemma],
             bookName: libroActual ? nombre(libroActual) : book,
             fronted: frontedDe(i),
+            conditional: alineados ? estructura.conditionals.find(c => c.ordinal === i) : undefined,
             onSaveFinding: insight && user?.uid && (claveDe(tok.text, i) || insight.words[i]) ? () => void guardarHallazgo(i) : undefined,
             saved: guardados.has(tok.lemma),
         };

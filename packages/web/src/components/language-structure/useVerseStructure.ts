@@ -10,6 +10,8 @@ import {
     hebrewParticipleCandidates,
     hebrewKiCandidates,
     ketivQereOfVerse,
+    greekConditionals,
+    type ConditionalFact,
     type KetivQereFact,
     type HebrewInfinitiveCandidate,
     type HebrewParticipleCandidate,
@@ -55,6 +57,8 @@ export interface VerseStructureState {
     kis: readonly HebrewKiCandidate[];
     /** Sólo hebreo: lo que se lee distinto de como está escrito (ketiv y qere, Rut 2:1). */
     ketivQere: readonly KetivQereFact[];
+    /** Sólo griego: la clase de cada condicional en su partícula (εἰ, ἐάν), para la ficha. */
+    conditionals: readonly ConditionalFact[];
 }
 
 /**
@@ -101,7 +105,8 @@ export function useVerseStructure(
         const participles = actual?.chapter && lang === 'he' ? hebrewParticipleCandidates(actual.chapter, verse) : [];
         const kis = actual?.chapter && lang === 'he' ? hebrewKiCandidates(actual.chapter, verse) : [];
         const ketivQere = actual?.chapter && lang === 'he' ? ketivQereOfVerse(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere };
+        const conditionals = griego ? greekConditionals(griego, verse) : [];
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals };
     }, [actual, key, verse, lang]);
 }
 

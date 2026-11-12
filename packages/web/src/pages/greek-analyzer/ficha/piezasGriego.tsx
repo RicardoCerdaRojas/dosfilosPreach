@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     prepositionUsage, TENSE_RULE_SOURCES, tenseUseSources, translationBridge, VERB_RULE_SOURCES, verbFunctionSources,
-    type GreekCase, type GreekKeyInsight, type GreekVerbForm, type GreekWordInsight, type GreekWordToken,
+    type ConditionalFact, type GreekCase, type GreekKeyInsight, type GreekVerbForm, type GreekWordInsight, type GreekWordToken,
 } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaFuncion } from '@/components/word-ficha/FichaPiezas';
@@ -20,6 +20,8 @@ export interface DatosGriego {
     readonly bookCount?: number;
     readonly bookName?: string;
     readonly fronted?: FrontedInfo;
+    /** En εἰ/ἐάN: la clase de la condicional y, en la 3.ª, su valor (Wallace p. 696). */
+    readonly conditional?: ConditionalFact;
     /** Guardar el hallazgo para el sermón. */
     readonly onSaveFinding?: () => void;
     readonly saved?: boolean;
