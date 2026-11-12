@@ -5,6 +5,7 @@
   "unavailable": "La estructura de este versículo no está disponible.",
   "noClauses": "Este versículo no tiene palabras en los datos sintácticos.",
   "protasis": "Prótasis",
+  "protasisMember": "Prótasis · otro miembro",
   "apodosis": "Apódosis",
   "disjunctiveNoValue": "El valor (contraste, circunstancia, causa, concesión…) lo elige el asistente al analizar el versículo; si no aparece, re-analízalo.",
   "verbless": "Nominal (sin verbo)",

@@ -39,6 +39,13 @@ describe('StructureFlow (G1 + G5)', () => {
         expect(filas[2]!.textContent).toContain('fronted');
     });
 
+    it('U11 (Stg 2:14): el 2.º miembro de la prótasis lo dice; la condición y la apódosis, no', () => {
+        render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 14)} />);
+        const filas = screen.getAllByTestId('structure-row');
+        expect(filas.map(f => !!f.querySelector('[data-testid="protasis-miembro"]'))).toEqual([false, false, true, false, false]);
+        expect(filas[2]!.textContent).toContain('relations.development');
+    });
+
     it('la sangría sigue la profundidad, relativa a la fila menos profunda', () => {
         render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 9)} />);
         const sangrias = screen.getAllByTestId('structure-row').map(f => f.style.marginLeft);

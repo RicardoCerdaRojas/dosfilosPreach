@@ -5,6 +5,7 @@
   "unavailable": "The structure of this verse is not available.",
   "noClauses": "This verse has no words in the syntactic data.",
   "protasis": "Protasis",
+  "protasisMember": "Protasis · further member",
   "apodosis": "Apodosis",
   "disjunctiveNoValue": "The value (contrast, circumstance, cause, concession…) is chosen by the assistant when it analyzes the verse; if it is missing, re-analyze it.",
   "verbless": "Verbless",

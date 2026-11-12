@@ -161,6 +161,10 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                                         {n.conditionalClass ? ` · ${t(`classLabel.${n.conditionalClass}`)}` : ''}
                                     </span>
                                 )}
+                                {/* U11 (Stg 2:14 «ἔργα δὲ μὴ ἔχῃ»): otro miembro de la misma prótasis, no una cláusula aparte. */}
+                                {n.conditionGroup !== undefined && n.relation !== 'condition' && (
+                                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-primary" data-testid="protasis-miembro">{t('protasisMember')}</span>
+                                )}
                                 {n.isApodosis && (
                                     <span className="text-[10.5px] font-bold uppercase tracking-wider text-primary">{t('apodosis')}</span>
                                 )}

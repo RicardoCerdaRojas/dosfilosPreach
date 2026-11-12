@@ -22,9 +22,15 @@ describe('estructura — invariante sobre todo el corpus', () => {
                 const ch = JSON.parse(readFileSync(`${BASE}${lang}/${libro}/${archivo}`, 'utf8')) as ChapterStructure;
                 for (const v of new Set(ch.words.map(w => Number(w.r.split('!')[0])))) {
                     versos++;
-                    const vista = verseStructure(ch, v).flatMap(n => n.words.map(w => w.r)).sort();
+                    const nodos = verseStructure(ch, v);
+                    const vista = nodos.flatMap(n => n.words.map(w => w.r)).sort();
                     const esperadas = verseWords(ch, v).map(w => w.r).sort();
                     if (vista.join() !== esperadas.join()) malos.push(`${libro} ${archivo} ${v}`);
+                    // U11: ninguna fila con nivel negativo; un grupo de prótasis tiene su condición y otro miembro más.
+                    if (nodos.some(n => n.depth < 0)) malos.push(`${libro} ${archivo} ${v} (nivel)`);
+                    const grupos = new Map<number, string[]>();
+                    for (const n of nodos) if (n.conditionGroup !== undefined) grupos.set(n.conditionGroup, [...(grupos.get(n.conditionGroup) ?? []), n.relation]);
+                    for (const rs of grupos.values()) if (rs.length < 2 || !rs.includes('condition')) malos.push(`${libro} ${archivo} ${v} (grupo)`);
                 }
             }
         }
