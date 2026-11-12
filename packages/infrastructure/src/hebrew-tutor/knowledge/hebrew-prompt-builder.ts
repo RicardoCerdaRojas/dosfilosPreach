@@ -13,8 +13,8 @@
  * cross-validation but is explicitly NOT presented as authoritative.
  */
 
-import type { HebrewInfinitiveCandidate, HebrewKiCandidate, HebrewParticipleCandidate, HebrewVerse, NeighborVerses, SpeechFact, StructureNode } from '@dosfilos/domain';
-import { buildClauseReadingTask, buildHebrewInfinitiveTask, buildHebrewKiTask, buildHebrewParticipleTask, buildSpeechFactsTask } from '@dosfilos/domain';
+import type { HebrewInfinitiveCandidate, HebrewKiCandidate, HebrewParticipleCandidate, HebrewVerbCandidate, HebrewVerse, NeighborVerses, SpeechFact, StructureNode } from '@dosfilos/domain';
+import { buildClauseReadingTask, buildHebrewFiniteVerbTask, buildHebrewInfinitiveTask, buildHebrewKiTask, buildHebrewParticipleTask, buildSpeechFactsTask } from '@dosfilos/domain';
 import type { LexicalEntry } from '@dosfilos/domain';
 import type { KnowledgeChunk } from '../knowledge/farfan-chunks.js';
 
@@ -42,6 +42,7 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
       "explanation": "string — detailed pedagogical explanation (morphology, recognition clues, typology, temporal/aspectual value). FORMATTED WITH MARKDOWN. Use bold text, bullet points, and short paragraphs to make it highly structured and readable.",
       "infinitiveFunction": "string | null — SÓLO en los infinitivos de la sección INFINITIVOS: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
       "participleFunction": "string | null — SÓLO en los participios de la sección PARTICIPIOS: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
+      "verbFunction": "string | null — SÓLO en los verbos de la sección VERBOS FINITOS: el id que elijas de su lista. En las demás palabras, null.",
       "kiFunction": "string | null — SÓLO en las palabras כִּי de la sección כִּי: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
       "verbMorphology": {
         "binyan": "QAL | NIFAL | PIEL | PUAL | HITPAEL | HIFIL | HOFAL",
@@ -350,12 +351,15 @@ export function buildVerseAnalysisPrompt(
   kis: readonly HebrewKiCandidate[] = [],
   /** El versículo anterior y el siguiente, sólo como contexto (banco de la waw, 2026-11-11). */
   neighbors: NeighborVerses = {},
+  /** U5 (Rut 3:5): la función de cada verbo finito (Arnold y Choi cap. 3), con el cohortativo por función. */
+  verbs: readonly HebrewVerbCandidate[] = [],
 ): string {
   const lectura = buildClauseReadingTask(structure);
   const habla = buildSpeechFactsTask(speech);
   const infinitivos = buildHebrewInfinitiveTask(infinitives);
   const participios = buildHebrewParticipleTask(participles);
   const particulaKi = buildHebrewKiTask(kis);
+  const verbosFinitos = buildHebrewFiniteVerbTask(verbs);
   const langInstruction =
     language === 'es'
       ? 'IMPORTANT: Respond entirely in Spanish. Use clear academic Spanish appropriate for a Chilean seminary student.'
@@ -432,6 +436,7 @@ ${habla}
 ${infinitivos}
 ${participios}
 ${particulaKi}
+${verbosFinitos}
 
 ${lectura ? SECCION_LECTURA(lectura) : `## REGLAS DE CLÁUSULAS (campo "clauses")
 

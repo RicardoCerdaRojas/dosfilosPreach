@@ -54,7 +54,7 @@ describe('el esquema de la respuesta del análisis hebreo', () => {
         const p = conFilas.properties!.words!.items!.properties!;
         expect(p.verbMorphology!.properties!.binyan!.enum).toEqual(Object.values(Binyan));
         expect(p.morphemes!.items!.properties!.role!.enum).toEqual(Object.values(MorphemeRole));
-        for (const k of ['root', 'rootTransliteration', 'rootMeaning', 'infinitiveFunction', 'verbMorphology', 'nominalMorphology', 'clauseTag']) {
+        for (const k of ['root', 'rootTransliteration', 'rootMeaning', 'infinitiveFunction', 'verbFunction', 'verbMorphology', 'nominalMorphology', 'clauseTag']) {
             expect(p[k]!.nullable, k).toBe(true);
         }
         // `clauseTag` llegaba como el texto "null" (10 de 273): el enum no lo admite.

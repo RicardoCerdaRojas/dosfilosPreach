@@ -18,9 +18,14 @@ describe('por qué no hay lectura de cláusulas (hebreo)', () => {
         expect(renderHook(() => useEstructuraHebrea(analisis({}), ref)).result.current.sinLectura).toBe('stale');
     });
 
-    it('un v4 sin lecturas (el asistente no las devolvió o no pasaron) es «empty», no «stale»', () => {
+    it('un análisis vigente sin lecturas (el asistente no las devolvió o no pasaron) es «empty», no «stale»', () => {
         filas = [{}];
-        expect(renderHook(() => useEstructuraHebrea(analisis({ promptVersion: 4, clauseReadings: [] }), ref)).result.current.sinLectura).toBe('empty');
+        expect(renderHook(() => useEstructuraHebrea(analisis({ promptVersion: 5, clauseReadings: [] }), ref)).result.current.sinLectura).toBe('empty');
+    });
+
+    it('un v4 tiene la waw, pero no la función del verbo: «staleVerb» (U5, Rut 3:5)', () => {
+        filas = [{}];
+        expect(renderHook(() => useEstructuraHebrea(analisis({ promptVersion: 4, clauseReadings: [{}] }), ref)).result.current.sinLectura).toBe('staleVerb');
     });
 
     it('un v3 tiene lectura, pero su waw disyuntiva salía «pero» por defecto: «staleWaw» (revisión del profesor, 2026-11)', () => {
@@ -30,8 +35,8 @@ describe('por qué no hay lectura de cláusulas (hebreo)', () => {
 
     it('con lecturas, o sin filas que leer, no hay aviso', () => {
         filas = [{}];
-        expect(renderHook(() => useEstructuraHebrea(analisis({ promptVersion: 4, clauseReadings: [{}] }), ref)).result.current.sinLectura).toBeNull();
+        expect(renderHook(() => useEstructuraHebrea(analisis({ promptVersion: 5, clauseReadings: [{}] }), ref)).result.current.sinLectura).toBeNull();
         filas = [];
-        expect(renderHook(() => useEstructuraHebrea(analisis({ promptVersion: 4 }), ref)).result.current.sinLectura).toBeNull();
+        expect(renderHook(() => useEstructuraHebrea(analisis({ promptVersion: 5 }), ref)).result.current.sinLectura).toBeNull();
     });
 });

@@ -56,3 +56,20 @@ describe('el análisis hebreo recibe los versículos vecinos', () => {
         expect(await vecinos(6, 10, roto)).toEqual({});
     });
 });
+
+/** U5 (revisión del profesor, Rut 3:5 אֶעֱשֶׂה): el caso de uso pasa los verbos finitos con su lista de funciones. */
+describe('el análisis hebreo recibe los verbos finitos', () => {
+    it('Rut 3:5: אֶעֱשֶׂה llega como yiqtol de 1.ª persona con las funciones del cohortativo', async () => {
+        const { readFileSync } = await import('node:fs');
+        const { fileURLToPath } = await import('node:url');
+        const ch = JSON.parse(readFileSync(fileURLToPath(new URL('../../../../../web/public/language-data/v1/he/Ruth/3.json', import.meta.url)), 'utf8'));
+        const estructura = { getChapter: vi.fn().mockResolvedValue(ch) };
+        const service = { analyzeVerse: vi.fn().mockResolvedValue(analisis) };
+        await new AnalyzeVerseUseCase(provider as never, service as never, undefined, undefined, estructura as never)
+            .execute({ morphhbKey: 'Ruth', chapter: 3, verse: 5, forceRefresh: true } as never);
+        const verbos = service.analyzeVerse.mock.calls[0]![9] as Array<{ text: string; rule: string; allowed: string[] }>;
+        const asah = verbos.find(v => v.text.normalize('NFD').replace(/[^א-ת]/g, '') === 'אעשה')!;
+        expect(asah.rule).toBe('vfYiqtolPrimera');
+        expect(asah.allowed).toContain('resolve');
+    });
+});

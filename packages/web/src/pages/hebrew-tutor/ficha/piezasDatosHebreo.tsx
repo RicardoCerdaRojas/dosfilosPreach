@@ -26,6 +26,7 @@ export function FuncionSintactica({ d }: { d: DatosHebreo }) {
                     <dt className="text-muted-foreground">{t('verseAnalyzer.ficha.role.label')}</dt>
                     <dd className="m-0" data-testid="ficha-rol-macula">
                         {nombreRol}
+                        <span className="mt-0.5 block text-[12px] text-muted-foreground" data-testid="ficha-rol-fuente">{t('verseAnalyzer.ficha.role.dataSource')}</span>
                         {choca && <span className="mt-1 block font-semibold text-warning-subtle-foreground" data-testid="ficha-rol-choque">{t('verseAnalyzer.ficha.role.conflict', { role: nombreRol })}</span>}
                         {choca && rol === 'adv' && <span className="mt-1 block text-muted-foreground">{t('verseAnalyzer.ficha.role.adverbialHint')}</span>}
                     </dd>

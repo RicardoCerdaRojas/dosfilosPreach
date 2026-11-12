@@ -119,6 +119,7 @@
     "generate": "Generate the analysis to see the reading of each clause.",
     "stale": "This analysis was generated before the clause reading. Re-analyze the verse to see it.",
     "staleWaw": "This analysis predates the values of the disjunctive waw: it translated it “but” by default. Re-analyze the verse to update the reading and the translations (your corrected translation is kept).",
+    "staleVerb": "This analysis predates the function of each verb (for example, a cohortative the form does not show). Re-analyze the verse to see it (your corrected translation is kept).",
     "reanalyze": "Re-analyze",
     "generateButton": "Generate analysis",
     "empty": "The assistant did not return the clause reading in this analysis. Re-analyze the verse to request it."

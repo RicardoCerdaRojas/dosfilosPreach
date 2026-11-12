@@ -119,6 +119,7 @@
     "generate": "Genera el análisis para ver la lectura de cada cláusula.",
     "stale": "Este análisis se generó antes de la lectura de cláusulas. Re-analiza el versículo para verla.",
     "staleWaw": "Este análisis es anterior a los valores de la waw disyuntiva: la traducía «pero» por defecto. Re-analiza el versículo para actualizar la lectura y las traducciones (tu traducción corregida se conserva).",
+    "staleVerb": "Este análisis es anterior a la función de cada verbo (por ejemplo, el cohortativo que no se ve en la forma). Re-analiza el versículo para verla (tu traducción corregida se conserva).",
     "reanalyze": "Re-analizar",
     "generateButton": "Generar análisis",
     "empty": "El asistente no devolvió la lectura de las cláusulas en este análisis. Re-analiza el versículo para pedirla."

@@ -1,3 +1,4 @@
+import { HEBREW_VERB_FUNCTIONS, type HebrewVerbForm, type HebrewVerbFunction } from './hebrewFiniteVerb.js';
 import type { ClauseRelation } from './verseStructure.js';
 import type { GreekVerbForm, TenseRule, TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
 import type { TENSE_USES } from './verbFunctions.js';
@@ -359,3 +360,30 @@ export const HEBREW_WORD_DATA_SOURCES = {
     articleAntecedent: [PU('el artículo', '1.4.3a El artículo anafórico'), P('2026-10-14 · Rut 3:6 הַגֹּרֶן')],
     roleAdverbial: [PU('el complemento adverbial', '2.4.2a Objetivo o meta')],
 } as const satisfies Readonly<Record<string, readonly RuleSource[]>>;
+
+/**
+ * U5 — la función del verbo finito hebreo: la sección de Arnold y Choi según la
+ * FORMA (las páginas, del índice del ejemplar, 2026-11-12). Un yiqtol con
+ * función de cohortativo cita también la sección del cohortativo y Putnam
+ * §2.2.4a (el cohortativo puede verse igual que el yiqtol; Rut 3:5).
+ */
+const VERBO_SECCION: Readonly<Record<HebrewVerbForm, readonly [string, string]>> = {
+    perfect: ['3.2.1 Perfect', '54'],
+    imperfect: ['3.2.2 Imperfect', '56'],
+    jussive: ['3.3.1 Jussive', '61'],
+    imperative: ['3.3.2 Imperative', '63'],
+    cohortative: ['3.3.3 Cohortative', '65'],
+    wayyiqtol: ['3.5.1 Imperfect plus waw Consecutive', '84'],
+    weqatal: ['3.5.2 Perfect plus waw Consecutive', '87'],
+};
+const VERBOS = 'los verbos';
+export function hebrewVerbSources(fn: HebrewVerbFunction, form: HebrewVerbForm): readonly RuleSource[] {
+    const [seccion, pagina] = VERBO_SECCION[form];
+    const propia = AC(VERBOS, seccion, pagina);
+    if (form === 'imperfect' && HEBREW_VERB_FUNCTIONS.cohortative.includes(fn)) {
+        const [sc, pc] = VERBO_SECCION.cohortative;
+        return [AC(VERBOS, sc, pc), PU('el cohortativo', '2.2.4a'), P('2026-10-14 · Rut 3:5 אֶעֱשֶׂה')];
+    }
+    if (fn === 'prohibition' && form === 'imperfect') return [AC(VERBOS, VERBO_SECCION.jussive[0], VERBO_SECCION.jussive[1])];
+    return [propia];
+}

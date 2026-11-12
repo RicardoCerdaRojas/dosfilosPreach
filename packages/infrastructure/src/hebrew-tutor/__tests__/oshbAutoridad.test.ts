@@ -84,6 +84,15 @@ describe('el prompt con las filas de «Estructura»', () => {
         expect(soloSiguiente).not.toContain('Anterior (');
     });
 
+    it('U5: con verbos finitos, el prompt trae su sección y el campo "verbFunction" en el esquema', () => {
+        const v = [{ ordinal: 1, text: 'אֶעֱשֶׂה', form: 'imperfect' as const, rule: 'vfYiqtolPrimera' as const, allowed: ['future', 'resolve'] as const, status: 'medida' as const }];
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], [], [], [], {}, v as never);
+        expect(texto).toContain('## VERBOS FINITOS: SU FUNCIÓN');
+        expect(texto).toMatch(/אֶעֱשֶׂה: imperfecto \(yiqtol\), elige "verbFunction" de: "future"/);
+        expect(texto).toContain('"verbFunction"');
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## VERBOS FINITOS');
+    });
+
     it('con quién habla (Rut 1:16), el prompt lo da como hecho decidido', () => {
         const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [{ ordinal: 1, text: 'תִּפְגְּעִי', kind: 'verb', speaker: 'רוּת', speakerOrdinals: [0] }]);
         expect(texto).toContain('## QUIÉN HABLA');

@@ -97,6 +97,8 @@ export interface WordAnalysis {
   readonly participleFunction?: string;
   /** R4: la función de כִּי que eligió el asistente. Se valida al mostrar contra la regla. */
   readonly kiFunction?: string;
+  /** U5: la función del verbo finito que eligió el asistente (Arnold y Choi cap. 3). */
+  readonly verbFunction?: string;
   /** Detailed pedagogical explanation following professor's methodology */
   readonly explanation: string;
 
@@ -206,8 +208,11 @@ export interface LexicalNote {
  *   4 — la waw disyuntiva elige su valor de una lista (contraste, circunstancial,
  *       causal, concesiva, fondo, apertura, cierre) y la traducción lo sigue; ya no
  *       es «pero» por defecto (revisión del profesor, 2026-11, Rut 1:21-2:13).
+ *   5 — la función de cada verbo finito (Arnold y Choi cap. 3), con el cohortativo
+ *       por función (revisión del profesor, Rut 3:5 אֶעֱשֶׂה); esquema estricto y
+ *       versículos vecinos como contexto.
  */
-export const HEBREW_ANALYSIS_PROMPT_VERSION = 4;
+export const HEBREW_ANALYSIS_PROMPT_VERSION = 5;
 
 // ── Clauses ───────────────────────────────────────────────────────────────────
 

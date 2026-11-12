@@ -5,7 +5,7 @@
 
 Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, en qué sección queda, si entra en el resumen (tooltip y tarjeta) y de dónde sale.
 
-## Hebreo (24 bloques)
+## Hebreo (25 bloques)
 
 | # | Bloque | Dato | Antes | Sección | Resumen | De dónde sale |
 |---|---|---|---|---|---|---|
@@ -26,13 +26,14 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 15 | `he.funcionInfinitivo` | Función del infinitivo | tarjeta, tooltip | Su función | sí | regla + asistente |
 | 16 | `he.funcionParticipio` | Función del participio | tarjeta, tooltip | Su función | sí | regla + asistente |
 | 17 | `he.funcionKi` | Función de כִּי | tarjeta, tooltip | Su función | sí | regla + asistente |
-| 18 | `he.wawDisyuntiva` | Waw disyuntiva (waw + no verbo) y su valor |  | Su función | sí | regla + asistente |
-| 19 | `he.funcionSintactica` | Función sintáctica (texto del asistente) | tarjeta, tooltip, panel | Su función | sí | asistente |
-| 20 | `he.quienHabla` | Quién habla y a quién | tarjeta, tooltip | En el contexto | — | regla |
-| 21 | `he.articulo` | El sustantivo con artículo ya se nombró antes (posible artículo anafórico) |  | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 22 | `he.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 23 | `he.explicacion` | Explicación pedagógica (con su formato) | tarjeta, panel | Para estudiar | — | asistente |
-| 24 | `he.investigar` | Investigar la palabra paso a paso (detective) | tarjeta | Acciones | — | — |
+| 18 | `he.funcionVerbo` | Función del verbo finito (Arnold y Choi cap. 3), con el cohortativo por función |  | Su función | sí | regla + asistente |
+| 19 | `he.wawDisyuntiva` | Waw disyuntiva (waw + no verbo) y su valor |  | Su función | sí | regla + asistente |
+| 20 | `he.funcionSintactica` | Función sintáctica (texto del asistente) | tarjeta, tooltip, panel | Su función | sí | asistente |
+| 21 | `he.quienHabla` | Quién habla y a quién | tarjeta, tooltip | En el contexto | — | regla |
+| 22 | `he.articulo` | El sustantivo con artículo ya se nombró antes (posible artículo anafórico) |  | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 23 | `he.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 24 | `he.explicacion` | Explicación pedagógica (con su formato) | tarjeta, panel | Para estudiar | — | asistente |
+| 25 | `he.investigar` | Investigar la palabra paso a paso (detective) | tarjeta | Acciones | — | — |
 
 ## Griego (24 bloques)
 

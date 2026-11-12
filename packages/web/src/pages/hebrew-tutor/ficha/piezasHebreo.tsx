@@ -8,7 +8,7 @@ import {
 } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaCaja, FichaFuncion, FichaOrigenRotulo, type OrigenFuncion } from '@/components/word-ficha/FichaPiezas';
-import type { HebrewArticleFact, HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact, ResolvedRelation } from '@dosfilos/domain';
+import type { HebrewArticleFact, HebrewVerbView, HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact, ResolvedRelation } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from '../components/MorphemeSpan';
@@ -34,6 +34,8 @@ export interface DatosHebreo {
     readonly article?: HebrewArticleFact;
     /** El rol de la palabra en su oración según MACULA (s, o, adv…). */
     readonly role?: string;
+    /** U5: la función del verbo finito (Arnold y Choi cap. 3), con el cohortativo por función. */
+    readonly verb?: HebrewVerbView;
     /** Abre el detective (verbos y nombres). */
     readonly onInvestigate?: () => void;
 }
@@ -59,7 +61,8 @@ export const investigable = (d: DatosHebreo) => {
     const c = d.word.category?.toUpperCase() ?? '';
     return !!d.onInvestigate && (c === 'VERB' || ['NOUN', 'PROPER_NOUN', 'ADJECTIVE', 'PRONOUN', 'PERSONAL_PRONOUN', 'DEMONSTRATIVE_PRONOUN', 'RELATIVE_PRONOUN'].includes(c));
 };
-export const funcionDeRegla = (d: DatosHebreo) => !!(d.infinitive || d.participle || d.ki);
+/** Con regla (o elección) para la palabra, la función libre del asistente va dentro de ese bloque. */
+export const funcionDeRegla = (d: DatosHebreo) => !!(d.infinitive || d.participle || d.ki || (d.verb && (d.verb.fn || d.verb.assistantReading)));
 
 /**
  * Un rótulo traducido o, si el asistente devolvió un valor fuera del catálogo, el valor tal cual — en vez de
@@ -157,7 +160,7 @@ type Vista<F extends string> = {
     readonly assistantReading?: F;
     readonly phraseReading?: F;
 };
-interface FuncionDeRegla<F extends string> {
+export interface FuncionDeRegla<F extends string> {
     view: Vista<F>;
     titulo: string;
     nombre: (f: F) => string;
@@ -168,7 +171,7 @@ interface FuncionDeRegla<F extends string> {
 /** Regla que decide, elección del asistente o, si nadie eligió, las opciones (sin atribuirlas a nadie). */
 const origenDe = <F extends string>(v: Vista<F>): OrigenFuncion => (v.by === 'rule' ? 'regla' : v.by === 'assistant' ? 'eleccion' : 'opciones');
 
-function BloqueRegla<F extends string>({ d, f }: { d: DatosHebreo; f: FuncionDeRegla<F> }) {
+export function BloqueRegla<F extends string>({ d, f }: { d: DatosHebreo; f: FuncionDeRegla<F> }) {
     const { t } = useTranslation('hebrewTutor');
     const { t: tl } = useTranslation('languageStructure');
     const { candidate, fn, by, assistantReading, phraseReading } = f.view;
@@ -190,7 +193,7 @@ function BloqueRegla<F extends string>({ d, f }: { d: DatosHebreo; f: FuncionDeR
     );
 }
 
-function CortoRegla<F extends string>({ f }: { f: FuncionDeRegla<F> }) {
+export function CortoRegla<F extends string>({ f }: { f: FuncionDeRegla<F> }) {
     const { candidate, fn } = f.view;
     return (
         <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">

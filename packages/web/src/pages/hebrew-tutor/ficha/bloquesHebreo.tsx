@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { STRUCTURE_RULE_SOURCES, type WordAnalysis } from '@dosfilos/domain';
 import { ArticuloAntecedente, FuncionSintactica } from './piezasDatosHebreo';
+import { VerboCompleto, VerboCorto } from './piezasVerboHebreo';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
@@ -161,6 +162,9 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
     { id: 'he.funcionInfinitivo', dato: 'Función del infinitivo', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.infinitive, Completo: InfinitivoCompleto, Corto: InfinitivoCorto },
     { id: 'he.funcionParticipio', dato: 'Función del participio', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.participle, Completo: ParticipioCompleto, Corto: ParticipioCorto },
     { id: 'he.funcionKi', dato: 'Función de כִּי', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.ki, Completo: KiCompleto, Corto: KiCorto },
+    // U5 (revisión del profesor, Rut 3:5 אֶעֱשֶׂה): sólo con la función elegida o decidida — un análisis anterior
+    // no la trae y listar cinco a once opciones en cada verbo no le dice nada al estudiante.
+    { id: 'he.funcionVerbo', dato: 'Función del verbo finito (Arnold y Choi cap. 3), con el cohortativo por función', seccion: 'funcion', origen: 'mixto', antes: [], hay: (d) => !!d.verb && (!!d.verb.fn || !!d.verb.assistantReading), Completo: VerboCompleto, Corto: VerboCorto },
     {
         // Revisión del profesor (2026-11, Rut 2:1): «waw + no verbo introduce una cláusula disyuntiva,
         // pero no necesariamente contrastiva». La regla la dice el dato; el valor, el asistente.
@@ -243,6 +247,7 @@ export const DESTINO_PALABRA: Readonly<Record<keyof WordAnalysis, Destino>> = {
     infinitiveFunction: 'he.funcionInfinitivo',
     participleFunction: 'he.funcionParticipio',
     kiFunction: 'he.funcionKi',
+    verbFunction: 'he.funcionVerbo',
     explanation: 'he.explicacion',
     verbMorphology: 'he.celdas',
     nominalMorphology: 'he.celdas',

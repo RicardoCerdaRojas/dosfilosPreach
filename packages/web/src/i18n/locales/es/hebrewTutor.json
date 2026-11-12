@@ -85,6 +85,47 @@
         "substantive": "sustantivo: «el que…»"
       }
     },
+    "verb": {
+      "title": {
+        "perfect": "Perfecto (qatal)",
+        "imperfect": "Imperfecto (yiqtol)",
+        "wayyiqtol": "Wayyiqtol",
+        "weqatal": "Weqatal",
+        "jussive": "Yusivo",
+        "imperative": "Imperativo",
+        "cohortative": "Cohortativo"
+      },
+      "functions": {
+        "complete": "Acción completa",
+        "stative": "Estado",
+        "experience": "Experiencia",
+        "rhetoricalFuture": "Futuro retórico (profético)",
+        "proverbial": "Proverbial (verdad general)",
+        "performative": "Performativo (ocurre al decirlo)",
+        "future": "Futuro",
+        "customary": "Habitual",
+        "progressive": "Progresivo (en curso)",
+        "conditional": "Condicional",
+        "permission": "Permiso",
+        "obligation": "Obligación",
+        "command": "Mandato",
+        "preterite": "Pretérito",
+        "wish": "Deseo",
+        "benediction": "Bendición",
+        "prohibition": "Prohibición",
+        "promise": "Promesa",
+        "resolve": "Resolución («sí, lo haré»)",
+        "exhortation": "Exhortación («hagamos»)",
+        "sequential": "Secuencial",
+        "consequential": "Consecuencia",
+        "narratival": "Narrativo",
+        "epexegetical": "Epexegético (explica lo anterior)",
+        "dependent": "Dependiente (tras una cláusula de tiempo)",
+        "volitional": "Volitivo (sigue a un mandato)",
+        "apodictic": "Apodíctico (ley o instrucción)"
+      },
+      "cohortativeByFunction": "Cohortativo por función · {{fn}}"
+    },
     "ki": {
       "title": "Partícula כִּי",
       "functions": {
@@ -159,7 +200,8 @@
         "seenSameVerse": "ya se nombró antes en este versículo. El artículo puede retomarlo (artículo anafórico): míralo en el contexto, porque también puede ser genérico o señalar algo conocido."
       },
       "role": {
-        "label": "En la oración (MACULA)",
+        "label": "Función en la oración (según el análisis sintáctico del texto)",
+        "dataSource": "Dato de MACULA, el análisis sintáctico abierto de la Biblia hebrea (Clear Bible), revisado por especialistas. No lo escribe el asistente.",
         "s": "sujeto",
         "o": "objeto directo",
         "o2": "segundo objeto",
@@ -207,7 +249,16 @@
         "kiPregunta": "La palabra siguiente es interrogativa.",
         "kiTrasNegacion": "Sigue a una negación: «sino», «excepto» o la causa de lo negado.",
         "kiInicial": "Abre el versículo: condición, tiempo, concesión, aseveración o causa.",
-        "kiGeneral": "Sin una pista que limite las opciones: lo decide el contexto."
+        "kiGeneral": "Sin una pista que limite las opciones: lo decide el contexto.",
+        "vfProhibicion": "אַל delante del yusivo: prohíbe («no hagas»).",
+        "vfYiqtolPrimera": "Yiqtol de 1.ª persona: puede ser cohortativo por su función aunque la forma no lo muestre (en un verbo III-he la ה- final del cohortativo no se ve). Lo decide el contexto: si el hablante se compromete o se decide, es resolución.",
+        "vfPerfecto": "Perfecto (qatal): la forma deja estas funciones; lo decide el contexto.",
+        "vfImperfecto": "Imperfecto (yiqtol): la forma deja estas funciones; lo decide el contexto.",
+        "vfWayyiqtol": "Wayyiqtol (waw consecutiva + yiqtol): la forma deja estas funciones; lo decide el contexto.",
+        "vfWeqatal": "Weqatal (waw consecutiva + qatal): la forma deja estas funciones; lo decide el contexto.",
+        "vfYusivo": "Yusivo: la forma deja estas funciones; lo decide el contexto.",
+        "vfImperativo": "Imperativo: la forma deja estas funciones; lo decide el contexto.",
+        "vfCohortativo": "Cohortativo (con la ה- final): la forma deja estas funciones; lo decide el contexto."
       }
     },
     "speech": {

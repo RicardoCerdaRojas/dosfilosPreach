@@ -126,6 +126,47 @@
         "substantive": "substantive: “the one who…”"
       }
     },
+    "verb": {
+      "title": {
+        "perfect": "Perfect (qatal)",
+        "imperfect": "Imperfect (yiqtol)",
+        "wayyiqtol": "Wayyiqtol",
+        "weqatal": "Weqatal",
+        "jussive": "Jussive",
+        "imperative": "Imperative",
+        "cohortative": "Cohortative"
+      },
+      "functions": {
+        "complete": "Complete action",
+        "stative": "State",
+        "experience": "Experience",
+        "rhetoricalFuture": "Rhetorical future (prophetic)",
+        "proverbial": "Proverbial (general truth)",
+        "performative": "Performative (happens as it is said)",
+        "future": "Future",
+        "customary": "Customary",
+        "progressive": "Progressive (ongoing)",
+        "conditional": "Conditional",
+        "permission": "Permission",
+        "obligation": "Obligation",
+        "command": "Command",
+        "preterite": "Preterite",
+        "wish": "Wish",
+        "benediction": "Benediction",
+        "prohibition": "Prohibition",
+        "promise": "Promise",
+        "resolve": "Resolve (“I will do it”)",
+        "exhortation": "Exhortation (“let us”)",
+        "sequential": "Sequential",
+        "consequential": "Consequential",
+        "narratival": "Narratival",
+        "epexegetical": "Epexegetical (explains what precedes)",
+        "dependent": "Dependent (after a temporal clause)",
+        "volitional": "Volitional (continues a command)",
+        "apodictic": "Apodictic (law or instruction)"
+      },
+      "cohortativeByFunction": "Cohortative by function · {{fn}}"
+    },
     "ki": {
       "title": "Particle כִּי",
       "functions": {
@@ -200,7 +241,8 @@
         "seenSameVerse": "was already mentioned earlier in this verse. The article may refer back to it (anaphoric article): check the context, since it may also be generic or point to something known."
       },
       "role": {
-        "label": "In the clause (MACULA)",
+        "label": "Function in the clause (from the syntactic analysis of the text)",
+        "dataSource": "From MACULA, the open syntactic analysis of the Hebrew Bible (Clear Bible), reviewed by specialists. Not written by the assistant.",
         "s": "subject",
         "o": "direct object",
         "o2": "second object",
@@ -248,7 +290,16 @@
         "kiPregunta": "The next word is interrogative.",
         "kiTrasNegacion": "Follows a negation: “but rather”, “except” or the cause of what is denied.",
         "kiInicial": "Opens the verse: condition, time, concession, assertion or cause.",
-        "kiGeneral": "No clue narrows the options: context decides."
+        "kiGeneral": "No clue narrows the options: context decides.",
+        "vfProhibicion": "אַל before the jussive: it forbids (“do not”).",
+        "vfYiqtolPrimera": "First-person yiqtol: it can be a cohortative by function even when the form does not show it (in a III-he verb the cohortative’s final ה- is not visible). Context decides: if the speaker commits or resolves, it is resolve.",
+        "vfPerfecto": "Perfect (qatal): the form allows these functions; context decides.",
+        "vfImperfecto": "Imperfect (yiqtol): the form allows these functions; context decides.",
+        "vfWayyiqtol": "Wayyiqtol (waw consecutive + yiqtol): the form allows these functions; context decides.",
+        "vfWeqatal": "Weqatal (waw consecutive + qatal): the form allows these functions; context decides.",
+        "vfYusivo": "Jussive: the form allows these functions; context decides.",
+        "vfImperativo": "Imperative: the form allows these functions; context decides.",
+        "vfCohortativo": "Cohortative (with the final ה-): the form allows these functions; context decides."
       }
     },
     "speech": {

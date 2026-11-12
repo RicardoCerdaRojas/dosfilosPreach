@@ -9,6 +9,7 @@ export * from './hebrewSpeech.js';
 export * from './hebrewInfinitive.js';
 export * from './hebrewParticiple.js';
 export * from './hebrewKi.js';
+export * from './hebrewFiniteVerb.js';
 export type { RuleChoiceView } from './hebrewRuleChoice.js';
 export { hebrewSuffix, type HebrewSuffix } from './hebrewMorph.js';
 export * from './greekConditionals.js';
