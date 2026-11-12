@@ -175,7 +175,14 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
       return cleaned; // Let JSON.parse throw with the original text
     }
 
-    return cleaned.substring(firstBrace, lastBrace + 1);
+    // El primer objeto COMPLETO (llaves balanceadas, sin contar las de dentro de
+    // cadenas). Medido (2026-11, banco de la waw disyuntiva): gpt-6-luna a veces
+    // repite el JSON entero detrás del primero («…}} \nbayes{"reference"…»)
+    // hasta agotar los tokens; del primer «{» al último «}» eso no parsea. Si no
+    // hay un objeto cerrado (respuesta truncada), se sigue como antes y el
+    // rescate de `lexicalNotes` decide.
+    const completo = primerObjetoCompleto(cleaned, firstBrace);
+    return completo ?? cleaned.substring(firstBrace, lastBrace + 1);
   }
 
   /**
@@ -202,4 +209,25 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
     // Close the JSON object
     return truncated + '}';
   }
+}
+
+/** El primer objeto JSON cerrado desde `ini`, o `null` si no se cierra (respuesta truncada). */
+export function primerObjetoCompleto(texto: string, ini = texto.indexOf('{')): string | null {
+  if (ini < 0) return null;
+  let profundidad = 0;
+  let enCadena = false;
+  let escape = false;
+  for (let i = ini; i < texto.length; i++) {
+    const c = texto[i]!;
+    if (enCadena) {
+      if (escape) escape = false;
+      else if (c === '\\') escape = true;
+      else if (c === '"') enCadena = false;
+      continue;
+    }
+    if (c === '"') enCadena = true;
+    else if (c === '{') profundidad++;
+    else if (c === '}' && --profundidad === 0) return texto.slice(ini, i + 1);
+  }
+  return null;
 }
