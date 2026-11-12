@@ -99,6 +99,8 @@ export interface WordAnalysis {
   readonly kiFunction?: string;
   /** U5: la función del verbo finito que eligió el asistente (Arnold y Choi cap. 3). */
   readonly verbFunction?: string;
+  /** U3a: la función de la preposición que eligió el asistente (Arnold y Choi §4.1). */
+  readonly prepositionFunction?: string;
   /** Detailed pedagogical explanation following professor's methodology */
   readonly explanation: string;
 

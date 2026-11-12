@@ -8,7 +8,7 @@ import {
 } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaCaja, FichaFuncion, FichaOrigenRotulo, type OrigenFuncion } from '@/components/word-ficha/FichaPiezas';
-import type { HebrewArticleFact, HebrewVerbView, HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact, ResolvedRelation } from '@dosfilos/domain';
+import type { HebrewArticleFact, HebrewPrepositionView, HebrewVerbView, HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact, ResolvedRelation } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from '../components/MorphemeSpan';
@@ -36,6 +36,8 @@ export interface DatosHebreo {
     readonly role?: string;
     /** U5: la función del verbo finito (Arnold y Choi cap. 3), con el cohortativo por función. */
     readonly verb?: HebrewVerbView;
+    /** U3a: la función de su preposición (A&C §4.1). */
+    readonly preposition?: HebrewPrepositionView;
     /** Abre el detective (verbos y nombres). */
     readonly onInvestigate?: () => void;
 }

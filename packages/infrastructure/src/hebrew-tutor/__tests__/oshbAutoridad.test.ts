@@ -93,6 +93,15 @@ describe('el prompt con las filas de «Estructura»', () => {
         expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## VERBOS FINITOS');
     });
 
+    it('U3a: con preposiciones, su sección y "prepositionFunction"; la literal conserva el sentido base (Rut 2:7 «en»)', () => {
+        const p = [{ ordinal: 0, text: 'בָעֳמָרִים', preposition: 'b' as const, allowed: ['spatial', 'temporal'] as const }];
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], [], [], [], {}, [], p as never);
+        expect(texto).toContain('## PREPOSICIONES: SU FUNCIÓN');
+        expect(texto).toContain('"prepositionFunction"');
+        expect(texto).toMatch(/Each PREPOSITION keeps its base sense here \(בְּ «en»/);
+        expect(texto).toMatch(/name both readings in exegeticalNotes/);
+    });
+
     it('con quién habla (Rut 1:16), el prompt lo da como hecho decidido', () => {
         const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [{ ordinal: 1, text: 'תִּפְגְּעִי', kind: 'verb', speaker: 'רוּת', speakerOrdinals: [0] }]);
         expect(texto).toContain('## QUIÉN HABLA');

@@ -1,4 +1,5 @@
 import { HEBREW_VERB_FUNCTIONS, type HebrewVerbForm, type HebrewVerbFunction } from './hebrewFiniteVerb.js';
+import { HEBREW_PREPOSITIONS, type HebrewPreposition } from './hebrewPreposition.js';
 import type { ClauseRelation } from './verseStructure.js';
 import type { GreekVerbForm, TenseRule, TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
 import type { TENSE_USES } from './verbFunctions.js';
@@ -386,4 +387,10 @@ export function hebrewVerbSources(fn: HebrewVerbFunction, form: HebrewVerbForm):
     }
     if (fn === 'prohibition' && form === 'imperfect') return [AC(VERBOS, VERBO_SECCION.jussive[0], VERBO_SECCION.jussive[1])];
     return [propia];
+}
+
+/** U3a — la función de la preposición hebrea: la sección de Arnold y Choi §4.1 (página del índice del ejemplar, 2026-11-12). */
+export function hebrewPrepositionSources(p: HebrewPreposition): readonly RuleSource[] {
+    const d = HEBREW_PREPOSITIONS[p];
+    return [AC('las preposiciones', `${d.seccion} ${d.forma}`, d.pagina)];
 }

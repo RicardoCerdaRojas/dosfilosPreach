@@ -13,6 +13,8 @@ import {
     ketivQereOfVerse,
     hebrewArticleAntecedents,
     hebrewFiniteVerbCandidates,
+    hebrewPrepositionCandidates,
+    type HebrewPrepositionCandidate,
     type HebrewArticleFact,
     type HebrewVerbCandidate,
     greekConditionals,
@@ -68,6 +70,8 @@ export interface VerseStructureState {
     articles: readonly HebrewArticleFact[];
     /** Sólo hebreo (U5, Rut 3:5): cada verbo finito con las funciones que deja su forma. */
     hebrewVerbs: readonly HebrewVerbCandidate[];
+    /** Sólo hebreo (U3a, Rut 2:1, 2:7): cada preposición con las funciones de A&C §4.1. */
+    hebrewPrepositions: readonly HebrewPrepositionCandidate[];
 }
 
 /**
@@ -118,7 +122,8 @@ export function useVerseStructure(
         const conditionals = griego ? greekConditionals(griego, verse) : [];
         const articles = actual?.chapter && lang === 'he' ? hebrewArticleAntecedents(actual.chapter, verse) : [];
         const hebrewVerbs = actual?.chapter && lang === 'he' ? hebrewFiniteVerbCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs };
+        const hebrewPrepositions = actual?.chapter && lang === 'he' ? hebrewPrepositionCandidates(actual.chapter, verse) : [];
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions };
     }, [actual, key, verse, lang]);
 }
 

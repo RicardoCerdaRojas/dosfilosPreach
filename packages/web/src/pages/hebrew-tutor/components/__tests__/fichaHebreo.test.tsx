@@ -99,8 +99,8 @@ describe('Ficha hebrea — paridad: ningún dato se pierde', () => {
         const { container } = render(<FichaCompleta registro={BLOQUES_HEBREO} d={DATOS} />);
         const dibujados = new Set([...container.querySelectorAll('[data-ficha-bloque]')].map(e => e.getAttribute('data-ficha-bloque')));
         const sinDibujar = BLOQUES_HEBREO.map(b => b.id).filter(id => !dibujados.has(id));
-        // La función del participio, de כִּי y del verbo finito no aplican a un infinitivo; la libre va dentro del bloque de la regla.
-        expect(sinDibujar.sort()).toEqual(['he.apertura', 'he.funcionKi', 'he.funcionParticipio', 'he.funcionSintactica', 'he.funcionVerbo']);
+        // La función del participio, de כִּי, del verbo finito y de la preposición no aplican a un infinitivo; la libre va dentro del bloque de la regla.
+        expect(sinDibujar.sort()).toEqual(['he.apertura', 'he.funcionKi', 'he.funcionParticipio', 'he.funcionPreposicion', 'he.funcionSintactica', 'he.funcionVerbo']);
     });
 
     it('el resumen (tooltip y tarjeta) lleva palabra, traducción, forma en una línea y la función', () => {

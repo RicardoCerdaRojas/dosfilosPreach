@@ -70,3 +70,23 @@ describe('Ficha hebrea — la función del verbo finito (U5)', () => {
         expect(t).not.toContain('cohortativeByFunction');
     });
 });
+
+/** U3a (revisión del profesor, Rut 2:1): la función de la preposición, elegida de la lista de A&C §4.1. */
+describe('Ficha hebrea — la función de la preposición (U3a)', () => {
+    const PALABRA = { hebrewText: 'וּלְנָעֳמִי', category: 'PROPER_NOUN', morphemes: [], translation: 'y Noemí tenía', syntacticFunction: 'Predicado de la cláusula nominal' };
+    const cand = { ordinal: 0, text: 'וּלְנָעֳמִי', preposition: 'l' as const, allowed: ['possession', 'genitival', 'interest'] as const };
+
+    it('Rut 2:1: «Posesión» de la לְ, como elección del asistente, con la sección de A&C; la función libre sigue en su bloque', () => {
+        render(<FichaCompleta registro={BLOQUES_HEBREO} d={{ word: PALABRA, preposition: { candidate: cand, fn: 'possession' }, role: 'p' } as never} />);
+        const b = screen.getByTestId('preposition-function-note');
+        expect(b.textContent).toContain('verseAnalyzer.preposition.functions.possession');
+        expect(b.textContent).toContain('verseAnalyzer.preposition.title');
+        expect(b.textContent).toContain('4.1.10');
+        expect(screen.getByTestId('ficha-funcion').textContent).toContain('Predicado de la cláusula nominal');
+    });
+
+    it('sin función elegida, no hay bloque', () => {
+        render(<FichaCompleta registro={BLOQUES_HEBREO} d={{ word: PALABRA, preposition: { candidate: cand } } as never} />);
+        expect(screen.queryByTestId('preposition-function-note')).toBeNull();
+    });
+});

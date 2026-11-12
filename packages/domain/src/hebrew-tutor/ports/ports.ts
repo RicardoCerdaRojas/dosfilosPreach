@@ -4,6 +4,7 @@ import type { HebrewInfinitiveCandidate } from '../../language-structure/hebrewI
 import type { HebrewParticipleCandidate } from '../../language-structure/hebrewParticiple.js';
 import type { HebrewKiCandidate } from '../../language-structure/hebrewKi.js';
 import type { HebrewVerbCandidate } from '../../language-structure/hebrewFiniteVerb.js';
+import type { HebrewPrepositionCandidate } from '../../language-structure/hebrewPreposition.js';
 /**
  * Domain ports (interfaces) for the Hebrew Tutor module.
  *
@@ -94,6 +95,8 @@ export interface IHebrewAnalysisService {
     neighbors?: NeighborVerses,
     /** U5 (Rut 3:5): la función de cada verbo finito, con el cohortativo por función. */
     verbs?: readonly HebrewVerbCandidate[],
+    /** U3a (Rut 2:1, 2:7): la función de cada preposición. */
+    prepositions?: readonly HebrewPrepositionCandidate[],
   ): Promise<VerseAnalysis>;
 }
 

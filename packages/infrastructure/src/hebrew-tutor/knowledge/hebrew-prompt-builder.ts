@@ -13,8 +13,8 @@
  * cross-validation but is explicitly NOT presented as authoritative.
  */
 
-import type { HebrewInfinitiveCandidate, HebrewKiCandidate, HebrewParticipleCandidate, HebrewVerbCandidate, HebrewVerse, NeighborVerses, SpeechFact, StructureNode } from '@dosfilos/domain';
-import { buildClauseReadingTask, buildHebrewFiniteVerbTask, buildHebrewInfinitiveTask, buildHebrewKiTask, buildHebrewParticipleTask, buildSpeechFactsTask } from '@dosfilos/domain';
+import type { HebrewInfinitiveCandidate, HebrewKiCandidate, HebrewParticipleCandidate, HebrewPrepositionCandidate, HebrewVerbCandidate, HebrewVerse, NeighborVerses, SpeechFact, StructureNode } from '@dosfilos/domain';
+import { buildClauseReadingTask, buildHebrewFiniteVerbTask, buildHebrewPrepositionTask, buildHebrewInfinitiveTask, buildHebrewKiTask, buildHebrewParticipleTask, buildSpeechFactsTask } from '@dosfilos/domain';
 import type { LexicalEntry } from '@dosfilos/domain';
 import type { KnowledgeChunk } from '../knowledge/farfan-chunks.js';
 
@@ -26,7 +26,7 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
   "reference": "string — human-readable reference, e.g. 'Jonás 2:3'",
   "hebrewText": "string — full vocalized Hebrew text",
   "transliteration": "string — full academic transliteration of the verse",
-  "literalTranslation": "string — STRICT word-for-word translation. DO NOT apply idiomatic meaning here. Even if a phrase is an idiom, translate each word literally.",
+  "literalTranslation": "string — STRICT word-for-word translation. DO NOT apply idiomatic meaning here. Even if a phrase is an idiom, translate each word literally. Each PREPOSITION keeps its base sense here (בְּ «en», לְ «a/para», מִן «de/desde», עַל «sobre», אֶל «a/hacia», כְּ «como», עִם/אֵת «con», עַד «hasta»): the sense the context asks for goes in fluidTranslation, and if the reading is disputed (e.g. «en» or «entre» las gavillas), name both readings in exegeticalNotes.",
   "fluidTranslation": "string — natural, fluent Spanish translation using IDIOMATIC equivalents where applicable. Use the lexical glossary when provided.",
   "words": [
     {
@@ -42,6 +42,7 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
       "explanation": "string — detailed pedagogical explanation (morphology, recognition clues, typology, temporal/aspectual value). FORMATTED WITH MARKDOWN. Use bold text, bullet points, and short paragraphs to make it highly structured and readable.",
       "infinitiveFunction": "string | null — SÓLO en los infinitivos de la sección INFINITIVOS: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
       "participleFunction": "string | null — SÓLO en los participios de la sección PARTICIPIOS: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
+      "prepositionFunction": "string | null — SÓLO en las palabras de la sección PREPOSICIONES: el id que elijas de la lista de su preposición. En las demás palabras, null.",
       "verbFunction": "string | null — SÓLO en los verbos de la sección VERBOS FINITOS: el id que elijas de su lista. En las demás palabras, null.",
       "kiFunction": "string | null — SÓLO en las palabras כִּי de la sección כִּי: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
       "verbMorphology": {
@@ -353,6 +354,8 @@ export function buildVerseAnalysisPrompt(
   neighbors: NeighborVerses = {},
   /** U5 (Rut 3:5): la función de cada verbo finito (Arnold y Choi cap. 3), con el cohortativo por función. */
   verbs: readonly HebrewVerbCandidate[] = [],
+  /** U3a (Rut 2:1, 2:7): la función de cada preposición (Arnold y Choi §4.1). */
+  prepositions: readonly HebrewPrepositionCandidate[] = [],
 ): string {
   const lectura = buildClauseReadingTask(structure);
   const habla = buildSpeechFactsTask(speech);
@@ -360,6 +363,7 @@ export function buildVerseAnalysisPrompt(
   const participios = buildHebrewParticipleTask(participles);
   const particulaKi = buildHebrewKiTask(kis);
   const verbosFinitos = buildHebrewFiniteVerbTask(verbs);
+  const preposiciones = buildHebrewPrepositionTask(prepositions);
   const langInstruction =
     language === 'es'
       ? 'IMPORTANT: Respond entirely in Spanish. Use clear academic Spanish appropriate for a Chilean seminary student.'
@@ -437,6 +441,7 @@ ${infinitivos}
 ${participios}
 ${particulaKi}
 ${verbosFinitos}
+${preposiciones}
 
 ${lectura ? SECCION_LECTURA(lectura) : `## REGLAS DE CLÁUSULAS (campo "clauses")
 

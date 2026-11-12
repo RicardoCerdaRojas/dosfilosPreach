@@ -1,5 +1,5 @@
 import React from 'react';
-import { applyHebrewFiniteVerb, applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, readingFor, type HebrewSuffix, type HebrewArticleFact, type HebrewVerbView, type ResolvedRelation, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewFiniteVerb, applyHebrewPreposition, applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, readingFor, type HebrewSuffix, type HebrewArticleFact, type HebrewVerbView, type HebrewPrepositionView, type ResolvedRelation, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
@@ -187,7 +187,17 @@ export function useEstructuraHebrea(
         }
         return m;
     }, [estructura, alinear, analysis.words]);
-    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, articulos, roles, verbos, sinLectura };
+    /** U3a (Rut 2:1, 2:7): índice del análisis → la función de su preposición, de la lista de A&C §4.1. */
+    const preposiciones = React.useMemo(() => {
+        const m = new Map<number, HebrewPrepositionView>();
+        const indice = alinear(estructura.words);
+        for (const c of estructura.hebrewPrepositions ?? []) {
+            const i = indice[c.ordinal];
+            if (i !== undefined) m.set(i, applyHebrewPreposition(c, analysis.words[i]?.prepositionFunction));
+        }
+        return m;
+    }, [estructura, alinear, analysis.words]);
+    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, articulos, roles, verbos, preposiciones, sinLectura };
 }
 
 /**

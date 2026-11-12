@@ -88,6 +88,7 @@ const word = objeto({
     participleFunction: textoONulo(),
     kiFunction: textoONulo(),
     verbFunction: textoONulo(),
+    prepositionFunction: textoONulo(),
     verbMorphology,
     nominalMorphology,
     morphemes: { type: SchemaType.ARRAY, items: objeto({ text: texto(), role: lista(Object.values(MorphemeRole)), label: texto() }) },

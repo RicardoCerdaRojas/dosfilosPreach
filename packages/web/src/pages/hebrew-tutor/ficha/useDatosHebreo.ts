@@ -1,5 +1,5 @@
 import React from 'react';
-import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, HebrewArticleFact, HebrewVerbView, KetivQereFact, ResolvedRelation, VerseAnalysis, WordAnalysis } from '@dosfilos/domain';
+import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, HebrewArticleFact, HebrewVerbView, HebrewPrepositionView, KetivQereFact, ResolvedRelation, VerseAnalysis, WordAnalysis } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import type { DatosHebreo } from './bloquesHebreo';
@@ -16,6 +16,7 @@ interface Mapas {
     articulos: ReadonlyMap<number, HebrewArticleFact>;
     roles: ReadonlyMap<number, string>;
     verbos: ReadonlyMap<number, HebrewVerbView>;
+    preposiciones: ReadonlyMap<number, HebrewPrepositionView>;
 }
 
 /** Los datos de la ficha de la palabra `i` del análisis. */
@@ -36,8 +37,9 @@ export function useDatosHebreo(analysis: VerseAnalysis, mapas: Mapas, onInvestig
             article: mapas.articulos.get(i),
             role: mapas.roles.get(i),
             verb: mapas.verbos.get(i),
+            preposition: mapas.preposiciones.get(i),
             ...(onInvestigate ? { onInvestigate: () => onInvestigate(word) } : {}),
         };
-    }, [analysis.words, mapas.antepuestas, mapas.discurso, mapas.infinitivos, mapas.participios, mapas.kis, mapas.ketivQere, mapas.sufijos, mapas.disyuntivas, mapas.articulos, mapas.roles, mapas.verbos, onInvestigate]);
+    }, [analysis.words, mapas.antepuestas, mapas.discurso, mapas.infinitivos, mapas.participios, mapas.kis, mapas.ketivQere, mapas.sufijos, mapas.disyuntivas, mapas.articulos, mapas.roles, mapas.verbos, mapas.preposiciones, onInvestigate]);
 }
 
