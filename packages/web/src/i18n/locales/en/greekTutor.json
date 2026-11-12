@@ -841,6 +841,9 @@
         "address": "Vocative of address"
       }
     },
+    "caseRule": {
+      "partitiveEk": "ἐκ or ἀπό + plural genitive next to a word that takes a part (τις, εἷς, οὐδείς, πολλοί, a numeral): the genitive is the whole from which that part is taken (“one of you”)."
+    },
     "caseFnHint": {
       "subject": "Performs the action of the finite verb.",
       "predicateNominative": "States WHAT the subject is (with \"to be\").",

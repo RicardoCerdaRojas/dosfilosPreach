@@ -82,6 +82,7 @@ describe('Ficha hebrea — la función de la preposición (U3a)', () => {
         expect(b.textContent).toContain('verseAnalyzer.preposition.functions.possession');
         expect(b.textContent).toContain('verseAnalyzer.preposition.title');
         expect(b.textContent).toContain('4.1.10');
+        expect(b.textContent).toContain('Possession');
         expect(screen.getByTestId('ficha-funcion').textContent).toContain('Predicado de la cláusula nominal');
     });
 

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { verseWords, type ChapterStructure } from '../chapterStructure';
-import { applyNominalRules, buildNominalFactsTask, greekAgency, greekAnaphora, greekAnaphoraHints, greekAutos } from '../nominalFunctions';
+import { applyNominalRules, buildNominalFactsTask, greekAgency, greekAnaphora, greekAnaphoraHints, greekAutos, greekPartitive } from '../nominalFunctions';
 import { greekDiscourseCandidates } from '../discourseFunctions';
 
 /** G3 — agencia (#G5) y artículo anafórico (#G6), los casos del profesor. */
@@ -214,5 +214,44 @@ describe('la pista del artículo que retoma algo del párrafo', () => {
         expect(t).toMatch(/POSIBLE artículo anafórico — el mismo sustantivo aparece antes en el párrafo: πίστις \(v\. 14\)/);
         expect(t).not.toContain('HECHOS QUE DA EL TEXTO');
         expect(buildNominalFactsTask([], [], ws, [], [])).toBe('');
+    });
+});
+
+/** U3b (revisión del profesor, Stg 2:16 «τις ἐξ ὑμῶν»): el genitivo partitivo con ἐκ/ἀπό, por regla (Wallace p. 84). */
+describe('el genitivo partitivo con ἐκ/ἀπό', () => {
+    const terminos = (rel: string, v: number) => {
+        const ch = cargar(rel);
+        const ws = verseWords(ch, v);
+        return greekPartitive(ch, v).map(p => ws[p.ordinal]!.t.replace(/[,.·;’]/g, ''));
+    };
+
+    it('Stg 2:16 «εἴπῃ δέ τις αὐτοῖς ἐξ ὑμῶν»: ὑμῶν es el todo («alguno de entre ustedes»)', () => {
+        expect(terminos('JAS/2.json', 16)).toEqual(['ὑμῶν']);
+        expect(terminos('JHN/13.json', 23)).toEqual(['μαθητῶν']);
+        expect(terminos('MAT/25.json', 2)).toEqual(['αὐτῶν']);
+    });
+
+    it('NO: lugar (Mt 27:38 «εἷς ἐκ δεξιῶν»), τι neutro (2 Co 3:5), verbo o sustantivo en medio (Ap 22:19, Jn 6:13)', () => {
+        expect(terminos('MAT/27.json', 38)).toEqual([]);
+        expect(terminos('2CO/3.json', 5)).toEqual([]);
+        expect(terminos('REV/22.json', 19)).toEqual([]);
+        expect(terminos('JHN/6.json', 13)).toEqual([]);
+    });
+
+    it('NO si la parte no concuerda en género con el grupo (Lc 7:21 «πολλοὺς ἀπὸ νόσων», Hch 19:34 «μία ἐκ πάντων»)', () => {
+        expect(terminos('LUK/7.json', 21)).toEqual([]);
+        expect(terminos('ACT/19.json', 34)).toEqual([]);
+    });
+
+    it('al mostrar, el término queda «partitive» por regla; y el prompt lo da como hecho', () => {
+        const ch = cargar('JAS/2.json');
+        const ws = verseWords(ch, 16);
+        const p = greekPartitive(ch, 16);
+        const palabras = ws.map(w => ({ text: w.t, caseFunction: 'objectOfPreposition' }));
+        const out = applyNominalRules(palabras, [], [], [], p);
+        expect(out[p[0]!.ordinal]).toMatchObject({ caseFunction: 'partitive', nominalRule: 'partitiveEk' });
+        expect(out[p[0]!.prepositionOrdinal]!.caseFunction).toBe('objectOfPreposition');
+        const t = buildNominalFactsTask([], [], ws.map(w => w.t), [], [], p);
+        expect(t).toMatch(/genitivo PARTITIVO — ἐξ \+ genitivo junto a τις/);
     });
 });

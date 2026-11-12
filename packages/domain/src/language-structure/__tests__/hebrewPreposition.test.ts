@@ -51,7 +51,10 @@ describe('la función de la preposición hebrea (U3a, revisión del profesor)', 
     });
 
     it('la fuente: la sección de A&C de la preposición, con su página', () => {
-        expect(formatCitation(hebrewPrepositionSources('l')[0]!)).toBe('Arnold y Choi, «4.1.10 לְ», p. 110');
-        for (const p of Object.keys(HEBREW_PREPOSITIONS) as Array<keyof typeof HEBREW_PREPOSITIONS>) expect(hebrewPrepositionSources(p)).toHaveLength(1);
+        expect(formatCitation(hebrewPrepositionSources('l', 'possession')[0]!)).toBe('Arnold y Choi, «4.1.10 לְ › (f) Possession», p. 112');
+        // Cada función de cada preposición tiene su categoría del libro (cotejada en `cotejo-aprobado.json`).
+        for (const [p, d] of Object.entries(HEBREW_PREPOSITIONS)) {
+            for (const fn of Object.keys(d.funciones)) expect(hebrewPrepositionSources(p as never, fn as never), `${p}.${fn}`).toHaveLength(1);
+        }
     });
 });

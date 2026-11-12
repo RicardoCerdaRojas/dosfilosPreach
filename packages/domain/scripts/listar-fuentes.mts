@@ -6,7 +6,9 @@
  */
 import * as RS from '../src/language-structure/ruleSources';
 
-const TABLAS = ['VERB_RULE_SOURCES', 'VERB_FUNCTION_SOURCES', 'TENSE_USE_SOURCES', 'DISCOURSE_RULE_SOURCES', 'NOMINAL_RULE_SOURCES', 'STRUCTURE_RULE_SOURCES', 'HEBREW_INFINITIVE_SOURCES', 'HEBREW_PARTICIPLE_SOURCES', 'HEBREW_KI_SOURCES'] as const;
+// TODAS las tablas «*_SOURCES», como la prueba de CI: una lista escrita a mano dejaba fuera las nuevas
+// (TENSE_RULE_SOURCES de U7 y las de U5/U3a no se habían cotejado; revisión del profesor, 2026-11-12).
+const TABLAS = Object.keys(RS).filter(k => k.endsWith('_SOURCES'));
 const porFuente = new Map<string, { fuente: RS.RuleSource; usos: string[] }>();
 const visitar = (x: unknown, ruta: string) => {
     if (Array.isArray(x)) x.forEach(y => visitar(y, ruta));

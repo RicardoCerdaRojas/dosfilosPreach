@@ -1,5 +1,5 @@
 import { HEBREW_VERB_FUNCTIONS, type HebrewVerbForm, type HebrewVerbFunction } from './hebrewFiniteVerb.js';
-import { HEBREW_PREPOSITIONS, type HebrewPreposition } from './hebrewPreposition.js';
+import type { HebrewPreposition, HebrewPrepositionFunction } from './hebrewPreposition.js';
 import type { ClauseRelation } from './verseStructure.js';
 import type { GreekVerbForm, TenseRule, TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
 import type { TENSE_USES } from './verbFunctions.js';
@@ -249,6 +249,8 @@ export const NOMINAL_RULE_SOURCES: Readonly<Record<NominalRule, readonly RuleSou
     anaphoraLemma: [W('el artículo', 'The Article › Anaphoric (Previous Reference)', '217'), P('2026-10-07 · Stg 2:9 τοῦ νόμου → νόμον, v. 8')],
     autosIntensive: [W('el pronombre αὐτός', 'Intensive Pronoun › As an Intensive Pronoun', '349')],
     autosIdentical: [W('el pronombre αὐτός', 'Intensive Pronoun › As an Identifying Adjective', '349')],
+    // U3b (revisión del profesor, Stg 2:16): ἐκ + genitivo «often has a partitive force»; con τις, ἕκαστος y εἷς, de rutina.
+    partitiveEk: [W('el genitivo', 'Genitive › Adjectival › Partitive Genitive (“Wholative”)', '84'), P('2026-10-14 · Stg 2:16 τις … ἐξ ὑμῶν')],
 };
 
 /** Notas de «Estructura» que salen de una regla: condicionales, conectores, orden. */
@@ -363,34 +365,49 @@ export const HEBREW_WORD_DATA_SOURCES = {
 } as const satisfies Readonly<Record<string, readonly RuleSource[]>>;
 
 /**
- * U5 — la función del verbo finito hebreo: la sección de Arnold y Choi según la
- * FORMA (las páginas, del índice del ejemplar, 2026-11-12). Un yiqtol con
- * función de cohortativo cita también la sección del cohortativo y Putnam
- * §2.2.4a (el cohortativo puede verse igual que el yiqtol; Rut 3:5).
+ * U5 — la función del verbo finito hebreo: la CATEGORÍA de Arnold y Choi con la
+ * página donde está impreso su encabezado (calculada de la capa del ejemplar y
+ * cotejada con `cotejar-citas.py`, 2026-11-12).
  */
-const VERBO_SECCION: Readonly<Record<HebrewVerbForm, readonly [string, string]>> = {
-    perfect: ['3.2.1 Perfect', '54'],
-    imperfect: ['3.2.2 Imperfect', '56'],
-    jussive: ['3.3.1 Jussive', '61'],
-    imperative: ['3.3.2 Imperative', '63'],
-    cohortative: ['3.3.3 Cohortative', '65'],
-    wayyiqtol: ['3.5.1 Imperfect plus waw Consecutive', '84'],
-    weqatal: ['3.5.2 Perfect plus waw Consecutive', '87'],
-};
 const VERBOS = 'los verbos';
+export const HEBREW_VERB_FUNCTION_SOURCES: Readonly<Record<HebrewVerbForm, Readonly<Partial<Record<HebrewVerbFunction, RuleSource>>>>> = {
+    perfect: { complete: AC(VERBOS, '3.2.1 Perfect › (a) Complete', '55'), stative: AC(VERBOS, '3.2.1 Perfect › (b) Stative', '55'), experience: AC(VERBOS, '3.2.1 Perfect › (c) Experience', '55'), rhetoricalFuture: AC(VERBOS, '3.2.1 Perfect › (d) Rhetorical future', '55'), proverbial: AC(VERBOS, '3.2.1 Perfect › (e) Proverbial', '56'), performative: AC(VERBOS, '3.2.1 Perfect › (f) Performative', '56') },
+    imperfect: { future: AC(VERBOS, '3.2.2 Imperfect › (a) Future', '58'), customary: AC(VERBOS, '3.2.2 Imperfect › (b) Customary', '58'), progressive: AC(VERBOS, '3.2.2 Imperfect › (c) Progressive', '58'), conditional: AC(VERBOS, '3.2.2 Imperfect › (d.1) Conditional', '59'), permission: AC(VERBOS, '3.2.2 Imperfect › (d.2) Permission', '59'), obligation: AC(VERBOS, '3.2.2 Imperfect › (d.3) Obligation', '59'), command: AC(VERBOS, '3.2.2 Imperfect › (d.4) Command', '59'), preterite: AC(VERBOS, '3.2.2 Imperfect › (e) Preterite', '60') },
+    jussive: { command: AC(VERBOS, '3.3.1 Jussive › (a) Command', '61'), wish: AC(VERBOS, '3.3.1 Jussive › (b) Wish', '62'), benediction: AC(VERBOS, '3.3.1 Jussive › (c) Benediction', '62'), prohibition: AC(VERBOS, '3.3.1 Jussive › (d) Prohibition', '63') },
+    imperative: { command: AC(VERBOS, '3.3.2 Imperative › (a) Command', '63'), permission: AC(VERBOS, '3.3.2 Imperative › (b) Permission', '64'), promise: AC(VERBOS, '3.3.2 Imperative › (c) Promise', '64') },
+    cohortative: { resolve: AC(VERBOS, '3.3.3 Cohortative › (a) Resolve', '65'), wish: AC(VERBOS, '3.3.3 Cohortative › (b) Wish', '66'), exhortation: AC(VERBOS, '3.3.3 Cohortative › (c) Exhortation', '66') },
+    wayyiqtol: { sequential: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (a) Sequential', '84'), consequential: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (b) Consequential', '85'), narratival: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (c) Narratival', '86'), epexegetical: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (d) Epexegetical', '86'), dependent: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (e) Dependent', '87') },
+    weqatal: { sequential: AC(VERBOS, '3.5.2 Perfect plus waw Consecutive › (a) Sequential', '88'), consequential: AC(VERBOS, '3.5.2 Perfect plus waw Consecutive › (b) Consequential', '88'), volitional: AC(VERBOS, '3.5.2 Perfect plus waw Consecutive › (c) Volitional', '88'), apodictic: AC(VERBOS, '3.5.2 Perfect plus waw Consecutive › (d) Apodictic', '89') },
+};
+/**
+ * Un yiqtol con función de cohortativo cita la categoría del cohortativo, Putnam §2.2.4a (el cohortativo
+ * puede verse igual que el yiqtol) y la indicación del profesor (Rut 3:5); אַל + yiqtol, la prohibición del yusivo.
+ */
 export function hebrewVerbSources(fn: HebrewVerbFunction, form: HebrewVerbForm): readonly RuleSource[] {
-    const [seccion, pagina] = VERBO_SECCION[form];
-    const propia = AC(VERBOS, seccion, pagina);
     if (form === 'imperfect' && HEBREW_VERB_FUNCTIONS.cohortative.includes(fn)) {
-        const [sc, pc] = VERBO_SECCION.cohortative;
-        return [AC(VERBOS, sc, pc), PU('el cohortativo', '2.2.4a'), P('2026-10-14 · Rut 3:5 אֶעֱשֶׂה')];
+        return [HEBREW_VERB_FUNCTION_SOURCES.cohortative[fn]!, PU('el cohortativo', '2.2.4a'), P('2026-10-14 · Rut 3:5 אֶעֱשֶׂה')];
     }
-    if (fn === 'prohibition' && form === 'imperfect') return [AC(VERBOS, VERBO_SECCION.jussive[0], VERBO_SECCION.jussive[1])];
-    return [propia];
+    const propia = HEBREW_VERB_FUNCTION_SOURCES[form][fn] ?? (fn === 'prohibition' ? HEBREW_VERB_FUNCTION_SOURCES.jussive.prohibition : undefined);
+    return propia ? [propia] : [];
 }
 
-/** U3a — la función de la preposición hebrea: la sección de Arnold y Choi §4.1 (página del índice del ejemplar, 2026-11-12). */
-export function hebrewPrepositionSources(p: HebrewPreposition): readonly RuleSource[] {
-    const d = HEBREW_PREPOSITIONS[p];
-    return [AC('las preposiciones', `${d.seccion} ${d.forma}`, d.pagina)];
+/** U3a — la función de la preposición hebrea: la categoría de A&C §4.1 con la página de su encabezado (cotejada, 2026-11-12). */
+const PREPOSICIONES = 'las preposiciones';
+export const HEBREW_PREPOSITION_SOURCES: Readonly<Record<HebrewPreposition, Readonly<Partial<Record<HebrewPrepositionFunction, RuleSource>>>>> = {
+    b: { spatial: AC(PREPOSICIONES, '4.1.5 בְּ › (a) Spatial', '102'), temporal: AC(PREPOSICIONES, '4.1.5 בְּ › (b) Temporal', '103'), instrumental: AC(PREPOSICIONES, '4.1.5 בְּ › (c) Instrumental', '104'), adversative: AC(PREPOSICIONES, '4.1.5 בְּ › (d) Adversative', '104'), specification: AC(PREPOSICIONES, '4.1.5 בְּ › (e) Specification', '104'), causal: AC(PREPOSICIONES, '4.1.5 בְּ › (f) Causal', '105'), accompaniment: AC(PREPOSICIONES, '4.1.5 בְּ › (g) Accompaniment', '105'), essence: AC(PREPOSICIONES, '4.1.5 בְּ › (h) Essence', '106'), manner: AC(PREPOSICIONES, '4.1.5 בְּ › (i) Manner', '106'), price: AC(PREPOSICIONES, '4.1.5 בְּ › (j) Price', '106') },
+    k: { agreement: AC(PREPOSICIONES, '4.1.9 כְּ › (a) Agreement', '109'), correspondence: AC(PREPOSICIONES, '4.1.9 כְּ › (b) Correspondence', '109') },
+    l: { spatial: AC(PREPOSICIONES, '4.1.10 לְ › (a) Spatial', '110'), locative: AC(PREPOSICIONES, '4.1.10 לְ › (b) Locative', '110'), temporal: AC(PREPOSICIONES, '4.1.10 לְ › (c) Temporal', '111'), purpose: AC(PREPOSICIONES, '4.1.10 לְ › (d) Purpose', '111'), quasiDatival: AC(PREPOSICIONES, '4.1.10 לְ › (e) Quasi datival', '111'), interest: AC(PREPOSICIONES, '4.1.10 לְ › (e.1) Interest/advantage', '112'), product: AC(PREPOSICIONES, '4.1.10 לְ › (e.2) Product', '112'), possession: AC(PREPOSICIONES, '4.1.10 לְ › (f) Possession', '112'), genitival: AC(PREPOSICIONES, '4.1.10 לְ › (g) Genitival', '113'), specification: AC(PREPOSICIONES, '4.1.10 לְ › (h) Specification', '113'), normative: AC(PREPOSICIONES, '4.1.10 לְ › (i) Normative', '113'), manner: AC(PREPOSICIONES, '4.1.10 לְ › (j) Manner', '113'), estimative: AC(PREPOSICIONES, '4.1.10 לְ › (k) Estimative', '114'), agent: AC(PREPOSICIONES, '4.1.10 לְ › (l) Agent', '114') },
+    min: { source: AC(PREPOSICIONES, '4.1.13 מִן › (a) Source', '116'), temporal: AC(PREPOSICIONES, '4.1.13 מִן › (b) Temporal', '117'), material: AC(PREPOSICIONES, '4.1.13 מִן › (c) Material', '117'), causal: AC(PREPOSICIONES, '4.1.13 מִן › (d) Causal', '117'), estimative: AC(PREPOSICIONES, '4.1.13 מִן › (e) Estimative', '117'), partitive: AC(PREPOSICIONES, '4.1.13 מִן › (f) Partitive', '118'), privative: AC(PREPOSICIONES, '4.1.13 מִן › (g) Privative', '118'), comparative: AC(PREPOSICIONES, '4.1.13 מִן › (h) Comparative', '118'), compound: AC(PREPOSICIONES, '4.1.13 מִן › (i) Compound', '119') },
+    al: { vertical: AC(PREPOSICIONES, '4.1.16 עַל › (a.1) Vertical relationship', '120'), horizontal: AC(PREPOSICIONES, '4.1.16 עַל › (a.2) Horizontal relationship', '121'), duty: AC(PREPOSICIONES, '4.1.16 עַל › (b) Duty', '121'), rank: AC(PREPOSICIONES, '4.1.16 עַל › (c) Rank', '122'), causal: AC(PREPOSICIONES, '4.1.16 עַל › (d) Causal', '122'), manner: AC(PREPOSICIONES, '4.1.16 עַל › (e) Manner', '122'), adversative: AC(PREPOSICIONES, '4.1.16 עַל › (f) Adversative', '123'), accompaniment: AC(PREPOSICIONES, '4.1.16 עַל › (g) Accompaniment', '123'), interest: AC(PREPOSICIONES, '4.1.16 עַל › (h) Interest', '124'), emotive: AC(PREPOSICIONES, '4.1.16 עַל › (i) Emotive', '124') },
+    el: { terminative: AC(PREPOSICIONES, '4.1.2 אֶל › (a) Terminative', '97'), estimative: AC(PREPOSICIONES, '4.1.2 אֶל › (b) Estimative', '98'), declarative: AC(PREPOSICIONES, '4.1.2 אֶל › (c) Declarative', '99'), perceptual: AC(PREPOSICIONES, '4.1.2 אֶל › (d) Perceptual', '99'), addition: AC(PREPOSICIONES, '4.1.2 אֶל › (e) Addition', '100'), spatial: AC(PREPOSICIONES, '4.1.2 אֶל › (f) Spatial', '100') },
+    ad: { locative: AC(PREPOSICIONES, '4.1.15 עַד › (a) Locative', '120'), temporal: AC(PREPOSICIONES, '4.1.15 עַד › (b) Temporal', '120'), degree: AC(PREPOSICIONES, '4.1.15 עַד › (c) Degree', '120') },
+    im: { accompaniment: AC(PREPOSICIONES, '4.1.17 עִם › (a) Accompaniment', '124'), personalComplement: AC(PREPOSICIONES, '4.1.17 עִם › (b) Personal complement', '124'), locative: AC(PREPOSICIONES, '4.1.17 עִם › (c) Locative', '125'), restrictive: AC(PREPOSICIONES, '4.1.17 עִם › (d) Restrictive', '125') },
+    et: { accompaniment: AC(PREPOSICIONES, '4.1.4 אֵת › (a) Accompaniment', '101'), possession: AC(PREPOSICIONES, '4.1.4 אֵת › (b) Possession', '102'), complement: AC(PREPOSICIONES, '4.1.4 אֵת › (c) Complement', '102'), spatial: AC(PREPOSICIONES, '4.1.4 אֵת › (d) Spatial', '102') },
+    achar: { spatial: AC(PREPOSICIONES, '4.1.1 אַחַר › (a) Spatial', '96'), temporal: AC(PREPOSICIONES, '4.1.1 אַחַר › (b) Temporal', '97'), metaphorical: AC(PREPOSICIONES, '4.1.1 אַחַר › (c) Metaphorical', '97') },
+    tachat: { vertical: AC(PREPOSICIONES, '4.1.18 תַּחַת › (a) Vertical relationship', '125'), staticPosition: AC(PREPOSICIONES, '4.1.18 תַּחַת › (b) Static position', '126'), metaphorical: AC(PREPOSICIONES, '4.1.18 תַּחַת › (c) Metaphorical', '126'), substitution: AC(PREPOSICIONES, '4.1.18 תַּחַת › (d) Substitution', '126') },
+    lemaan: { purpose: AC(PREPOSICIONES, '4.1.11 לְמַעַן › (a) Purpose', '115'), causal: AC(PREPOSICIONES, '4.1.11 לְמַעַן › (b) Causal', '115') },
+};
+export function hebrewPrepositionSources(p: HebrewPreposition, fn?: HebrewPrepositionFunction): readonly RuleSource[] {
+    const s = fn ? HEBREW_PREPOSITION_SOURCES[p][fn] : undefined;
+    return s ? [s] : [];
 }

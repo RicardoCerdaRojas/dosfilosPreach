@@ -107,6 +107,7 @@ export function GreekAnalyzerPage() {
                               estructura.nominal.agency,
                               estructura.nominal.anaphora,
                               estructura.nominal.autos,
+                              estructura.nominal.partitive,
                           ),
                           estructura.discourse,
                       ),

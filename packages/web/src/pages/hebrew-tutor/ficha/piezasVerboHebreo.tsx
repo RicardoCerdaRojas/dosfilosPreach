@@ -42,7 +42,7 @@ export function PreposicionCompleta({ d }: { d: DatosHebreo }) {
             titulo={t('verseAnalyzer.preposition.title', { p: HEBREW_PREPOSITIONS[v.candidate.preposition].forma })}
             nombre={t(`verseAnalyzer.preposition.functions.${v.fn}`)}
             origen="eleccion"
-            fuentes={hebrewPrepositionSources(v.candidate.preposition)}
+            fuentes={hebrewPrepositionSources(v.candidate.preposition, v.fn)}
             testId="preposition-function-note"
         />
     );

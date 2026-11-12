@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+    NOMINAL_RULE_SOURCES,
     prepositionUsage, TENSE_RULE_SOURCES, tenseUseSources, translationBridge, VERB_RULE_SOURCES, verbFunctionSources,
     type ConditionalFact, type GreekCase, type GreekKeyInsight, type GreekVerbForm, type GreekWordInsight, type GreekWordToken,
 } from '@dosfilos/domain';
@@ -97,11 +98,14 @@ export function FuncionCaso({ d }: { d: DatosGriego }) {
     const { t } = useTranslation('greekTutor');
     const i = d.insight!;
     const puente = translationBridge(d.token);
+    // U3b (revisión del profesor, Stg 2:16): el partitivo con ἐκ/ἀπό lo decide la regla, no el asistente.
+    const regla = i.nominalRule === 'partitiveEk';
     return (
         <FichaFuncion
             titulo={t('analyzer.fields.caseFunction')}
             nombre={t(`analyzer.caseFn.${d.token.tag.case}.${i.caseFunction}`)}
-            origen="eleccion"
+            origen={regla ? 'regla' : 'eleccion'}
+            {...(regla ? { reconoce: t('analyzer.caseRule.partitiveEk'), fuentes: NOMINAL_RULE_SOURCES.partitiveEk } : {})}
             texto={<>{t(`analyzer.caseFnHint.${i.caseFunction}`)}{i.syntacticFunction && <span className="mt-1 block">{i.syntacticFunction}</span>}</>}
             extra={puente ? <><dt className="text-info-subtle-foreground">{t('analyzer.fichaBridge')}</dt><dd className="m-0 italic">{t(`analyzer.bridge.${puente}`)}</dd></> : undefined}
             testId="case-function"

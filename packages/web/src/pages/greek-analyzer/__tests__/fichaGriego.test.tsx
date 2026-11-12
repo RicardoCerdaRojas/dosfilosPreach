@@ -172,3 +172,22 @@ describe('Ficha griega — tarjetas resumen, impresión y panel', () => {
         expect(screen.getByLabelText('wordFicha.previous')).toBeDisabled();
     });
 });
+
+/** U3b (revisión del profesor, Stg 2:16 «τις ἐξ ὑμῶν»): el partitivo con ἐκ lo decide la regla. */
+describe('Ficha griega — el genitivo partitivo por regla (U3b)', () => {
+    const UMON: GreekWordToken = { text: 'ὑμῶν', lemma: 'σύ', pos: 'RP' as never, transliteration: 'hymōn', tag: { case: 'G', number: 'P' } as never };
+
+    it('con la regla, el bloque del caso dice «Regla», cómo se reconoce y cita a Wallace p. 84', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: UMON, insight: { text: 'ὑμῶν', caseFunction: 'partitive', nominalRule: 'partitiveEk' } } as never} />);
+        const b = screen.getByTestId('case-function');
+        expect(b.textContent).toContain('analyzer.caseFn.G.partitive');
+        expect(b.textContent).toContain('analyzer.caseRule.partitiveEk');
+        expect(b.querySelector('[data-testid="ficha-origen-regla"]')).not.toBeNull();
+        expect(b.textContent).toContain('Wallace');
+    });
+
+    it('sin la regla, el mismo caso sigue siendo elección del asistente', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: UMON, insight: { text: 'ὑμῶν', caseFunction: 'partitive' } } as never} />);
+        expect(screen.getByTestId('case-function').querySelector('[data-testid="ficha-origen-eleccion"]')).not.toBeNull();
+    });
+});

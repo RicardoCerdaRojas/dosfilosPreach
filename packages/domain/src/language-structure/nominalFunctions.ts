@@ -16,7 +16,7 @@ import { clausesOfVerse, verseWords, type ChapterStructure, type StructureWord }
  */
 
 export type AgencyKind = 'ultimate' | 'intermediate' | 'impersonal';
-export type NominalRule = 'agentHypo' | 'agentDia' | 'anaphoraLemma' | 'autosIntensive' | 'autosIdentical';
+export type NominalRule = 'agentHypo' | 'agentDia' | 'anaphoraLemma' | 'autosIntensive' | 'autosIdentical' | 'partitiveEk';
 /** Usos de αὐτός que decide la posición (Wallace): «él mismo» o «el mismo». */
 export type AutosUse = 'intensive' | 'identical';
 
@@ -56,6 +56,8 @@ export interface NominalFacts {
     readonly anaphora: readonly AnaphoraFact[];
     /** Pistas: el sustantivo apareció 2 a 5 versículos antes (Stg 2:17 → 2:14). El asistente decide. */
     readonly anaphoraHints?: readonly AnaphoraFact[];
+    /** U3b: el genitivo partitivo con ἐκ/ἀπό (Stg 2:16 «τις ἐξ ὑμῶν»), por regla. */
+    readonly partitive?: readonly PartitiveFact[];
     readonly autos?: readonly AutosFact[];
 }
 
@@ -296,6 +298,60 @@ export function greekAnaphoraHints(ch: ChapterStructure, verse: number): Anaphor
 }
 
 /**
+ * U3b (revisión del profesor 2026-11, Stg 2:16 «τις ἐξ ὑμῶν»): GENITIVO
+ * PARTITIVO con ἐκ/ἀπό. Wallace p. 84: ἐκ + genitivo «often has a partitive
+ * force» («alguno de entre ustedes»). Regla: ἐκ/ἀπό + genitivo PLURAL (el
+ * grupo), junto a una palabra que toma una parte —τις, εἷς, οὐδείς, μηδείς,
+ * πολλοί o un numeral— sin verbo ni otro sustantivo en medio. Fuera: derecha,
+ * izquierda y puntos cardinales («εἷς ἐκ δεξιῶν», «πολλοὶ ἀπὸ ἀνατολῶν»: lugar),
+ * y el neutro τι («τι ὡς ἐξ αὑτῶν», 2 Co 3:5). Medido en el NT (2026-11-12): sin
+ * esos filtros, 18 de 25; con ellos, 68 casos y 23 de 25 en la muestra, y la concordancia de
+ * género descartó los 2 que fallaban (Lc 7:21, Hch 19:34).
+ */
+export interface PartitiveFact {
+    /** El término en genitivo (el todo). */
+    readonly ordinal: number;
+    /** La preposición. */
+    readonly prepositionOrdinal: number;
+    /** La palabra que toma la parte (τις, εἷς…). */
+    readonly partOrdinal: number;
+}
+const PARTE: ReadonlySet<string> = new Set(['τις', 'εἷς', 'οὐδείς', 'μηδείς', 'πολύς', 'δύο', 'τρεῖς', 'τέσσαρες', 'πέντε', 'ἕξ', 'ἑπτά', 'ὀκτώ', 'ἐννέα', 'δέκα', 'δώδεκα']);
+const LUGAR: ReadonlySet<string> = new Set(['δεξιός', 'εὐώνυμος', 'ἀριστερός', 'ἀνατολή', 'δυσμή', 'βορρᾶς', 'νότος']);
+export function greekPartitive(ch: ChapterStructure, verse: number): PartitiveFact[] {
+    if (ch.lang !== 'gr') return [];
+    const ws = verseWords(ch, verse);
+    const out: PartitiveFact[] = [];
+    const corta = (x: StructureWord) => !!x.pos?.startsWith('V') || !!x.pos?.startsWith('N');
+    const toma = (x: StructureWord | undefined) => !!x && PARTE.has(x.l)
+        && (x.l !== 'πολύς' || x.parse?.[5] === 'P')
+        && !(x.l === 'τις' && x.parse?.[6] === 'N');
+    ws.forEach((w, i) => {
+        if (w.l !== 'ἐκ' && w.l !== 'ἀπό') return;
+        let k = i + 1;
+        if (ws[k]?.pos === 'RA') k++;
+        const term = ws[k];
+        if (!term || term.parse?.[4] !== 'G' || term.parse?.[5] !== 'P' || !/^(N|R|A)/.test(term.pos ?? '') || LUGAR.has(term.l)) return;
+        // Antes: hasta 3 palabras, sin verbo ni sustantivo en medio. Después: justo detrás del término (o tras un sustantivo).
+        let parte: number | undefined;
+        for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+            if (toma(ws[j])) { parte = j; break; }
+            if (corta(ws[j]!)) break;
+        }
+        if (parte === undefined) {
+            if (toma(ws[k + 1])) parte = k + 1;
+            else if (ws[k + 1]?.pos?.startsWith('N') && toma(ws[k + 2])) parte = k + 2;
+        }
+        // La parte es del MISMO grupo: si los dos tienen género, concuerdan («εἷς ἐκ τῶν μαθητῶν»; no «πολλοὺς ἀπὸ
+        // νόσων», Lc 7:21, ni «μία ἐκ πάντων», Hch 19:34). Un pronombre de 1.ª/2.ª persona no tiene género («τις ἐξ ὑμῶν»).
+        const genero = (x: StructureWord) => (x.parse?.[6] && x.parse[6] !== '-' ? x.parse[6] : undefined);
+        if (parte !== undefined && genero(ws[parte]!) && genero(term) && genero(ws[parte]!) !== genero(term)) return;
+        if (parte !== undefined) out.push({ ordinal: k, prepositionOrdinal: i, partOrdinal: parte });
+    });
+    return out;
+}
+
+/**
  * Los usos que la regla NO corrige: los que el profesor dijo respetar.
  * «Con abstracto» ya no está: el artículo puede retomar Y particularizar un
  * abstracto a la vez, y entonces es anafórico (Wallace p. 219, con Stg 2:14
@@ -308,15 +364,17 @@ const USOS_QUE_SE_RESPETAN: ReadonlySet<string> = new Set(['monadic', 'parExcell
  * agencia en la preposición y el artículo anafórico (salvo que el asistente
  * haya elegido un uso que se respeta).
  */
-export function applyNominalRules<T extends { text?: string; articleUse?: string; antecedent?: string; agency?: AgencyKind; nominalRule?: NominalRule; autosUse?: AutosUse; autosHeadText?: string; autosTogether?: boolean; translation?: string; autosHeadTranslation?: string }>(
+export function applyNominalRules<T extends { text?: string; caseFunction?: string; articleUse?: string; antecedent?: string; agency?: AgencyKind; nominalRule?: NominalRule; autosUse?: AutosUse; autosHeadText?: string; autosTogether?: boolean; translation?: string; autosHeadTranslation?: string }>(
     words: readonly T[],
     agency: readonly AgencyFact[],
     anaphora: readonly AnaphoraFact[],
     autos: readonly AutosFact[] = [],
+    partitive: readonly PartitiveFact[] = [],
 ): T[] {
     const porAgencia = new Map(agency.map(a => [a.ordinal, a]));
     const porArticulo = new Map(anaphora.map(a => [a.ordinal, a]));
     const porAutos = new Map(autos.map(a => [a.ordinal, a]));
+    const porPartitivo = new Set(partitive.map(p => p.ordinal));
     return words.map((w, i) => {
         const { agency: _a, nominalRule: _r, autosUse: _u, autosHeadText: _h, autosTogether: _j, autosHeadTranslation: _ht, ...resto } = w;
         const ag = porAgencia.get(i);
@@ -338,6 +396,8 @@ export function applyNominalRules<T extends { text?: string; articleUse?: string
                 ...(au.together ? { autosTogether: true } : {}),
             };
         }
+        // U3b: el término de ἐκ/ἀπó tras τις, εἷς… es el TODO del que se toma una parte (Wallace p. 84).
+        if (porPartitivo.has(i)) out = { ...out, caseFunction: 'partitive', nominalRule: 'partitiveEk' };
         if (an && !(w.articleUse && USOS_QUE_SE_RESPETAN.has(w.articleUse))) {
             out = { ...out, articleUse: 'anaphoric', antecedent: `${an.antecedent.text}, v. ${an.antecedent.verse}`, nominalRule: 'anaphoraLemma' };
         }
@@ -346,8 +406,8 @@ export function applyNominalRules<T extends { text?: string; articleUse?: string
 }
 
 /** Los hechos para el prompt: el asistente los EXPLICA, no los decide. */
-export function buildNominalFactsTask(agency: readonly AgencyFact[], anaphora: readonly AnaphoraFact[], words: readonly string[], autos: readonly AutosFact[] = [], hints: readonly AnaphoraFact[] = []): string {
-    if (!agency.length && !anaphora.length && !autos.length && !hints.length) return '';
+export function buildNominalFactsTask(agency: readonly AgencyFact[], anaphora: readonly AnaphoraFact[], words: readonly string[], autos: readonly AutosFact[] = [], hints: readonly AnaphoraFact[] = [], partitive: readonly PartitiveFact[] = []): string {
+    if (!agency.length && !anaphora.length && !autos.length && !hints.length && !partitive.length) return '';
     const AUTOS: Record<AutosUse, (h: string) => string> = {
         intensive: h => `αὐτός INTENSIVO (fuera del artículo${h ? `, junto a ${h}` : ''}): «él mismo»${h ? `, realza a ${h}` : ''}; NO es el pronombre «él». En su "translation" pon «mismo/misma/mismos/mismas» concordando con la palabra ESPAÑOLA${h ? ` que traduce ${h}` : ''}, y explícalo así.`,
         identical: h => `αὐτός IDENTIFICADOR (con el artículo delante): «el mismo». En su "translation" pon «el mismo/la misma/los mismos/las mismas/lo mismo» concordando con la palabra ESPAÑOLA${h ? ` que traduce ${h}` : ''}, y explícalo así.`,
@@ -360,6 +420,7 @@ export function buildNominalFactsTask(agency: readonly AgencyFact[], anaphora: r
     const lineas = [
         ...agency.map(a => `- ${a.ordinal + 1}. ${words[a.ordinal]} ${words[a.termOrdinal]}: ${TIPO[a.kind]} de la pasiva ${words[a.verbOrdinal]}. En el "syntacticFunction" de la preposición nómbralo así; si el agente es impersonal (una cosa, la ley, el pecado), explica la PERSONIFICACIÓN.`),
         ...autos.map(a => `- ${a.ordinal + 1}. ${words[a.ordinal]}: ${a.together ? '«ἐπὶ τὸ αὐτό» es MODISMO: «juntos, en el mismo lugar». Tradúcelo así, no «sobre lo mismo».' : AUTOS[a.use](a.headOrdinal !== undefined ? limpio(words[a.headOrdinal] ?? '') : '')}`),
+        ...partitive.map(p => `- ${p.ordinal + 1}. ${words[p.ordinal]}: genitivo PARTITIVO — ${words[p.prepositionOrdinal]} + genitivo junto a ${words[p.partOrdinal]}: es el TODO del que se toma una parte («alguno de entre…»). Devuelve "caseFunction": "partitive" y explícalo.`),
         ...anaphora.map(a => `- ${a.ordinal + 1}. ${words[a.ordinal]}: artículo ANAFÓRICO — retoma ${a.antecedent.text} (v. ${a.antecedent.verse}). Devuelve "articleUse": "anaphoric" y "antecedent": "${a.antecedent.text}, v. ${a.antecedent.verse}", salvo que sea monádico o por antonomasia.`),
     ];
     const pistas = hints.map(a => `- ${a.ordinal + 1}. ${words[a.ordinal]}: POSIBLE artículo anafórico — el mismo sustantivo aparece antes en el párrafo: ${a.antecedent.text} (v. ${a.antecedent.verse}). El artículo puede retomar algo ya nombrado aunque esté varios versículos atrás. Si el contexto muestra que habla de lo mismo, devuelve "articleUse": "anaphoric" y "antecedent": "${a.antecedent.text}, v. ${a.antecedent.verse}"; si es otro referente o un uso genérico, elige el uso que corresponda.`);

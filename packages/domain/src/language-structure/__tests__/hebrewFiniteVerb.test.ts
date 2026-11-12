@@ -74,9 +74,18 @@ describe('la función del verbo finito hebreo (U5, revisión del profesor)', () 
     });
 
     it('las fuentes: la sección de A&C de la forma; la resolución sobre un yiqtol cita el cohortativo y Putnam', () => {
-        expect(hebrewVerbSources('sequential', 'wayyiqtol').map(s => formatCitation(s))).toEqual(['Arnold y Choi, «3.5.1 Imperfect plus waw Consecutive», p. 84']);
+        expect(hebrewVerbSources('sequential', 'wayyiqtol').map(s => formatCitation(s))).toEqual(['Arnold y Choi, «3.5.1 Imperfect plus waw Consecutive › (a) Sequential», p. 84']);
         const r = hebrewVerbSources('resolve', 'imperfect').map(s => formatCitation(s));
-        expect(r[0]).toBe('Arnold y Choi, «3.3.3 Cohortative», p. 65');
+        expect(r[0]).toBe('Arnold y Choi, «3.3.3 Cohortative › (a) Resolve», p. 65');
         expect(r[1]).toBe('Putnam, sobre el cohortativo');
+    });
+});
+
+describe('cada función del verbo de cada forma tiene su categoría de A&C', () => {
+    it('ninguna queda sin fuente', async () => {
+        const { HEBREW_VERB_FUNCTION_SOURCES } = await import('../ruleSources');
+        for (const [form, fns] of Object.entries(HEBREW_VERB_FUNCTIONS)) {
+            for (const fn of fns) expect(HEBREW_VERB_FUNCTION_SOURCES[form as keyof typeof HEBREW_VERB_FUNCTION_SOURCES][fn], `${form}.${fn}`).toBeDefined();
+        }
     });
 });

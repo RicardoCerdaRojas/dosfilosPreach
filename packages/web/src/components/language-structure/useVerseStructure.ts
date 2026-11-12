@@ -4,6 +4,7 @@ import {
     greekAgency,
     greekAnaphora,
     greekAnaphoraHints,
+    greekPartitive,
     greekAutos,
     greekVerbCandidates,
     hebrewSpeechFacts,
@@ -111,6 +112,7 @@ export function useVerseStructure(
             agency: griego ? greekAgency(griego, verse) : [],
             anaphora: griego ? greekAnaphora(griego, verse) : [],
             anaphoraHints: griego ? greekAnaphoraHints(griego, verse) : [],
+            partitive: griego ? greekPartitive(griego, verse) : [],
             autos: griego ? greekAutos(griego, verse) : [],
         };
         const discourse = griego ? greekDiscourseCandidates(griego, verse) : [];
