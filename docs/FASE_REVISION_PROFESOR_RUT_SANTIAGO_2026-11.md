@@ -347,7 +347,9 @@ Lectura (medido):
 
 **U3b (2026-11-12), `3e66d813`:** genitivo partitivo con ἐκ/ἀπό por regla (Wallace p. 84). Son 64 casos en el NT; la muestra dio 23/25, y el filtro de concordancia de género quitó los 2 que fallaban. Stg 2:16 ὑμῶν queda «partitivo» como Regla.
 - **Fuentes:** las de U5 y U3a no se habían cotejado. Eran funciones, y `listar-fuentes` tenía la lista de tablas escrita a mano (le faltaba también la del proléptico de U7). Ahora cada función cita su categoría de A&C con la página de su encabezado, y el cotejo da 235/235.
-- **U3c, Louw-Nida de las preposiciones griegas:** en espera de una fuente con los nombres de los dominios.
+- **U3c (2026-11-12), `5ec8ddd5`:** cada preposición griega muestra su sentido de Louw-Nida, dato de MACULA. Stg 2:10 ἐν ἑνί = 89.5 (relaciones › especificación, «con respecto a»); Stg 2:16 ἐξ = 63.20 (parte), que respalda U3b.
+  - Datos regenerados: 260 capítulos con cambios solo en `ln`; 9.323 de 10.877 preposiciones traen código.
+  - Fuente: el vol. 1 del léxico (UBS 1988) que pasó el fundador. 172 citas cotejadas, 407/407 en total.
 
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
