@@ -8,7 +8,7 @@ import {
 } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaCaja, FichaFuncion, FichaOrigenRotulo, type OrigenFuncion } from '@/components/word-ficha/FichaPiezas';
-import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, KetivQereFact } from '@dosfilos/domain';
+import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from '../components/MorphemeSpan';
@@ -26,6 +26,8 @@ export interface DatosHebreo {
     readonly ki?: HebrewKiView;
     /** Ketiv y qere: lo que está escrito y lo que se lee (OSHB). */
     readonly ketivQere?: KetivQereFact;
+    /** El sufijo pronominal (OSHB): persona, género, número y a qué va pegado. */
+    readonly suffix?: HebrewSuffix;
     /** Abre el detective (verbos y nombres). */
     readonly onInvestigate?: () => void;
 }
@@ -107,6 +109,15 @@ export function useCeldas(d: DatosHebreo) {
     if (g) celdas.push({ label: t('verseAnalyzer.ficha.cells.gender'), value: rotulo(`verseAnalyzer.morphology.gender.${String(g).toUpperCase()}`, String(g)) });
     if (num) celdas.push({ label: t('verseAnalyzer.ficha.cells.number'), value: rotulo(`verseAnalyzer.morphology.number.${String(num).toUpperCase()}`, String(num)) });
     if (n?.state) celdas.push({ label: t('verseAnalyzer.ficha.cells.state'), value: rotulo(`verseAnalyzer.morphology.state.${String(n.state).toUpperCase()}`, String(n.state)) });
+    // El sufijo pronominal, de OSHB (revisión del profesor, Rut 3:3 כַּלֹּתוֹ: en un infinitivo es su sujeto u objeto).
+    if (d.suffix) {
+        const clave = `${d.suffix.person}${d.suffix.gender}${d.suffix.number}`;
+        celdas.push({
+            label: t('verseAnalyzer.ficha.cells.suffix'),
+            value: t('verseAnalyzer.ficha.suffix.value', { pgn: clave.toUpperCase(), gloss: t(`verseAnalyzer.ficha.suffix.gloss.${clave}`), use: t(`verseAnalyzer.ficha.suffix.host.${d.suffix.host}`) }),
+            ancha: true,
+        });
+    }
     if (v?.temporalValue) celdas.push({ label: t('verseAnalyzer.ficha.cells.temporalValue'), value: v.temporalValue, ancha: true });
     return celdas;
 }
@@ -121,11 +132,13 @@ export const pgn = (d: DatosHebreo) => {
 /** La línea de la forma en el resumen. */
 export function LineaForma({ d }: { d: DatosHebreo }) {
     const rotulo = useRotulo();
+    const { t } = useTranslation('hebrewTutor');
     const v = vm(d), n = nm(d);
     const partes = v
         ? [v.binyan, v.verbForm && rotulo(`verseAnalyzer.verbForms.${v.verbForm}`, String(v.verbForm)), pgn(d)]
         : [n?.gender && rotulo(`verseAnalyzer.morphology.gender.${String(n.gender).toUpperCase()}`, String(n.gender)), n?.number && rotulo(`verseAnalyzer.morphology.number.${String(n.number).toUpperCase()}`, String(n.number)), n?.state && rotulo(`verseAnalyzer.morphology.state.${String(n.state).toUpperCase()}`, String(n.state))];
-    const linea = partes.filter(Boolean).join(' · ');
+    const sufijo = d.suffix ? t('verseAnalyzer.ficha.suffix.short', { pgn: `${d.suffix.person}${d.suffix.gender}${d.suffix.number}`.toUpperCase() }) : '';
+    const linea = [...partes, sufijo].filter(Boolean).join(' · ');
     return linea ? <p className="m-0 font-medium text-foreground/85">{linea}</p> : null;
 }
 

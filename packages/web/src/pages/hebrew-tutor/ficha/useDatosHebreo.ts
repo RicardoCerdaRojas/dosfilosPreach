@@ -1,5 +1,5 @@
 import React from 'react';
-import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, KetivQereFact, VerseAnalysis, WordAnalysis } from '@dosfilos/domain';
+import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact, VerseAnalysis, WordAnalysis } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import type { DatosHebreo } from './bloquesHebreo';
@@ -11,6 +11,7 @@ interface Mapas {
     participios: ReadonlyMap<number, HebrewParticipleView>;
     kis: ReadonlyMap<number, HebrewKiView>;
     ketivQere: ReadonlyMap<number, KetivQereFact>;
+    sufijos: ReadonlyMap<number, HebrewSuffix>;
 }
 
 /** Los datos de la ficha de la palabra `i` del análisis. */
@@ -26,8 +27,9 @@ export function useDatosHebreo(analysis: VerseAnalysis, mapas: Mapas, onInvestig
             participle: mapas.participios.get(i),
             ki: mapas.kis.get(i),
             ketivQere: mapas.ketivQere.get(i),
+            suffix: mapas.sufijos.get(i),
             ...(onInvestigate ? { onInvestigate: () => onInvestigate(word) } : {}),
         };
-    }, [analysis.words, mapas.antepuestas, mapas.discurso, mapas.infinitivos, mapas.participios, mapas.kis, mapas.ketivQere, onInvestigate]);
+    }, [analysis.words, mapas.antepuestas, mapas.discurso, mapas.infinitivos, mapas.participios, mapas.kis, mapas.ketivQere, mapas.sufijos, onInvestigate]);
 }
 

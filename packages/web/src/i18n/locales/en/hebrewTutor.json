@@ -154,7 +154,25 @@
         "gender": "Gender",
         "number": "Number",
         "state": "State",
-        "temporalValue": "Temporal value"
+        "temporalValue": "Temporal value",
+        "suffix": "Suffix"
+      },
+      "suffix": {
+        "value": "{{pgn}} (“{{gloss}}”) · {{use}}",
+        "short": "suff. {{pgn}}",
+        "host": {
+          "infinitive": "subject or object of the infinitive",
+          "verb": "object of the verb",
+          "objectMarker": "direct object (with אֵת)",
+          "preposition": "object of the preposition",
+          "noun": "the possessor (“his…”, “my…”)",
+          "other": "attached pronoun"
+        },
+        "gloss": {
+          "1cs": "I / my / me", "2ms": "you / your", "2fs": "you / your", "3ms": "he / his / him", "3fs": "she / her",
+          "1cp": "we / our / us", "2mp": "you / your", "2fp": "you / your", "3mp": "they / their / them", "3fp": "they / their / them",
+          "2cs": "you / your", "3cs": "he / she / its", "2cp": "you / your", "1ms": "I / my / me"
+        }
       },
       "weakVerb": "Weak verb",
       "opening": "Opening",

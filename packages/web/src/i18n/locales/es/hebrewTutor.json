@@ -113,7 +113,25 @@
         "gender": "Género",
         "number": "Número",
         "state": "Estado",
-        "temporalValue": "Valor temporal"
+        "temporalValue": "Valor temporal",
+        "suffix": "Sufijo"
+      },
+      "suffix": {
+        "value": "{{pgn}} («{{gloss}}») · {{use}}",
+        "short": "suf. {{pgn}}",
+        "host": {
+          "infinitive": "sujeto u objeto del infinitivo",
+          "verb": "complemento del verbo",
+          "objectMarker": "complemento directo (con אֵת)",
+          "preposition": "término de la preposición",
+          "noun": "el poseedor («su…», «mi…»)",
+          "other": "pronombre pegado"
+        },
+        "gloss": {
+          "1cs": "yo / mi / me", "2ms": "tú / tu / te", "2fs": "tú / tu / te", "3ms": "él / su / lo", "3fs": "ella / su / la",
+          "1cp": "nosotros / nuestro / nos", "2mp": "ustedes / su / los", "2fp": "ustedes / su / las", "3mp": "ellos / su / los", "3fp": "ellas / su / las",
+          "2cs": "tú / tu / te", "3cs": "él / ella / su", "2cp": "ustedes / su", "1ms": "yo / mi / me"
+        }
       },
       "weakVerb": "Verbo débil",
       "opening": "Apertura",

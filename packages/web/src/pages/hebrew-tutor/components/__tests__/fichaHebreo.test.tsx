@@ -219,6 +219,15 @@ describe('Ficha hebrea — lo que la revisión encontró perdido', () => {
         // Sin ketiv ni qere, nada.
         expect(ficha({}).textContent).not.toContain('verseAnalyzer.ficha.ketivQere.title');
     });
+    it('el sufijo pronominal como dato de la forma (revisión del profesor, Rut 3:3 כַּלֹּתוֹ): celda en la ficha y «suf.» en el tooltip', () => {
+        const suffix = { person: '3' as const, gender: 'm' as const, number: 's' as const, host: 'infinitive' as const };
+        const c = ficha({}, { suffix }).textContent!;
+        expect(c).toContain('verseAnalyzer.ficha.cells.suffix');
+        expect(c).toContain('verseAnalyzer.ficha.suffix.value');
+        const corto = render(<FichaResumen registro={BLOQUES_HEBREO} d={{ word: PALABRA, suffix }} />).container.textContent!;
+        expect(corto).toContain('verseAnalyzer.ficha.suffix.short');
+        expect(ficha({}).textContent).not.toContain('verseAnalyzer.ficha.cells.suffix');
+    });
     it('«Apertura» en וַיְהִי', () => {
         const vh = { ...PALABRA.verbMorphology!, verbForm: 'WAYYIQTOL' as never };
         expect(ficha({ root: 'היה', verbMorphology: vh }).textContent).toContain('verseAnalyzer.ficha.opening');

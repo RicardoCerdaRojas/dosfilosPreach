@@ -94,6 +94,21 @@ describe('ketiv y qere del dato a la página (revisión del profesor, Rut 2:1 מ
     });
 });
 
+describe('el sufijo pronominal del dato a la página (revisión del profesor, Rut 3:3 כַּלֹּתוֹ)', () => {
+    it('la ficha de la palabra alineada muestra la celda «Sufijo» desde el código OSHB', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [], kis: [], ketivQere: [],
+            words: [{ r: '3!14', t: 'כַּלֹּתוֹ', l: '3615', m: 'HVpc/Sp3ms', role: 'v' }],
+        };
+        const analisis = { reference: 'Rut 3:3', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [{ hebrewText: 'כַּלֹּתוֹ', hebrewWord: 'כַּלֹּתוֹ', morphemes: [], category: 'VERB', translation: 'su terminar', verbMorphology: { binyan: 'PIEL', verbForm: 'INFINITIVE_CONSTRUCT' } }] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.3.3" /></TooltipProvider>);
+        abrirFicha(0);
+        expect(screen.getByTestId('ficha-panel').textContent).toContain('verseAnalyzer.ficha.cells.suffix');
+        expect(screen.getByTestId('ficha-panel').textContent).toContain('verseAnalyzer.ficha.suffix.host.infinitive');
+    });
+});
+
 describe('el hablante con su nombre en español (prueba del fundador: «Habla רוּת» en medio de la frase)', () => {
     it('toma la traducción de la palabra del hablante en el análisis: «Rut»', () => {
         estado.estructura = {

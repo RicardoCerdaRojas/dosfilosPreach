@@ -224,5 +224,5 @@ export const DESTINO_VERBO: Readonly<Record<keyof NonNullable<WordAnalysis['verb
 };
 export const DESTINO_NOMBRE: Readonly<Record<keyof NonNullable<WordAnalysis['nominalMorphology']>, Destino>> = {
     gender: 'he.celdas', number: 'he.celdas', state: 'he.celdas', person: 'he.celdas',
-    suffix: { fuera: 'Ni la tarjeta ni el tooltip lo mostraban; se agrega cuando haga falta.' },
+    suffix: { fuera: 'Se muestra el de OSHB (celda «Sufijo», revisión del profesor 2026-11), no el que escribe el asistente.' },
 };

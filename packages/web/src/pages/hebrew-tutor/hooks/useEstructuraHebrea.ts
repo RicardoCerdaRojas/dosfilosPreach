@@ -1,5 +1,5 @@
 import React from 'react';
-import { applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewSuffix, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
@@ -116,7 +116,21 @@ export function useEstructuraHebrea(
         }
         return m;
     }, [estructura, alinear]);
-    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sinLectura };
+    /**
+     * Índice del análisis → su sufijo pronominal, desde el código OSHB de la palabra alineada
+     * (revisión del profesor, Rut 3:3 כַּלֹּתוֹ): la ficha no lo mostraba como dato de la forma.
+     */
+    const sufijos = React.useMemo(() => {
+        const m = new Map<number, HebrewSuffix>();
+        const indice = alinear(estructura.words);
+        estructura.words.forEach((w, o) => {
+            const i = indice[o];
+            const s = hebrewSuffix(w.m);
+            if (i !== undefined && s && !m.has(i)) m.set(i, s);
+        });
+        return m;
+    }, [estructura, alinear]);
+    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, sinLectura };
 }
 
 /**
