@@ -360,6 +360,19 @@ Lectura (medido):
 - Falla dentro de una unidad ya abierta (Stg 5:9, 5:10) y en el control del profesor, Stg 3:12 (pregunta retórica en medio del argumento).
 - Stg 3:1, el caso del profesor, queda cubierto: el vocativo está en la 5.ª palabra, después del imperativo.
 
+**U10 (2026-11-12), `f273a7c2`, prompt griego v16:** cuando un mismo lema aparece dos veces en el versículo con distinta glosa en contexto de MACULA, la glosa pasa al asistente como PISTA y a la ficha como DATO («Mismo lema en este versículo»).
+- **Por qué la glosa y no Louw-Nida:** en Stg 3:5 las dos palabras llevan el código 79.127, que abarca «qué grande» y «qué pequeño» (Louw-Nida cita justo Stg 3:5). Solo la glosa las distingue: ἡλίκον «small», ἡλίκην «how great».
+- **Criterio (medido en el NT):** 157 versículos y +4 KB de datos. Las glosas se comparan por raíz. Un verbo cuenta solo si además Louw-Nida le da sentidos sin código común, porque «said / say» es el tiempo y no el sentido. Quedan fuera las palabras de función y los nombres propios.
+- **Muestra a mano de 50:** la mitad son sentidos distintos (Lc 12:42 κύριος, Ro 8:3 ἁμαρτία) y la otra mitad, sinónimos («now / already»). Por eso es pista y dato, nunca aviso. La glosa en contexto es correcta en los dos casos.
+- **v15 (banco de 12 versículos):** Stg 3:5 reproduce el error: las dos palabras salen «qué gran» y la literal queda mal. Una regla general de coherencia literal/fluida arregla la palabra pero NO la literal, porque el modelo escribe la literal antes que las palabras. Esa regla se descartó.
+- **v16 (glosa como pista, solo datos):**
+  - Stg 3:5: la literal sale «¡Miren qué pequeño fuego enciende qué gran bosque!» en 2 de 2 corridas.
+  - Lc 12:42: «el Señor» / «el señor» (el amo) en 2 de 2.
+  - Mejoran Ap 16:21 (enorme / severo), Stg 1:4 (completa / maduros), Ro 8:3 («carne pecaminosa… como ofrenda por el pecado») y Mt 24:23 (aquí / allí).
+  - 6 controles de sinónimos: ninguno dañado. Tres quedan iguales y tres varían el sinónimo («muchas veces / a menudo»), que sigue siendo fiel.
+  - Costo: 22 llamadas, unos US$ 0,11.
+- **No se hizo:** el aviso «la literal contradice la traducción de la palabra». Con la mitad de los casos sinónimos, sería ruido.
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
