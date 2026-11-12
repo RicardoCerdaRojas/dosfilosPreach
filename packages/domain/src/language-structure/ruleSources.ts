@@ -144,6 +144,7 @@ export const VERB_RULE_SOURCES: Readonly<Record<VerbRule, readonly RuleSource[]>
     ouMe: [wSubj.emphaticNegation],
     prohibition: [wSubj.prohibitive],
     indefinite: [wSubj.indefiniteRelative, wSubj.indefiniteTemporal],
+    indefiniteRelative: [wSubj.indefiniteRelative],
     lest: [wSubj.fearing],
     hortatory: [wSubj.hortatory, wSubj.deliberative],
     meGenoito: [wMood.voluntative],

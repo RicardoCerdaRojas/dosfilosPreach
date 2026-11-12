@@ -53,7 +53,7 @@ export type TenseUseId = (typeof TENSE_USES)[keyof typeof TENSE_USES][number];
 export type VerbRule =
     | 'articular' | 'periphrastic' | 'genitiveAbsolute'
     | 'eisTo' | 'prosTo' | 'enToi' | 'metaTo' | 'proTou' | 'diaTo' | 'tou' | 'articularNominal'
-    | 'afterIna' | 'conditionalEan' | 'ouMe' | 'prohibition' | 'indefinite' | 'lest' | 'hortatory' | 'meGenoito' | 'presentProhibition';
+    | 'afterIna' | 'conditionalEan' | 'ouMe' | 'prohibition' | 'indefinite' | 'indefiniteRelative' | 'lest' | 'hortatory' | 'meGenoito' | 'presentProhibition';
 
 export interface VerbCandidate {
     /** Posición en el versículo (0 = primera palabra). */
@@ -316,9 +316,11 @@ export const VERB_RULES: readonly ReglaVerbo[] = [
     { rule: 'ouMe', form: 'subjunctive', when: ouMe, allowed: ['emphaticNegation'] },
     { rule: 'afterIna', form: 'subjunctive', when: c => ['ἵνα', 'ὅπως'].includes(subordinanteCercano(c) ?? ''), allowed: ['inaClause'] },
     { rule: 'conditionalEan', form: 'subjunctive', when: c => subordinanteCercano(c) === 'ἐάν' || subordinanteCercano(c) === 'εἰ', allowed: ['conditional'] },
+    { rule: 'indefinite', form: 'subjunctive', when: c => INDEFINIDOS.has(subordinanteCercano(c) ?? ''), allowed: ['indefinite'] },
     // ὅστις + subjuntivo, con o sin ἄν (Wallace p. 478: «ὅστις (ἄν/ἐάν)»): Stg 2:10 «ὅστις … τηρήσῃ,
     // πταίσῃ δέ» no tenía regla y la ficha no mostraba la función (revisión del profesor, 2026-11).
-    { rule: 'indefinite', form: 'subjunctive', when: c => INDEFINIDOS.has(subordinanteCercano(c) ?? '') || relativoIndefinido(c), allowed: ['indefinite'] },
+    // Regla propia: la ficha decía «con ἄν» donde no hay ἄν (prueba del fundador).
+    { rule: 'indefiniteRelative', form: 'subjunctive', when: relativoIndefinido, allowed: ['indefinite'] },
     { rule: 'lest', form: 'subjunctive', when: c => subordinanteCercano(c) === 'μήποτε' || bajoTemor(c), allowed: ['lest'] },
     { rule: 'prohibition', form: 'subjunctive', when: c => conProhibicion(c) && c.tiempo === 'A' && c.persona === '2', allowed: ['prohibition'] },
     { rule: 'hortatory', form: 'subjunctive', when: c => c.persona === '1' && c.plural && !c.clausula.some(x => x.pos === 'RR'), allowed: ['hortatory', 'deliberative'] },
@@ -420,7 +422,7 @@ const FUNCION_ES: Record<VerbFunctionId, string> = {
     imperatival: 'imperativo (equivale a un mandato)', absolute: 'absoluto (saludo epistolar: χαίρειν)',
     hortatory: 'exhortativo («hagamos»)', deliberative: 'deliberativo (pregunta real o retórica: «¿qué haremos?»)', prohibition: 'prohibición',
     emphaticNegation: 'negación enfática (οὐ μή: «de ningún modo»)', inaClause: 'subjuntivo tras ἵνα/ὅπως', conditional: 'condicional (ἐάν)',
-    indefinite: 'indefinido (con ἄν: relativo o temporal indefinido)', lest: 'temor o propósito negativo («no sea que», con μή o μήποτε)', command: 'mandato', request: 'ruego o petición (a un superior)',
+    indefinite: 'indefinido (relativo o temporal: con ἄν, ὅταν, ἕως u ὅστις)', lest: 'temor o propósito negativo («no sea que», con μή o μήποτε)', command: 'mandato', request: 'ruego o petición (a un superior)',
     permissive: 'permisivo («que sea así»)', volitive: 'volitivo (deseo: «ojalá»)', potential: 'potencial (con ἄν)', oblique: 'oblicuo (discurso indirecto)',
 };
 
@@ -443,7 +445,7 @@ const REGLA_ES: Record<VerbRule, string> = {
     eisTo: 'εἰς τό + infinitivo', prosTo: 'πρὸς τό + infinitivo', enToi: 'ἐν τῷ + infinitivo (simultáneo)', metaTo: 'μετὰ τό + infinitivo (anterior)',
     proTou: 'πρὸ τοῦ + infinitivo (posterior)', diaTo: 'διὰ τό + infinitivo', tou: 'τοῦ + infinitivo', articularNominal: 'infinitivo con artículo',
     afterIna: 'dentro de una cláusula con ἵνα/ὅπως', conditionalEan: 'prótasis con ἐάν', ouMe: 'οὐ μή + subjuntivo', prohibition: 'μή + subjuntivo aoristo',
-    indefinite: 'con ἄν (relativo o temporal indefinido)', lest: 'μήποτε, o μή tras un verbo de temor o advertencia (βλέπω, φοβέομαι)', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
+    indefinite: 'con ἄν, ὅταν o ἕως (relativo o temporal indefinido)', indefiniteRelative: 'ὅστις + subjuntivo, con o sin ἄν: «quienquiera que…»; plantea un caso general, como una condición', lest: 'μήποτε, o μή tras un verbo de temor o advertencia (βλέπω, φοβέομαι)', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
 };
 
 /** El tramo del prompt con la tarea de los verbos. Vacío si no hay verbos. */

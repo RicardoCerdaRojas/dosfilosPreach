@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { act, render, screen, fireEvent, within } from '@testing-library/react';
+import es from '@/i18n/locales/es/greekTutor.json';
 import type { GreekKeyInsight, GreekWordInsight, GreekWordToken } from '@dosfilos/domain';
 
 /**
@@ -125,6 +126,19 @@ describe('Ficha griega — el bloque de función', () => {
         for (const v of ['analyzer.conditional.title', 'classLabel.3', 'classNotes.3', 'analyzer.conditional.uses.presentGeneral', 'Third Class Condition']) expect(n, v).toContain(v);
         const corto = render(<FichaResumen registro={BLOQUES_GRIEGO} d={{ token: conj, conditional } as never} />).container.textContent!;
         expect(corto).toContain('analyzer.conditional.short.presentGeneral');
+    });
+    it('ὅστις + subjuntivo sin ἄν (Stg 2:10 τηρήσῃ): su regla propia, sin «con ἄν» y sólo con la fuente de la relativa (prueba del fundador)', () => {
+        const insight = { ...INSIGHT_VERBO, verbFunction: 'indefinite', verbRule: 'indefiniteRelative', tenseUse: undefined };
+        const subj = { ...VERBO, tag: { tense: 'A', voice: 'A', mood: 'S', person: '3', number: 'S' } as never };
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: subj, insight } as never} />);
+        const n = screen.getByTestId('verb-function').textContent!;
+        expect(n).toContain('analyzer.verbFn.rules.indefiniteRelative');
+        expect(n).toContain('Subjunctive in Indefinite Relative Clause');
+        expect(n).not.toContain('Indefinite Temporal Clause');
+        // Y el texto real no dice que hay ἄN donde no lo hay.
+        const reglas = (es as { analyzer: { verbFn: { rules: Record<string, string>; functions: Record<string, string> } } }).analyzer.verbFn;
+        expect(reglas.rules.indefiniteRelative).toContain('con o sin ἄν');
+        expect(reglas.functions.indefinite).not.toContain('con ἄν');
     });
     it('uso del tiempo acotado y elegido: el nombre, sin opciones', () => {
         const insight = { ...INSIGHT_VERBO, verbFunction: undefined, verbRule: undefined, tenseUse: 'proleptic', tenseRule: 'prolepticPerfect' };

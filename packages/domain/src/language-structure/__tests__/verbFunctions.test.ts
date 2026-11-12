@@ -222,8 +222,8 @@ describe('G2 — regresiones de la revisión adversarial', () => {
 
 describe('revisión del profesor (2026-11) — Stg 2:10-11', () => {
     it('ὅστις + subjuntivo sin ἄν es relativo indefinido, también el coordinado «πταίσῃ δέ» (Wallace p. 478)', () => {
-        expect(verbo('JAS/2.json', 10, 'τηρήσῃ')).toMatchObject({ decided: 'indefinite', rule: 'indefinite' });
-        expect(verbo('JAS/2.json', 10, 'πταίσῃ')).toMatchObject({ decided: 'indefinite', rule: 'indefinite' });
+        expect(verbo('JAS/2.json', 10, 'τηρήσῃ')).toMatchObject({ decided: 'indefinite', rule: 'indefiniteRelative' });
+        expect(verbo('JAS/2.json', 10, 'πταίσῃ')).toMatchObject({ decided: 'indefinite', rule: 'indefiniteRelative' });
     });
     it('perfecto en la apódosis de una 3.ª clase o con sujeto indefinido: proléptico o gnómico (Wallace p. 581)', () => {
         for (const [rel, v, t] of [['JAS/2.json', 10, 'γέγονεν'], ['ROM/7.json', 2, 'κατήργηται'], ['ROM/14.json', 23, 'κατακέκριται'], ['1CO/13.json', 1, 'γέγονα']] as const) {
