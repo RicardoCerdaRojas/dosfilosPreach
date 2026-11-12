@@ -3,7 +3,7 @@ import { BookmarkPlus, Check, Star } from 'lucide-react';
 import { greekRecognitionClues, louwNidaSenses, STRUCTURE_RULE_SOURCES, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
-import { AperturaSeccion, SentidoLouwNida } from './piezasDatosGriego';
+import { AperturaSeccion, MismoLema, SentidoLouwNida } from './piezasDatosGriego';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
 import { cn } from '@/lib/utils';
 import { GreekAgencyBlock, GreekAnaphoraRuleNote, GreekAutosBlock } from '../GreekNominalRuleBlock';
@@ -70,6 +70,12 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
         id: 'gr.rango', dato: 'Rango semántico', seccion: 'palabra', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
         hay: (d) => !!d.insight?.semanticRange,
         Completo: function Rango({ d }) { const { t } = useTranslation('greekTutor'); return <FichaFilas filas={[[t('analyzer.fields.semanticRange'), d.insight!.semanticRange]]} />; },
+    },
+    {
+        // U10 (revisión del profesor, Stg 3:5 ἡλίκον «small» / ἡλίκην «how great»): el mismo lema otra vez en el
+        // versículo con otra glosa en contexto (dato de MACULA). Dato, no aviso: la mitad son sinónimos.
+        id: 'gr.mismoLema', dato: 'El mismo lema otra vez en el versículo, con otra glosa en contexto (dato de MACULA)', seccion: 'palabra', origen: 'datos', antes: [],
+        hay: (d) => (d.sameLemma?.length ?? 0) > 1, Completo: MismoLema,
     },
     {
         id: 'gr.frecuencia', dato: 'Frecuencia (NT, libro, palabra rara)', seccion: 'palabra', origen: 'datos', antes: ['tarjeta', 'tooltip'],

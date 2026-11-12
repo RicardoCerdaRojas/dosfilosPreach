@@ -91,6 +91,7 @@ export function GreekAnalyzerPage() {
         alineados ? estructura.verbs : undefined,
         alineados ? estructura.nominal : undefined,
         alineados ? estructura.discourse : undefined,
+        alineados ? estructura.sameLemma : undefined,
     );
     // Las reglas de los verbos se aplican AL MOSTRAR: una regla mejorada llega a
     // los análisis ya guardados sin re-analizar (G2, como el hebreo).
@@ -204,6 +205,11 @@ export function GreekAnalyzerPage() {
         }
     };
 
+    const mismoLemaDe = (i: number) => {
+        const f = estructura.sameLemma.find(x => x.words.some(w => w.ordinal === i));
+        return f?.words.map(w => ({ text: data?.tokens[w.ordinal]?.text ?? '', gloss: w.gloss, translation: insight?.words[w.ordinal]?.translation, self: w.ordinal === i }));
+    };
+
     /** Los datos de la ficha de la palabra `i` (tooltip, tarjeta resumen y panel). */
     const datosGriego = (i: number): DatosGriego | null => {
         const tok = data?.tokens[i];
@@ -222,6 +228,8 @@ export function GreekAnalyzerPage() {
             ln: alineados ? estructura.words[i]?.ln : undefined,
             // U9 (Stg 3:1): en la ficha del vocativo, la señal de apertura de sección.
             opening: alineados && estructura.opening?.vocativeOrdinal === i ? { ...estructura.opening, imperative: estructura.opening.imperativeOrdinal !== undefined ? data?.tokens[estructura.opening.imperativeOrdinal]?.text : undefined } : undefined,
+            // U10 (Stg 3:5): el mismo lema otra vez en el versículo, con otra glosa en contexto (MACULA).
+            sameLemma: alineados ? mismoLemaDe(i) : undefined,
             onSaveFinding: insight && user?.uid && (claveDe(tok.text, i) || insight.words[i]) ? () => void guardarHallazgo(i) : undefined,
             saved: guardados.has(tok.lemma),
         };

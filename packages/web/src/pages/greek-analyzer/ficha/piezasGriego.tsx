@@ -27,6 +27,11 @@ export interface DatosGriego {
     readonly ln?: string;
     /** U9: este vocativo abre el versículo con un imperativo (su texto) o una pregunta: señal de apertura. */
     readonly opening?: { readonly question: boolean; readonly imperative?: string };
+    /**
+     * U10 (Stg 3:5): el lema de esta palabra aparece otra vez en el versículo con otra glosa en contexto
+     * (MACULA). Cada aparición, con su glosa y la traducción del análisis; `self` es esta palabra.
+     */
+    readonly sameLemma?: readonly { readonly text: string; readonly gloss: string; readonly translation?: string; readonly self: boolean }[];
     /** Guardar el hallazgo para el sermón. */
     readonly onSaveFinding?: () => void;
     readonly saved?: boolean;

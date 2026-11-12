@@ -2,6 +2,7 @@ import { buildDiscourseTask, type DiscourseCandidate } from '../language-structu
 import { buildNominalFactsTask, type NominalFacts } from '../language-structure/nominalFunctions';
 import { buildVerbFunctionTask, type VerbCandidate } from '../language-structure/verbFunctions';
 import { buildClauseReadingTask } from '../language-structure/clauseReading';
+import { buildSameLemmaTask, type SameLemmaFact } from '../language-structure/greekSameLemma';
 import type { StructureNode } from '../language-structure/verseStructure';
 import type { GreekWordToken } from './morphGntToken';
 import { CASE_FUNCTIONS } from './caseFunctionTaxonomy';
@@ -63,10 +64,13 @@ export function buildGreekInsightPrompt(input: {
     nominal?: NominalFacts;
     /** G4: partículas y pronombres explícitos con su función posible o decidida. */
     discourse?: readonly DiscourseCandidate[];
+    /** U10 (Stg 3:5): el mismo lema con distinta glosa en contexto; la literal debe distinguirlos. */
+    sameLemma?: readonly SameLemmaFact[];
 }): string {
     const lectura = buildClauseReadingTask(input.structure ?? []);
     const verbos = buildVerbFunctionTask(input.verbs ?? [], input.tokens.map(t => t.text));
     const discurso = buildDiscourseTask(input.discourse ?? [], input.tokens.map(t => t.text));
+    const mismoLema = buildSameLemmaTask(input.sameLemma ?? [], input.tokens.map(t => t.text));
     const hechos = buildNominalFactsTask(input.nominal?.agency ?? [], input.nominal?.anaphora ?? [], input.tokens.map(t => t.text), input.nominal?.autos ?? [], input.nominal?.anaphoraHints ?? [], input.nominal?.partitive ?? []);
     const lista = input.tokens
         .map((t, i) => `${i + 1}. ${t.text} — lema ${t.lemma} — ${describirTag(t)}`)
@@ -209,6 +213,7 @@ ${lectura}
 ${verbos}
 ${hechos}
 ${discurso}
+${mismoLema}
 
 REGLAS:
 - Todo en español, salvo las palabras griegas.

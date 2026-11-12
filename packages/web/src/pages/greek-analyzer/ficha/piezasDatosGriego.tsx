@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { louwNidaSenses, louwNidaSources, SECTION_OPENING_SOURCES } from '@dosfilos/domain';
+import { louwNidaSenses, louwNidaSources, SAME_LEMMA_SOURCES, SECTION_OPENING_SOURCES } from '@dosfilos/domain';
 import { SourceNote } from '@/components/language-structure/SourceNote';
 import { FichaCaja } from '@/components/word-ficha/FichaPiezas';
 import type { DatosGriego } from './piezasGriego';
@@ -49,6 +49,30 @@ export function AperturaSeccion({ d }: { d: DatosGriego }) {
                 {o.imperative ? t('analyzer.opening.withImperative', { imp: o.imperative }) : t('analyzer.opening.withQuestion')}
             </p>
             <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">{t('analyzer.opening.note')}</p>
+        </FichaCaja>
+    );
+}
+
+/**
+ * U10 (revisión del profesor, Stg 3:5 «ἡλίκον πῦρ ἡλίκην ὕλην»): el mismo lema otra vez en el versículo, con otra
+ * glosa en contexto según MACULA (ἡλίκον «small», ἡλίκην «how great»). Es un dato: a veces es un sentido distinto,
+ * a veces un sinónimo («now» / «already»), y la ficha lo dice así. Junto a cada glosa, la traducción del análisis,
+ * para que se vea si las dos apariciones se tradujeron igual.
+ */
+export function MismoLema({ d }: { d: DatosGriego }) {
+    const { t } = useTranslation('greekTutor');
+    return (
+        <FichaCaja titulo={t('analyzer.sameLemma.title')} pie={<SourceNote sources={SAME_LEMMA_SOURCES} />} testId="mismo-lema">
+            <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[13.5px] leading-relaxed">
+                {d.sameLemma!.map((w, k) => (
+                    <li key={k} data-testid="mismo-lema-aparicion" className={w.self ? 'font-semibold' : undefined}>
+                        <span lang="grc">{w.text}</span>
+                        {w.translation && <> — «{w.translation}»</>}{' '}
+                        <span className="text-[12px] font-normal text-muted-foreground">({t('analyzer.sameLemma.gloss', { gloss: w.gloss })})</span>
+                    </li>
+                ))}
+            </ul>
+            <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">{t('analyzer.sameLemma.note')}</p>
         </FichaCaja>
     );
 }

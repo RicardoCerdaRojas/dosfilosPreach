@@ -441,3 +441,6 @@ export function louwNidaSources(s: LouwNidaSense): readonly RuleSource[] {
 
 /** U9 — la apertura de sección (vocativo + imperativo o pregunta): señal medida, indicada por el profesor (Stg 3:1). */
 export const SECTION_OPENING_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 3:1 ἀδελφοί μου')];
+
+/** U10 — el mismo lema con distinta glosa en contexto (dato de MACULA), indicado por el profesor (Stg 3:5). */
+export const SAME_LEMMA_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 3:5 ἡλίκον … ἡλίκην')];

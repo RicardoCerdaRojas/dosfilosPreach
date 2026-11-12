@@ -146,8 +146,10 @@ export interface GreekKeyInsight {
  * v14: + función en el argumento acotada por regla (G4, Runge) y pronombre explícito.
  * v15: revisión del profesor (2026-11) — pistas del artículo que retoma algo del párrafo
  *      (Stg 2:17, 2:20) y del perfecto proléptico en la apódosis de 1.ª clase (Stg 2:11).
+ * v16: revisión del profesor (U10) — el mismo lema con distinta glosa en contexto (Stg 3:5
+ *      ἡλίκον «small» / ἡλίκην «how great»): la literal los traduce por su sentido.
  */
-export const GREEK_INSIGHT_PROMPT_VERSION = 15;
+export const GREEK_INSIGHT_PROMPT_VERSION = 16;
 
 export interface GreekVerseInsight {
     /** "JAS 1:2" — la clave del caché. */

@@ -36,7 +36,7 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 25 | `he.explicacion` | Explicación pedagógica (con su formato) | tarjeta, panel | Para estudiar | — | asistente |
 | 26 | `he.investigar` | Investigar la palabra paso a paso (detective) | tarjeta | Acciones | — | — |
 
-## Griego (26 bloques)
+## Griego (27 bloques)
 
 | # | Bloque | Dato | Antes | Sección | Resumen | De dónde sale |
 |---|---|---|---|---|---|---|
@@ -45,24 +45,25 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 3 | `gr.palabraClave` | Insignia «Palabra clave» | tarjeta, tooltip | Encabezado | sí | asistente |
 | 4 | `gr.traduccion` | Traducción en contexto | tarjeta, tooltip | Encabezado | sí | asistente |
 | 5 | `gr.rango` | Rango semántico | tarjeta, tooltip | La palabra | — | asistente |
-| 6 | `gr.frecuencia` | Frecuencia (NT, libro, palabra rara) | tarjeta, tooltip | La palabra | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 7 | `gr.composicion` | Composición de la palabra | tarjeta, tooltip | La palabra | — | asistente |
-| 8 | `gr.nombre` | Nota sobre el nombre | tarjeta, tooltip | La palabra | — | asistente |
-| 9 | `gr.celdas` | Tiempo, voz, modo, persona, caso, número, género, grado | tarjeta, tooltip | La forma | sí | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 10 | `gr.pistas` | Cómo se reconoce: la forma (pistas y su fuente) | tarjeta, tooltip | La forma | — | regla |
-| 11 | `gr.funcionVerbo` | Función del verbo | tarjeta, tooltip | Su función | sí | regla + asistente |
-| 12 | `gr.usoTiempo` | Uso del tiempo (indicativo) | tarjeta, tooltip | Su función | — | asistente |
-| 13 | `gr.caso` | Función del caso, su puente de traducción y la función sintáctica | tarjeta, tooltip | Su función | sí | asistente |
-| 14 | `gr.funcionSintactica` | Función sintáctica (texto del asistente) y puente de traducción | tarjeta, tooltip | Su función | sí | asistente |
-| 15 | `gr.preposicion` | Régimen de la preposición | tarjeta, tooltip | Su función | — | regla |
-| 16 | `gr.apertura` | Vocativo al comienzo con imperativo o pregunta: señal de apertura de sección |  | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 17 | `gr.sentidoLouwNida` | Sentido de la preposición en el versículo (Louw-Nida, dato de MACULA) |  | Su función | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 18 | `gr.articulo` | Uso del artículo, su antecedente y la regla de anáfora | tarjeta, tooltip | Su función | — | regla + asistente |
-| 19 | `gr.condicional` | Clase de la condicional y su valor (Wallace) |  | Su función | sí | regla |
-| 20 | `gr.particulas` | Partículas y pronombre explícito | tarjeta, tooltip | Su función | — | regla + asistente |
-| 21 | `gr.agencia` | Agencia (agente de la pasiva) | tarjeta, tooltip | Su función | — | regla + asistente |
-| 22 | `gr.autos` | Uso de αὐτός | tarjeta, tooltip | Su función | — | regla + asistente |
-| 23 | `gr.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 24 | `gr.relaciones` | Relaciones con otras palabras | tarjeta, tooltip | En el contexto | — | asistente |
-| 25 | `gr.significancia` | Significancia (palabra clave) | tarjeta, tooltip | Para estudiar | — | asistente |
-| 26 | `gr.guardar` | Guardar hallazgo para el sermón | tarjeta | Acciones | — | — |
+| 6 | `gr.mismoLema` | El mismo lema otra vez en el versículo, con otra glosa en contexto (dato de MACULA) |  | La palabra | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 7 | `gr.frecuencia` | Frecuencia (NT, libro, palabra rara) | tarjeta, tooltip | La palabra | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 8 | `gr.composicion` | Composición de la palabra | tarjeta, tooltip | La palabra | — | asistente |
+| 9 | `gr.nombre` | Nota sobre el nombre | tarjeta, tooltip | La palabra | — | asistente |
+| 10 | `gr.celdas` | Tiempo, voz, modo, persona, caso, número, género, grado | tarjeta, tooltip | La forma | sí | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 11 | `gr.pistas` | Cómo se reconoce: la forma (pistas y su fuente) | tarjeta, tooltip | La forma | — | regla |
+| 12 | `gr.funcionVerbo` | Función del verbo | tarjeta, tooltip | Su función | sí | regla + asistente |
+| 13 | `gr.usoTiempo` | Uso del tiempo (indicativo) | tarjeta, tooltip | Su función | — | asistente |
+| 14 | `gr.caso` | Función del caso, su puente de traducción y la función sintáctica | tarjeta, tooltip | Su función | sí | asistente |
+| 15 | `gr.funcionSintactica` | Función sintáctica (texto del asistente) y puente de traducción | tarjeta, tooltip | Su función | sí | asistente |
+| 16 | `gr.preposicion` | Régimen de la preposición | tarjeta, tooltip | Su función | — | regla |
+| 17 | `gr.apertura` | Vocativo al comienzo con imperativo o pregunta: señal de apertura de sección |  | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 18 | `gr.sentidoLouwNida` | Sentido de la preposición en el versículo (Louw-Nida, dato de MACULA) |  | Su función | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 19 | `gr.articulo` | Uso del artículo, su antecedente y la regla de anáfora | tarjeta, tooltip | Su función | — | regla + asistente |
+| 20 | `gr.condicional` | Clase de la condicional y su valor (Wallace) |  | Su función | sí | regla |
+| 21 | `gr.particulas` | Partículas y pronombre explícito | tarjeta, tooltip | Su función | — | regla + asistente |
+| 22 | `gr.agencia` | Agencia (agente de la pasiva) | tarjeta, tooltip | Su función | — | regla + asistente |
+| 23 | `gr.autos` | Uso de αὐτός | tarjeta, tooltip | Su función | — | regla + asistente |
+| 24 | `gr.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 25 | `gr.relaciones` | Relaciones con otras palabras | tarjeta, tooltip | En el contexto | — | asistente |
+| 26 | `gr.significancia` | Significancia (palabra clave) | tarjeta, tooltip | Para estudiar | — | asistente |
+| 27 | `gr.guardar` | Guardar hallazgo para el sermón | tarjeta | Acciones | — | — |

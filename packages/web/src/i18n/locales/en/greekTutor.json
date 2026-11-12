@@ -847,6 +847,11 @@
       "withQuestion": "Vocative at the start of the verse, with a question: in the letters, the author often opens a new unit this way (Jas 2:14).",
       "note": "It is a signal, not a rule: it also appears in the middle of an argument (Jas 3:12, 5:9). Confirm it with the content."
     },
+    "sameLemma": {
+      "title": "Same lemma in this verse",
+      "gloss": "gloss in context: “{{gloss}}”",
+      "note": "From MACULA: the same word appears again in this verse with another gloss in context. It may be a different sense (Jas 3:5: “how small” a fire, “how great” a forest) or just a nuance; translate it by its own."
+    },
     "louwNida": {
       "title": "Sense in this verse (Louw-Nida)",
       "note": "From MACULA: the sense the analysis of the text gives this preposition here, by Louw and Nida's semantic domains. The case shows which senses are possible; this shows which one is read in this verse.",

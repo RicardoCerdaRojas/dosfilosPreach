@@ -238,3 +238,33 @@ describe('Ficha griega — apertura de sección (U9)', () => {
         expect(screen.queryByTestId('apertura-seccion')).toBeNull();
     });
 });
+
+/** U10 (revisión del profesor, Stg 3:5): el mismo lema otra vez en el versículo, con otra glosa en contexto. */
+describe('Ficha griega — mismo lema en el versículo (U10)', () => {
+    const HLIKON: GreekWordToken = { text: 'ἡλίκον', lemma: 'ἡλίκος', pos: 'A' as never, transliteration: 'hēlikon', tag: { case: 'N', number: 'S' } as never };
+    const MISMO = [
+        { text: 'ἡλίκον', gloss: 'small', translation: 'qué pequeño', self: true },
+        { text: 'ἡλίκην', gloss: 'how great', translation: 'qué gran', self: false },
+    ];
+
+    it('Stg 3:5: las dos apariciones con la traducción del análisis, esta palabra destacada, y la indicación del profesor', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: HLIKON, sameLemma: MISMO } as never} />);
+        const filas = screen.getAllByTestId('mismo-lema-aparicion');
+        expect(filas.map(f => f.textContent)).toEqual([expect.stringContaining('«qué pequeño»'), expect.stringContaining('«qué gran»')]);
+        expect(filas.map(f => f.className.includes('font-semibold'))).toEqual([true, false]);
+        const b = screen.getByTestId('mismo-lema');
+        expect(b.textContent).toContain('analyzer.sameLemma.note');
+        expect(b.textContent).toContain('Stg 3:5');
+    });
+
+    it('sin análisis, sólo el texto y la glosa; sin el dato (o con una sola aparición), no hay bloque', () => {
+        const { unmount } = render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: HLIKON, sameLemma: MISMO.map(({ translation: _t, ...w }) => w) } as never} />);
+        expect(screen.getAllByTestId('mismo-lema-aparicion')[0]!.textContent).not.toContain('«');
+        unmount();
+        const r = render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: HLIKON } as never} />);
+        expect(screen.queryByTestId('mismo-lema')).toBeNull();
+        r.unmount();
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: HLIKON, sameLemma: [MISMO[0]] } as never} />);
+        expect(screen.queryByTestId('mismo-lema')).toBeNull();
+    });
+});

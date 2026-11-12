@@ -7,6 +7,7 @@ import {
     type VerbCandidate,
     type NominalFacts,
     type DiscourseCandidate,
+    type SameLemmaFact,
 } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
@@ -31,6 +32,8 @@ export class GreekInsightService {
         nominal?: NominalFacts;
         /** G4: partículas y pronombres explícitos. */
         discourse?: readonly DiscourseCandidate[];
+        /** U10 (Stg 3:5): el mismo lema con otra glosa en contexto. */
+        sameLemma?: readonly SameLemmaFact[];
     }): Promise<GreekVerseInsight> {
         const raw = await runLlmPrompt({
             feature: 'greekTutor.analyzeVerse',

@@ -7,6 +7,8 @@ import {
     greekPartitive,
     greekSectionOpening,
     type SectionOpeningFact,
+    greekSameLemma,
+    type SameLemmaFact,
     greekAutos,
     greekVerbCandidates,
     hebrewSpeechFacts,
@@ -77,6 +79,8 @@ export interface VerseStructureState {
     hebrewPrepositions: readonly HebrewPrepositionCandidate[];
     /** Sólo griego (U9, Stg 3:1): vocativo + imperativo o pregunta al comienzo, señal de apertura de sección. */
     opening?: SectionOpeningFact;
+    /** Sólo griego (U10, Stg 3:5): el mismo lema con otra glosa en contexto (MACULA). */
+    sameLemma: readonly SameLemmaFact[];
 }
 
 /**
@@ -127,10 +131,11 @@ export function useVerseStructure(
         const ketivQere = actual?.chapter && lang === 'he' ? ketivQereOfVerse(actual.chapter, verse) : [];
         const conditionals = griego ? greekConditionals(griego, verse) : [];
         const opening = griego ? greekSectionOpening(griego, verse) : undefined;
+        const sameLemma = griego ? greekSameLemma(griego, verse) : [];
         const articles = actual?.chapter && lang === 'he' ? hebrewArticleAntecedents(actual.chapter, verse) : [];
         const hebrewVerbs = actual?.chapter && lang === 'he' ? hebrewFiniteVerbCandidates(actual.chapter, verse) : [];
         const hebrewPrepositions = actual?.chapter && lang === 'he' ? hebrewPrepositionCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, ...(opening ? { opening } : {}) };
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, sameLemma, ...(opening ? { opening } : {}) };
     }, [actual, key, verse, lang]);
 }
 

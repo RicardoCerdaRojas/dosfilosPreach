@@ -871,6 +871,11 @@
       "withQuestion": "Vocativo al comienzo del versículo, con una pregunta: en las cartas, el autor suele abrir así una nueva unidad (Stg 2:14).",
       "note": "Es una señal, no una regla: también aparece en medio de un argumento (Stg 3:12, 5:9). Confírmalo con el contenido."
     },
+    "sameLemma": {
+      "title": "Mismo lema en este versículo",
+      "gloss": "glosa en contexto: «{{gloss}}»",
+      "note": "Dato de MACULA: la misma palabra aparece otra vez en este versículo con otra glosa en contexto. Puede ser un sentido distinto (Stg 3:5: «qué pequeño» fuego, «qué grande» bosque) o solo un matiz; tradúcela según el suyo."
+    },
     "louwNida": {
       "title": "Sentido en este versículo (Louw-Nida)",
       "note": "Dato de MACULA: el sentido que el análisis del texto da a esta preposición aquí, según los dominios semánticos de Louw y Nida. El régimen dice qué sentidos admite el caso; esto dice cuál se lee en este versículo.",

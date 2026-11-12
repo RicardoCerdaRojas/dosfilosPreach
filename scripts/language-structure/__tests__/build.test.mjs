@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clausulasDelCapitulo, leerLowfat, leerOshb, sinAparato, sinMarcas } from '../build.mjs';
+import { clausulasDelCapitulo, glosasDistintas, raicesDeGlosa, leerLowfat, leerOshb, sinAparato, sinMarcas } from '../build.mjs';
 
 /** Revisión adversarial de G0 (2026-10-07): cada caso fue un defecto medido sobre el corpus. */
 describe('lectura de OSHB', () => {
@@ -69,6 +69,43 @@ describe('cláusulas del capítulo', () => {
         const x = `<wg class="cl"><w xml:id="c1" ref="X 2:10!9" class="prep" ln="89.5">ἐν</w><w xml:id="c2" ref="X 2:21!6" class="prep" ln="89.25 89.77">ἐξ</w><w xml:id="c3" ref="X 2:10!10">ἑνί</w></wg>`;
         const { palabras } = leerLowfat(x);
         expect(palabras.map(p => p.ln)).toEqual(['89.5', '89.25 89.77', '']);
+    });
+
+    it('U10 (revisión del profesor, Stg 3:5): se leen la clase y la glosa inglesa en contexto de MACULA', () => {
+        const x = `<wg class="cl"><w xml:id="d1" ref="X 3:5!12" class="pron" english="small" ln="79.127">ἡλίκον</w><w xml:id="d2" ref="X 3:5!13">πῦρ</w></wg>`;
+        const { palabras } = leerLowfat(x);
+        expect(palabras.map(p => [p.cls, p.en])).toEqual([['pron', 'small'], ['', '']]);
+    });
+});
+
+describe('U10: el mismo lema con otra glosa en contexto (Stg 3:5)', () => {
+    const w = (l, cls, en, ln = '') => ({ l, cls, en, ln });
+
+    it('raíces de la glosa: sin plural, posesivo ni palabras vacías; irregulares comunes', () => {
+        expect([...raicesDeGlosa('how great')]).toEqual(['grea']);
+        expect([...raicesDeGlosa('Satan’s')]).toEqual(['sata']);
+        expect(raicesDeGlosa('sons')).toEqual(raicesDeGlosa('son'));
+        expect(raicesDeGlosa('armies')).toEqual(raicesDeGlosa('army'));
+        expect(raicesDeGlosa('gave')).toEqual(raicesDeGlosa('given'));
+        expect(raicesDeGlosa('the')).toEqual(new Set());
+    });
+
+    it('Stg 3:5: ἡλίκον «small» / ἡλίκην «how great» se marcan aunque compartan Louw-Nida (79.127)', () => {
+        const ps = [w('μικρός', 'adj', 'small'), w('ἡλίκος', 'pron', 'small', '79.127'), w('πῦρ', 'noun', 'fire'), w('ἡλίκος', 'pron', 'how great', '79.127')];
+        expect([...glosasDistintas(ps)]).toEqual([1, 3]);
+    });
+
+    it('NO: misma glosa (o plural); palabras de función; nombres propios (93.x); sin glosa', () => {
+        expect(glosasDistintas([w('υἱός', 'noun', 'sons', '10.42'), w('υἱός', 'noun', 'son', '10.42')]).size).toBe(0);
+        expect(glosasDistintas([w('αὐτός', 'pron', 'him'), w('αὐτός', 'pron', 'their')]).size).toBe(0);
+        expect(glosasDistintas([w('Ἰούδας', 'noun', 'Judas', '93.173a'), w('Ἰούδας', 'noun', 'Jude', '93.173b')]).size).toBe(0);
+        expect(glosasDistintas([w('πῦρ', 'noun', ''), w('πῦρ', 'noun', 'flame')]).size).toBe(0);
+        expect(glosasDistintas([w('καί', 'conj', 'and'), w('καί', 'conj', 'also')]).size).toBe(0);
+    });
+
+    it('verbos: sólo con Louw-Nida sin código común («said» / «say» es el tiempo, no el sentido)', () => {
+        expect(glosasDistintas([w('λέγω', 'verb', 'said', '33.69'), w('λέγω', 'verb', 'tell', '33.69')]).size).toBe(0);
+        expect([...glosasDistintas([w('ὁράω', 'verb', 'saw', '24.1'), w('ὁράω', 'verb', 'look to it', '13.134')])]).toEqual([0, 1]);
     });
 });
 

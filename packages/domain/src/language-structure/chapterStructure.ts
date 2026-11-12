@@ -31,6 +31,8 @@ export interface StructureWord {
     readonly parse?: string;
     /** Griego (U3c): el sentido de Louw-Nida que MACULA da a una PREPOSICIÓN («89.5»; a veces dos). */
     readonly ln?: string;
+    /** Griego (U10, Stg 3:5): la glosa inglesa en contexto de MACULA, sólo si el lema se repite en el versículo con otra glosa. */
+    readonly g?: string;
     /** Hebreo: código de OSHB y piezas. */
     readonly m?: string;
     readonly parts?: readonly StructurePart[];
