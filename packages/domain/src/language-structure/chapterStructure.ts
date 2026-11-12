@@ -61,6 +61,34 @@ export interface ChapterStructure {
     readonly chapter: number;
     readonly words: readonly StructureWord[];
     readonly clauses: readonly StructureClause[];
+    /** U11b: las frases preposicionales de MACULA (las más externas). Falta en datos viejos. */
+    readonly phrases?: readonly StructurePhrase[];
+}
+
+/**
+ * U11b (revisión del profesor, Stg 2:16 ἐξ ὑμῶν, 2:18 χωρὶς τῶν ἔργων, 2:21 ἐξ ἔργων): una frase
+ * preposicional de MACULA como `[versículo, desde, hasta, clase]` (posiciones desde 1). Clase: «a»
+ * adverbial (constituyente de la cláusula: va con el verbo), «p» predicado, «n» adnominal (va con
+ * un nombre, dentro de un sintagma nominal).
+ */
+export type PhraseKind = 'a' | 'p' | 'n';
+export type StructurePhrase = readonly [verse: number, from: number, to: number, kind: PhraseKind];
+
+/** Una frase del versículo: sus palabras («verso!n», en orden, sin ketiv) y su clase. */
+export interface VersePhrase {
+    readonly rs: readonly string[];
+    readonly kind: PhraseKind;
+}
+
+export function versePhrases(ch: ChapterStructure, verse: number): VersePhrase[] {
+    const enVerso = new Set(verseWords(ch, verse).map(w => w.r));
+    return (ch.phrases ?? [])
+        .filter(([v]) => v === verse)
+        .map(([, desde, hasta, kind]) => ({
+            rs: Array.from({ length: hasta - desde + 1 }, (_, k) => `${verse}!${desde + k}`).filter(r => enVerso.has(r)),
+            kind,
+        }))
+        .filter(f => f.rs.length > 0);
 }
 
 export interface ILanguageStructureProvider {

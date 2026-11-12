@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clausulasDelCapitulo, glosasDistintas, raicesDeGlosa, leerLowfat, leerOshb, sinAparato, sinMarcas } from '../build.mjs';
+import { clausulasDelCapitulo, frasesDelCapitulo, glosasDistintas, raicesDeGlosa, leerLowfat, leerOshb, sinAparato, sinMarcas } from '../build.mjs';
 
 /** Revisión adversarial de G0 (2026-10-07): cada caso fue un defecto medido sobre el corpus. */
 describe('lectura de OSHB', () => {
@@ -106,6 +106,34 @@ describe('U10: el mismo lema con otra glosa en contexto (Stg 3:5)', () => {
     it('verbos: sólo con Louw-Nida sin código común («said» / «say» es el tiempo, no el sentido)', () => {
         expect(glosasDistintas([w('λέγω', 'verb', 'said', '33.69'), w('λέγω', 'verb', 'tell', '33.69')]).size).toBe(0);
         expect([...glosasDistintas([w('ὁράω', 'verb', 'saw', '24.1'), w('ὁράω', 'verb', 'look to it', '13.134')])]).toEqual([0, 1]);
+    });
+});
+
+describe('U11b: las frases preposicionales de MACULA (Stg 2:16 ἐξ ὑμῶν, 2:18 χωρὶς τῶν ἔργων)', () => {
+    const x = `<wg class="cl"><w xml:id="e1" ref="X 2:16!1">εἴπῃ</w><wg class="np" role="s"><w xml:id="e2" ref="X 2:16!3">τις</w>
+      <wg class="pp" rule="PrepNp"><w xml:id="e3" ref="X 2:16!5">ἐξ</w><w xml:id="e4" ref="X 2:16!6">ὑμῶν</w></wg></wg>
+      <wg class="pp" rule="PrepNp" role="adv"><w xml:id="e5" ref="X 2:16!8">ἐν</w><wg class="np"><w xml:id="e6" ref="X 2:16!9">εἰρήνῃ</w>
+      <wg class="pp" rule="PrepNp"><w xml:id="e7" ref="X 2:16!10">ἐν</w><w xml:id="e8" ref="X 2:16!11">Χ</w></wg></wg></wg>
+      <wg class="pp" rule="PrepCL" role="adv"><w xml:id="e9" ref="X 2:16!12">ἐν</w><w xml:id="e10" ref="X 2:16!13">τῷ</w></wg></wg>`;
+    const orden = new Map(Array.from({ length: 13 }, (_, i) => [`16!${i + 1}`, i]));
+
+    it('lee sólo las MÁS EXTERNAS, con el rol del grupo; sin rol = adnominal', () => {
+        const { frases } = leerLowfat(x);
+        expect(frases.map(f => [f.refs.length, f.role, f.rule])).toEqual([[2, '', 'PrepNp'], [4, 'adv', 'PrepNp'], [2, 'adv', 'PrepCL']]);
+    });
+
+    it('al capítulo: [versículo, desde, hasta, clase]; preposición + infinitivo (PrepCL) no entra', () => {
+        const { frases } = leerLowfat(x);
+        expect(frasesDelCapitulo(frases, 2, orden)).toEqual({ phrases: [[16, 5, 6, 'n'], [16, 8, 11, 'a']], saltadas: 0 });
+    });
+
+    it('omite la que cruza de versículo o tiene un hueco; «p» si es predicado', () => {
+        const fs = [
+            { role: 'adv', rule: 'PrepNp', refs: ['X 2:15!9', 'X 2:16!1'] },
+            { role: 'adv', rule: 'PrepNp', refs: ['X 2:16!2', 'X 2:16!4'] },
+            { role: 'p', rule: 'PrepNp', refs: ['X 2:16!7'] },
+        ];
+        expect(frasesDelCapitulo(fs, 2, orden)).toEqual({ phrases: [[16, 7, 7, 'p']], saltadas: 2 });
     });
 });
 

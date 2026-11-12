@@ -3,13 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CLAUSE_RELATIONS, verseStructure, verseWords, type ChapterStructure } from '@dosfilos/domain';
+import { CLAUSE_RELATIONS, verseStructure, versePhrases, verseWords, type ChapterStructure } from '@dosfilos/domain';
+import { frasePorRef } from '../frases';
 import type { StructureWordLinks } from '../StructureSection';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (k: string) => k }),
 }));
-const { StructureFlow, StructureSection } = await import('../StructureSection');
+const { LeyendaFrases, StructureFlow, StructureSection } = await import('../StructureSection');
 const { useVerseStructure } = await import('../useVerseStructure');
 const { TooltipProvider } = await import('@/components/ui/tooltip');
 
@@ -44,6 +45,24 @@ describe('StructureFlow (G1 + G5)', () => {
         const filas = screen.getAllByTestId('structure-row');
         expect(filas.map(f => !!f.querySelector('[data-testid="protasis-miembro"]'))).toEqual([false, false, true, false, false]);
         expect(filas[2]!.textContent).toContain('relations.development');
+    });
+
+    it('U11b (Stg 2:16): con «Frases», «ἐξ ὑμῶν» punteada (va con τις) y «ἐν εἰρήνῃ» continua (va con el verbo); sin, nada', () => {
+        const { unmount } = render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 16)} phrases={frasePorRef(versePhrases(santiago2, 16))} />);
+        const ex = screen.getByText('ἐξ'), en = screen.getByText('ἐν');
+        expect([ex.dataset.frase, screen.getByText('ὑμῶν·').dataset.frase, en.dataset.frase]).toEqual(['n', 'n', 'a']);
+        expect(ex.className).toContain('decoration-dashed');
+        expect(en.className).toContain('underline');
+        expect(en.className).not.toContain('decoration-dashed');
+        expect(screen.getByText('εἴπῃ').className).not.toContain('underline');
+        unmount();
+        render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 16)} />);
+        expect(screen.getByText('ἐξ').className).not.toContain('underline');
+    });
+
+    it('U11b: la leyenda de las frases dice la forma de cada línea', () => {
+        render(<LeyendaFrases />);
+        expect(screen.getByTestId('phrases-legend').textContent).toBe('legendPhraseVerblegendPhraseNoun');
     });
 
     it('la sangría sigue la profundidad, relativa a la fila menos profunda', () => {

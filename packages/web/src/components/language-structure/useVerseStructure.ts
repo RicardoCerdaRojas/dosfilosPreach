@@ -9,6 +9,8 @@ import {
     type SectionOpeningFact,
     greekSameLemma,
     type SameLemmaFact,
+    versePhrases,
+    type VersePhrase,
     greekAutos,
     greekVerbCandidates,
     hebrewSpeechFacts,
@@ -81,6 +83,8 @@ export interface VerseStructureState {
     opening?: SectionOpeningFact;
     /** Sólo griego (U10, Stg 3:5): el mismo lema con otra glosa en contexto (MACULA). */
     sameLemma: readonly SameLemmaFact[];
+    /** U11b (Stg 2:16, 2:18): las frases preposicionales de MACULA, en los dos idiomas. */
+    phrases: readonly VersePhrase[];
 }
 
 /**
@@ -132,10 +136,11 @@ export function useVerseStructure(
         const conditionals = griego ? greekConditionals(griego, verse) : [];
         const opening = griego ? greekSectionOpening(griego, verse) : undefined;
         const sameLemma = griego ? greekSameLemma(griego, verse) : [];
+        const phrases = actual?.chapter ? versePhrases(actual.chapter, verse) : [];
         const articles = actual?.chapter && lang === 'he' ? hebrewArticleAntecedents(actual.chapter, verse) : [];
         const hebrewVerbs = actual?.chapter && lang === 'he' ? hebrewFiniteVerbCandidates(actual.chapter, verse) : [];
         const hebrewPrepositions = actual?.chapter && lang === 'he' ? hebrewPrepositionCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, sameLemma, ...(opening ? { opening } : {}) };
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, sameLemma, phrases, ...(opening ? { opening } : {}) };
     }, [actual, key, verse, lang]);
 }
 

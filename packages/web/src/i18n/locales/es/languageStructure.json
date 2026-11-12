@@ -92,6 +92,8 @@
   },
   "legendConnector": "Conector",
   "legendFronted": "Antepuesto al verbo (foco o marco)",
+  "legendPhraseVerb": "Frase preposicional con el verbo",
+  "legendPhraseNoun": "Frase preposicional con un nombre",
   "legendIndent": "La sangría muestra qué cláusula depende de cuál.",
   "cardFronted": "Antepuesta al verbo como {{role}}: puede marcar foco (énfasis) o marco (el tema); lo decide el contexto.",
   "cardFrontedTitle": "Posición",

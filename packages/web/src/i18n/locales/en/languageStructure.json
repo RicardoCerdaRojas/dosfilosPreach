@@ -92,6 +92,8 @@
   },
   "legendConnector": "Connector",
   "legendFronted": "Before the verb (focus or frame)",
+  "legendPhraseVerb": "Prepositional phrase with the verb",
+  "legendPhraseNoun": "Prepositional phrase with a noun",
   "legendIndent": "Indentation shows which clause depends on which.",
   "cardFronted": "Placed before the verb as {{role}}: it may mark focus (emphasis) or frame (the topic); context decides.",
   "cardFrontedTitle": "Position",

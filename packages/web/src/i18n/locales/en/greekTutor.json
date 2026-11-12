@@ -761,6 +761,8 @@
     "tools": {
       "translit": "Translit.",
       "translitToggle": "Show or hide the transliteration — drop the crutch to really read the alphabet",
+      "phrases": "Phrases",
+      "phrasesToggle": "Underline the prepositional phrases: solid if it goes with the verb, dotted if it goes with a noun",
       "smaller": "Smaller text",
       "larger": "Larger text",
       "copyGreek": "Greek",

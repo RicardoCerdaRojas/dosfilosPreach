@@ -1,4 +1,6 @@
-import type { GreekKeyInsight, GreekVerseInsight, GreekVerseTokens } from '@dosfilos/domain';
+import type { GreekKeyInsight, GreekVerseInsight, GreekVerseTokens, PhraseKind } from '@dosfilos/domain';
+import { SUBRAYADO_FRASE } from '@/components/language-structure/frases';
+import { LeyendaFrases } from '@/components/language-structure/StructureSection';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -29,6 +31,10 @@ interface Props {
     onSeleccion: (i: number | null) => void;
     /** Rol con que la palabra va antepuesta al verbo (vista «Estructura»). */
     frontedDe?: (i: number) => FrontedInfo | undefined;
+    /** U11b: el interruptor «Frases» y, prendido, la clase de la frase de cada palabra (por posición). */
+    showPhrases?: boolean;
+    onTogglePhrases?: () => void;
+    frases?: ReadonlyMap<number, PhraseKind>;
 }
 
 const FUENTE: Record<GreekFontScale, string> = { 0: 'text-2xl', 1: 'text-3xl', 2: 'text-4xl' };
@@ -95,6 +101,9 @@ export function GreekVerseBoard({
     seleccion,
     onSeleccion,
     frontedDe,
+    showPhrases,
+    onTogglePhrases,
+    frases,
 }: Props) {
     const { t } = useTranslation('greekTutor');
 
@@ -109,6 +118,8 @@ export function GreekVerseBoard({
                     onFontScale={onFontScale}
                     showTranslit={showTranslit}
                     onToggleTranslit={onToggleTranslit}
+                    showPhrases={showPhrases}
+                    onTogglePhrases={onTogglePhrases}
                     greekText={data.text}
                     translitText={data.tokens.map((tk) => tk.transliteration).join(' ')}
                     onReanalyze={onReanalyze}
@@ -127,7 +138,9 @@ export function GreekVerseBoard({
                                     seleccion === i && 'bg-primary/10 ring-1 ring-primary/40',
                                 )}
                             >
-                                <span className={cn('leading-tight', FUENTE[fontScale])}>{pintarPalabraGriega(tok, colorMode)}</span>
+                                <span data-frase={showPhrases ? frases?.get(i) : undefined} className={cn('leading-tight', FUENTE[fontScale], showPhrases && frases?.has(i) && SUBRAYADO_FRASE[frases.get(i)!])}>
+                                    {pintarPalabraGriega(tok, colorMode)}
+                                </span>
                                 {showTranslit && (
                                     <span className="text-[11px] text-muted-foreground italic" lang="en">
                                         {tok.transliteration}
@@ -149,6 +162,10 @@ export function GreekVerseBoard({
                     </Tooltip>
                 ))}
             </div>
+
+            {showPhrases && (frases?.size ?? 0) > 0 && (
+                <div className="mt-4 border-t border-border/60 pt-3 print:hidden"><LeyendaFrases /></div>
+            )}
 
             {/* SISTEMA DE COLORES — la leyenda del hebreo, para la capa activa. */}
             {colorMode !== 'off' && (

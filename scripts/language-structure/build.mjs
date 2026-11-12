@@ -85,11 +85,19 @@ export function leerLowfat(xml) {
     // (Stg 2:7) el rol «o» está en el grupo, no en las palabras: sin esto, un
     // objeto de varias palabras no tenía rol y no se podía ver si iba antes
     // del verbo.
-    const pila = []; // { cl: índice|null, role, cls, cons }
+    const pila = []; // { cl: índice|null, role, cls, cons, pp? }
+    // U11b (revisión del profesor, Stg 2:16 ἐξ ὑμῶν, 2:18 χωρὶς τῶν ἔργων): las
+    // frases preposicionales MÁS EXTERNAS, con el rol del grupo (sin rol =
+    // adnominal, dentro de un sintagma nominal).
+    const frases = [];
     const rol = (r) => (r && !r.startsWith('err') ? r : '');
     for (const m of xml.matchAll(/<wg(\s[^>]*)?>|<\/wg>|<w\s([^>]*)>([^<]*)<\/w>/gs)) {
         const g = m[0];
-        if (g === '</wg>') { pila.pop(); continue; }
+        if (g === '</wg>') {
+            const cerrado = pila.pop();
+            if (cerrado?.pp && !pila.some(x => x.pp)) frases.push(cerrado.pp);
+            continue;
+        }
         if (g.startsWith('<wg')) {
             const a = attrs(m[1]);
             const padre = [...pila].reverse().find(x => x.cl !== null)?.cl ?? null;
@@ -101,11 +109,12 @@ export function leerLowfat(xml) {
             } else {
                 const tope = pila[pila.length - 1];
                 const cons = tope && tope.cls === 'cl' ? rol(a.role) : (tope?.cons ?? '');
-                pila.push({ cl: null, role: a.role ?? '', cls: a.class ?? '', cons });
+                pila.push({ cl: null, role: a.role ?? '', cls: a.class ?? '', cons, ...(a.class === 'pp' ? { pp: { role: rol(a.role), rule: a.rule ?? '', refs: [] } } : {}) });
             }
             continue;
         }
         const a = attrs(m[2]);
+        for (const x of pila) if (x.pp && a.ref && !x.pp.refs.includes(a.ref)) x.pp.refs.push(a.ref);
         const cl = [...pila].reverse().find(x => x.cl !== null)?.cl ?? null;
         const tope = pila[pila.length - 1];
         const cons = tope && tope.cls !== 'cl' ? tope.cons : '';
@@ -113,7 +122,33 @@ export function leerLowfat(xml) {
         // `cls` y `en` (U10, Stg 3:5 ἡλίκον «small» / ἡλίκην «how great»): la clase y la glosa inglesa EN CONTEXTO.
         palabras.push({ id: a['xml:id'], ref: a.ref, text: m[3], role: rol(a.role) || cons, morph: a.morph ?? '', clause: cl, ln: a.ln ?? '', cls: a.class ?? '', en: a.english ?? '' });
     }
-    return { clausulas, palabras };
+    return { clausulas, palabras, frases };
+}
+
+/**
+ * U11b: las frases preposicionales de un capítulo como `[versículo, desde,
+ * hasta, clase]` (posiciones de palabra en el versículo, desde 1). Clase:
+ * «a» adverbial (constituyente de la cláusula: va con el verbo), «p»
+ * predicado, «n» adnominal (va con un nombre). Preposición + infinitivo
+ * (`PrepCL`) no entra: es una cláusula y ya tiene su fila. Se omiten las que cruzan de
+ * versículo o tienen un hueco (otra palabra en medio que no es suya).
+ */
+export function frasesDelCapitulo(frases, cap, orden) {
+    const out = [];
+    let saltadas = 0;
+    for (const f of frases) {
+        // Preposición + infinitivo (`PrepCL`: לִרְאוֹת, ἐν τῷ σπείρειν) es una cláusula, no una frase.
+        if (f.rule === 'PrepCL') continue;
+        const ks = f.refs.map(capVers).filter(Boolean);
+        if (!ks.length || ks.some(k => k.cv !== ks[0].cv)) { if (ks.some(k => Number(k.cv.split(':')[0]) === cap)) saltadas++; continue; }
+        const [c, v] = ks[0].cv.split(':').map(Number);
+        if (c !== cap) continue;
+        const ns = [...new Set(ks.map(k => k.n))].sort((a, b) => a - b);
+        if (ns.some(n => !orden.has(`${v}!${n}`)) || ns[ns.length - 1] - ns[0] + 1 !== ns.length) { saltadas++; continue; }
+        out.push([v, ns[0], ns[ns.length - 1], f.role === 'p' ? 'p' : f.role ? 'a' : 'n']);
+    }
+    out.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    return { phrases: out, saltadas };
 }
 
 /**
@@ -231,7 +266,7 @@ async function griego(only, informe) {
         const texto = await descargar('morphgnt', `${mg}-morphgnt.txt`);
         const xml = await descargar('maculaGreek', `SBLGNT/lowfat/${mac}.xml`);
         const filas = texto.split('\n').filter(Boolean).map(l => l.trim().split(/\s+/));
-        const { clausulas, palabras } = leerLowfat(xml);
+        const { clausulas, palabras, frases } = leerLowfat(xml);
         const maculaPorVers = new Map();
         for (const p of palabras) {
             const r = capVers(p.ref ?? '');
@@ -270,11 +305,13 @@ async function griego(only, informe) {
         }
         // Palabras de MACULA de versículos que SBLGNT sí tiene y que nadie usó.
         for (const [cv, lista] of maculaPorVers) if ((posEnVers.get(cv) ?? 0) > 0 && lista.length !== posEnVers.get(cv)) distintas++;
-        informe.push({ lang: 'gr', book, palabras: filas.length, macula: palabras.length, distintas });
+        const frasesSaltadas = [...capitulos].reduce((n, [cap, words]) => n + frasesDelCapitulo(frases, cap, ordenDe(words)).saltadas, 0);
+        informe.push({ lang: 'gr', book, palabras: filas.length, macula: palabras.length, distintas, frasesSaltadas });
         if (distintas > 0) continue;
         limpiar(`gr/${book}`);
         for (const [cap, words] of capitulos) {
-            escribir(`gr/${book}/${cap}.json`, { lang: 'gr', book, chapter: cap, words, clauses: clausulasDelCapitulo(clausulas, palabras, cap, ordenDe(words)) });
+            const { phrases } = frasesDelCapitulo(frases, cap, ordenDe(words));
+            escribir(`gr/${book}/${cap}.json`, { lang: 'gr', book, chapter: cap, words, clauses: clausulasDelCapitulo(clausulas, palabras, cap, ordenDe(words)), phrases });
         }
     }
 }
@@ -322,13 +359,13 @@ async function hebreo(only, informe) {
         if (only && !only.has(book)) continue;
         const oshb = leerOshb(await descargar('morphhb', `wlc/${book}.xml`));
         const capitulos = [...new Set([...oshb.keys()].map(k => Number(k.split(':')[0])))].sort((a, b) => a - b);
-        let total = 0, distintas = 0, ketiv = 0, faltan = 0;
+        let total = 0, distintas = 0, ketiv = 0, faltan = 0, frasesSaltadas = 0;
         const desacuerdos = [];
         const salida = [];
         for (const cap of capitulos) {
             const xml = await descargar('maculaHebrew', `WLC/lowfat/${mac}-${String(cap).padStart(3, '0')}-lowfat.xml`);
             if (!xml) { faltan++; continue; }
-            const { clausulas, palabras } = leerLowfat(xml);
+            const { clausulas, palabras, frases } = leerLowfat(xml);
             const partes = new Map();
             for (const p of palabras) {
                 const r = capVers(p.ref ?? '');
@@ -361,10 +398,12 @@ async function hebreo(only, informe) {
                 });
             }
             for (const k of partes.keys()) if (!usadas.has(k)) distintas++;
-            salida.push([cap, { lang: 'he', book, chapter: cap, words, clauses: clausulasDelCapitulo(clausulas, palabras, cap, ordenDe(words)) }]);
+            const { phrases, saltadas } = frasesDelCapitulo(frases, cap, ordenDe(words));
+            frasesSaltadas += saltadas;
+            salida.push([cap, { lang: 'he', book, chapter: cap, words, clauses: clausulasDelCapitulo(clausulas, palabras, cap, ordenDe(words)), phrases }]);
         }
         informe.push({
-            lang: 'he', book, palabras: total, distintas, ketiv,
+            lang: 'he', book, palabras: total, distintas, ketiv, frasesSaltadas,
             ...(desacuerdos.length ? { desacuerdos: desacuerdos.join(' · ') } : {}),
             ...(faltan ? { falta: `${faltan} cap. de MACULA` } : {}),
         });

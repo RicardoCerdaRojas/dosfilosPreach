@@ -16,6 +16,8 @@ import { SourceNote } from './SourceNote';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VerseStructureState } from './useVerseStructure';
+import { frasePorRef, SUBRAYADO_FRASE } from './frases';
+import type { PhraseKind } from '@dosfilos/domain';
 
 /** Las relaciones que llevan una nota de la regla (`notes.*` en el locale). */
 const CON_NOTA: ReadonlySet<ClauseRelation> = new Set([
@@ -65,6 +67,8 @@ interface FlowProps {
     links?: StructureWordLinks;
     /** La lectura del asistente, por fila (validada contra las filas al generarse). */
     readings?: readonly ClauseReading[];
+    /** U11b: palabra → clase de su frase preposicional, si el interruptor «Frases» está prendido. */
+    phrases?: ReadonlyMap<string, PhraseKind>;
 }
 
 /** Marca lo que viene del asistente: lo demás de la fila sale del texto. */
@@ -86,7 +90,7 @@ const EtiquetaAsistente: React.FC = () => {
  * antepuesto al verbo resaltado y la relación a la vista. Las relaciones que
  * el texto no decide («propósito o resultado») se nombran como tales.
  */
-export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageIndex, links, readings }) => {
+export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageIndex, links, readings, phrases }) => {
     const { t } = useTranslation('languageStructure');
     const base = Math.min(...nodes.map(n => n.depth));
     const indiceDe = (r: string) => {
@@ -137,7 +141,8 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                                         >
                                             <span
                                                 lang={lang === 'he' ? 'he' : 'grc'}
-                                                className={cn('leading-snug text-foreground', lang === 'he' ? 'font-hebrew text-xl' : 'text-lg')}
+                                                data-frase={phrases?.get(w.r)}
+                                                className={cn('leading-snug text-foreground', lang === 'he' ? 'font-hebrew text-xl' : 'text-lg', phrases?.has(w.r) && SUBRAYADO_FRASE[phrases.get(w.r)!])}
                                             >
                                                 {enlazada && links?.renderText ? links.renderText(i) : w.t}
                                             </span>
@@ -211,7 +216,7 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
 };
 
 /** La leyenda con las mismas marcas que las palabras (pedido del fundador: «no entiendo los colores»). */
-const Leyenda: React.FC = () => {
+const Leyenda: React.FC<{ frases?: boolean }> = ({ frases }) => {
     const { t } = useTranslation('languageStructure');
     return (
         <div className="mt-3 space-y-1.5 text-[11px] text-muted-foreground" data-testid="structure-legend">
@@ -226,7 +231,25 @@ const Leyenda: React.FC = () => {
                 </span>
                 <span>{t('legendIndent')}</span>
             </div>
+            {frases && <LeyendaFrases />}
             <p>{t('legend')}</p>
+        </div>
+    );
+};
+
+/** U11b: qué dice cada subrayado (la forma de la línea, no sólo el color). */
+export const LeyendaFrases: React.FC = () => {
+    const { t } = useTranslation('languageStructure');
+    return (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground" data-testid="phrases-legend">
+            <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="inline-block h-2.5 w-6 border-b-2 border-primary" />
+                {t('legendPhraseVerb')}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="inline-block h-2.5 w-6 border-b-2 border-dashed border-primary" />
+                {t('legendPhraseNoun')}
+            </span>
         </div>
     );
 };
@@ -238,14 +261,17 @@ interface SectionProps {
     readings?: readonly ClauseReading[];
     /** Por qué no hay lectura del asistente (sin análisis, o análisis viejo) y cómo pedirla. */
     readingNotice?: { message: string; action?: { label: string; onClick: () => void; disabled?: boolean } };
+    /** U11b: subrayar las frases preposicionales (el interruptor «Frases» de la página). */
+    showPhrases?: boolean;
 }
 
 /** La sección «Estructura» de las páginas de griego y de hebreo. */
-export const StructureSection: React.FC<SectionProps> = ({ lang, structure, links, readings, readingNotice }) => {
+export const StructureSection: React.FC<SectionProps> = ({ lang, structure, links, readings, readingNotice, showPhrases }) => {
     const { t } = useTranslation('languageStructure');
     const { loading, unavailable, nodes, ordinal, words } = structure;
     const mapear = links?.toPageIndex;
     const pageIndex = React.useMemo(() => (mapear ? mapear(words) : undefined), [mapear, words]);
+    const frases = React.useMemo(() => (showPhrases ? frasePorRef(structure.phrases) : undefined), [showPhrases, structure.phrases]);
 
     return (
         <section className="rounded-xl border border-border bg-card p-5 print:break-inside-avoid">
@@ -276,8 +302,8 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
                             )}
                         </div>
                     )}
-                    <StructureFlow lang={lang} nodes={nodes} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} />
-                    <Leyenda />
+                    <StructureFlow lang={lang} nodes={nodes} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} phrases={frases} />
+                    <Leyenda frases={!!frases} />
                 </>
             )}
             <p className="mt-2 text-[11px] text-muted-foreground">

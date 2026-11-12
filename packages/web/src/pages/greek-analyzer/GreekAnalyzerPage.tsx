@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { FichaPanelGriego, TarjetasResumenGriego } from './FichasGriego';
 import type { DatosGriego } from './ficha/bloquesGriego';
 import { StructureSection } from '@/components/language-structure/StructureSection';
+import { frasePorOrdinal, useFrasesVisibles } from '@/components/language-structure/frases';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { mismasPalabras } from '@/components/language-structure/mismasPalabras';
 import { applyDiscourseRules, applyNominalRules, applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
@@ -54,6 +55,7 @@ export function GreekAnalyzerPage() {
         const v = Number(localStorage.getItem('greekAnalyzer.fontScale'));
         return (v === 0 || v === 1 || v === 2 ? v : 1) as GreekFontScale;
     });
+    const [frases, alternarFrases] = useFrasesVisibles('greekAnalyzer.frases');
     const [showTranslit, setShowTranslit] = useState(() => localStorage.getItem('greekAnalyzer.translit') !== '0');
     const [colorMode, setColorMode] = useState<GreekColorMode>(() => {
         const v = localStorage.getItem('greekAnalyzer.colorMode');
@@ -298,6 +300,8 @@ export function GreekAnalyzerPage() {
                             seleccion={seleccion}
                             onSeleccion={abrirFicha}
                             frontedDe={frontedDe}
+                            // U11b (Stg 2:16, 2:21): las frases preposicionales de MACULA, si las palabras calzan.
+                            {...(alineados ? { showPhrases: frases, onTogglePhrases: alternarFrases, frases: frasePorOrdinal(estructura.words, estructura.phrases) } : {})}
                         />
 
                         {/* LAS DOS TRADUCCIONES — el aporte del modelo, con caché
@@ -322,6 +326,7 @@ export function GreekAnalyzerPage() {
                             structure={estructura}
                             readings={lecturas}
                             readingNotice={avisoLectura}
+                            showPhrases={alineados && frases}
                             links={{
                                 toPageIndex: alinear,
                                 renderText: (i) => (data.tokens[i] ? pintarPalabraGriega(data.tokens[i]!, colorMode) : null),

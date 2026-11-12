@@ -93,7 +93,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
   const [activeWordIndex, setActiveWordIndex] = React.useState<number | null>(null);
 
   // ── Estructura (G1 + G5): datos de MACULA, enlazados a las palabras del análisis ──
-  const { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, articulos, roles, verbos, preposiciones, sinLectura } = useEstructuraHebrea(analysis, structureRef);
+  const { estructura, alinear, frases, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, articulos, roles, verbos, preposiciones, sinLectura } = useEstructuraHebrea(analysis, structureRef);
   // H6: con formas corregidas según OSHB, la traducción literal es anterior a la corrección. La
   // fórmula de juramento no cuenta: su traducción la pone el código (H7), y en Rut 1:17 OSHB dice
   // imperfecto, así que esa «corrección» existe siempre, aun con la literal ya bien (prueba del fundador).
@@ -227,6 +227,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
         showColors={showColors}
         showVerbMarkers={showVerbMarkers}
         showSyntaxMarkers={showSyntaxMarkers}
+        frases={frases}
         fullMarks={fullMarks}
         sentinelRef={headerSentinelRef}
         activeWordIndex={activeWordIndex}
@@ -366,7 +367,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
           >
             {analysis.words.map((w, i) => {
               const isVerb = !!w.verbMorphology && showVerbMarkers;
-              const syntacticMark = showSyntaxMarkers ? getSyntacticMark(w) : null;
+              const syntacticMark = showSyntaxMarkers ? getSyntacticMark(w, frases.get(i)) : null;
               const isActive = activeWordIndex === i;
               // Maqaf (U+05BE ־): when the PREVIOUS word ends with maqaf, this word
               // is prosodically bound to it. We collapse the flex gap with a negative
@@ -558,6 +559,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
           lang="he"
           structure={estructura}
           readings={analysis.clauseReadings}
+          showPhrases={showSyntaxMarkers}
           readingNotice={
             sinLectura
               ? {

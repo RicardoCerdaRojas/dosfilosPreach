@@ -785,6 +785,8 @@
     "tools": {
       "translit": "Translit.",
       "translitToggle": "Mostrar u ocultar la transliteración — suelta la muleta para leer el alfabeto de verdad",
+      "phrases": "Frases",
+      "phrasesToggle": "Subrayar las frases preposicionales: línea continua si va con el verbo, punteada si va con un nombre",
       "smaller": "Letra más pequeña",
       "larger": "Letra más grande",
       "copyGreek": "Griego",

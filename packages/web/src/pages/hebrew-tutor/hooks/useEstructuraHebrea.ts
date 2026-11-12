@@ -1,8 +1,9 @@
 import React from 'react';
-import { applyHebrewFiniteVerb, applyHebrewPreposition, applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, readingFor, type HebrewSuffix, type HebrewArticleFact, type HebrewVerbView, type HebrewPrepositionView, type ResolvedRelation, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewFiniteVerb, applyHebrewPreposition, applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, readingFor, type HebrewSuffix, type HebrewArticleFact, type HebrewVerbView, type HebrewPrepositionView, type ResolvedRelation, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type PhraseKind, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
+import { frasePorRef } from '@/components/language-structure/frases';
 
 /** Un hecho de «quién habla» con los nombres en el idioma del análisis. */
 export type SpeechView = SpeechFact & { readonly speakerName?: string; readonly addresseeName?: string };
@@ -197,7 +198,22 @@ export function useEstructuraHebrea(
         }
         return m;
     }, [estructura, alinear, analysis.words]);
-    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, articulos, roles, verbos, preposiciones, sinLectura };
+    /**
+     * U11b (Rut 2:1 לְאִישָׁהּ): índice del análisis → la clase de su frase preposicional según MACULA,
+     * o `null` si está alineada y no va en ninguna. Falta (undefined) si la palabra no se alineó: ahí
+     * la marca sigue saliendo como antes.
+     */
+    const frases = React.useMemo(() => {
+        const m = new Map<number, PhraseKind | null>();
+        const indice = alinear(estructura.words);
+        const porRef = frasePorRef(estructura.phrases ?? []);
+        estructura.words.forEach((w, o) => {
+            const i = indice[o];
+            if (i !== undefined && !m.get(i)) m.set(i, porRef.get(w.r) ?? null);
+        });
+        return m;
+    }, [estructura, alinear]);
+    return { estructura, alinear, frases, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, articulos, roles, verbos, preposiciones, sinLectura };
 }
 
 /**
