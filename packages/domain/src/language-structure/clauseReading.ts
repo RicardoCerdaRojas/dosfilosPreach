@@ -25,6 +25,19 @@ export type ResolvedRelation =
     | 'contrast' | 'circumstantial' | 'concessive' | 'background' | 'opening' | 'closing';
 export type FrontingFunction = 'focus' | 'frame';
 
+/**
+ * Todos los valores de "resolved", para el esquema de respuesta del asistente
+ * (G0: modo estricto). El tipo de abajo falla al compilar si falta uno.
+ */
+export const RESOLVED_RELATIONS = [
+    'purpose', 'result', 'ground', 'content',
+    'contrast', 'circumstantial', 'concessive', 'background', 'opening', 'closing',
+] as const satisfies readonly ResolvedRelation[];
+type FaltaUnValor = Exclude<ResolvedRelation, (typeof RESOLVED_RELATIONS)[number]>;
+const _resolvedCompleto: [FaltaUnValor] extends [never] ? true : never = true;
+void _resolvedCompleto;
+export const FRONTING_FUNCTIONS = ['focus', 'frame'] as const satisfies readonly FrontingFunction[];
+
 export interface ClauseReading {
     /** `StructureNode.index` de la fila. */
     readonly index: number;
