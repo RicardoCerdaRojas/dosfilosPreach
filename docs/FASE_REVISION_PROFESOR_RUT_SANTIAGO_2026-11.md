@@ -373,6 +373,42 @@ Lectura (medido):
   - Costo: 22 llamadas, unos US$ 0,11.
 - **No se hizo:** el aviso «la literal contradice la traducción de la palabra». Con la mitad de los casos sinónimos, sería ruido.
 
+**U11 (2026-11-12): «Estructura» por frases, en tres commits.**
+
+**Decisiones del fundador en la sesión de diseño:**
+- corregir las filas y sumar una vista «Diagrama» al estilo del profesor;
+- interruptor «Frases» que subraya, y en el Diagrama solo las frases adverbiales bajan a su propia línea;
+- la prótasis de varios miembros, con corchete y rótulo;
+- griego y hebreo.
+
+**U11a (`e34d0d36`), reglas de las filas.**
+- La hija discontinua va en línea con su madre: Stg 2:14 queda «ἐὰν πίστιν λέγῃ τις ἔχειν», y con eso desaparece la fila de solo «ἐάν».
+- `conditionGroup`: la prótasis de varios miembros.
+  - En griego, lo que está dentro de ἐάν/εἰ deja de rotularse apódosis. Era un defecto previo: Ap 3:20 «καὶ ἀνοίξῃ», Mc 12:19 «καταλίπῃ».
+  - En hebreo, אִם puede envolver la oración entera (Am 9:3), así que la apódosis queda fuera del grupo.
+- Las coordinadas van al mismo nivel (Stg 2:19).
+- Lo dicho tras un verbo de decir sale «discurso directo» (Stg 2:18).
+- **Medido:** cambian 1.897 de 31.140 versículos. A mano, antes de corregir los contraejemplos: en línea 7/8, lo dicho 7/8, nivel 7/7. Los contraejemplos quedaron como pruebas: Heb 1:8 (vocativo), Jn 5:7 (δέ pospositivo), Hch 21:23 (madre relativa) y Nm 23:12 (palabra hebrea de dos piezas repetida).
+- La invariante del corpus suma: ningún nivel negativo y todo grupo tiene su condición.
+
+**U11b (`9e87a69a`), frases preposicionales de MACULA.** Son las más externas, como `[versículo, desde, hasta, clase]`.
+- Clases: «a» va con el verbo, «p» es predicado, «n» va con un nombre.
+- Fuera queda preposición + infinitivo (`PrepCL`), que es una cláusula.
+- Hay 9.867 frases en griego y 46.556 en hebreo, y suman unos 800 KB.
+- **Griego:** interruptor «Frases» en la barra del versículo. Línea continua si la frase va con el verbo, punteada si va con un nombre, con leyenda.
+- **Hebreo:** el interruptor «Sintaxis» que ya existía toma la frase del DATO cuando la palabra está alineada.
+
+**U11c (`a6085a46`), Diagrama.**
+- Una línea por cláusula.
+- La frase que va con el verbo baja a su línea marcada «└». La antepuesta queda en la línea (Stg 2:21).
+- La prótasis va en un bloque con barra y flecha a la apódosis.
+- La lógica es pura, en el dominio (`diagramLines`).
+
+**Diferencias que quedan con el profesor (leído):**
+- Stg 2:18 «κἀγώ σοι δείξω» sigue sangrado: MACULA lo cuelga de δεῖξον como objeto, y el profesor lo pone al margen.
+- El quiasmo de 2:18 queda para una etapa posterior.
+- Mc 12:19 conserva un desorden previo de filas: «καὶ καὶ μὴ ἀφῇ» sale antes de «καταλίπῃ».
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
