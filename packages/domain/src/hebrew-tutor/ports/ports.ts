@@ -3,6 +3,8 @@ import type { SpeechFact } from '../../language-structure/hebrewSpeech.js';
 import type { HebrewInfinitiveCandidate } from '../../language-structure/hebrewInfinitive.js';
 import type { HebrewParticipleCandidate } from '../../language-structure/hebrewParticiple.js';
 import type { HebrewKiCandidate } from '../../language-structure/hebrewKi.js';
+import type { HebrewVerbCandidate } from '../../language-structure/hebrewFiniteVerb.js';
+import type { HebrewPrepositionCandidate } from '../../language-structure/hebrewPreposition.js';
 /**
  * Domain ports (interfaces) for the Hebrew Tutor module.
  *
@@ -50,6 +52,16 @@ export interface IHebrewBibleProvider {
 // ── IHebrewAnalysisService ────────────────────────────────────────────────────
 
 /**
+ * El versículo anterior y el siguiente, para que el asistente vea lo que rodea
+ * al que analiza (contraste con lo anterior, apertura o cierre de escena). Sólo
+ * contexto: no se analizan.
+ */
+export interface NeighborVerses {
+  readonly previous?: { readonly reference: string; readonly hebrewText: string };
+  readonly next?: { readonly reference: string; readonly hebrewText: string };
+}
+
+/**
  * Port for morphological and syntactic analysis of Hebrew verses.
  * Implemented by GeminiHebrewService.
  *
@@ -79,6 +91,12 @@ export interface IHebrewAnalysisService {
     participles?: readonly HebrewParticipleCandidate[],
     /** R4: la función de cada כִּי (Arnold y Choi §4.3.4). */
     kis?: readonly HebrewKiCandidate[],
+    /** El versículo anterior y el siguiente, sólo como contexto. */
+    neighbors?: NeighborVerses,
+    /** U5 (Rut 3:5): la función de cada verbo finito, con el cohortativo por función. */
+    verbs?: readonly HebrewVerbCandidate[],
+    /** U3a (Rut 2:1, 2:7): la función de cada preposición. */
+    prepositions?: readonly HebrewPrepositionCandidate[],
   ): Promise<VerseAnalysis>;
 }
 

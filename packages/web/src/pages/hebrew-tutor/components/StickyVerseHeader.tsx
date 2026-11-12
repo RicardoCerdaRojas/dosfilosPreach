@@ -19,7 +19,7 @@ import {
   Tooltip,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { VerseAnalysis } from '@dosfilos/domain';
+import type { PhraseKind, VerseAnalysis } from '@dosfilos/domain';
 import { versePunctuationOf } from '@dosfilos/domain';
 import { getSyntacticMark, SYNTACTIC_BORDER, SYNTACTIC_DOT } from '../utils/syntacticMark';
 
@@ -28,6 +28,8 @@ interface StickyVerseHeaderProps {
   showColors: boolean;
   showVerbMarkers: boolean;
   showSyntaxMarkers: boolean;
+  /** U11b: índice del análisis → su frase preposicional según MACULA (ver `getSyntacticMark`). */
+  frases?: ReadonlyMap<number, PhraseKind | null>;
   /** When true, renders hebrewText as a single unbroken string so the browser
    *  can correctly shape all diacritics (niqqud + cantillation). When false,
    *  renders via MorphemeSpan with morphological color coding. */
@@ -48,6 +50,7 @@ export const StickyVerseHeader: React.FC<StickyVerseHeaderProps> = ({
   showColors,
   showVerbMarkers,
   showSyntaxMarkers,
+  frases,
   fullMarks,
   sentinelRef,
   activeWordIndex,
@@ -104,7 +107,7 @@ export const StickyVerseHeader: React.FC<StickyVerseHeaderProps> = ({
           >
             {analysis.words.map((w, i) => {
               const isVerb = !!w.verbMorphology && showVerbMarkers;
-              const syntacticMark = showSyntaxMarkers ? getSyntacticMark(w) : null;
+              const syntacticMark = showSyntaxMarkers ? getSyntacticMark(w, frases?.get(i)) : null;
               const isActive = activeWordIndex === i;
               // Maqaf (U+05BE ־): collapse flex gap when the previous word ends with maqaf
               const prevHasMaqaf = i > 0 && analysis.words[i - 1].hebrewText.endsWith('\u05BE');

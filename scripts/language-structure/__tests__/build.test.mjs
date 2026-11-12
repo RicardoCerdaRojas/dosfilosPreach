@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clausulasDelCapitulo, leerLowfat, leerOshb, sinAparato, sinMarcas } from '../build.mjs';
+import { clausulasDelCapitulo, frasesDelCapitulo, glosasDistintas, raicesDeGlosa, leerLowfat, leerOshb, sinAparato, sinMarcas } from '../build.mjs';
 
 /** Revisión adversarial de G0 (2026-10-07): cada caso fue un defecto medido sobre el corpus. */
 describe('lectura de OSHB', () => {
@@ -7,6 +7,16 @@ describe('lectura de OSHB', () => {
         const xml = '<verse osisID="Deut.6.4"><w lemma="8085" morph="HVqv2ms">שְׁמַ֖<seg type="x-large">ע</seg></w> <w lemma="3478" morph="HNp">יִשְׂרָאֵ֑ל</w></verse>';
         const ws = leerOshb(xml).get('6:4');
         expect(ws.map(w => w.text)).toEqual(['שְׁמַ֖ע', 'יִשְׂרָאֵ֑ל']);
+    });
+    it('ketiv con su qere, ketiv sin qere y qere sin ketiv (Rut 2:1, 3:12, 3:5; revisión del profesor, 2026-11)', () => {
+        const xml = '<verse osisID="Ruth.2.1"><w lemma="c/l/5281" morph="HC/R/Np">וּ/לְ/נָעֳמִ֞י</w> <w type="x-ketiv" lemma="3045" morph="HVPsmsa">מידע</w><note type="variant"><catchWord>מידע</catchWord><rdg type="x-qere"><w lemma="4129" morph="HNcmsa">מוֹדַ֣ע</w></rdg></note> <w lemma="l/376" morph="HR/Ncmsc/Sp3fs">לְ/אִישָׁ֗/הּ</w></verse>'
+            + '<verse osisID="Ruth.3.12"><w lemma="3588 a" morph="HC">כִּ֥י</w> <w type="x-ketiv" lemma="518 a" morph="HC">אם</w><note type="variant"><catchWord>אם</catchWord><rdg type="x-qere"/></note> <w lemma="1350 a" morph="HVqrmsa">גֹאֵ֖ל</w></verse>'
+            + '<verse osisID="Ruth.3.5"><w lemma="559" morph="HVqi2fs">תֹּאמְרִ֥י</w> <note type="variant"><rdg type="x-qere"><w lemma="413" morph="HR/Sp1cs">אֵלַ֖/י</w></rdg></note> <w lemma="6213 a" morph="HVqi1cs">אֶֽעֱשֶֽׂה</w></verse>';
+        const o = leerOshb(xml);
+        const marcas = (k) => o.get(k).map(w => [w.text, w.type === 'x-ketiv' ? 'K' : '', w.qere ? 'Q' : '', w.sinQere ? 'sinQ' : ''].filter(Boolean).join(' '));
+        expect(marcas('2:1')).toEqual(['וּ/לְ/נָעֳמִ֞י', 'מידע K', 'מוֹדַ֣ע Q', 'לְ/אִישָׁ֗/הּ']);
+        expect(marcas('3:12')).toEqual(['כִּ֥י', 'אם K sinQ', 'גֹאֵ֖ל']);
+        expect(marcas('3:5')).toEqual(['תֹּאמְרִ֥י', 'אֵלַ֖/י Q', 'אֶֽעֱשֶֽׂה']);
     });
 });
 
@@ -53,6 +63,86 @@ describe('cláusulas del capítulo', () => {
           <wg class="np" role="o"><w xml:id="b3" ref="X 2:7!3">τὸ</w><wg class="np"><w xml:id="b4" ref="X 2:7!4">καλὸν</w></wg></wg></wg>`;
         const { palabras } = leerLowfat(x);
         expect(palabras.map(p => p.role)).toEqual(['s', 'v', 'o', 'o']);
+    });
+
+    it('U3c (revisión del profesor, Stg 2:10): se lee el sentido de Louw-Nida (`ln`) de MACULA, también doble', () => {
+        const x = `<wg class="cl"><w xml:id="c1" ref="X 2:10!9" class="prep" ln="89.5">ἐν</w><w xml:id="c2" ref="X 2:21!6" class="prep" ln="89.25 89.77">ἐξ</w><w xml:id="c3" ref="X 2:10!10">ἑνί</w></wg>`;
+        const { palabras } = leerLowfat(x);
+        expect(palabras.map(p => p.ln)).toEqual(['89.5', '89.25 89.77', '']);
+    });
+
+    it('U10 (revisión del profesor, Stg 3:5): se leen la clase y la glosa inglesa en contexto de MACULA', () => {
+        const x = `<wg class="cl"><w xml:id="d1" ref="X 3:5!12" class="pron" english="small" ln="79.127">ἡλίκον</w><w xml:id="d2" ref="X 3:5!13">πῦρ</w></wg>`;
+        const { palabras } = leerLowfat(x);
+        expect(palabras.map(p => [p.cls, p.en])).toEqual([['pron', 'small'], ['', '']]);
+    });
+});
+
+describe('U10: el mismo lema con otra glosa en contexto (Stg 3:5)', () => {
+    const w = (l, cls, en, ln = '') => ({ l, cls, en, ln });
+
+    it('raíces de la glosa: sin plural, posesivo ni palabras vacías; irregulares comunes', () => {
+        expect([...raicesDeGlosa('how great')]).toEqual(['grea']);
+        expect([...raicesDeGlosa('Satan’s')]).toEqual(['sata']);
+        expect(raicesDeGlosa('sons')).toEqual(raicesDeGlosa('son'));
+        expect(raicesDeGlosa('armies')).toEqual(raicesDeGlosa('army'));
+        expect(raicesDeGlosa('gave')).toEqual(raicesDeGlosa('given'));
+        expect(raicesDeGlosa('the')).toEqual(new Set());
+    });
+
+    it('Stg 3:5: ἡλίκον «small» / ἡλίκην «how great» se marcan aunque compartan Louw-Nida (79.127)', () => {
+        const ps = [w('μικρός', 'adj', 'small'), w('ἡλίκος', 'pron', 'small', '79.127'), w('πῦρ', 'noun', 'fire'), w('ἡλίκος', 'pron', 'how great', '79.127')];
+        expect([...glosasDistintas(ps)]).toEqual([1, 3]);
+    });
+
+    it('NO: misma glosa (o plural); palabras de función; nombres propios (93.x); sin glosa', () => {
+        expect(glosasDistintas([w('υἱός', 'noun', 'sons', '10.42'), w('υἱός', 'noun', 'son', '10.42')]).size).toBe(0);
+        expect(glosasDistintas([w('αὐτός', 'pron', 'him'), w('αὐτός', 'pron', 'their')]).size).toBe(0);
+        expect(glosasDistintas([w('Ἰούδας', 'noun', 'Judas', '93.173a'), w('Ἰούδας', 'noun', 'Jude', '93.173b')]).size).toBe(0);
+        expect(glosasDistintas([w('πῦρ', 'noun', ''), w('πῦρ', 'noun', 'flame')]).size).toBe(0);
+        expect(glosasDistintas([w('καί', 'conj', 'and'), w('καί', 'conj', 'also')]).size).toBe(0);
+    });
+
+    it('verbos: sólo con Louw-Nida sin código común («said» / «say» es el tiempo, no el sentido)', () => {
+        expect(glosasDistintas([w('λέγω', 'verb', 'said', '33.69'), w('λέγω', 'verb', 'tell', '33.69')]).size).toBe(0);
+        expect([...glosasDistintas([w('ὁράω', 'verb', 'saw', '24.1'), w('ὁράω', 'verb', 'look to it', '13.134')])]).toEqual([0, 1]);
+    });
+});
+
+describe('U11b: las frases preposicionales de MACULA (Stg 2:16 ἐξ ὑμῶν, 2:18 χωρὶς τῶν ἔργων)', () => {
+    const x = `<wg class="cl"><w xml:id="e1" ref="X 2:16!1">εἴπῃ</w><wg class="np" role="s"><w xml:id="e2" ref="X 2:16!3">τις</w>
+      <wg class="pp" rule="PrepNp"><w xml:id="e3" ref="X 2:16!5">ἐξ</w><w xml:id="e4" ref="X 2:16!6">ὑμῶν</w></wg></wg>
+      <wg class="pp" rule="PrepNp" role="adv"><w xml:id="e5" ref="X 2:16!8">ἐν</w><wg class="np"><w xml:id="e6" ref="X 2:16!9">εἰρήνῃ</w>
+      <wg class="pp" rule="PrepNp"><w xml:id="e7" ref="X 2:16!10">ἐν</w><w xml:id="e8" ref="X 2:16!11">Χ</w></wg></wg></wg>
+      <wg class="pp" rule="PrepCL" role="adv"><w xml:id="e9" ref="X 2:16!12">ἐν</w><w xml:id="e10" ref="X 2:16!13">τῷ</w></wg></wg>`;
+    const orden = new Map(Array.from({ length: 13 }, (_, i) => [`16!${i + 1}`, i]));
+
+    it('lee sólo las MÁS EXTERNAS, con el rol del grupo; sin rol = adnominal', () => {
+        const { frases } = leerLowfat(x);
+        expect(frases.map(f => [f.refs.length, f.role, f.rule])).toEqual([[2, '', 'PrepNp'], [4, 'adv', 'PrepNp'], [2, 'adv', 'PrepCL']]);
+    });
+
+    it('al capítulo: [versículo, desde, hasta, clase]; preposición + infinitivo (PrepCL) no entra', () => {
+        const { frases } = leerLowfat(x);
+        expect(frasesDelCapitulo(frases, 2, orden)).toEqual({ phrases: [[16, 5, 6, 'n'], [16, 8, 11, 'a']], saltadas: 0 });
+    });
+
+    it('omite la que cruza de versículo o tiene un hueco; «p» si es predicado', () => {
+        const fs = [
+            { role: 'adv', rule: 'PrepNp', refs: ['X 2:15!9', 'X 2:16!1'] },
+            { role: 'adv', rule: 'PrepNp', refs: ['X 2:16!2', 'X 2:16!4'] },
+            { role: 'p', rule: 'PrepNp', refs: ['X 2:16!7'] },
+        ];
+        expect(frasesDelCapitulo(fs, 2, orden)).toEqual({ phrases: [[16, 7, 7, 'p']], saltadas: 2 });
+    });
+});
+
+describe('U11b: el rol de la frase que lo trae el grupo que la envuelve (Mt 23:34 «ἀπὸ πόλεως εἰς πόλιν»)', () => {
+    it('sin rol propio, lo hereda del grupo; dentro de un sintagma nominal, adnominal', () => {
+        const x = `<wg class="cl"><wg rule="2Pp" role="adv"><wg class="pp" rule="PrepNp"><w xml:id="f1" ref="X 23:34!1">ἀπὸ</w><w xml:id="f2" ref="X 23:34!2">πόλεως</w></wg>
+          <wg class="pp" rule="PrepNp"><w xml:id="f3" ref="X 23:34!3">εἰς</w><w xml:id="f4" ref="X 23:34!4">πόλιν</w></wg></wg>
+          <wg class="np" role="s"><w xml:id="f5" ref="X 23:34!5">τις</w><wg class="pp" rule="PrepNp"><w xml:id="f6" ref="X 23:34!6">ἐξ</w><w xml:id="f7" ref="X 23:34!7">ὑμῶν</w></wg></wg></wg>`;
+        expect(leerLowfat(x).frases.map(f => f.role)).toEqual(['adv', 'adv', '']);
     });
 });
 

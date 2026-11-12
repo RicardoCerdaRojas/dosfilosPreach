@@ -53,7 +53,7 @@ export type TenseUseId = (typeof TENSE_USES)[keyof typeof TENSE_USES][number];
 export type VerbRule =
     | 'articular' | 'periphrastic' | 'genitiveAbsolute'
     | 'eisTo' | 'prosTo' | 'enToi' | 'metaTo' | 'proTou' | 'diaTo' | 'tou' | 'articularNominal'
-    | 'afterIna' | 'conditionalEan' | 'ouMe' | 'prohibition' | 'indefinite' | 'lest' | 'hortatory' | 'meGenoito' | 'presentProhibition';
+    | 'afterIna' | 'conditionalEan' | 'ouMe' | 'prohibition' | 'indefinite' | 'indefiniteRelative' | 'lest' | 'hortatory' | 'meGenoito' | 'presentProhibition';
 
 export interface VerbCandidate {
     /** Posición en el versículo (0 = primera palabra). */
@@ -66,7 +66,31 @@ export interface VerbCandidate {
     readonly rule?: VerbRule;
     /** Usos del tiempo posibles (sólo indicativo). */
     readonly tenseUses: readonly TenseUseId[];
+    /** Una regla acotó los usos del tiempo (el asistente elige entre ellos). */
+    readonly tenseRule?: TenseRule;
+    /**
+     * Pista (no regla): perfecto de indicativo en la apódosis de una condición de 1.ª clase.
+     * Medido en el NT (2026-11-12): 14 casos, 4 prolépticos o gnómicos (Stg 2:11, 1 Ti 5:8,
+     * 1 Co 8:3, 2 P 2:20) y 10 intensivos o extensivos (1 Co 15:13); la forma no los separa.
+     */
+    readonly tenseHint?: 'prolepticFirstClass';
 }
+
+/**
+ * Reglas que ACOTAN el uso del tiempo (no deciden): `prolepticPerfect` — el
+ * perfecto en la apódosis de una condición «depende del tiempo del verbo de la
+ * prótasis» (Wallace p. 581, con Stg 2:10 y Ro 14:23); con una prótasis
+ * futura (ἐάN + subjuntivo) o un sujeto indefinido («ὅστις … τηρήσῃ»,
+ * equivalente a una condición, Wallace p. 478), es proléptico; Wallace admite
+ * también gnómico. Medido en el NT: 5 casos, los 5 revisados (1 Co 13:1, Stg
+ * 2:10, Ro 2:25, 7:2, 14:23). La 1.ª clase (Stg 2:11, εἰ + indicativo) queda
+ * fuera: ahí el perfecto suele ser el intensivo de siempre (1 Co 15:13, 16), y también
+ * los perfectos con sentido de presente que salían sin ese filtro (1 Jn 5:15 οἴδαμεν).
+ */
+export type TenseRule = 'prolepticPerfect';
+
+/** Los perfectos que significan un estado PRESENTE (lema de MorphGNT): ni regla ni pista de proléptico. */
+const PERFECTO_DE_PRESENTE: ReadonlySet<string> = new Set(['οἶδα', 'ἔοικα', 'πείθω', 'ἵστημι', 'μιμνῄσκω']);
 
 const MODO: Record<string, GreekVerbForm> = { P: 'participle', N: 'infinitive', S: 'subjunctive', D: 'imperative', O: 'optative', I: 'indicative' };
 const modo = (w: StructureWord | undefined) => (w?.pos?.startsWith('V') ? w.parse?.[3] ?? '' : '');
@@ -88,6 +112,8 @@ interface Contexto {
     readonly fila?: StructureNode;
     /** Palabras de las cláusulas HIJAS de la suya (un sujeto puede estar ahí). */
     readonly hijas: readonly StructureWord[];
+    /** Si la madre COORDINA cláusulas («A δέ B», `CLaCL`): las palabras de sus hermanas. */
+    readonly coordinadas: readonly StructureWord[];
     /** El rol MACULA de su cláusula («o»: es objeto de otro verbo). */
     readonly rolClausula: string;
     /** La cláusula madre tiene verbo propio: la suya es subordinada. */
@@ -118,6 +144,44 @@ const INDEFINIDOS: ReadonlySet<string> = new Set(['ὅταν', 'ἄν', 'ἕως
 /** μή y sus compuestos de prohibición (1 Co 3:18 μηδείς, 1 Jn 3:7 μηδείς, μηκέτι, μηδέ). */
 const NEGACION_DE_PROHIBICION: ReadonlySet<string> = new Set(['μή', 'μηδέ', 'μηδείς', 'μηκέτι', 'μήτε']);
 const conProhibicion = (c: Contexto) => c.clausula.some(x => NEGACION_DE_PROHIBICION.has(x.l));
+
+/**
+ * Verbos de temor o advertencia que rigen un μή «no sea que» (Wallace p. 477,
+ * «Subjunctive with Verbs of Fearing, Etc.»): «βλεπέτω μὴ πέσῃ» (1 Co 10:12),
+ * «ἐφοβοῦντο … μὴ λιθασθῶσιν» (Hch 5:26), «Βλέπετε μὴ πλανηθῆτε» (Lc 21:8).
+ */
+const TEMOR_O_ADVERTENCIA: ReadonlySet<string> = new Set(['φοβέομαι', 'βλέπω', 'ὁράω', 'προσέχω', 'σκοπέω', 'φυλάσσω', 'εὐλαβέομαι', 'δείδω']);
+const esFinito = (w: StructureWord | undefined) => ['I', 'S', 'D', 'O'].includes(modo(w));
+
+/**
+ * μή dependiente = «no sea que» SÓLO bajo un verbo de temor o advertencia: el
+ * verbo finito más cercano ANTES del μή. Antes bastaba con que la cláusula
+ * madre tuviera verbo, y una cita («εἶπεν· Μὴ φονεύσῃς», Stg 2:11; los
+ * mandamientos de Lc 18:20 y Mc 10:19; Heb 3:8) salía «no sea que» cuando es
+ * subjuntivo prohibitivo — Wallace p. 469 lista Stg 2:11 y Heb 3:8 ahí
+ * (revisión del profesor, 2026-11). Se mira el más cercano y no toda la madre:
+ * en Hch 18:9 «μὴ φοβοῦ, ἀλλὰ λάλει καὶ μὴ σιωπήσῃς» la madre tiene φοβέομαι
+ * pero rige λάλει.
+ */
+function bajoTemor(c: Contexto): boolean {
+    if (c.clausula[0]?.l !== 'μή' || !c.madreConVerbo) return false;
+    const mh = c.ws.indexOf(c.clausula[0]);
+    for (let k = mh - 1; k >= 0; k--) if (esFinito(c.ws[k])) return TEMOR_O_ADVERTENCIA.has(c.ws[k]!.l);
+    return false;
+}
+
+/**
+ * ὅστις antes del verbo: relativo indefinido aunque falte ἄν (Wallace p. 478). Se sube por las
+ * madres, como con ἵνα: el coordinado «πταίσῃ δέ» (Stg 2:10) está en otra cláusula de MACULA.
+ * Una madre con otro verbo propio corta la búsqueda: ya es otra oración.
+ */
+function relativoIndefinido(c: Contexto): boolean {
+    for (const cl of [c.clausula, c.coordinadas, ...c.arriba]) {
+        if (cl.some(x => x.l === 'ὅστις' && c.ws.indexOf(x) >= 0 && c.ws.indexOf(x) < c.i)) return true;
+        if (cl !== c.clausula && cl !== c.coordinadas && cl.some(x => x.role === 'v' && x !== c.w && !SUBORDINANTES.has(x.l))) return false;
+    }
+    return false;
+}
 
 /** οὐ μή delante del verbo, aunque haya palabras entre medio («οὐ μή με ἴδητε», Mt 23:39). */
 function ouMe(c: Contexto): boolean {
@@ -262,7 +326,11 @@ export const VERB_RULES: readonly ReglaVerbo[] = [
     { rule: 'afterIna', form: 'subjunctive', when: c => ['ἵνα', 'ὅπως'].includes(subordinanteCercano(c) ?? ''), allowed: ['inaClause'] },
     { rule: 'conditionalEan', form: 'subjunctive', when: c => subordinanteCercano(c) === 'ἐάν' || subordinanteCercano(c) === 'εἰ', allowed: ['conditional'] },
     { rule: 'indefinite', form: 'subjunctive', when: c => INDEFINIDOS.has(subordinanteCercano(c) ?? ''), allowed: ['indefinite'] },
-    { rule: 'lest', form: 'subjunctive', when: c => subordinanteCercano(c) === 'μήποτε' || (c.clausula[0]?.l === 'μή' && !!c.madreConVerbo), allowed: ['lest'] },
+    // ὅστις + subjuntivo, con o sin ἄν (Wallace p. 478: «ὅστις (ἄν/ἐάν)»): Stg 2:10 «ὅστις … τηρήσῃ,
+    // πταίσῃ δέ» no tenía regla y la ficha no mostraba la función (revisión del profesor, 2026-11).
+    // Regla propia: la ficha decía «con ἄν» donde no hay ἄν (prueba del fundador).
+    { rule: 'indefiniteRelative', form: 'subjunctive', when: relativoIndefinido, allowed: ['indefinite'] },
+    { rule: 'lest', form: 'subjunctive', when: c => subordinanteCercano(c) === 'μήποτε' || bajoTemor(c), allowed: ['lest'] },
     { rule: 'prohibition', form: 'subjunctive', when: c => conProhibicion(c) && c.tiempo === 'A' && c.persona === '2', allowed: ['prohibition'] },
     { rule: 'hortatory', form: 'subjunctive', when: c => c.persona === '1' && c.plural && !c.clausula.some(x => x.pos === 'RR'), allowed: ['hortatory', 'deliberative'] },
     // Imperativo y optativo
@@ -293,6 +361,23 @@ export function greekVerbCandidates(ch: ChapterStructure, verse: number): VerbCa
         for (const c of clausulas) if (c.words.includes(r) && (!mejor || c.depth >= mejor.depth)) mejor = c;
         return mejor?.index;
     };
+    /** Las cláusulas que contiene una (para el sujeto que es una relativa indefinida). */
+    const hijasDe = new Map<number, number[]>();
+    ch.clauses.forEach((cl, k) => { if (cl.p !== null) hijasDe.set(cl.p, [...(hijasDe.get(cl.p) ?? []), k]); });
+    const subarbol = (k: number): StructureWord[] => {
+        const out: StructureWord[] = [];
+        for (const pila = [k]; pila.length;) { const x = pila.pop()!; out.push(...palabras(ch.clauses[x]!.w)); pila.push(...(hijasDe.get(x) ?? [])); }
+        return out;
+    };
+    /** Su sujeto es una cláusula con ὅστις / ἄν / ἐάν y un subjuntivo: una condición implícita (Stg 2:10). */
+    const sujetoIndefinido = (propia: number | undefined) => propia !== undefined
+        && (hijasDe.get(propia) ?? []).some(k => ch.clauses[k]!.role === 's' && ((s) => s.some(x => ['ὅστις', 'ἄν', 'ἐάν'].includes(x.l)) && s.some(x => modo(x) === 'S'))(subarbol(k)));
+    /** Las hermanas de una cláusula cuya madre sólo coordina (`CLaCL`, `aCLaCL`…). */
+    const coordinadasDe = (propia: number | undefined): StructureWord[] => {
+        const p = propia === undefined ? null : ch.clauses[propia]!.p;
+        if (p === null || !/CL.*CL/.test(ch.clauses[p]!.rule)) return [];
+        return ch.clauses.flatMap((cl, k) => (cl.p === p && k !== propia ? palabras(cl.w) : []));
+    };
     const out: VerbCandidate[] = [];
     ws.forEach((w, i) => {
         const form = MODO[modo(w)];
@@ -306,11 +391,22 @@ export function greekVerbCandidates(ch: ChapterStructure, verse: number): VerbCa
             arriba,
             fila: filas.find(f => f.words.some(t => t.r === w.r)),
             hijas: propia === undefined ? [] : ch.clauses.flatMap(cl => (cl.p === propia ? palabras(cl.w) : [])),
+            coordinadas: coordinadasDe(propia),
             rolClausula: propia === undefined ? '' : ch.clauses[propia]!.role,
             madreConVerbo: (arriba[0] ?? []).some(x => x.role === 'v' && y_finito(x)),
             tiempo: w.parse?.[1] ?? '', persona: w.parse?.[0] ?? '', plural: w.parse?.[5] === 'P',
         };
-        const tenseUses = form === 'indicative' ? [...(TENSE_USES[c.tiempo as keyof typeof TENSE_USES] ?? [])] : [];
+        // Perfecto con sentido de presente (οἶδα «sé», ἔοικα «se parece», πέποιθα «confío», ἕστηκα
+        // «estoy de pie», μέμνημαι «recuerdo»): no es proléptico (revisión adversarial, Stg 1:23 ἔοικεν).
+        const perfectoDePresente = PERFECTO_DE_PRESENTE.has(w.l);
+        const proleptico = form === 'indicative' && c.tiempo === 'X' && !perfectoDePresente
+            && ((!!c.fila?.isApodosis && filas.some(f => f.relation === 'condition' && f.conditionalClass === 3)) || sujetoIndefinido(propia));
+        const tenseUses = proleptico
+            ? (['proleptic', 'gnomic'] as TenseUseId[])
+            : form === 'indicative' ? [...(TENSE_USES[c.tiempo as keyof typeof TENSE_USES] ?? [])] : [];
+        const acota = proleptico ? { tenseRule: 'prolepticPerfect' as const }
+            : form === 'indicative' && c.tiempo === 'X' && !perfectoDePresente && !!c.fila?.isApodosis && filas.some(f => f.relation === 'condition' && f.conditionalClass === 1)
+                ? { tenseHint: 'prolepticFirstClass' as const } : {};
         const regla = VERB_RULES.find(r => r.form === form && r.when(c));
         // «Predicativo» sólo si hay un sustantivo o pronombre del que predicar,
         // en su cláusula o en la madre. Con el sujeto implícito en el verbo
@@ -320,8 +416,8 @@ export function greekVerbCandidates(ch: ChapterStructure, verse: number): VerbCa
             : SIN_REGLA[form];
         out.push(
             regla
-                ? { ordinal: i, form, tenseUses, allowed: regla.allowed, rule: regla.rule, ...(regla.allowed.length === 1 ? { decided: regla.allowed[0]! } : {}) }
-                : { ordinal: i, form, tenseUses, allowed: sinRegla },
+                ? { ordinal: i, form, tenseUses, ...acota, allowed: regla.allowed, rule: regla.rule, ...(regla.allowed.length === 1 ? { decided: regla.allowed[0]! } : {}) }
+                : { ordinal: i, form, tenseUses, ...acota, allowed: sinRegla },
         );
     });
     return out;
@@ -340,7 +436,7 @@ const FUNCION_ES: Record<VerbFunctionId, string> = {
     imperatival: 'imperativo (equivale a un mandato)', absolute: 'absoluto (saludo epistolar: χαίρειν)',
     hortatory: 'exhortativo («hagamos»)', deliberative: 'deliberativo (pregunta real o retórica: «¿qué haremos?»)', prohibition: 'prohibición',
     emphaticNegation: 'negación enfática (οὐ μή: «de ningún modo»)', inaClause: 'subjuntivo tras ἵνα/ὅπως', conditional: 'condicional (ἐάν)',
-    indefinite: 'indefinido (con ἄν: relativo o temporal indefinido)', lest: 'temor o propósito negativo («no sea que», con μή o μήποτε)', command: 'mandato', request: 'ruego o petición (a un superior)',
+    indefinite: 'indefinido (relativo o temporal: con ἄν, ὅταν, ἕως u ὅστις)', lest: 'temor o propósito negativo («no sea que», con μή o μήποτε)', command: 'mandato', request: 'ruego o petición (a un superior)',
     permissive: 'permisivo («que sea así»)', volitive: 'volitivo (deseo: «ojalá»)', potential: 'potencial (con ἄν)', oblique: 'oblicuo (discurso indirecto)',
 };
 
@@ -363,7 +459,7 @@ const REGLA_ES: Record<VerbRule, string> = {
     eisTo: 'εἰς τό + infinitivo', prosTo: 'πρὸς τό + infinitivo', enToi: 'ἐν τῷ + infinitivo (simultáneo)', metaTo: 'μετὰ τό + infinitivo (anterior)',
     proTou: 'πρὸ τοῦ + infinitivo (posterior)', diaTo: 'διὰ τό + infinitivo', tou: 'τοῦ + infinitivo', articularNominal: 'infinitivo con artículo',
     afterIna: 'dentro de una cláusula con ἵνα/ὅπως', conditionalEan: 'prótasis con ἐάν', ouMe: 'οὐ μή + subjuntivo', prohibition: 'μή + subjuntivo aoristo',
-    indefinite: 'con ἄν (relativo o temporal indefinido)', lest: 'μή o μήποτε en una cláusula dependiente', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
+    indefinite: 'con ἄν, ὅταν, ἕως, ἄχρι, μέχρι o πρίν (relativo o temporal indefinido)', indefiniteRelative: 'ὅστις + subjuntivo, con o sin ἄν: «quienquiera que…»; plantea un caso general, como una condición', lest: 'μήποτε, o μή tras un verbo de temor o advertencia (βλέπω, φοβέομαι)', hortatory: '1.ª persona plural', meGenoito: 'μὴ γένοιτο', presentProhibition: 'μή + imperativo',
 };
 
 /** El tramo del prompt con la tarea de los verbos. Vacío si no hay verbos. */
@@ -375,6 +471,7 @@ export function buildVerbFunctionTask(candidates: readonly VerbCandidate[], word
         if (c.decided) partes.push(`FUNCIÓN YA DECIDIDA por regla (${REGLA_ES[c.rule!]}): "${c.decided}" = ${FUNCION_ES[c.decided]}; sólo explícala en "verbNote"`);
         else if (c.allowed.length) partes.push(`"verbFunction", elige de: ${c.allowed.map(f => `"${f}" (${FUNCION_ES[f]})`).join('; ')}${c.rule ? ` [acotado porque ${REGLA_ES[c.rule]}]` : ''}`);
         if (c.tenseUses.length) partes.push(`"tenseUse", elige de: ${c.tenseUses.map(u => `"${u}" (${USO_ES[u]})`).join('; ')}`);
+        if (c.tenseHint) partes.push('PISTA: perfecto en la apódosis de una condición de 1.ª clase. Si la prótasis plantea un caso general (τις, un «tú» que vale para cualquiera) y el perfecto dice el estado que de ahí resulta, es "proleptic" (Wallace p. 581); si afirma un hecho ya ocurrido, es "intensive" o "extensive"');
         return partes.join(' — ');
     });
     return `
@@ -414,14 +511,17 @@ export function readVerbFunction(raw: Record<string, unknown>, c: VerbCandidate 
  * ya analizados sin re-analizar. Lo decidido por regla manda; una elección del
  * asistente que la regla de hoy ya no permite se quita (con su nota).
  */
-export function applyVerbRules<T extends { verbFunction?: VerbFunctionId; verbRule?: VerbRule; tenseUse?: TenseUseId; verbNote?: string }>(
+export function applyVerbRules<T extends {
+    verbFunction?: VerbFunctionId; verbRule?: VerbRule; tenseUse?: TenseUseId; verbNote?: string;
+    tenseRule?: TenseRule; tenseUseOptions?: readonly TenseUseId[]; tenseUseOutside?: TenseUseId;
+}>(
     words: readonly T[],
     candidates: readonly VerbCandidate[],
 ): T[] {
     const porPos = new Map(candidates.map(c => [c.ordinal, c]));
     return words.map((w, i) => {
         const c = porPos.get(i);
-        const { verbFunction, verbRule: _regla, tenseUse, verbNote, ...resto } = w;
+        const { verbFunction, verbRule: _regla, tenseUse, verbNote, tenseRule: _tr, tenseUseOptions: _to, tenseUseOutside: _tf, ...resto } = w;
         const fn = c?.decided ?? (c && verbFunction && c.allowed.includes(verbFunction) ? verbFunction : undefined);
         const uso = c && tenseUse && c.tenseUses.includes(tenseUse) ? tenseUse : undefined;
         return {
@@ -429,6 +529,12 @@ export function applyVerbRules<T extends { verbFunction?: VerbFunctionId; verbRu
             ...(fn ? { verbFunction: fn } : {}),
             ...(c?.decided && c.rule ? { verbRule: c.rule } : {}),
             ...(uso ? { tenseUse: uso } : {}),
+            // Una regla que ACOTA el uso del tiempo (proléptico o gnómico, Wallace p. 581): sin
+            // elección válida quedan las opciones, y lo que eligió el asistente fuera de ellas,
+            // como «otra lectura» (Stg 2:10 γέγονεν: un análisis guardado decía «intensivo»).
+            ...(c?.tenseRule ? { tenseRule: c.tenseRule } : {}),
+            ...(c?.tenseRule && !uso ? { tenseUseOptions: c.tenseUses } : {}),
+            ...(c?.tenseRule && tenseUse && !uso ? { tenseUseOutside: tenseUse } : {}),
             // La nota explica lo que el asistente eligió: si hoy la regla decide OTRA
             // función, la nota vieja contradiría la ficha (revisión de G2).
             ...(verbNote && (fn || uso) && (!fn || fn === verbFunction) ? { verbNote } : {}),

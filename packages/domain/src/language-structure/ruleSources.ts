@@ -1,5 +1,8 @@
+import { HEBREW_VERB_FUNCTIONS, type HebrewVerbForm, type HebrewVerbFunction } from './hebrewFiniteVerb.js';
+import type { HebrewPreposition, HebrewPrepositionFunction } from './hebrewPreposition.js';
+import { LOUW_NIDA_DOMAINS, LOUW_NIDA_SUBDOMAINS, type LouwNidaSense } from './louwNida.js';
 import type { ClauseRelation } from './verseStructure.js';
-import type { GreekVerbForm, TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
+import type { GreekVerbForm, TenseRule, TenseUseId, VerbFunctionId, VerbRule } from './verbFunctions.js';
 import type { TENSE_USES } from './verbFunctions.js';
 import type { NominalRule } from './nominalFunctions.js';
 import type { DiscourseRule } from './discourseFunctions.js';
@@ -28,7 +31,7 @@ import type { HebrewKiFunction } from './hebrewKi.js';
  * sección con `verified` sólo después de cotejarla con el ejemplar.
  */
 
-export type WorkId = 'wallace' | 'runge' | 'arnoldChoi' | 'professor';
+export type WorkId = 'wallace' | 'runge' | 'arnoldChoi' | 'putnam' | 'louwNida' | 'professor';
 
 export interface Work {
     readonly author: string;
@@ -44,6 +47,10 @@ export const WORKS: Readonly<Record<WorkId, Work>> = {
     runge: { author: 'Steven E. Runge', title: 'Discourse Grammar of the Greek New Testament', year: 2010, publisher: 'Hendrickson' },
     // 1.ª edición: la del ejemplar de la biblioteca (la 2.ª, de 2018, pagina distinto).
     arnoldChoi: { author: 'Bill T. Arnold y John H. Choi', title: 'A Guide to Biblical Hebrew Syntax', year: 2003, publisher: 'Cambridge University Press', isbn: '978-0-521-82609-9' },
+    // Vol. 1 (Introduction & Domains), 1.ª ed. 1988; ISBN-10 0-8267-0341-0. Cotejado con el escaneo del fundador (2026-11-12).
+    louwNida: { author: 'Johannes P. Louw y Eugene A. Nida', title: 'Greek-English Lexicon of the New Testament Based on Semantic Domains', year: 1988, publisher: 'United Bible Societies', isbn: '978-0-8267-0341-5' },
+    // La obra que usa el profesor (revisión 2026-11). Se cita por sección: el PDF del fundador no trae páginas impresas.
+    putnam: { author: 'Frederick C. Putnam', title: 'Clave Putnam: La Biblia hebrea', year: 1996, publisher: 'Stylus Publishing (Ridley Park, PA)' },
     // Lo ven todos los usuarios: «profesor del fundador» no les dice nada.
     professor: { author: 'Revisión docente', title: 'Dos Filos Preach', year: 2026 },
 };
@@ -76,6 +83,8 @@ const W = (topic: string, section: string, page?: string): RuleSource => ({ work
 const R = (topic: string, section: string): RuleSource => ({ work: 'runge', section, topic });
 const AC = (topic: string, section: string, page?: string): RuleSource => ({ work: 'arnoldChoi', section, topic, ...(page ? { verified: PDF(page) } : {}) });
 const P = (note: string): RuleSource => ({ work: 'professor', section: 'Indicación del profesor', topic: 'indicación docente', note });
+/** Putnam, sin `verified`: el PDF del fundador no trae página impresa; la sección se leyó en él (2026-11-12). */
+const PU = (topic: string, section: string): RuleSource => ({ work: 'putnam', section, topic });
 
 // Temas generales (lo que se ve sin verificación).
 const PART = 'el participio', INF = 'el infinitivo', SUBJ = 'el subjuntivo', OPT = 'el optativo', IMPV = 'el imperativo';
@@ -144,6 +153,7 @@ export const VERB_RULE_SOURCES: Readonly<Record<VerbRule, readonly RuleSource[]>
     ouMe: [wSubj.emphaticNegation],
     prohibition: [wSubj.prohibitive],
     indefinite: [wSubj.indefiniteRelative, wSubj.indefiniteTemporal],
+    indefiniteRelative: [wSubj.indefiniteRelative],
     lest: [wSubj.fearing],
     hortatory: [wSubj.hortatory, wSubj.deliberative],
     meGenoito: [wMood.voluntative],
@@ -196,6 +206,14 @@ export const TENSE_USE_SOURCES: { readonly [T in keyof typeof TENSE_USES]: Reado
     Y: { intensive: [W(PLUP, 'Intensive Pluperfect (Resultative Pluperfect)', '584')], extensive: [W(PLUP, 'Extensive Pluperfect (Consummative Pluperfect)', '585')] },
 };
 
+/**
+ * Reglas que ACOTAN el uso del tiempo. El perfecto proléptico: Wallace p. 581 (con Stg 2:10 y
+ * Ro 14:23); la relativa indefinida equivale a una condición, p. 478; el profesor, Stg 2:10-11.
+ */
+export const TENSE_RULE_SOURCES: Readonly<Record<TenseRule, readonly RuleSource[]>> = {
+    prolepticPerfect: [W(PERF, 'Proleptic (Futuristic) Perfect', '581'), W(SUBJ, 'Subjunctive in Indefinite Relative Clause', '478'), P('2026-11 · Stg 2:10 γέγονεν')],
+};
+
 /** Las fuentes de un uso del tiempo para el tiempo del verbo (código de MorphGNT). */
 export function tenseUseSources(use: TenseUseId, tense: string | undefined): readonly RuleSource[] {
     const porTiempo = tense && tense in TENSE_USE_SOURCES ? (TENSE_USE_SOURCES[tense as keyof typeof TENSE_USES] as Record<string, readonly RuleSource[]>) : undefined;
@@ -234,6 +252,8 @@ export const NOMINAL_RULE_SOURCES: Readonly<Record<NominalRule, readonly RuleSou
     anaphoraLemma: [W('el artículo', 'The Article › Anaphoric (Previous Reference)', '217'), P('2026-10-07 · Stg 2:9 τοῦ νόμου → νόμον, v. 8')],
     autosIntensive: [W('el pronombre αὐτός', 'Intensive Pronoun › As an Intensive Pronoun', '349')],
     autosIdentical: [W('el pronombre αὐτός', 'Intensive Pronoun › As an Identifying Adjective', '349')],
+    // U3b (revisión del profesor, Stg 2:16): ἐκ + genitivo «often has a partitive force»; con τις, ἕκαστος y εἷς, de rutina.
+    partitiveEk: [W('el genitivo', 'Genitive › Adjectival › Partitive Genitive (“Wholative”)', '84'), P('2026-10-14 · Stg 2:16 τις … ἐξ ὑμῶν')],
 };
 
 /** Notas de «Estructura» que salen de una regla: condicionales, conectores, orden. */
@@ -337,3 +357,90 @@ export function hebrewInfinitiveSources(fn: HebrewInfinitiveFunction, form: 'con
     const propias = todas.filter(x => !x.section.startsWith(form === 'construct' ? IA : IC));
     return propias.length ? propias : todas;
 }
+
+/**
+ * U4 (revisión del profesor, Rut 3:6): el antecedente del artículo hebreo y el
+ * rol de la palabra en su oración, como DATOS de la ficha.
+ */
+export const HEBREW_WORD_DATA_SOURCES = {
+    articleAntecedent: [PU('el artículo', '1.4.3a El artículo anafórico'), P('2026-10-14 · Rut 3:6 הַגֹּרֶן')],
+    roleAdverbial: [PU('el complemento adverbial', '2.4.2a Objetivo o meta')],
+} as const satisfies Readonly<Record<string, readonly RuleSource[]>>;
+
+/**
+ * U5 — la función del verbo finito hebreo: la CATEGORÍA de Arnold y Choi con la
+ * página donde está impreso su encabezado (calculada de la capa del ejemplar y
+ * cotejada con `cotejar-citas.py`, 2026-11-12).
+ */
+const VERBOS = 'los verbos';
+export const HEBREW_VERB_FUNCTION_SOURCES: Readonly<Record<HebrewVerbForm, Readonly<Partial<Record<HebrewVerbFunction, RuleSource>>>>> = {
+    perfect: { complete: AC(VERBOS, '3.2.1 Perfect › (a) Complete', '55'), stative: AC(VERBOS, '3.2.1 Perfect › (b) Stative', '55'), experience: AC(VERBOS, '3.2.1 Perfect › (c) Experience', '55'), rhetoricalFuture: AC(VERBOS, '3.2.1 Perfect › (d) Rhetorical future', '55'), proverbial: AC(VERBOS, '3.2.1 Perfect › (e) Proverbial', '56'), performative: AC(VERBOS, '3.2.1 Perfect › (f) Performative', '56') },
+    imperfect: { future: AC(VERBOS, '3.2.2 Imperfect › (a) Future', '58'), customary: AC(VERBOS, '3.2.2 Imperfect › (b) Customary', '58'), progressive: AC(VERBOS, '3.2.2 Imperfect › (c) Progressive', '58'), conditional: AC(VERBOS, '3.2.2 Imperfect › (d.1) Conditional', '59'), permission: AC(VERBOS, '3.2.2 Imperfect › (d.2) Permission', '59'), obligation: AC(VERBOS, '3.2.2 Imperfect › (d.3) Obligation', '59'), command: AC(VERBOS, '3.2.2 Imperfect › (d.4) Command', '59'), preterite: AC(VERBOS, '3.2.2 Imperfect › (e) Preterite', '60') },
+    jussive: { command: AC(VERBOS, '3.3.1 Jussive › (a) Command', '61'), wish: AC(VERBOS, '3.3.1 Jussive › (b) Wish', '62'), benediction: AC(VERBOS, '3.3.1 Jussive › (c) Benediction', '62'), prohibition: AC(VERBOS, '3.3.1 Jussive › (d) Prohibition', '63') },
+    imperative: { command: AC(VERBOS, '3.3.2 Imperative › (a) Command', '63'), permission: AC(VERBOS, '3.3.2 Imperative › (b) Permission', '64'), promise: AC(VERBOS, '3.3.2 Imperative › (c) Promise', '64') },
+    cohortative: { resolve: AC(VERBOS, '3.3.3 Cohortative › (a) Resolve', '65'), wish: AC(VERBOS, '3.3.3 Cohortative › (b) Wish', '66'), exhortation: AC(VERBOS, '3.3.3 Cohortative › (c) Exhortation', '66') },
+    wayyiqtol: { sequential: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (a) Sequential', '84'), consequential: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (b) Consequential', '85'), narratival: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (c) Narratival', '86'), epexegetical: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (d) Epexegetical', '86'), dependent: AC(VERBOS, '3.5.1 Imperfect plus waw Consecutive › (e) Dependent', '87') },
+    weqatal: { sequential: AC(VERBOS, '3.5.2 Perfect plus waw Consecutive › (a) Sequential', '88'), consequential: AC(VERBOS, '3.5.2 Perfect plus waw Consecutive › (b) Consequential', '88'), volitional: AC(VERBOS, '3.5.2 Perfect plus waw Consecutive › (c) Volitional', '88'), apodictic: AC(VERBOS, '3.5.2 Perfect plus waw Consecutive › (d) Apodictic', '89') },
+};
+/**
+ * Un yiqtol con función de cohortativo cita la categoría del cohortativo, Putnam §2.2.4a (el cohortativo
+ * puede verse igual que el yiqtol) y la indicación del profesor (Rut 3:5); אַל + yiqtol, la prohibición del yusivo.
+ */
+export function hebrewVerbSources(fn: HebrewVerbFunction, form: HebrewVerbForm): readonly RuleSource[] {
+    if (form === 'imperfect' && HEBREW_VERB_FUNCTIONS.cohortative.includes(fn)) {
+        return [HEBREW_VERB_FUNCTION_SOURCES.cohortative[fn]!, PU('el cohortativo', '2.2.4a'), P('2026-10-14 · Rut 3:5 אֶעֱשֶׂה')];
+    }
+    const propia = HEBREW_VERB_FUNCTION_SOURCES[form][fn] ?? (fn === 'prohibition' ? HEBREW_VERB_FUNCTION_SOURCES.jussive.prohibition : undefined);
+    return propia ? [propia] : [];
+}
+
+/** U3a — la función de la preposición hebrea: la categoría de A&C §4.1 con la página de su encabezado (cotejada, 2026-11-12). */
+const PREPOSICIONES = 'las preposiciones';
+export const HEBREW_PREPOSITION_SOURCES: Readonly<Record<HebrewPreposition, Readonly<Partial<Record<HebrewPrepositionFunction, RuleSource>>>>> = {
+    b: { spatial: AC(PREPOSICIONES, '4.1.5 בְּ › (a) Spatial', '102'), temporal: AC(PREPOSICIONES, '4.1.5 בְּ › (b) Temporal', '103'), instrumental: AC(PREPOSICIONES, '4.1.5 בְּ › (c) Instrumental', '104'), adversative: AC(PREPOSICIONES, '4.1.5 בְּ › (d) Adversative', '104'), specification: AC(PREPOSICIONES, '4.1.5 בְּ › (e) Specification', '104'), causal: AC(PREPOSICIONES, '4.1.5 בְּ › (f) Causal', '105'), accompaniment: AC(PREPOSICIONES, '4.1.5 בְּ › (g) Accompaniment', '105'), essence: AC(PREPOSICIONES, '4.1.5 בְּ › (h) Essence', '106'), manner: AC(PREPOSICIONES, '4.1.5 בְּ › (i) Manner', '106'), price: AC(PREPOSICIONES, '4.1.5 בְּ › (j) Price', '106') },
+    k: { agreement: AC(PREPOSICIONES, '4.1.9 כְּ › (a) Agreement', '109'), correspondence: AC(PREPOSICIONES, '4.1.9 כְּ › (b) Correspondence', '109') },
+    l: { spatial: AC(PREPOSICIONES, '4.1.10 לְ › (a) Spatial', '110'), locative: AC(PREPOSICIONES, '4.1.10 לְ › (b) Locative', '110'), temporal: AC(PREPOSICIONES, '4.1.10 לְ › (c) Temporal', '111'), purpose: AC(PREPOSICIONES, '4.1.10 לְ › (d) Purpose', '111'), quasiDatival: AC(PREPOSICIONES, '4.1.10 לְ › (e) Quasi datival', '111'), interest: AC(PREPOSICIONES, '4.1.10 לְ › (e.1) Interest/advantage', '112'), product: AC(PREPOSICIONES, '4.1.10 לְ › (e.2) Product', '112'), possession: AC(PREPOSICIONES, '4.1.10 לְ › (f) Possession', '112'), genitival: AC(PREPOSICIONES, '4.1.10 לְ › (g) Genitival', '113'), specification: AC(PREPOSICIONES, '4.1.10 לְ › (h) Specification', '113'), normative: AC(PREPOSICIONES, '4.1.10 לְ › (i) Normative', '113'), manner: AC(PREPOSICIONES, '4.1.10 לְ › (j) Manner', '113'), estimative: AC(PREPOSICIONES, '4.1.10 לְ › (k) Estimative', '114'), agent: AC(PREPOSICIONES, '4.1.10 לְ › (l) Agent', '114') },
+    min: { source: AC(PREPOSICIONES, '4.1.13 מִן › (a) Source', '116'), temporal: AC(PREPOSICIONES, '4.1.13 מִן › (b) Temporal', '117'), material: AC(PREPOSICIONES, '4.1.13 מִן › (c) Material', '117'), causal: AC(PREPOSICIONES, '4.1.13 מִן › (d) Causal', '117'), estimative: AC(PREPOSICIONES, '4.1.13 מִן › (e) Estimative', '117'), partitive: AC(PREPOSICIONES, '4.1.13 מִן › (f) Partitive', '118'), privative: AC(PREPOSICIONES, '4.1.13 מִן › (g) Privative', '118'), comparative: AC(PREPOSICIONES, '4.1.13 מִן › (h) Comparative', '118'), compound: AC(PREPOSICIONES, '4.1.13 מִן › (i) Compound', '119') },
+    al: { vertical: AC(PREPOSICIONES, '4.1.16 עַל › (a.1) Vertical relationship', '120'), horizontal: AC(PREPOSICIONES, '4.1.16 עַל › (a.2) Horizontal relationship', '121'), duty: AC(PREPOSICIONES, '4.1.16 עַל › (b) Duty', '121'), rank: AC(PREPOSICIONES, '4.1.16 עַל › (c) Rank', '122'), causal: AC(PREPOSICIONES, '4.1.16 עַל › (d) Causal', '122'), manner: AC(PREPOSICIONES, '4.1.16 עַל › (e) Manner', '122'), adversative: AC(PREPOSICIONES, '4.1.16 עַל › (f) Adversative', '123'), accompaniment: AC(PREPOSICIONES, '4.1.16 עַל › (g) Accompaniment', '123'), interest: AC(PREPOSICIONES, '4.1.16 עַל › (h) Interest', '124'), emotive: AC(PREPOSICIONES, '4.1.16 עַל › (i) Emotive', '124') },
+    el: { terminative: AC(PREPOSICIONES, '4.1.2 אֶל › (a) Terminative', '97'), estimative: AC(PREPOSICIONES, '4.1.2 אֶל › (b) Estimative', '98'), declarative: AC(PREPOSICIONES, '4.1.2 אֶל › (c) Declarative', '99'), perceptual: AC(PREPOSICIONES, '4.1.2 אֶל › (d) Perceptual', '99'), addition: AC(PREPOSICIONES, '4.1.2 אֶל › (e) Addition', '100'), spatial: AC(PREPOSICIONES, '4.1.2 אֶל › (f) Spatial', '100') },
+    ad: { locative: AC(PREPOSICIONES, '4.1.15 עַד › (a) Locative', '120'), temporal: AC(PREPOSICIONES, '4.1.15 עַד › (b) Temporal', '120'), degree: AC(PREPOSICIONES, '4.1.15 עַד › (c) Degree', '120') },
+    im: { accompaniment: AC(PREPOSICIONES, '4.1.17 עִם › (a) Accompaniment', '124'), personalComplement: AC(PREPOSICIONES, '4.1.17 עִם › (b) Personal complement', '124'), locative: AC(PREPOSICIONES, '4.1.17 עִם › (c) Locative', '125'), restrictive: AC(PREPOSICIONES, '4.1.17 עִם › (d) Restrictive', '125') },
+    et: { accompaniment: AC(PREPOSICIONES, '4.1.4 אֵת › (a) Accompaniment', '101'), possession: AC(PREPOSICIONES, '4.1.4 אֵת › (b) Possession', '102'), complement: AC(PREPOSICIONES, '4.1.4 אֵת › (c) Complement', '102'), spatial: AC(PREPOSICIONES, '4.1.4 אֵת › (d) Spatial', '102') },
+    achar: { spatial: AC(PREPOSICIONES, '4.1.1 אַחַר › (a) Spatial', '96'), temporal: AC(PREPOSICIONES, '4.1.1 אַחַר › (b) Temporal', '97'), metaphorical: AC(PREPOSICIONES, '4.1.1 אַחַר › (c) Metaphorical', '97') },
+    tachat: { vertical: AC(PREPOSICIONES, '4.1.18 תַּחַת › (a) Vertical relationship', '125'), staticPosition: AC(PREPOSICIONES, '4.1.18 תַּחַת › (b) Static position', '126'), metaphorical: AC(PREPOSICIONES, '4.1.18 תַּחַת › (c) Metaphorical', '126'), substitution: AC(PREPOSICIONES, '4.1.18 תַּחַת › (d) Substitution', '126') },
+    lemaan: { purpose: AC(PREPOSICIONES, '4.1.11 לְמַעַן › (a) Purpose', '115'), causal: AC(PREPOSICIONES, '4.1.11 לְמַעַן › (b) Causal', '115') },
+};
+export function hebrewPrepositionSources(p: HebrewPreposition, fn?: HebrewPrepositionFunction): readonly RuleSource[] {
+    const s = fn ? HEBREW_PREPOSITION_SOURCES[p][fn] : undefined;
+    return s ? [s] : [];
+}
+
+/**
+ * U3c — Louw-Nida: el dominio con la página donde empieza, y el subdominio con la página donde está su
+ * línea del «Outline of Subdomains» (cotejadas con el ejemplar, 2026-11-12; el desfase hoja → página es 30).
+ */
+const LN = (section: string, page: number): RuleSource => ({ work: 'louwNida', section, topic: 'los dominios semánticos', verified: { page: String(page), method: 'pdf', on: '2026-11-12' } });
+/** El esquema de subdominios que sigue en la página siguiente. */
+const LN_PAGINA_SUB: Readonly<Record<string, number>> = {
+    '67.118': 629, '67.136': 629, '67.142': 629, '67.163': 629, '67.201': 629,
+    // El dominio 90 empieza en la p. 796; su esquema está en la 797.
+    ...Object.fromEntries(['90.1', '90.8', '90.14', '90.17', '90.20', '90.21', '90.29', '90.31', '90.36', '90.43', '90.45', '90.51', '90.56', '90.85'].map(k => [k, 797])),
+};
+export const LOUW_NIDA_DOMAIN_SOURCES: Readonly<Record<number, RuleSource>> =
+    Object.fromEntries(LOUW_NIDA_DOMAINS.map(d => [d.n, LN(`${d.n} ${d.en}`, d.page)]));
+export const LOUW_NIDA_SUBDOMAIN_SOURCES: Readonly<Record<string, RuleSource>> =
+    Object.fromEntries(LOUW_NIDA_SUBDOMAINS.map(s => {
+        const d = LOUW_NIDA_DOMAINS.find(x => x.n === s.domain)!;
+        const rango = s.from === s.to ? `${s.domain}.${s.from}` : `${s.domain}.${s.from}-${s.domain}.${s.to}`;
+        return [`${s.domain}.${s.from}`, LN(`${s.domain} ${d.en} › ${s.en} (${rango})`, LN_PAGINA_SUB[`${s.domain}.${s.from}`] ?? d.page)];
+    }));
+export function louwNidaSources(s: LouwNidaSense): readonly RuleSource[] {
+    const sub = s.subdomain ? LOUW_NIDA_SUBDOMAIN_SOURCES[`${s.subdomain.domain}.${s.subdomain.from}`] : undefined;
+    return [sub ?? LOUW_NIDA_DOMAIN_SOURCES[s.domain.n]!];
+}
+
+/** U9 — la apertura de sección (vocativo + imperativo o pregunta): señal medida, indicada por el profesor (Stg 3:1). */
+export const SECTION_OPENING_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 3:1 ἀδελφοί μου')];
+
+/** U10 — el mismo lema con distinta glosa en contexto (dato de MACULA), indicado por el profesor (Stg 3:5). */
+export const SAME_LEMMA_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 3:5 ἡλίκον … ἡλίκην')];

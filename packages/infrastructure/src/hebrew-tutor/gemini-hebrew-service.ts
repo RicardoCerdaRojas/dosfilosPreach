@@ -12,12 +12,13 @@
  *  - maxOutputTokens 32768 to accommodate long verse analyses with many words
  */
 
-import type { IHebrewAnalysisService, HebrewVerse, VerseAnalysis, LexicalEntry, SpeechFact, StructureNode, HebrewInfinitiveCandidate, HebrewParticipleCandidate, HebrewKiCandidate } from '@dosfilos/domain';
+import type { IHebrewAnalysisService, HebrewVerse, VerseAnalysis, LexicalEntry, SpeechFact, StructureNode, HebrewInfinitiveCandidate, HebrewParticipleCandidate, HebrewKiCandidate, HebrewPrepositionCandidate, HebrewVerbCandidate, NeighborVerses } from '@dosfilos/domain';
 import { HEBREW_ANALYSIS_PROMPT_VERSION, parseClauseReadings, reconcileGlobalWords } from '@dosfilos/domain';
 import { runLlmPrompt } from '../llm/callableLlm';
 import { GEMINI_CONFIG } from '../gemini/config.js';
 import { selectRelevantChunks } from './knowledge/knowledge-selector.js';
 import { buildVerseAnalysisPrompt } from './knowledge/hebrew-prompt-builder.js';
+import { hebrewAnalysisResponseSchema } from './analysisResponseSchema';
 import { LONG_GENERATION_TIMEOUT_MS } from '../llm/llmTimeouts';
 
 /**
@@ -37,12 +38,15 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
     infinitives: readonly HebrewInfinitiveCandidate[] = [],
     participles: readonly HebrewParticipleCandidate[] = [],
     kis: readonly HebrewKiCandidate[] = [],
+    neighbors: NeighborVerses = {},
+    verbs: readonly HebrewVerbCandidate[] = [],
+    prepositions: readonly HebrewPrepositionCandidate[] = [],
   ): Promise<VerseAnalysis> {
     // 1. Select the most relevant grammar knowledge chunks for this verse
     const knowledgeChunks = selectRelevantChunks(verse.hebrewText, [], 10);
 
     // 2. Build the full pedagogical prompt (includes lexical glossary context when provided)
-    const prompt = buildVerseAnalysisPrompt(verse, knowledgeChunks, lexicalEntries, language, structure, speech, infinitives, participles, kis);
+    const prompt = buildVerseAnalysisPrompt(verse, knowledgeChunks, lexicalEntries, language, structure, speech, infinitives, participles, kis, neighbors, verbs, prepositions);
 
     // 3. Call Gemini
     let rawResponse: string;
@@ -54,6 +58,9 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
         responseMimeType: 'application/json',
         temperature: 0.2, // Bajo: el análisis morfológico debe ser determinista.
         maxOutputTokens: 32768, // Versos largos (Job, Salmos) necesitan espacio.
+        // G0: con esquema, OpenAI responde en modo estricto y termina al cerrar
+        // el objeto (sin él repetía el JSON hasta el tope en 7 de 22 llamadas).
+        responseSchema: hebrewAnalysisResponseSchema(structure.length > 0),
       }, { timeoutMs: LONG_GENERATION_TIMEOUT_MS });
     } catch (error) {
       throw new Error(
@@ -175,7 +182,14 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
       return cleaned; // Let JSON.parse throw with the original text
     }
 
-    return cleaned.substring(firstBrace, lastBrace + 1);
+    // El primer objeto COMPLETO (llaves balanceadas, sin contar las de dentro de
+    // cadenas). Medido (2026-11, banco de la waw disyuntiva): gpt-6-luna a veces
+    // repite el JSON entero detrás del primero («…}} \nbayes{"reference"…»)
+    // hasta agotar los tokens; del primer «{» al último «}» eso no parsea. Si no
+    // hay un objeto cerrado (respuesta truncada), se sigue como antes y el
+    // rescate de `lexicalNotes` decide.
+    const completo = primerObjetoCompleto(cleaned, firstBrace);
+    return completo ?? cleaned.substring(firstBrace, lastBrace + 1);
   }
 
   /**
@@ -202,4 +216,25 @@ export class HebrewAnalysisService implements IHebrewAnalysisService {
     // Close the JSON object
     return truncated + '}';
   }
+}
+
+/** El primer objeto JSON cerrado desde `ini`, o `null` si no se cierra (respuesta truncada). */
+export function primerObjetoCompleto(texto: string, ini = texto.indexOf('{')): string | null {
+  if (ini < 0) return null;
+  let profundidad = 0;
+  let enCadena = false;
+  let escape = false;
+  for (let i = ini; i < texto.length; i++) {
+    const c = texto[i]!;
+    if (enCadena) {
+      if (escape) escape = false;
+      else if (c === '\\') escape = true;
+      else if (c === '"') enCadena = false;
+      continue;
+    }
+    if (c === '"') enCadena = true;
+    else if (c === '{') profundidad++;
+    else if (c === '}' && --profundidad === 0) return texto.slice(ini, i + 1);
+  }
+  return null;
 }

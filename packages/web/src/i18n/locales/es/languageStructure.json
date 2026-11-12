@@ -1,12 +1,22 @@
 {
   "title": "Estructura",
+  "viewLabel": "Vista de la estructura",
+  "view": {
+    "cards": "Tarjetas",
+    "diagram": "Diagrama"
+  },
+  "diagramToApodosis": "→ apódosis:",
+  "diagramNote": "Una línea por cláusula, sangrada bajo la que la contiene; la frase preposicional que va con el verbo, en su propia línea (└); la prótasis de varios miembros, unida por la barra. Las lecturas del asistente y las notas de cada cláusula están en «Tarjetas».",
   "intro": "Cada cláusula va debajo de la que la contiene, con su conector y su relación: eso sale del texto y de reglas fijas. Lo marcado «Asistente» es su lectura.",
   "loading": "Cargando la estructura…",
   "unavailable": "La estructura de este versículo no está disponible.",
   "noClauses": "Este versículo no tiene palabras en los datos sintácticos.",
   "protasis": "Prótasis",
+  "protasisMember": "Prótasis · otro miembro",
   "apodosis": "Apódosis",
+  "disjunctiveNoValue": "El valor (contraste, circunstancia, causa, concesión…) lo elige el asistente al analizar el versículo; si no aparece, re-analízalo.",
   "verbless": "Nominal (sin verbo)",
+  "verblessNote": "Sin verbo finito: la cópula («es», «será») se sobreentiende, y lo que se dice del sujeto es el predicado (Pred).",
   "fronted": "Antepuesto al verbo: {{roles}}.",
   "frontedNote": "Puede ser foco o marco; lo decide el contexto.",
   "attribution": "Estructura sintáctica: MACULA {{lang}} (Clear Bible, CC BY 4.0).",
@@ -69,7 +79,7 @@
     "negativePurpose": "«Para que no».",
     "chain": "El wayyiqtol hace avanzar la narración.",
     "conjunctive": "La waw se une a un verbo: sigue la línea de lo anterior.",
-    "disjunctive": "La waw va antes de algo que no es verbo y corta la cadena: contraste, circunstancia o cambio de tema.",
+    "disjunctive": "La waw va antes de algo que no es verbo y corta la cadena del wayyiqtol. No es necesariamente contraste: puede ser circunstancia, causa, concesión, paréntesis, apertura o cierre; lo decide el contexto.",
     "asyndetic": "Sin conjunción: la relación con lo anterior queda implícita.",
     "speech": "Empieza lo que se dice, después de «dijo».",
     "question": "εἰ interrogativo: «si…», no una condición.",
@@ -89,6 +99,9 @@
   },
   "legendConnector": "Conector",
   "legendFronted": "Antepuesto al verbo (foco o marco)",
+  "legendPhraseVerb": "Frase preposicional con el verbo",
+  "legendPhraseNoun": "Frase preposicional con un nombre",
+  "legendPhraseLine": "Frase preposicional con el verbo, en su línea",
   "legendIndent": "La sangría muestra qué cláusula depende de cuál.",
   "cardFronted": "Antepuesta al verbo como {{role}}: puede marcar foco (énfasis) o marco (el tema); lo decide el contexto.",
   "cardFrontedTitle": "Posición",
@@ -98,7 +111,13 @@
     "purpose": "Propósito",
     "result": "Resultado",
     "ground": "Causa",
-    "content": "Contenido"
+    "content": "Contenido",
+    "contrast": "Contraste («pero»)",
+    "circumstantial": "Circunstancial («siendo…», «mientras…»)",
+    "concessive": "Concesiva («aunque»)",
+    "background": "Paréntesis o fondo («y»)",
+    "opening": "Abre una escena",
+    "closing": "Cierra o resume («y»)"
   },
   "resolvedNote": "El texto deja abierto «{{open}}»; el asistente lo lee como {{choice}}.",
   "fronting": {
@@ -110,6 +129,10 @@
   "readingMissing": {
     "generate": "Genera el análisis para ver la lectura de cada cláusula.",
     "stale": "Este análisis se generó antes de la lectura de cláusulas. Re-analiza el versículo para verla.",
+    "staleWaw": "Este análisis es anterior a los valores de la waw disyuntiva: la traducía «pero» por defecto. Re-analiza el versículo para actualizar la lectura y las traducciones (tu traducción corregida se conserva).",
+    "staleNewer": "Este análisis es de una versión anterior. Re-analiza el versículo para ver lo último (por ejemplo, el perfecto proléptico, el artículo que retoma algo nombrado antes en el párrafo y la palabra que se repite con otro sentido).",
+    "staleVerb": "Este análisis es anterior a la función de cada verbo (por ejemplo, el cohortativo que no se ve en la forma). Re-analiza el versículo para verla (tu traducción corregida se conserva).",
+    "staleHebrew": "Este análisis es de una versión anterior. Re-analiza el versículo para ver lo último, por ejemplo la función de cada preposición (tu traducción corregida se conserva).",
     "reanalyze": "Re-analizar",
     "generateButton": "Generar análisis",
     "empty": "El asistente no devolvió la lectura de las cláusulas en este análisis. Re-analiza el versículo para pedirla."

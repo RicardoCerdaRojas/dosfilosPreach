@@ -67,6 +67,11 @@ export interface StructureNode {
     /** Sin verbo finito ni participio ni infinitivo: cláusula nominal. */
     readonly verbless: boolean;
     /**
+     * U11 (Stg 2:14 «ἐὰν … λέγῃ τις ἔχειν / ἔργα δὲ μὴ ἔχῃ»): la prótasis de varios
+     * miembros. Todas sus filas llevan el mismo número; la primera es la condición.
+     */
+    readonly conditionGroup?: number;
+    /**
      * Constituyentes antes del verbo, en orden (sujeto, objeto, adverbial…):
      * `r` es la primera palabra y `rs` todas las del constituyente.
      */
@@ -168,6 +173,13 @@ function relacionHebrea(
 }
 
 // ── Común ─────────────────────────────────────────────────────────────────────
+
+/**
+ * U11 (revisión del profesor, Stg 2:18 «Ἀλλ’ ἐρεῖ τις· Σὺ πίστιν ἔχεις…»): los
+ * verbos de decir cuyo OBJETO es una cláusula sin conector. Esa cláusula es lo
+ * dicho (discurso directo), no una «Principal».
+ */
+const DECIR_GRIEGO: ReadonlySet<string> = new Set(['λέγω', 'φημί', 'ἀποκρίνομαι', 'κράζω', 'λαλέω']);
 
 const NEGACIONES: ReadonlySet<string> = new Set(['μή', 'οὐ', 'οὐκ', 'οὐχ', LEMA.lo, LEMA.al]);
 
@@ -314,10 +326,15 @@ export function verseStructure(ch: ChapterStructure, verse: number): StructureNo
             if (relation === 'condition' && madre !== null) apodosis.add(madre);
         }
         // Un nodo que sólo trae su conector (envoltorio de coordinación) no es
-        // una cláusula nominal: su verbo está en las hijas.
-        const verbless = ch.lang === 'gr'
-            ? !sub.some(w => w.pos?.startsWith('V'))
-            : !sub.some(w => piezas(w).some(x => esVerboHe(x.m)));
+        // una cláusula nominal: su verbo está en las hijas. Pero si la fila trae
+        // su PREDICADO (rol «p») y ningún verbo propio, es nominal aunque una
+        // hija tenga verbo: «ἡ γὰρ κρίσις ἀνέλεος τῷ μὴ ποιήσαντι» (Stg 2:13) no
+        // salía nominal por el participio de la hija, ni «πιστὸς ὁ θεός, δι’ οὗ
+        // ἐκλήθητε» (1 Co 1:9) por su relativa (revisión del profesor, 2026-11).
+        const conVerbo = (xs: readonly StructureWord[]) => ch.lang === 'gr'
+            ? xs.some(w => w.pos?.startsWith('V'))
+            : xs.some(w => piezas(w).some(x => esVerboHe(x.m)));
+        const verbless = !conVerbo(ws) && (ws.some(w => w.role === 'p') || !conVerbo(sub));
         return { relation, connector, conditionalClass, verbless };
     };
     // Una palabra hebrea de varias piezas lleva el rol de la primera (לְ = Prep);
@@ -336,6 +353,11 @@ export function verseStructure(ch: ChapterStructure, verse: number): StructureNo
         let r = relacion(ws, n.index, n.clause.rule, n.clause.p);
         // Sin conjunción después de «dijo»: comienza el discurso directo.
         if (ch.lang === 'he' && r.relation === 'asyndetic' && i > 0 && palabrasDe(nodos[i - 1]!.words).some(w => lemaBase(w.l) === LEMA.amar))
+            r = { ...r, relation: 'speech' };
+        // Griego (U11, Stg 2:18): el objeto sin conector de un verbo de decir es lo dicho.
+        const madre = n.clause.p === null ? undefined : nodos.find(x => x.index === n.clause.p);
+        if (ch.lang === 'gr' && r.relation === 'main' && !r.connector && (n.clause.role === 'o' || n.clause.role === 'o2')
+            && madre && palabrasDe(madre.words)[0]?.pos !== 'RR' && palabrasDe(madre.words).some(w => w.pos?.startsWith('V') && DECIR_GRIEGO.has(w.l)))
             r = { ...r, relation: 'speech' };
         return { index: n.index, parent: n.clause.p, depth: n.depth, tokens: ws.map(token), ...r, isApodosis: false };
     });
@@ -358,6 +380,7 @@ export function verseStructure(ch: ChapterStructure, verse: number): StructureNo
         ...(f.conditionalClass ? { conditionalClass: f.conditionalClass } : {}),
         isApodosis: f.isApodosis,
         verbless: f.verbless,
+        ...(f.conditionGroup !== undefined ? { conditionGroup: f.conditionGroup } : {}),
         fronted: adelantados(f.tokens, noCuenta, finito),
     }));
 }
@@ -372,6 +395,7 @@ interface Fila {
     conditionalClass: StructureNode['conditionalClass'];
     isApodosis: boolean;
     verbless: boolean;
+    conditionGroup?: number;
 }
 
 /**
@@ -414,6 +438,41 @@ function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: Readon
         const pos = posicion.get(t.r) ?? 0;
         return POSPOSITIVOS.has(lemaDe.get(t.r) ?? '') ? pos - 1.5 : pos;
     };
+    // U11 (revisión del profesor, Stg 2:14 «ἐὰν πίστιν λέγῃ τις ἔχειν»): una hija
+    // DISCONTINUA (sus palabras envuelven a las de la madre) va EN LÍNEA con la
+    // madre. Como fila aparte salía antes que su verbo («πίστιν ἔχειν» arriba de
+    // «λέγῃ τις») y rompía el orden del texto. Se mira sólo la hija sin conector.
+    const pos = (t: StructureToken) => posicion.get(t.r) ?? 0;
+    let enLinea = true;
+    while (enLinea) {
+        enLinea = false;
+        for (const hija of filas) {
+            const madre = filas.find(f => f.index === hija.parent);
+            // La madre es una cláusula de verdad (con constituyentes), no un envoltorio de sólo
+            // conector («δέ» de Stg 2:14): esos los funde `fundirEnvoltorios` más abajo.
+            // Lo dicho va en su fila aunque lo corte el verbo de decir (Hch 25:5 «Οἱ οὖν ἐν ὑμῖν, φησίν,
+            // δυνατοὶ…»; 1 S 28:13): revisión adversarial, 2026-11-12.
+            if (!madre || hija.connector || hija.relation === 'speech' || hija.tokens.length < 2 || !madre.tokens.some(t => t.role)) continue;
+            const ps = hija.tokens.map(pos);
+            const desde = Math.min(...ps), hasta = Math.max(...ps);
+            // Lo que interrumpe a la hija es un CONSTITUYENTE de la madre, no su conector
+            // pospositivo (Jn 5:7 «ἐν ᾧ δὲ ἔρχομαι»: el δέ va dentro de la relativa).
+            // Un vocativo (`aux`) en medio no cuenta (Heb 1:8 «Ὁ θρόνος σου ὁ θεὸς εἰς τὸν αἰῶνα»).
+            const interrumpen = madre.tokens.filter(t => t.role && t.role !== 'aux' && t.r !== madre.connector && pos(t) > desde && pos(t) < hasta);
+            if (!interrumpen.length) continue;
+            // Un «φησίν» parentético dentro de la cita no la vuelve parte de la frase del narrador.
+            if (interrumpen.every(t => t.role === 'v' && DECIR_GRIEGO.has(lemaDe.get(t.r) ?? ''))) continue;
+            // Una palabra hebrea de varias piezas puede estar en las dos (לְ|דַבֵּר): va una vez.
+            const yaEsta = new Set(madre.tokens.map(t => t.r));
+            madre.tokens = [...madre.tokens, ...hija.tokens.filter(t => !yaEsta.has(t.r))].sort(orden);
+            madre.isApodosis ||= hija.isApodosis;
+            for (const f of filas) if (f.parent === hija.index) f.parent = madre.index;
+            for (const f of filas) if (desciendeDe(f.index, hija.index)) f.depth -= 1;
+            filas = filas.filter(f => f !== hija);
+            enLinea = true;
+            break;
+        }
+    }
     let cambio = true;
     while (cambio) {
         cambio = false;
@@ -441,13 +500,56 @@ function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: Readon
                 h.parent = madre.parent;
                 if (madre.isApodosis && h.relation !== 'condition') h.isApodosis = true;
             }
+            // U11 (Stg 2:14): la condición que envolvía a varias hijas es UNA prótasis de varios miembros.
+            // En griego, ἐάN/εἰ envuelve sólo la prótasis: sus hijas no son apódosis (Ap 3:20 «καὶ
+            // ἀνοίξῃ», Mc 12:19 «καταλίπῃ γυναῖκα» salían «apódosis»). En hebreo, אִם puede envolver
+            // la oración condicional entera (Am 9:3): la apódosis queda fuera del grupo.
+            if (madre.relation === 'condition' && hijas.length > 1) {
+                for (const h of hijas) if (ch.lang === 'gr' || !h.isApodosis) h.conditionGroup = madre.index;
+            }
             for (const f of filas) if (desciendeDe(f.index, madre.index)) f.depth -= 1;
             filas = filas.filter(f => f !== madre);
             cambio = true;
             break;
         }
     }
+    // U11 (revisión del profesor, Stg 2:19 «καὶ τὰ δαιμόνια πιστεύουσιν καὶ
+    // φρίσσουσιν»): MACULA coordina con un nodo que trae el SEGUNDO miembro y
+    // cuelga el primero de él. Una hija que va entera ANTES de una madre que
+    // empieza con su conector de coordinación es una coordinada: va a su mismo nivel.
+    const COORDINA: ReadonlySet<ClauseRelation> = new Set(['addition', 'development', 'contrast', 'alternative', 'conjunctive']);
+    const porIndice = new Map(filas.map(f => [f.index, f]));
+    /** ¿`f` cuelga (fila por fila) de `ancestro`? */
+    const bajoFila = (f: Fila, ancestro: Fila) => {
+        for (let p = porIndice.get(f.parent ?? NaN); p; p = porIndice.get(p.parent ?? NaN)) if (p === ancestro) return true;
+        return false;
+    };
+    for (const madre of filas) {
+        if (!madre.connector || !COORDINA.has(madre.relation) || madre.tokens[0]?.r !== madre.connector) continue;
+        const inicio = pos(madre.tokens[0]!);
+        for (const hija of filas.filter(f => f.parent === madre.index)) {
+            if (Math.max(...hija.tokens.map(pos)) >= inicio) continue;
+            const sube = hija.depth - madre.depth;
+            if (sube <= 0) continue;
+            for (const f of filas) if (f === hija || bajoFila(f, hija)) f.depth -= sube;
+            hija.parent = madre.parent;
+        }
+    }
     filas.sort((a, b) => clave(a) - clave(b));
+    // El grupo de prótasis (revisión adversarial, 2026-11-12): la condición PRIMERO y, después, sus
+    // miembros coordinados. No entra lo que va antes de la condición (2 S 14:32) ni, en griego, lo que
+    // no coordina («ἄρα», 1 Co 15:14: es la apódosis). Un miembro no es apódosis, aunque una fusión
+    // lo haya marcado (en hebreo, 40 filas: 1 S 17:9 וְהִכָּנִי). Sin la condición y otro miembro, no hay grupo.
+    const MIEMBRO_GR: ReadonlySet<ClauseRelation> = new Set(['condition', 'addition', 'development', 'contrast', 'alternative', 'main']);
+    const miembros = new Map<number, Fila[]>();
+    for (const f of filas) if (f.conditionGroup !== undefined) miembros.set(f.conditionGroup, [...(miembros.get(f.conditionGroup) ?? []), f]);
+    for (const fs of miembros.values()) {
+        const cond = fs.find(f => f.relation === 'condition');
+        const quedan = cond ? fs.filter(f => f === cond || (filas.indexOf(f) > filas.indexOf(cond) && (ch.lang !== 'gr' || MIEMBRO_GR.has(f.relation)))) : [];
+        for (const f of fs) if (!quedan.includes(f)) delete f.conditionGroup;
+        if (quedan.length < 2) for (const f of quedan) delete f.conditionGroup;
+        else for (const f of quedan) f.isApodosis = false;
+    }
     // Una palabra hebrea de varias piezas (לְ|עָזְבֵךְ) puede estar en dos
     // cláusulas: la madre por su preposición y la hija por su verbo, o dos
     // hermanas (Is 6:8 הִנְנִי). Se muestra una vez: en la más profunda y, entre

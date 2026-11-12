@@ -19,11 +19,20 @@
  *     clauseTag with full semantic context, which is always more accurate.
  */
 
-import type { WordAnalysis } from '@dosfilos/domain';
+import type { PhraseKind, WordAnalysis } from '@dosfilos/domain';
 
 export type SyntacticMark = 'PREP_PHRASE' | 'CONSTRUCT' | 'APPOSITION' | null;
 
-export function getSyntacticMark(word: WordAnalysis): SyntacticMark {
+export function getSyntacticMark(word: WordAnalysis, frase?: PhraseKind | null): SyntacticMark {
+  // 0. U11b (revisión del profesor, 2026-11): con los datos de MACULA alineados, la frase
+  //    preposicional es DATO (toda la frase, no sólo la palabra con la preposición), y ni la
+  //    etiqueta del asistente ni la heurística la deciden. `undefined` = sin dato: como antes.
+  if (frase !== undefined) {
+    if (frase) return 'PREP_PHRASE';
+    if (word.clauseTag === 'CONSTRUCT' || word.nominalMorphology?.state === 'CONSTRUCT') return 'CONSTRUCT';
+    const f = word.syntacticFunction?.toLowerCase() ?? '';
+    return word.clauseTag === 'APPOSITION' || f.includes('aposic') || f.includes('apósi') ? 'APPOSITION' : null;
+  }
   // 1. Explicit tag from Gemini — full semantic authority
   if (word.clauseTag === 'PREP_PHRASE') return 'PREP_PHRASE';
   if (word.clauseTag === 'CONSTRUCT')   return 'CONSTRUCT';

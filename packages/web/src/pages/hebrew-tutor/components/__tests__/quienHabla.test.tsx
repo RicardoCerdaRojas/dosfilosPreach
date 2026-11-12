@@ -14,7 +14,7 @@ vi.mock('../../HebrewTutorProvider', () => ({ useHebrewTutor: () => ({}) }));
 vi.mock('../VerbDetectivePanel', () => ({ VerbDetectivePanel: () => null }));
 vi.mock('../NominalDetectivePanel', () => ({ NominalDetectivePanel: () => null }));
 const estado = vi.hoisted(() => ({
-    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[], participles: [] as unknown[], kis: [] as unknown[] },
+    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[], participles: [] as unknown[], kis: [] as unknown[], ketivQere: [] as unknown[] },
 }));
 vi.mock('@/components/language-structure/useVerseStructure', () => ({
     useVerseStructure: () => estado.estructura,
@@ -72,6 +72,57 @@ describe('del dato a la ficha (revisión: el camino no tenía prueba)', () => {
         render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.1.16" /></TooltipProvider>);
         abrirFicha(0);
         expect(screen.getAllByTestId('speech-note')[0]!.textContent).toContain('verseAnalyzer.speech.verb {"speaker":"רוּת"}');
+    });
+});
+
+describe('ketiv y qere del dato a la página (revisión del profesor, Rut 2:1 מוֹדַע)', () => {
+    it('el círculo sobre la palabra en el versículo y el bloque en su ficha; nada en la vecina', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [], kis: [],
+            words: [{ r: '1!1', t: 'וּלְנָעֳמִי', l: 'c/l/5281', m: 'HC/R/Np', role: 'p' }, { r: '1!3', t: 'מוֹדַע', l: '4129', m: 'HNcmsa', role: 's' }],
+            ketivQere: [{ ordinal: 1, qere: 'מוֹדַע', ketiv: 'מידע' }],
+        };
+        const analisis = { reference: 'Rut 2:1', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'וּלְנָעֳמִי', hebrewWord: 'וּלְנָעֳמִי', morphemes: [], category: 'NOUN', translation: 'y para Noemí' },
+                { hebrewText: 'מוֹדַע', hebrewWord: 'מוֹדַע', morphemes: [], category: 'NOUN', translation: 'un pariente' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.2.1" /></TooltipProvider>);
+        expect(screen.getAllByTestId('ketiv-qere-mark')).toHaveLength(1);
+        abrirFicha(1);
+        expect(screen.getByTestId('ficha-panel').textContent).toContain('מידע');
+    });
+});
+
+describe('el sufijo pronominal del dato a la página (revisión del profesor, Rut 3:3 כַּלֹּתוֹ)', () => {
+    it('la ficha de la palabra alineada muestra la celda «Sufijo» desde el código OSHB', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [], kis: [], ketivQere: [],
+            words: [{ r: '3!14', t: 'כַּלֹּתוֹ', l: '3615', m: 'HVpc/Sp3ms', role: 'v' }],
+        };
+        const analisis = { reference: 'Rut 3:3', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [{ hebrewText: 'כַּלֹּתוֹ', hebrewWord: 'כַּלֹּתוֹ', morphemes: [], category: 'VERB', translation: 'su terminar', verbMorphology: { binyan: 'PIEL', verbForm: 'INFINITIVE_CONSTRUCT' } }] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.3.3" /></TooltipProvider>);
+        abrirFicha(0);
+        expect(screen.getByTestId('ficha-panel').textContent).toContain('verseAnalyzer.ficha.cells.suffix');
+        expect(screen.getByTestId('ficha-panel').textContent).toContain('verseAnalyzer.ficha.suffix.host.infinitive');
+    });
+});
+
+describe('la waw disyuntiva y su valor, de la lectura a la ficha (revisión del profesor, Rut 2:10)', () => {
+    it('la ficha de וְאָנֹכִי dice «waw disyuntiva» y el valor que eligió el asistente', () => {
+        const w = { r: '10!13', t: 'וְאָנֹכִי', l: 'c/595', m: 'HC/Pp1cs', role: 's' };
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [], kis: [], ketivQere: [],
+            words: [w], ordinal: new Map([[w.r, 0]]),
+            nodes: [{ index: 7, depth: 0, words: [{ r: w.r, t: w.t, role: 's' }], connector: w.r, relation: 'disjunctive', isApodosis: false, verbless: true, fronted: [] }] as never,
+        };
+        const analisis = { reference: 'Rut 2:10', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [], promptVersion: 4,
+            clauseReadings: [{ index: 7, anchor: w.r, value: 'circunstancia', explanation: 'x', resolved: 'circumstantial' }],
+            words: [{ hebrewText: 'וְאָנֹכִי', hebrewWord: 'וְאָנֹכִי', morphemes: [], category: 'PRONOUN', translation: 'siendo yo' }] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.2.10" /></TooltipProvider>);
+        abrirFicha(0);
+        expect(screen.getByTestId('ficha-panel').textContent).toContain('resolved.circumstantial');
     });
 });
 
@@ -155,7 +206,7 @@ describe('R4: del dato a la tarjeta resumen y a la ficha', () => {
 
 describe('la ficha en el panel lateral', () => {
     it('tocar la palabra en el versículo abre su ficha; «siguiente» pasa a la otra sin cerrar', () => {
-        estado.estructura = { ...estado.estructura, unavailable: true, speech: [], infinitives: [], participles: [], kis: [] };
+        estado.estructura = { ...estado.estructura, unavailable: true, speech: [], infinitives: [], participles: [], kis: [], ketivQere: [] };
         const analisis = { reference: 'Rut 1:16', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
             words: [
                 { hebrewText: 'רוּת', hebrewWord: 'רוּת', morphemes: [], category: 'NOUN', translation: 'Rut' },
@@ -168,5 +219,29 @@ describe('la ficha en el panel lateral', () => {
         fireEvent.click(screen.getByLabelText('wordFicha.next'));
         expect(panel().textContent).toContain('«vayas»');
         expect(screen.getByLabelText('wordFicha.next')).toBeDisabled();
+    });
+});
+
+describe('el artículo y el rol del dato a la página (U4, revisión del profesor, Rut 3:6 הַגֹּרֶן)', () => {
+    it('la ficha de la era dice que ya se nombró en 3:3 y que MACULA la lee como complemento adverbial, y avisa el choque', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [], kis: [], ketivQere: [],
+            words: [
+                { r: '6!1', t: 'וַתֵּרֶד', l: 'c/3381', m: 'HC/Vqw3fs', role: 'v' },
+                { r: '6!2', t: 'הַגֹּרֶן', l: 'd/1637', m: 'HTd/Ncbsa', role: 'adv' },
+            ],
+            articles: [{ ordinal: 1, antecedent: { text: 'הַגֹּרֶן', verse: 3 }, sameVerse: false }],
+        } as never;
+        const analisis = { reference: 'Rut 3:6', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'וַתֵּרֶד', morphemes: [], category: 'VERB', translation: 'y descendió', syntacticFunction: 'Verbo principal' },
+                { hebrewText: 'הַגֹּרֶן', morphemes: [], category: 'NOUN', translation: 'la era', syntacticFunction: 'Objeto directo del verbo' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.3.6" /></TooltipProvider>);
+        abrirFicha(1);
+        const panel = screen.getByTestId('ficha-panel');
+        expect(panel.querySelector('[data-testid="ficha-articulo"]')?.textContent).toContain('verseAnalyzer.ficha.article.seenBefore');
+        expect(panel.querySelector('[data-testid="ficha-rol-macula"]')?.textContent).toContain('verseAnalyzer.ficha.role.adv');
+        expect(panel.querySelector('[data-testid="ficha-rol-choque"]')).not.toBeNull();
     });
 });

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { act, render, screen, fireEvent, within } from '@testing-library/react';
+import es from '@/i18n/locales/es/greekTutor.json';
 import type { GreekKeyInsight, GreekWordInsight, GreekWordToken } from '@dosfilos/domain';
 
 /**
@@ -110,6 +111,42 @@ describe('Ficha griega — el bloque de función', () => {
         expect(n).toContain('wordFicha.origin.assistant');
         expect(screen.queryByTestId('verb-function')).toBeNull();
     });
+    it('uso del tiempo acotado por regla (Stg 2:10 γέγονεν, Wallace p. 581): el porqué, las opciones y la otra lectura del asistente', () => {
+        const insight = { ...INSIGHT_VERBO, verbFunction: undefined, verbRule: undefined, tenseUse: undefined, tenseRule: 'prolepticPerfect', tenseUseOptions: ['proleptic', 'gnomic'], tenseUseOutside: 'intensive' };
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VERBO, insight } as never} />);
+        const n = screen.getByTestId('tense-use').textContent!;
+        for (const v of ['analyzer.verbFn.tenseRules.prolepticPerfect', 'analyzer.verbFn.tenseUses.proleptic', 'analyzer.verbFn.tenseUses.gnomic', 'Proleptic (Futuristic) Perfect']) expect(n, v).toContain(v);
+        expect(n).toContain('analyzer.verbFn.tenseUses.intensive');
+    });
+    it('la condicional en la ficha de ἐάν (revisión del profesor, Stg 2:14): clase, qué es, su valor y la fuente; en el tooltip, una línea', () => {
+        const conj = { text: 'ἐὰν', lemma: 'ἐάν', pos: 'C' as never, transliteration: 'ean', tag: {} as never };
+        const conditional = { ordinal: 4, conditionalClass: 3 as const, use: 'presentGeneral' as const };
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: conj, conditional } as never} />);
+        const n = screen.getByTestId('conditional').textContent!;
+        for (const v of ['analyzer.conditional.title', 'classLabel.3', 'classNotes.3', 'analyzer.conditional.uses.presentGeneral', 'Third Class Condition']) expect(n, v).toContain(v);
+        const corto = render(<FichaResumen registro={BLOQUES_GRIEGO} d={{ token: conj, conditional } as never} />).container.textContent!;
+        expect(corto).toContain('analyzer.conditional.short.presentGeneral');
+    });
+    it('ὅστις + subjuntivo sin ἄν (Stg 2:10 τηρήσῃ): su regla propia, sin «con ἄν» y sólo con la fuente de la relativa (prueba del fundador)', () => {
+        const insight = { ...INSIGHT_VERBO, verbFunction: 'indefinite', verbRule: 'indefiniteRelative', tenseUse: undefined };
+        const subj = { ...VERBO, tag: { tense: 'A', voice: 'A', mood: 'S', person: '3', number: 'S' } as never };
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: subj, insight } as never} />);
+        const n = screen.getByTestId('verb-function').textContent!;
+        expect(n).toContain('analyzer.verbFn.rules.indefiniteRelative');
+        expect(n).toContain('Subjunctive in Indefinite Relative Clause');
+        expect(n).not.toContain('Indefinite Temporal Clause');
+        // Y el texto real no dice que hay ἄN donde no lo hay.
+        const reglas = (es as { analyzer: { verbFn: { rules: Record<string, string>; functions: Record<string, string> } } }).analyzer.verbFn;
+        expect(reglas.rules.indefiniteRelative).toContain('con o sin ἄν');
+        expect(reglas.functions.indefinite).not.toContain('con ἄν');
+    });
+    it('uso del tiempo acotado y elegido: el nombre, sin opciones', () => {
+        const insight = { ...INSIGHT_VERBO, verbFunction: undefined, verbRule: undefined, tenseUse: 'proleptic', tenseRule: 'prolepticPerfect' };
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VERBO, insight } as never} />);
+        const n = screen.getByTestId('tense-use').textContent!;
+        expect(n).toContain('analyzer.verbFn.tenseUses.proleptic');
+        expect(n).not.toContain('wordFicha.options');
+    });
     it('el caso lleva su función sintáctica adentro; sin caso, la sintáctica va sola', () => {
         render(<FichaCompleta registro={BLOQUES_GRIEGO} d={DATOS_NOMBRE as never} />);
         expect(screen.getByTestId('case-function').textContent).toContain('FUNCION-SINT-N complemento');
@@ -133,5 +170,101 @@ describe('Ficha griega — tarjetas resumen, impresión y panel', () => {
         fireEvent.click(screen.getByLabelText('wordFicha.next'));
         expect(onAbrir).toHaveBeenCalledWith(1);
         expect(screen.getByLabelText('wordFicha.previous')).toBeDisabled();
+    });
+});
+
+/** U3b (revisión del profesor, Stg 2:16 «τις ἐξ ὑμῶν»): el partitivo con ἐκ lo decide la regla. */
+describe('Ficha griega — el genitivo partitivo por regla (U3b)', () => {
+    const UMON: GreekWordToken = { text: 'ὑμῶν', lemma: 'σύ', pos: 'RP' as never, transliteration: 'hymōn', tag: { case: 'G', number: 'P' } as never };
+
+    it('con la regla, el bloque del caso dice «Regla», cómo se reconoce y cita a Wallace p. 84', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: UMON, insight: { text: 'ὑμῶν', caseFunction: 'partitive', nominalRule: 'partitiveEk' } } as never} />);
+        const b = screen.getByTestId('case-function');
+        expect(b.textContent).toContain('analyzer.caseFn.G.partitive');
+        expect(b.textContent).toContain('analyzer.caseRule.partitiveEk');
+        expect(b.querySelector('[data-testid="ficha-origen-regla"]')).not.toBeNull();
+        expect(b.textContent).toContain('Wallace');
+    });
+
+    it('sin la regla, el mismo caso sigue siendo elección del asistente', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: UMON, insight: { text: 'ὑμῶν', caseFunction: 'partitive' } } as never} />);
+        expect(screen.getByTestId('case-function').querySelector('[data-testid="ficha-origen-eleccion"]')).not.toBeNull();
+    });
+});
+
+/** U3c (revisión del profesor, Stg 2:10 «ἐν ἑνί»): el sentido de Louw-Nida de la preposición, dato de MACULA. */
+describe('Ficha griega — el sentido de Louw-Nida (U3c)', () => {
+    const EN: GreekWordToken = { text: 'ἐν', lemma: 'ἐν', pos: 'P' as never, transliteration: 'en', tag: {} as never };
+
+    it('Stg 2:10 89.5: Relaciones › especificación, como dato, con la cita del léxico', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: EN, ln: '89.5' } as never} />);
+        const b = screen.getByTestId('louw-nida');
+        expect(b.textContent).toContain('89.5');
+        expect(b.textContent).toContain('relaciones');
+        expect(b.textContent).toContain('especificación');
+        expect(b.textContent).toContain('Louw');
+        expect(b.textContent).toContain('analyzer.louwNida.note');
+    });
+
+    it('Stg 2:21 «89.25 89.77»: las dos lecturas que deja el dato (causa y medio)', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: EN, ln: '89.25 89.77' } as never} />);
+        expect(screen.getAllByTestId('louw-nida-sentido').map(e => e.textContent)).toEqual([expect.stringContaining('causa'), expect.stringContaining('medio')]);
+        expect(screen.getByTestId('louw-nida').textContent).toContain('analyzer.louwNida.twoReadings');
+    });
+
+    it('sin código (14 % de las preposiciones) o en otra palabra, no hay bloque', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: EN } as never} />);
+        expect(screen.queryByTestId('louw-nida')).toBeNull();
+    });
+});
+
+/** U9 (revisión del profesor, Stg 3:1): la señal de apertura de sección en la ficha del vocativo. */
+describe('Ficha griega — apertura de sección (U9)', () => {
+    const VOC: GreekWordToken = { text: 'ἀδελφοί', lemma: 'ἀδελφός', pos: 'N' as never, transliteration: 'adelphoi', tag: { case: 'V', number: 'P' } as never };
+
+    it('con imperativo: lo nombra, dice «señal» y cita la indicación del profesor', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VOC, opening: { question: false, imperative: 'γίνεσθε,' } } as never} />);
+        const b = screen.getByTestId('apertura-seccion');
+        expect(b.textContent).toContain('analyzer.opening.withImperative');
+        expect(b.textContent).toContain('analyzer.opening.note');
+        expect(b.textContent).toContain('Stg 3:1');
+    });
+
+    it('con pregunta (Stg 2:14), el texto de la pregunta; sin señal, no hay bloque', () => {
+        const { unmount } = render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VOC, opening: { question: true } } as never} />);
+        expect(screen.getByTestId('apertura-seccion').textContent).toContain('analyzer.opening.withQuestion');
+        unmount();
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: VOC } as never} />);
+        expect(screen.queryByTestId('apertura-seccion')).toBeNull();
+    });
+});
+
+/** U10 (revisión del profesor, Stg 3:5): el mismo lema otra vez en el versículo, con otra glosa en contexto. */
+describe('Ficha griega — mismo lema en el versículo (U10)', () => {
+    const HLIKON: GreekWordToken = { text: 'ἡλίκον', lemma: 'ἡλίκος', pos: 'A' as never, transliteration: 'hēlikon', tag: { case: 'N', number: 'S' } as never };
+    const MISMO = [
+        { text: 'ἡλίκον', gloss: 'small', translation: 'qué pequeño', self: true },
+        { text: 'ἡλίκην', gloss: 'how great', translation: 'qué gran', self: false },
+    ];
+
+    it('Stg 3:5: las dos apariciones con la traducción del análisis, esta palabra destacada, y la indicación del profesor', () => {
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: HLIKON, sameLemma: MISMO } as never} />);
+        const filas = screen.getAllByTestId('mismo-lema-aparicion');
+        expect(filas.map(f => f.textContent)).toEqual([expect.stringContaining('«qué pequeño»'), expect.stringContaining('«qué gran»')]);
+        expect(filas.map(f => f.className.includes('font-semibold'))).toEqual([true, false]);
+        const b = screen.getByTestId('mismo-lema');
+        expect(b.textContent).toContain('analyzer.sameLemma.note');
+        expect(b.textContent).toContain('Stg 3:5');
+    });
+
+    it('sin análisis, sólo el texto y la glosa; sin el dato (o con una sola aparición), no hay bloque', () => {
+        const { unmount } = render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: HLIKON, sameLemma: MISMO.map(({ translation: _t, ...w }) => w) } as never} />);
+        expect(screen.getAllByTestId('mismo-lema-aparicion')[0]!.textContent).not.toContain('«');
+        unmount();
+        const r = render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: HLIKON } as never} />);
+        expect(screen.queryByTestId('mismo-lema')).toBeNull();
+        r.unmount();
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: HLIKON, sameLemma: [MISMO[0]] } as never} />);
+        expect(screen.queryByTestId('mismo-lema')).toBeNull();
     });
 });

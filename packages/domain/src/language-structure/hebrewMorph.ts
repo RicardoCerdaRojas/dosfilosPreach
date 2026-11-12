@@ -38,5 +38,39 @@ export function clausulaDe(ch: ChapterStructure, w: StructureWord, porRef: Reado
     return palabras(k);
 }
 export const esInfinitivo = (x: StructureWord) => forma(x) === 'c' || forma(x) === 'a';
+
+/**
+ * El sufijo pronominal de una palabra, desde su código OSHB (`Sp3ms`). Revisión
+ * del profesor (2026-11, Rut 3:3 כַּלֹּתוֹ): la ficha nunca mostraba el sufijo
+ * como dato de la forma. Putnam §1.5.1b: en un sustantivo es posesivo (o
+ * sujeto/objeto de la idea verbal); en un verbo o tras אֵת, el complemento; en
+ * una preposición, su término; en un infinitivo constructo, su SUJETO u objeto
+ * («עַד כַּלֹּתוֹ», «hasta que él termine»). Los sufijos que no son pronombre
+ * (ה direccional `Sd`, paragógicas `Sh` y `Sn`) no cuentan.
+ */
+export interface HebrewSuffix {
+    readonly person: '1' | '2' | '3';
+    readonly gender: 'm' | 'f' | 'c';
+    readonly number: 's' | 'p' | 'd';
+    /** A qué va pegado: el uso del sufijo depende de eso. */
+    readonly host: 'infinitive' | 'verb' | 'noun' | 'preposition' | 'objectMarker' | 'other';
+}
+
+export function hebrewSuffix(morph: string | undefined): HebrewSuffix | undefined {
+    const segs = (morph ?? '').replace(/^[HA]/, '').split('/');
+    const k = segs.findIndex(s => /^Sp[123][mfcb][spd]$/.test(s));
+    if (k < 0) return undefined;
+    const s = segs[k]!;
+    const prev = segs[k - 1] ?? '';
+    const host: HebrewSuffix['host'] = /^V.[ca]/.test(prev) ? 'infinitive'
+        : prev.startsWith('V') ? 'verb'
+            : /^(N|A)/.test(prev) ? 'noun'
+                : prev === 'To' ? 'objectMarker'
+                    : prev.startsWith('R') ? 'preposition'
+                        : 'other';
+    // OSHB usa «b» (ambos) en pocos casos; para la ficha es común.
+    const gender = s[3] === 'b' ? 'c' : (s[3] as 'm' | 'f' | 'c');
+    return { person: s[2] as HebrewSuffix['person'], gender, number: s[4] as HebrewSuffix['number'], host };
+}
 /** La palabra sin cantilación (los acentos de OSHB): así la nombra el prompt. */
 export const sinAcentos = (t: string) => t.replace(/[\u0591-\u05AF\u05BD\u05C0\u05C3]/g, '');

@@ -180,6 +180,17 @@ describe('G2 — regresiones de la revisión adversarial', () => {
         // μηδείς también prohíbe; μή/μήποτε dependiente es «no sea que».
         ['1CO/3.json', 18, 'ἐξαπατάτω', 'prohibition'],
         ['1CO/10.json', 12, 'πέσῃ', 'lest'],
+        // «No sea que» sólo bajo un verbo de temor o advertencia (Wallace p. 477): Hch 5:26, Lc 21:8.
+        ['ACT/5.json', 26, 'λιθασθῶσιν', 'lest'],
+        ['LUK/21.json', 8, 'πλανηθῆτε', 'lest'],
+        ['HEB/2.json', 1, 'παραρυῶμεν', 'lest'],
+        ['MAT/5.json', 25, 'παραδῷ', 'lest'],
+        // Una cita bajo un verbo de decir es prohibición (Wallace p. 469 lista Stg 2:11 y Heb 3:8;
+        // revisión del profesor, 2026-11). En Hch 18:9 φοβέομαι está en la madre, pero rige λάλει.
+        ['JAS/2.json', 11, 'φονεύσῃς', 'prohibition'],
+        ['HEB/3.json', 8, 'σκληρύνητε', 'prohibition'],
+        ['LUK/18.json', 20, 'κλέψῃς', 'prohibition'],
+        ['ACT/18.json', 9, 'σιωπήσῃς', 'prohibition'],
     ])('%s %i %s → %s (regla)', (rel, v, t, f) => {
         expect(verbo(rel, v, t).decided).toBe(f);
     });
@@ -192,6 +203,8 @@ describe('G2 — regresiones de la revisión adversarial', () => {
         ['LUK/15.json', 7, 'μετανοοῦντι', 'periphrastic'],
         ['ACT/10.json', 24, 'συγκαλεσάμενος', 'periphrastic'],
         ['1PE/3.json', 22, 'πορευθεὶς', 'periphrastic'],
+        // «δῶμεν ἢ μὴ δῶμεν;» es deliberativo, no temor (Mc 12:14).
+        ['MRK/12.json', 14, 'δῶμεν', 'lest'],
     ])('%s %i %s NO es %s', (rel, v, t, f) => {
         expect(verbo(rel, v, t).decided).not.toBe(f);
     });
@@ -207,6 +220,33 @@ describe('G2 — regresiones de la revisión adversarial', () => {
         expect(verbo('ACT/21.json', 16, 'ξενισθῶμεν').rule).toBeUndefined();
     });
 
+describe('revisión del profesor (2026-11) — Stg 2:10-11', () => {
+    it('ὅστις + subjuntivo sin ἄν es relativo indefinido, también el coordinado «πταίσῃ δέ» (Wallace p. 478)', () => {
+        expect(verbo('JAS/2.json', 10, 'τηρήσῃ')).toMatchObject({ decided: 'indefinite', rule: 'indefiniteRelative' });
+        expect(verbo('JAS/2.json', 10, 'πταίσῃ')).toMatchObject({ decided: 'indefinite', rule: 'indefiniteRelative' });
+    });
+    it('perfecto en la apódosis de una 3.ª clase o con sujeto indefinido: proléptico o gnómico (Wallace p. 581)', () => {
+        for (const [rel, v, t] of [['JAS/2.json', 10, 'γέγονεν'], ['ROM/7.json', 2, 'κατήργηται'], ['ROM/14.json', 23, 'κατακέκριται'], ['1CO/13.json', 1, 'γέγονα']] as const) {
+            expect(verbo(rel, v, t), `${rel} ${v}`).toMatchObject({ tenseRule: 'prolepticPerfect', tenseUses: ['proleptic', 'gnomic'] });
+        }
+    });
+    it('NO acota: 1.ª clase (1 Co 15:13 ἐγήγερται; Stg 2:11 γέγονας, que elige el asistente) ni un perfecto con sentido de presente (1 Jn 5:15 οἴδαμεν)', () => {
+        expect(verbo('1CO/15.json', 13, 'ἐγήγερται').tenseRule).toBeUndefined();
+        expect(verbo('JAS/2.json', 11, 'γέγονας').tenseRule).toBeUndefined();
+        expect(verbo('1JN/5.json', 15, 'οἴδαμεν').tenseRule).toBeUndefined();
+        // Tampoco la pista (revisión adversarial): Stg 1:23 «εἴ τις… οὗτος ἔοικεν» es un perfecto con sentido de presente.
+        expect(verbo('1JN/5.json', 15, 'οἴδαμεν').tenseHint).toBeUndefined();
+        expect(verbo('JAS/1.json', 23, 'ἔοικεν').tenseHint).toBeUndefined();
+    });
+    it('al mostrar: la elección válida queda; si no, las opciones y lo del asistente como otra lectura', () => {
+        const c = [verbo('JAS/2.json', 10, 'γέγονεν')];
+        const conOrdinal = (x: object) => Array.from({ length: c[0]!.ordinal + 1 }, (_, i) => (i === c[0]!.ordinal ? x : {}));
+        expect(applyVerbRules(conOrdinal({ tenseUse: 'proleptic' }) as never[], c)[c[0]!.ordinal]).toEqual({ tenseUse: 'proleptic', tenseRule: 'prolepticPerfect' });
+        expect(applyVerbRules(conOrdinal({ tenseUse: 'intensive' }) as never[], c)[c[0]!.ordinal])
+            .toEqual({ tenseRule: 'prolepticPerfect', tenseUseOptions: ['proleptic', 'gnomic'], tenseUseOutside: 'intensive' });
+    });
+});
+
 describe('R0 — la regla no dice más que el libro que cita', () => {
     it('ἐν τῷ + infinitivo acota tiempo o medio, y πρὸς τό propósito o resultado (Wallace p. 611): no deciden solos', () => {
         const co = cargar('1CO/11.json');
@@ -220,4 +260,25 @@ describe('R0 — la regla no dice más que el libro que cita', () => {
     });
 });
 
+});
+
+/** Revisión del profesor (2026-11, Stg 2:11 γέγονας): el perfecto en la apódosis de 1.ª clase, como PISTA. */
+describe('la pista del perfecto proléptico en la 1.ª clase', () => {
+    it('Stg 2:11 γέγονας lleva la pista; Stg 2:10 γέγονεν (3.ª clase) sigue con la regla que acota', async () => {
+        const { readFileSync } = await import('node:fs');
+        const { fileURLToPath } = await import('node:url');
+        const { greekVerbCandidates, buildVerbFunctionTask } = await import('../verbFunctions');
+        const { verseWords } = await import('../chapterStructure');
+        const ch = JSON.parse(readFileSync(fileURLToPath(new URL('../../../../web/public/language-data/v1/gr/JAS/2.json', import.meta.url)), 'utf8'));
+        const de = (v: number, t: string) => greekVerbCandidates(ch, v).find(c => verseWords(ch, v)[c.ordinal]!.t.replace(/[,.·;]/g, '') === t)!;
+        const g11 = de(11, 'γέγονας');
+        expect(g11.tenseHint).toBe('prolepticFirstClass');
+        expect(g11.tenseRule).toBeUndefined();
+        const g10 = de(10, 'γέγονεν');
+        expect(g10.tenseRule).toBe('prolepticPerfect');
+        expect(g10.tenseHint).toBeUndefined();
+        const tarea = buildVerbFunctionTask([g11], verseWords(ch, 11).map(w => w.t));
+        expect(tarea).toMatch(/PISTA: perfecto en la apódosis de una condición de 1\.ª clase/);
+        expect(tarea).toContain('"intensive" o "extensive"');
+    });
 });

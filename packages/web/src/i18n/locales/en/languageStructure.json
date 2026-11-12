@@ -1,12 +1,22 @@
 {
   "title": "Structure",
+  "viewLabel": "Structure view",
+  "view": {
+    "cards": "Cards",
+    "diagram": "Diagram"
+  },
+  "diagramToApodosis": "→ apodosis:",
+  "diagramNote": "One line per clause, indented under the one that contains it; the prepositional phrase that goes with the verb on its own line (└); a protasis with several members joined by the bar. The assistant's readings and each clause's notes are under «Cards».",
   "intro": "Each clause sits under the one that contains it, with its connector and its relation: that comes from the text and fixed rules. What is marked «Assistant» is its reading.",
   "loading": "Loading the structure…",
   "unavailable": "The structure of this verse is not available.",
   "noClauses": "This verse has no words in the syntactic data.",
   "protasis": "Protasis",
+  "protasisMember": "Protasis · further member",
   "apodosis": "Apodosis",
+  "disjunctiveNoValue": "The value (contrast, circumstance, cause, concession…) is chosen by the assistant when it analyzes the verse; if it is missing, re-analyze it.",
   "verbless": "Verbless",
+  "verblessNote": "No finite verb: the copula (\"is\", \"will be\") is understood, and what is said of the subject is the predicate (Pred).",
   "fronted": "Before the verb: {{roles}}.",
   "frontedNote": "It may be focus or frame; context decides.",
   "attribution": "Syntactic structure: MACULA {{lang}} (Clear Bible, CC BY 4.0).",
@@ -69,7 +79,7 @@
     "negativePurpose": "«Lest».",
     "chain": "The wayyiqtol moves the narrative forward.",
     "conjunctive": "The waw joins a verb: it continues the previous line.",
-    "disjunctive": "The waw stands before something that is not a verb and breaks the chain: contrast, circumstance or change of topic.",
+    "disjunctive": "The waw stands before something that is not a verb and breaks the wayyiqtol chain. It is not necessarily contrastive: it can be circumstance, cause, concession, parenthesis, opening or closing; the context decides.",
     "asyndetic": "No conjunction: the link with what precedes is implicit.",
     "speech": "What is said begins, after «said».",
     "question": "Interrogative εἰ: «whether…», not a condition.",
@@ -89,6 +99,9 @@
   },
   "legendConnector": "Connector",
   "legendFronted": "Before the verb (focus or frame)",
+  "legendPhraseVerb": "Prepositional phrase with the verb",
+  "legendPhraseNoun": "Prepositional phrase with a noun",
+  "legendPhraseLine": "Prepositional phrase with the verb, on its own line",
   "legendIndent": "Indentation shows which clause depends on which.",
   "cardFronted": "Placed before the verb as {{role}}: it may mark focus (emphasis) or frame (the topic); context decides.",
   "cardFrontedTitle": "Position",
@@ -98,7 +111,13 @@
     "purpose": "Purpose",
     "result": "Result",
     "ground": "Ground",
-    "content": "Content"
+    "content": "Content",
+    "contrast": "Contrast (“but”)",
+    "circumstantial": "Circumstantial (“being…”, “while…”)",
+    "concessive": "Concessive (“although”)",
+    "background": "Parenthesis or background (“and”)",
+    "opening": "Opens a scene",
+    "closing": "Closes or sums up (“and”)"
   },
   "resolvedNote": "The text leaves «{{open}}» open; the assistant reads it as {{choice}}.",
   "fronting": {
@@ -110,6 +129,10 @@
   "readingMissing": {
     "generate": "Generate the analysis to see the reading of each clause.",
     "stale": "This analysis was generated before the clause reading. Re-analyze the verse to see it.",
+    "staleWaw": "This analysis predates the values of the disjunctive waw: it translated it “but” by default. Re-analyze the verse to update the reading and the translations (your corrected translation is kept).",
+    "staleNewer": "This analysis comes from an earlier version. Re-analyze the verse to see the latest (for example, the proleptic perfect, the article that refers back to something named earlier in the paragraph, and the word repeated with another sense).",
+    "staleVerb": "This analysis predates the function of each verb (for example, a cohortative the form does not show). Re-analyze the verse to see it (your corrected translation is kept).",
+    "staleHebrew": "This analysis comes from an earlier version. Re-analyze the verse to see the latest, for example the function of each preposition (your corrected translation is kept).",
     "reanalyze": "Re-analyze",
     "generateButton": "Generate analysis",
     "empty": "The assistant did not return the clause reading in this analysis. Re-analyze the verse to request it."

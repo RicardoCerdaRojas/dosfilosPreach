@@ -85,6 +85,96 @@
         "substantive": "sustantivo: «el que…»"
       }
     },
+    "preposition": {
+      "title": "Preposición {{p}}",
+      "functions": {
+        "spatial": "Espacial (lugar o dirección)",
+        "temporal": "Temporal",
+        "instrumental": "Instrumental",
+        "adversative": "Adversativa (en contra)",
+        "specification": "Especificación («en cuanto a»)",
+        "causal": "Causal",
+        "accompaniment": "Compañía",
+        "essence": "Esencia («como», beth essentiae)",
+        "manner": "Modo",
+        "price": "Precio («a cambio de»)",
+        "agreement": "Acuerdo en medida («unos»)",
+        "correspondence": "Correspondencia («como»)",
+        "locative": "Locativa («en», «junto a»)",
+        "purpose": "Finalidad",
+        "quasiDatival": "Objeto indirecto («a»)",
+        "interest": "Interés («para», «a favor de»)",
+        "product": "Producto («en», «por»)",
+        "possession": "Posesión («X tenía»)",
+        "genitival": "Genitival («de», en lugar del constructo)",
+        "normative": "Normativa («según»)",
+        "estimative": "Estimativa («a los ojos de»)",
+        "agent": "Agente («por», con pasiva)",
+        "source": "Origen («de», «desde»)",
+        "material": "Material («de»)",
+        "partitive": "Partitiva («algunos de»)",
+        "privative": "Privativa («sin», «lejos de»)",
+        "comparative": "Comparativa («más que»)",
+        "compound": "Compuesta (con otra preposición)",
+        "vertical": "Encima / debajo",
+        "horizontal": "Junto a",
+        "duty": "Deber («sobre mí»)",
+        "rank": "Autoridad («sobre»)",
+        "emotive": "Emotiva",
+        "terminative": "Destino («a», «hacia»)",
+        "declarative": "Destinatario de lo dicho («a»)",
+        "perceptual": "Atención o inclinación («hacia»)",
+        "addition": "Adición («además de»)",
+        "personalComplement": "Destinatario («con»)",
+        "restrictive": "Restrictiva («fuera de»)",
+        "degree": "Grado («en gran manera»)",
+        "metaphorical": "Figurada («en pos de», «bajo»)",
+        "substitution": "Sustitución («en lugar de»)",
+        "staticPosition": "Posición («allí mismo»)",
+        "complement": "Complemento («con»)"
+      }
+    },
+    "verb": {
+      "title": {
+        "perfect": "Perfecto (qatal)",
+        "imperfect": "Imperfecto (yiqtol)",
+        "wayyiqtol": "Wayyiqtol",
+        "weqatal": "Weqatal",
+        "jussive": "Yusivo",
+        "imperative": "Imperativo",
+        "cohortative": "Cohortativo"
+      },
+      "functions": {
+        "complete": "Acción completa",
+        "stative": "Estado",
+        "experience": "Experiencia",
+        "rhetoricalFuture": "Futuro retórico (profético)",
+        "proverbial": "Proverbial (verdad general)",
+        "performative": "Performativo (ocurre al decirlo)",
+        "future": "Futuro",
+        "customary": "Habitual",
+        "progressive": "Progresivo (en curso)",
+        "conditional": "Condicional",
+        "permission": "Permiso",
+        "obligation": "Obligación",
+        "command": "Mandato",
+        "preterite": "Pretérito",
+        "wish": "Deseo",
+        "benediction": "Bendición",
+        "prohibition": "Prohibición",
+        "promise": "Promesa",
+        "resolve": "Resolución («sí, lo haré»)",
+        "exhortation": "Exhortación («hagamos»)",
+        "sequential": "Secuencial",
+        "consequential": "Consecuencia",
+        "narratival": "Narrativo",
+        "epexegetical": "Epexegético (explica lo anterior)",
+        "dependent": "Dependiente (tras una cláusula de tiempo)",
+        "volitional": "Volitivo (sigue a un mandato)",
+        "apodictic": "Apodíctico (ley o instrucción)"
+      },
+      "cohortativeByFunction": "Cohortativo por función · {{fn}}"
+    },
     "ki": {
       "title": "Partícula כִּי",
       "functions": {
@@ -113,7 +203,25 @@
         "gender": "Género",
         "number": "Número",
         "state": "Estado",
-        "temporalValue": "Valor temporal"
+        "temporalValue": "Valor temporal",
+        "suffix": "Sufijo"
+      },
+      "suffix": {
+        "value": "{{pgn}} («{{gloss}}») · {{use}}",
+        "short": "suf. {{pgn}}",
+        "host": {
+          "infinitive": "sujeto u objeto del infinitivo",
+          "verb": "complemento del verbo",
+          "objectMarker": "complemento directo (con אֵת)",
+          "preposition": "término de la preposición",
+          "noun": "el poseedor («su…», «mi…»)",
+          "other": "pronombre pegado"
+        },
+        "gloss": {
+          "1cs": "yo / mi / me", "2ms": "tú / tu / te", "2fs": "tú / tu / te", "3ms": "él / su / lo", "3fs": "ella / su / la",
+          "1cp": "nosotros / nuestro / nos", "2mp": "ustedes / su / los", "2fp": "ustedes / su / las", "3mp": "ellos / su / los", "3fp": "ellas / su / las",
+          "2cs": "tú / tu / te", "3cs": "él / ella / su", "2cp": "ustedes / su", "1ms": "yo / mi / me"
+        }
       },
       "weakVerb": "Verbo débil",
       "opening": "Apertura",
@@ -127,6 +235,30 @@
       "weakVerbClass": "Se clasifica como {{type}} en el sistema de raíces de Farfán.",
       "explanation": "Explicación del asistente",
       "investigate": "Investigar la palabra paso a paso",
+      "ketivQere": {
+        "title": "Ketiv y qere",
+        "written": "Escrito (ketiv)",
+        "read": "Se lee (qere)",
+        "note": "Los masoretas dejaron el texto escrito como estaba y anotaron en el margen cómo leerlo. En la BHS, un círculo (°) sobre la palabra remite a esa nota del margen. El análisis es de lo que se lee.",
+        "onlyQere": "Se lee sin estar escrita (qere sin ketiv): los masoretas indican leer esta palabra aunque no está en el texto consonántico.",
+        "marker": "Esta palabra se lee distinta de como está escrita (ketiv y qere)"
+      },
+      "article": {
+        "title": "Artículo",
+        "seenBefore": "ya se nombró en el v. {{verse}}. El artículo puede retomarlo (artículo anafórico): míralo en el contexto, porque también puede ser genérico o señalar algo conocido.",
+        "seenSameVerse": "ya se nombró antes en este versículo. El artículo puede retomarlo (artículo anafórico): míralo en el contexto, porque también puede ser genérico o señalar algo conocido."
+      },
+      "role": {
+        "label": "Función en la oración (según el análisis sintáctico del texto)",
+        "dataSource": "Dato de MACULA, el análisis sintáctico abierto de la Biblia hebrea (Clear Bible), revisado por especialistas. No lo escribe el asistente.",
+        "s": "sujeto",
+        "o": "objeto directo",
+        "o2": "segundo objeto",
+        "adv": "complemento adverbial (lugar, dirección, tiempo o modo)",
+        "p": "predicado",
+        "conflict": "El asistente lo describe de otra manera. Los datos de MACULA lo leen como {{role}}.",
+        "adverbialHint": "Con un verbo de movimiento, el complemento adverbial se traduce con «a» o «hacia»."
+      },
       "recognizedBy": {
         "bInf": "Lleva la preposición בְּ pegada: temporal («cuando»), causal o instrumental.",
         "kInf": "Lleva la preposición כְּ pegada: «en cuanto», «mientras» o comparación.",
@@ -166,7 +298,16 @@
         "kiPregunta": "La palabra siguiente es interrogativa.",
         "kiTrasNegacion": "Sigue a una negación: «sino», «excepto» o la causa de lo negado.",
         "kiInicial": "Abre el versículo: condición, tiempo, concesión, aseveración o causa.",
-        "kiGeneral": "Sin una pista que limite las opciones: lo decide el contexto."
+        "kiGeneral": "Sin una pista que limite las opciones: lo decide el contexto.",
+        "vfProhibicion": "אַל delante del yusivo: prohíbe («no hagas»).",
+        "vfYiqtolPrimera": "Yiqtol de 1.ª persona: puede ser cohortativo por su función aunque la forma no lo muestre (en un verbo III-he la ה- final del cohortativo no se ve). Lo decide el contexto: si el hablante se compromete o se decide, es resolución.",
+        "vfPerfecto": "Perfecto (qatal): la forma deja estas funciones; lo decide el contexto.",
+        "vfImperfecto": "Imperfecto (yiqtol): la forma deja estas funciones; lo decide el contexto.",
+        "vfWayyiqtol": "Wayyiqtol (waw consecutiva + yiqtol): la forma deja estas funciones; lo decide el contexto.",
+        "vfWeqatal": "Weqatal (waw consecutiva + qatal): la forma deja estas funciones; lo decide el contexto.",
+        "vfYusivo": "Yusivo: la forma deja estas funciones; lo decide el contexto.",
+        "vfImperativo": "Imperativo: la forma deja estas funciones; lo decide el contexto.",
+        "vfCohortativo": "Cohortativo (con la ה- final): la forma deja estas funciones; lo decide el contexto."
       }
     },
     "speech": {

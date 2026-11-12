@@ -785,6 +785,8 @@
     "tools": {
       "translit": "Translit.",
       "translitToggle": "Mostrar u ocultar la transliteración — suelta la muleta para leer el alfabeto de verdad",
+      "phrases": "Frases",
+      "phrasesToggle": "Subrayar las frases preposicionales: línea continua si va con el verbo, punteada si va con un nombre",
       "smaller": "Letra más pequeña",
       "larger": "Letra más grande",
       "copyGreek": "Griego",
@@ -864,6 +866,25 @@
       "V": {
         "address": "Vocativo de invocación"
       }
+    },
+    "opening": {
+      "title": "Apertura de sección (señal)",
+      "withImperative": "Vocativo al comienzo del versículo, con el imperativo {{imp}}: en las cartas, el autor suele abrir así una nueva unidad (en Santiago: 1:2, 1:19, 2:1, 3:1, 4:11, 5:7).",
+      "withQuestion": "Vocativo al comienzo del versículo, con una pregunta: en las cartas, el autor suele abrir así una nueva unidad (Stg 2:14).",
+      "note": "Es una señal, no una regla: también aparece en medio de un argumento (Stg 3:12, 5:9). Confírmalo con el contenido."
+    },
+    "sameLemma": {
+      "title": "Mismo lema en este versículo",
+      "gloss": "glosa en contexto: «{{gloss}}»",
+      "note": "Dato de MACULA: la misma palabra aparece otra vez en este versículo con otra glosa en contexto. Puede ser un sentido distinto (Stg 3:5: «qué pequeño» fuego, «qué grande» bosque) o solo un matiz; tradúcela según el suyo."
+    },
+    "louwNida": {
+      "title": "Sentido en este versículo (Louw-Nida)",
+      "note": "Dato de MACULA: el sentido que el análisis del texto da a esta preposición aquí, según los dominios semánticos de Louw y Nida. El régimen dice qué sentidos admite el caso; esto dice cuál se lee en este versículo.",
+      "twoReadings": "Dato de MACULA: aquí deja abiertas {{count}} lecturas. El contexto decide entre ellas."
+    },
+    "caseRule": {
+      "partitiveEk": "ἐκ o ἀπό + genitivo plural junto a una palabra que toma una parte (τις, εἷς, οὐδείς, πολλοί, un numeral): el genitivo es el todo del que se toma esa parte («alguno de entre ustedes»)."
     },
     "caseFnHint": {
       "subject": "Ejecuta la acción del verbo finito.",
@@ -990,9 +1011,23 @@
       "contrast": "Con otros casos cambia el sentido:",
       "noObject": "No se identificó el término que rige."
     },
+    "conditional": {
+      "title": "Condicional",
+      "uses": {
+        "presentGeneral": "Aquí, presente general: una verdad que vale cada vez que se cumple la condición («si alguien…, entonces…»), no un hecho futuro. Wallace la llama «quinta clase» cuando la apódosis está en presente.",
+        "moreProbableFuture": "Aquí, futuro más probable: algo que puede pasar y se espera («si alguien les pregunta, dirán…»)."
+      },
+      "short": {
+        "presentGeneral": "presente general",
+        "moreProbableFuture": "futuro más probable"
+      }
+    },
     "verbFn": {
       "title": "Función del verbo",
       "tenseTitle": "Uso del tiempo",
+      "tenseRules": {
+        "prolepticPerfect": "Perfecto en la apódosis de una condición que mira al futuro (ἐάν + subjuntivo) o con un sujeto indefinido («quien…»): da por hecho un estado que todavía no ocurre. Wallace lo llama proléptico y admite también gnómico (una verdad general)."
+      },
       "functions": {
         "attributive": "Participio adjetival atributivo",
         "substantival": "Participio sustantival",
@@ -1023,7 +1058,7 @@
         "emphaticNegation": "Negación enfática (οὐ μή)",
         "inaClause": "Subjuntivo tras ἵνα/ὅπως",
         "conditional": "Subjuntivo condicional (ἐάν)",
-        "indefinite": "Indefinido (con ἄν)",
+        "indefinite": "Indefinido (relativo o temporal)",
         "command": "Mandato",
         "request": "Ruego",
         "permissive": "Permisivo",
@@ -1070,11 +1105,12 @@
         "conditionalEan": "prótasis con ἐάν",
         "ouMe": "οὐ μή + subjuntivo",
         "prohibition": "μή + subjuntivo aoristo",
-        "indefinite": "con ἄν",
+        "indefinite": "con ἄν, ὅταν, ἕως, ἄχρι, μέχρι o πρίν",
+        "indefiniteRelative": "ὅστις + subjuntivo, con o sin ἄν: «quienquiera que…». Plantea un caso general, como una condición (Wallace).",
         "hortatory": "1.ª persona plural",
         "meGenoito": "μὴ γένοιτο",
         "presentProhibition": "μή + imperativo",
-        "lest": "μή o μήποτε en una cláusula dependiente"
+        "lest": "μήποτε, o μή tras un verbo de temor o advertencia (βλέπω, φοβέομαι)"
       }
     },
     "agency": {

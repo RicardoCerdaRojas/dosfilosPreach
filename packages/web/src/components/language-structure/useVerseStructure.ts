@@ -3,12 +3,30 @@ import {
     greekDiscourseCandidates,
     greekAgency,
     greekAnaphora,
+    greekAnaphoraHints,
+    greekPartitive,
+    greekSectionOpening,
+    type SectionOpeningFact,
+    greekSameLemma,
+    type SameLemmaFact,
+    versePhrases,
+    type VersePhrase,
     greekAutos,
     greekVerbCandidates,
     hebrewSpeechFacts,
     hebrewInfinitiveCandidates,
     hebrewParticipleCandidates,
     hebrewKiCandidates,
+    ketivQereOfVerse,
+    hebrewArticleAntecedents,
+    hebrewFiniteVerbCandidates,
+    hebrewPrepositionCandidates,
+    type HebrewPrepositionCandidate,
+    type HebrewArticleFact,
+    type HebrewVerbCandidate,
+    greekConditionals,
+    type ConditionalFact,
+    type KetivQereFact,
     type HebrewInfinitiveCandidate,
     type HebrewParticipleCandidate,
     type HebrewKiCandidate,
@@ -51,6 +69,24 @@ export interface VerseStructureState {
     infinitives: readonly HebrewInfinitiveCandidate[];
     participles: readonly HebrewParticipleCandidate[];
     kis: readonly HebrewKiCandidate[];
+    /** Sólo hebreo: lo que se lee distinto de como está escrito (ketiv y qere, Rut 2:1). */
+    ketivQere: readonly KetivQereFact[];
+    /** Sólo griego: la clase de cada condicional en su partícula (εἰ, ἐάν), para la ficha. */
+    conditionals: readonly ConditionalFact[];
+    /** Sólo hebreo (U4, Rut 3:6): el sustantivo con artículo que ya apareció poco antes. */
+    articles: readonly HebrewArticleFact[];
+    /** Sólo hebreo (U5, Rut 3:5): cada verbo finito con las funciones que deja su forma. */
+    hebrewVerbs: readonly HebrewVerbCandidate[];
+    /** Sólo hebreo (U3a, Rut 2:1, 2:7): cada preposición con las funciones de A&C §4.1. */
+    hebrewPrepositions: readonly HebrewPrepositionCandidate[];
+    /** Sólo griego (U9, Stg 3:1): vocativo + imperativo o pregunta al comienzo, señal de apertura de sección. */
+    opening?: SectionOpeningFact;
+    /** Sólo griego (U10, Stg 3:5): el mismo lema con otra glosa en contexto (MACULA). */
+    sameLemma: readonly SameLemmaFact[];
+    /** U11b (Stg 2:16, 2:18): las frases preposicionales de MACULA, en los dos idiomas. */
+    phrases: readonly VersePhrase[];
+    /** ¿El capítulo trae frases? Un JSON viejo en caché (sin `phrases`) no dice que no haya: dice que no se sabe. */
+    phrasesKnown: boolean;
 }
 
 /**
@@ -89,6 +125,8 @@ export function useVerseStructure(
         const nominal = {
             agency: griego ? greekAgency(griego, verse) : [],
             anaphora: griego ? greekAnaphora(griego, verse) : [],
+            anaphoraHints: griego ? greekAnaphoraHints(griego, verse) : [],
+            partitive: griego ? greekPartitive(griego, verse) : [],
             autos: griego ? greekAutos(griego, verse) : [],
         };
         const discourse = griego ? greekDiscourseCandidates(griego, verse) : [];
@@ -96,7 +134,16 @@ export function useVerseStructure(
         const infinitives = actual?.chapter && lang === 'he' ? hebrewInfinitiveCandidates(actual.chapter, verse) : [];
         const participles = actual?.chapter && lang === 'he' ? hebrewParticipleCandidates(actual.chapter, verse) : [];
         const kis = actual?.chapter && lang === 'he' ? hebrewKiCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis };
+        const ketivQere = actual?.chapter && lang === 'he' ? ketivQereOfVerse(actual.chapter, verse) : [];
+        const conditionals = griego ? greekConditionals(griego, verse) : [];
+        const opening = griego ? greekSectionOpening(griego, verse) : undefined;
+        const sameLemma = griego ? greekSameLemma(griego, verse) : [];
+        const phrases = actual?.chapter ? versePhrases(actual.chapter, verse) : [];
+        const phrasesKnown = !!actual?.chapter?.phrases;
+        const articles = actual?.chapter && lang === 'he' ? hebrewArticleAntecedents(actual.chapter, verse) : [];
+        const hebrewVerbs = actual?.chapter && lang === 'he' ? hebrewFiniteVerbCandidates(actual.chapter, verse) : [];
+        const hebrewPrepositions = actual?.chapter && lang === 'he' ? hebrewPrepositionCandidates(actual.chapter, verse) : [];
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, sameLemma, phrases, phrasesKnown, ...(opening ? { opening } : {}) };
     }, [actual, key, verse, lang]);
 }
 

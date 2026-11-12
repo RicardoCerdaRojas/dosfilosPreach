@@ -50,6 +50,20 @@ describe('lectura de cláusulas — validación', () => {
         expect(out[1]).not.toHaveProperty('resolved');
     });
 
+    it('waw disyuntiva: elige su valor de la lista; fuera de la lista se descarta (revisión del profesor, Rut 2:10)', () => {
+        const rut = verseStructure(cargar('he/Ruth/2.json'), 10);
+        const n = rut.findIndex(f => f.relation === 'disjunctive') + 1;
+        expect(parseClauseReadings([{ n, value: 'circunstancia', explanation: 'x', resolved: 'circumstantial' }], rut)[0]?.resolved).toBe('circumstantial');
+        expect(parseClauseReadings([{ n, value: 'x', explanation: 'x', resolved: 'purpose' }], rut)[0]?.resolved).toBeUndefined();
+        // La tarea pide elegir en esa fila y dice que no es contraste por defecto.
+        const tarea = buildClauseReadingTask(rut);
+        expect(tarea.split('\n').find(l => l.startsWith(`${n}. `))).toContain('ELEGIR "resolved"');
+        expect(tarea).toContain('NO siempre');
+        // Banco fuera de muestra (2026-11-11): la concesiva se define (A&C 5.2.12) y se separa del contraste.
+        expect(tarea).toMatch(/«concessive» \(la cláusula dice algo que haría esperar que lo principal NO\s+ocurriera/);
+        expect(tarea).toMatch(/contraste opone DOS sujetos o hechos paralelos/);
+    });
+
     it('«fronting» donde nada va antepuesto se descarta (Stg 2:9, la fila de δέ)', () => {
         const n = stg29.findIndex(f => f.fronted.length === 0) + 1;
         const [l] = parseClauseReadings([{ n, value: 'desarrollo', explanation: 'δέ.', fronting: 'focus' }], stg29);

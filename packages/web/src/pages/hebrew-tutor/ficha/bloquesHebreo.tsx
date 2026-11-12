@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
-import type { WordAnalysis } from '@dosfilos/domain';
+import { STRUCTURE_RULE_SOURCES, type WordAnalysis } from '@dosfilos/domain';
+import { ArticuloAntecedente, FuncionSintactica } from './piezasDatosHebreo';
+import { PreposicionCompleta, PreposicionCorta, VerboCompleto, VerboCorto } from './piezasVerboHebreo';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
@@ -76,11 +78,55 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
             const { t } = useTranslation('hebrewTutor');
             return <FichaFilas filas={[[t('verseAnalyzer.ficha.root'), <>{he(d.word.root!, 'text-lg')} {d.word.rootTransliteration && <span className="italic text-muted-foreground">{d.word.rootTransliteration}</span>}{d.word.rootMeaning && <> · <strong className="font-semibold">{d.word.rootMeaning}</strong></>}</>]]} />;
         },
+        // En el tooltip, la raíz con su transliteración (pedido del profesor, revisión 2026-11):
+        // estaba antes del rediseño de la ficha y se había quedado sólo en la ficha completa.
+        Corto: function RaizCorta({ d }) {
+            const { t } = useTranslation('hebrewTutor');
+            return (
+                <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-sm text-foreground">
+                    <span className="text-muted-foreground">{t('verseAnalyzer.ficha.root')}</span>
+                    {he(d.word.root!, 'text-base')}
+                    {d.word.rootTransliteration && <span className="italic text-muted-foreground">{d.word.rootTransliteration}</span>}
+                </p>
+            );
+        },
     },
     {
         id: 'he.lexico', dato: 'Léxico (glosa)', seccion: 'palabra', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
         hay: (d) => !!d.word.lemmaGloss,
         Completo: function Lexico({ d }) { const { t } = useTranslation('hebrewTutor'); return <FichaFilas filas={[[t('verseAnalyzer.ficha.lexicon'), <strong className="font-semibold">{d.word.lemmaGloss}</strong>]]} />; },
+    },
+    {
+        // Revisión del profesor (2026-11, Rut 2:1 מוֹדַע): en la BHS el círculo remite al margen,
+        // donde está el ketiv. Sale de OSHB: la palabra analizada es el qere.
+        id: 'he.ketivQere', dato: 'Ketiv y qere: lo escrito y lo que se lee', seccion: 'palabra', origen: 'datos', antes: [],
+        hay: (d) => !!d.ketivQere,
+        Completo: function KetivQere({ d }) {
+            const { t } = useTranslation('hebrewTutor');
+            const f = d.ketivQere!;
+            return (
+                <FichaCaja titulo={t('verseAnalyzer.ficha.ketivQere.title')}>
+                    {f.ketiv
+                        ? <FichaFilas filas={[[t('verseAnalyzer.ficha.ketivQere.written'), he(f.ketiv, 'text-lg')], [t('verseAnalyzer.ficha.ketivQere.read'), he(f.qere, 'text-lg')]]} />
+                        : null}
+                    <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">
+                        {t(f.ketiv ? 'verseAnalyzer.ficha.ketivQere.note' : 'verseAnalyzer.ficha.ketivQere.onlyQere')}
+                    </p>
+                </FichaCaja>
+            );
+        },
+        Corto: function KetivQereCorto({ d }) {
+            const { t } = useTranslation('hebrewTutor');
+            const f = d.ketivQere!;
+            return (
+                <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-sm text-foreground">
+                    <span className="text-muted-foreground">°</span>
+                    {f.ketiv
+                        ? <>{t('verseAnalyzer.ficha.ketivQere.written')} {he(f.ketiv, 'text-base')}</>
+                        : t('verseAnalyzer.ficha.ketivQere.title')}
+                </p>
+            );
+        },
     },
 
     // LA FORMA
@@ -116,16 +162,54 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
     { id: 'he.funcionInfinitivo', dato: 'Función del infinitivo', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.infinitive, Completo: InfinitivoCompleto, Corto: InfinitivoCorto },
     { id: 'he.funcionParticipio', dato: 'Función del participio', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.participle, Completo: ParticipioCompleto, Corto: ParticipioCorto },
     { id: 'he.funcionKi', dato: 'Función de כִּי', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.ki, Completo: KiCompleto, Corto: KiCorto },
+    // U5 (revisión del profesor, Rut 3:5 אֶעֱשֶׂה): sólo con la función elegida o decidida — un análisis anterior
+    // no la trae y listar cinco a once opciones en cada verbo no le dice nada al estudiante.
+    { id: 'he.funcionVerbo', dato: 'Función del verbo finito (Arnold y Choi cap. 3), con el cohortativo por función', seccion: 'funcion', origen: 'mixto', antes: [], hay: (d) => !!d.verb && (!!d.verb.fn || !!d.verb.assistantReading), Completo: VerboCompleto, Corto: VerboCorto },
+    // U3a (Rut 2:1 וּלְנָעֳמִי / לְאִישָׁהּ, Rut 2:7): sólo con la función elegida. Sin texto: la función libre y el rol de MACULA siguen en su bloque.
+    { id: 'he.funcionPreposicion', dato: 'Función de la preposición (Arnold y Choi §4.1)', seccion: 'funcion', origen: 'asistente', antes: [], hay: (d) => !!d.preposition?.fn, Completo: PreposicionCompleta, Corto: PreposicionCorta },
+    {
+        // Revisión del profesor (2026-11, Rut 2:1): «waw + no verbo introduce una cláusula disyuntiva,
+        // pero no necesariamente contrastiva». La regla la dice el dato; el valor, el asistente.
+        id: 'he.wawDisyuntiva', dato: 'Waw disyuntiva (waw + no verbo) y su valor', seccion: 'funcion', origen: 'mixto', antes: [],
+        hay: (d) => !!d.disjunctive,
+        Completo: function WawDisyuntiva({ d }) {
+            const { t } = useTranslation('languageStructure');
+            const r = d.disjunctive!.resolved;
+            return (
+                <FichaFuncion
+                    titulo={t('relations.disjunctive')}
+                    {...(r ? { nombre: t(`resolved.${r}`) } : {})}
+                    origen={r ? 'eleccion' : 'regla'}
+                    reconoce={t('notes.disjunctive')}
+                    {...(r ? {} : { texto: t('disjunctiveNoValue') })}
+                    fuentes={STRUCTURE_RULE_SOURCES.disjunctive}
+                    testId="waw-disyuntiva"
+                />
+            );
+        },
+        Corto: function WawDisyuntivaCorta({ d }) {
+            const { t } = useTranslation('languageStructure');
+            const r = d.disjunctive!.resolved;
+            // El valor lo elige el asistente: el resumen lo dice como los bloques vecinos (revisión adversarial).
+            return <p className="m-0 flex flex-wrap items-center gap-x-2 font-medium text-foreground/85">{r && <FichaOrigenRotulo origen="eleccion" />}{t('relations.disjunctive')}{r ? ` · ${t(`resolved.${r}`)}` : ''}</p>;
+        },
+    },
     {
         // Sin regla para esta palabra, la función la da el asistente (con regla, va dentro de su bloque).
         id: 'he.funcionSintactica', dato: 'Función sintáctica (texto del asistente)', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip', 'panel'],
         hay: (d) => !!d.word.syntacticFunction && !funcionDeRegla(d),
-        Completo: ({ d }) => <FichaFuncion origen="asistente" texto={d.word.syntacticFunction} testId="ficha-funcion" />,
+        Completo: FuncionSintactica,
         Corto: ({ d }) => <p className="m-0 flex items-start gap-2"><FichaOrigenRotulo origen="asistente" /><span className="line-clamp-2">{d.word.syntacticFunction}</span></p>,
     },
 
     // EN EL CONTEXTO
     { id: 'he.quienHabla', dato: 'Quién habla y a quién', seccion: 'contexto', origen: 'regla', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.speech, Completo: ({ d }) => <SpeechNote speech={d.speech} /> },
+    {
+        // U4 (revisión del profesor, Rut 3:6 הַגֹּרֶן, nombrada en 3:3): un DATO, no una regla —
+        // medido a mano, el artículo retoma al antecedente en 72–92 % de los casos según la distancia.
+        id: 'he.articulo', dato: 'El sustantivo con artículo ya se nombró antes (posible artículo anafórico)', seccion: 'contexto', origen: 'datos', antes: [],
+        hay: (d) => !!d.article, Completo: ArticuloAntecedente,
+    },
     { id: 'he.antepuesta', dato: 'Antepuesta al verbo', seccion: 'contexto', origen: 'datos', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.fronted, Completo: ({ d }) => <FrontedNote fronted={d.fronted} /> },
 
     // PARA ESTUDIAR
@@ -166,6 +250,8 @@ export const DESTINO_PALABRA: Readonly<Record<keyof WordAnalysis, Destino>> = {
     infinitiveFunction: 'he.funcionInfinitivo',
     participleFunction: 'he.funcionParticipio',
     kiFunction: 'he.funcionKi',
+    verbFunction: 'he.funcionVerbo',
+    prepositionFunction: 'he.funcionPreposicion',
     explanation: 'he.explicacion',
     verbMorphology: 'he.celdas',
     nominalMorphology: 'he.celdas',
@@ -180,5 +266,6 @@ export const DESTINO_VERBO: Readonly<Record<keyof NonNullable<WordAnalysis['verb
 };
 export const DESTINO_NOMBRE: Readonly<Record<keyof NonNullable<WordAnalysis['nominalMorphology']>, Destino>> = {
     gender: 'he.celdas', number: 'he.celdas', state: 'he.celdas', person: 'he.celdas',
-    suffix: { fuera: 'Ni la tarjeta ni el tooltip lo mostraban; se agrega cuando haga falta.' },
+    suffix: { fuera: 'Se muestra el de OSHB (celda «Sufijo», revisión del profesor 2026-11), no el que escribe el asistente.' },
 };
+

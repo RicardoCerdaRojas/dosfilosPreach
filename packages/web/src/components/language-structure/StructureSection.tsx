@@ -16,6 +16,9 @@ import { SourceNote } from './SourceNote';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VerseStructureState } from './useVerseStructure';
+import { frasePorRef, SUBRAYADO_FRASE } from './frases';
+import { StructureDiagram } from './StructureDiagram';
+import type { PhraseKind } from '@dosfilos/domain';
 
 /** Las relaciones que llevan una nota de la regla (`notes.*` en el locale). */
 const CON_NOTA: ReadonlySet<ClauseRelation> = new Set([
@@ -65,6 +68,8 @@ interface FlowProps {
     links?: StructureWordLinks;
     /** La lectura del asistente, por fila (validada contra las filas al generarse). */
     readings?: readonly ClauseReading[];
+    /** U11b: palabra → clase de su frase preposicional, si el interruptor «Frases» está prendido. */
+    phrases?: ReadonlyMap<string, PhraseKind>;
 }
 
 /** Marca lo que viene del asistente: lo demás de la fila sale del texto. */
@@ -86,7 +91,7 @@ const EtiquetaAsistente: React.FC = () => {
  * antepuesto al verbo resaltado y la relación a la vista. Las relaciones que
  * el texto no decide («propósito o resultado») se nombran como tales.
  */
-export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageIndex, links, readings }) => {
+export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageIndex, links, readings, phrases }) => {
     const { t } = useTranslation('languageStructure');
     const base = Math.min(...nodes.map(n => n.depth));
     const indiceDe = (r: string) => {
@@ -102,6 +107,8 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                 const roles = n.fronted.map(f => t(`roleNames.${f.role}`)).join(', ');
                 const notas = [
                     n.conditionalClass ? t(`classNotes.${n.conditionalClass}`) : null,
+                    // Cómo se reconoce (pregunta del fundador, Stg 2:13): no hay verbo y la cópula se suple.
+                    n.verbless ? t('verblessNote') : null,
                     // Si el asistente eligió, la nota de la ambigüedad ya no hace falta: la dice la elección.
                     CON_NOTA.has(n.relation) && !lectura?.resolved ? t(`notes.${n.relation}`) : null,
                     n.fronted.length && !lectura?.fronting ? `${t('fronted', { roles })} ${t('frontedNote')}` : null,
@@ -135,7 +142,8 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                                         >
                                             <span
                                                 lang={lang === 'he' ? 'he' : 'grc'}
-                                                className={cn('leading-snug text-foreground', lang === 'he' ? 'font-hebrew text-xl' : 'text-lg')}
+                                                data-frase={phrases?.get(w.r)}
+                                                className={cn('leading-snug text-foreground', lang === 'he' ? 'font-hebrew text-xl' : 'text-lg', phrases?.has(w.r) && SUBRAYADO_FRASE[phrases.get(w.r)!])}
                                             >
                                                 {enlazada && links?.renderText ? links.renderText(i) : w.t}
                                             </span>
@@ -159,6 +167,10 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                                         {n.conditionalClass ? ` · ${t(`classLabel.${n.conditionalClass}`)}` : ''}
                                     </span>
                                 )}
+                                {/* U11 (Stg 2:14 «ἔργα δὲ μὴ ἔχῃ»): otro miembro de la misma prótasis, no una cláusula aparte. */}
+                                {n.conditionGroup !== undefined && n.relation !== 'condition' && (
+                                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-primary" data-testid="protasis-miembro">{t('protasisMember')}</span>
+                                )}
                                 {n.isApodosis && (
                                     <span className="text-[10.5px] font-bold uppercase tracking-wider text-primary">{t('apodosis')}</span>
                                 )}
@@ -166,7 +178,11 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                                     className="rounded-full border border-border bg-muted/40 px-2 py-0.5 font-semibold text-foreground"
                                     title={lectura?.resolved ? t('resolvedNote', { open: t(`relations.${n.relation}`), choice: t(`resolved.${lectura.resolved}`) }) : undefined}
                                 >
-                                    {lectura?.resolved ? t(`resolved.${lectura.resolved}`) : t(`relations.${n.relation}`)}
+                                    {lectura?.resolved
+                                        // La waw disyuntiva conserva su nombre y suma el valor (revisión del profesor, Rut 2:1:
+                                        // «waw + no verbo → disyuntiva, no necesariamente contrastiva»).
+                                        ? (n.relation === 'disjunctive' ? `${t('relations.disjunctive')} · ${t(`resolved.${lectura.resolved}`)}` : t(`resolved.${lectura.resolved}`))
+                                        : t(`relations.${n.relation}`)}
                                 </span>
                                 {n.verbless && <span className="text-muted-foreground">{t('verbless')}</span>}
                             </div>
@@ -201,7 +217,7 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
 };
 
 /** La leyenda con las mismas marcas que las palabras (pedido del fundador: «no entiendo los colores»). */
-const Leyenda: React.FC = () => {
+const Leyenda: React.FC<{ frases?: boolean }> = ({ frases }) => {
     const { t } = useTranslation('languageStructure');
     return (
         <div className="mt-3 space-y-1.5 text-[11px] text-muted-foreground" data-testid="structure-legend">
@@ -216,10 +232,40 @@ const Leyenda: React.FC = () => {
                 </span>
                 <span>{t('legendIndent')}</span>
             </div>
+            {frases && <LeyendaFrases />}
             <p>{t('legend')}</p>
         </div>
     );
 };
+
+/** U11b: qué dice cada subrayado (la forma de la línea, no sólo el color). */
+export const LeyendaFrases: React.FC = () => {
+    const { t } = useTranslation('languageStructure');
+    return (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground" data-testid="phrases-legend">
+            <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="inline-block h-2.5 w-6 border-b-2 border-primary" />
+                {t('legendPhraseVerb')}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="inline-block h-2.5 w-6 border-b-2 border-dashed border-primary" />
+                {t('legendPhraseNoun')}
+            </span>
+        </div>
+    );
+};
+
+/** U11c: la vista elegida («tarjetas» o «diagrama»), recordada en este navegador. */
+function useVistaEstructura(): ['cards' | 'diagram', (v: 'cards' | 'diagram') => void] {
+    const [vista, setVista] = React.useState<'cards' | 'diagram'>(() => {
+        try { return localStorage.getItem('estructura.vista') === 'diagram' ? 'diagram' : 'cards'; } catch { return 'cards'; }
+    });
+    const cambiar = (v: 'cards' | 'diagram') => {
+        setVista(v);
+        try { localStorage.setItem('estructura.vista', v); } catch { /* sin almacenamiento */ }
+    };
+    return [vista, cambiar];
+}
 
 interface SectionProps {
     lang: StructureLanguage;
@@ -228,18 +274,42 @@ interface SectionProps {
     readings?: readonly ClauseReading[];
     /** Por qué no hay lectura del asistente (sin análisis, o análisis viejo) y cómo pedirla. */
     readingNotice?: { message: string; action?: { label: string; onClick: () => void; disabled?: boolean } };
+    /** U11b: subrayar las frases preposicionales (el interruptor «Frases» de la página). */
+    showPhrases?: boolean;
 }
 
 /** La sección «Estructura» de las páginas de griego y de hebreo. */
-export const StructureSection: React.FC<SectionProps> = ({ lang, structure, links, readings, readingNotice }) => {
+export const StructureSection: React.FC<SectionProps> = ({ lang, structure, links, readings, readingNotice, showPhrases }) => {
     const { t } = useTranslation('languageStructure');
     const { loading, unavailable, nodes, ordinal, words } = structure;
     const mapear = links?.toPageIndex;
     const pageIndex = React.useMemo(() => (mapear ? mapear(words) : undefined), [mapear, words]);
+    const frases = React.useMemo(() => (showPhrases ? frasePorRef(structure.phrases) : undefined), [showPhrases, structure.phrases]);
+    const [vista, cambiarVista] = useVistaEstructura();
 
     return (
         <section className="rounded-xl border border-border bg-card p-5 print:break-inside-avoid">
-            <h3 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t('title')}</h3>
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t('title')}</h3>
+                {/* U11c: la misma estructura en tarjetas (con roles y lecturas) o en diagrama (como el profesor). */}
+                <span role="group" aria-label={t('viewLabel')} className="inline-flex items-center rounded-md border border-border/60 bg-background print:hidden">
+                    {(['cards', 'diagram'] as const).map((v, i) => (
+                        <button
+                            key={v}
+                            type="button"
+                            onClick={() => cambiarVista(v)}
+                            aria-pressed={vista === v}
+                            className={cn(
+                                'min-h-[32px] px-2.5 py-1 text-xs transition-colors',
+                                i > 0 && 'border-l border-border/60',
+                                vista === v ? 'bg-muted/60 font-medium text-foreground' : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            {t(`view.${v}`)}
+                        </button>
+                    ))}
+                </span>
+            </div>
             <p className="mb-3 text-[12.5px] text-muted-foreground">{t('intro')}</p>
             {loading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -266,8 +336,18 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
                             )}
                         </div>
                     )}
-                    <StructureFlow lang={lang} nodes={nodes} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} />
-                    <Leyenda />
+                    {vista === 'diagram' ? (
+                        <>
+                            <StructureDiagram lang={lang} nodes={nodes} phrases={structure.phrases} underline={frases} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} />
+                            {frases && <div className="mt-1.5"><LeyendaFrases /></div>}
+                            <p className="mt-3 text-[11px] text-muted-foreground">{t('diagramNote')}</p>
+                        </>
+                    ) : (
+                        <>
+                            <StructureFlow lang={lang} nodes={nodes} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} phrases={frases} />
+                            <Leyenda frases={!!frases} />
+                        </>
+                    )}
                 </>
             )}
             <p className="mt-2 text-[11px] text-muted-foreground">

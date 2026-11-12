@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FirestoreGreekInsightRepository, GreekInsightService } from '@dosfilos/infrastructure';
-import type { DiscourseCandidate, GreekVerseInsight, GreekWordToken, NominalFacts, StructureNode, VerbCandidate } from '@dosfilos/domain';
+import type { DiscourseCandidate, GreekVerseInsight, GreekWordToken, NominalFacts, SameLemmaFact, StructureNode, VerbCandidate } from '@dosfilos/domain';
 
 /**
  * El análisis del modelo para el versículo activo: caché global primero,
@@ -28,6 +28,8 @@ export function useGreekInsight(
     nominal?: NominalFacts,
     /** G4: partículas y pronombres explícitos. */
     discourse?: readonly DiscourseCandidate[],
+    /** U10 (Stg 3:5): el mismo lema con otra glosa en contexto; la literal debe distinguirlos. */
+    sameLemma?: readonly SameLemmaFact[],
 ) {
     const repoRef = useRef<FirestoreGreekInsightRepository>();
     if (!repoRef.current) repoRef.current = new FirestoreGreekInsightRepository();
@@ -71,7 +73,7 @@ export function useGreekInsight(
         setGenerating(true);
         setError(null);
         try {
-            const result = await serviceRef.current!.analyzeVerse({ reference, tokens, previousVerse, structure: structure ?? undefined, verbs, nominal, discourse });
+            const result = await serviceRef.current!.analyzeVerse({ reference, tokens, previousVerse, structure: structure ?? undefined, verbs, nominal, discourse, sameLemma });
             void repoRef.current!.save(result);
             if (actualRef.current === reference) setInsight(result);
         } catch (e) {
@@ -79,7 +81,7 @@ export function useGreekInsight(
         } finally {
             setGenerating(false);
         }
-    }, [reference, tokens, previousVerse, structure, verbs, nominal, discourse]);
+    }, [reference, tokens, previousVerse, structure, verbs, nominal, discourse, sameLemma]);
 
     return { insight, checking, generating, error, cacheUnavailable, generate };
 }

@@ -85,11 +85,19 @@ export function leerLowfat(xml) {
     // (Stg 2:7) el rol «o» está en el grupo, no en las palabras: sin esto, un
     // objeto de varias palabras no tenía rol y no se podía ver si iba antes
     // del verbo.
-    const pila = []; // { cl: índice|null, role, cls, cons }
+    const pila = []; // { cl: índice|null, role, cls, cons, pp? }
+    // U11b (revisión del profesor, Stg 2:16 ἐξ ὑμῶν, 2:18 χωρὶς τῶν ἔργων): las
+    // frases preposicionales MÁS EXTERNAS, con el rol del grupo (sin rol =
+    // adnominal, dentro de un sintagma nominal).
+    const frases = [];
     const rol = (r) => (r && !r.startsWith('err') ? r : '');
     for (const m of xml.matchAll(/<wg(\s[^>]*)?>|<\/wg>|<w\s([^>]*)>([^<]*)<\/w>/gs)) {
         const g = m[0];
-        if (g === '</wg>') { pila.pop(); continue; }
+        if (g === '</wg>') {
+            const cerrado = pila.pop();
+            if (cerrado?.pp && !pila.some(x => x.pp)) frases.push(cerrado.pp);
+            continue;
+        }
         if (g.startsWith('<wg')) {
             const a = attrs(m[1]);
             const padre = [...pila].reverse().find(x => x.cl !== null)?.cl ?? null;
@@ -101,17 +109,116 @@ export function leerLowfat(xml) {
             } else {
                 const tope = pila[pila.length - 1];
                 const cons = tope && tope.cls === 'cl' ? rol(a.role) : (tope?.cons ?? '');
-                pila.push({ cl: null, role: a.role ?? '', cls: a.class ?? '', cons });
+                // Una frase sin rol propio lo toma del grupo que la envuelve («ἀπὸ πόλεως εἰς πόλιν», Mt 23:34:
+                // el rol está en el grupo `2Pp`), salvo que la envuelva un sintagma nominal: ahí es adnominal.
+                const rolDeFrase = () => {
+                    if (rol(a.role)) return rol(a.role);
+                    for (const x of [...pila].reverse()) { if (x.cl !== null || x.cls === 'np') return ''; if (x.role) return rol(x.role); }
+                    return '';
+                };
+                pila.push({ cl: null, role: a.role ?? '', cls: a.class ?? '', cons, ...(a.class === 'pp' ? { pp: { role: rolDeFrase(), rule: a.rule ?? '', refs: [] } } : {}) });
             }
             continue;
         }
         const a = attrs(m[2]);
+        for (const x of pila) if (x.pp && a.ref && !x.pp.refs.includes(a.ref)) x.pp.refs.push(a.ref);
         const cl = [...pila].reverse().find(x => x.cl !== null)?.cl ?? null;
         const tope = pila[pila.length - 1];
         const cons = tope && tope.cls !== 'cl' ? tope.cons : '';
-        palabras.push({ id: a['xml:id'], ref: a.ref, text: m[3], role: rol(a.role) || cons, morph: a.morph ?? '', clause: cl });
+        // `ln`: el sentido de Louw-Nida que MACULA da a la palabra (revisión del profesor, U3c: el de las preposiciones griegas).
+        // `cls` y `en` (U10, Stg 3:5 ἡλίκον «small» / ἡλίκην «how great»): la clase y la glosa inglesa EN CONTEXTO.
+        palabras.push({ id: a['xml:id'], ref: a.ref, text: m[3], role: rol(a.role) || cons, morph: a.morph ?? '', clause: cl, ln: a.ln ?? '', cls: a.class ?? '', en: a.english ?? '' });
     }
-    return { clausulas, palabras };
+    return { clausulas, palabras, frases };
+}
+
+/**
+ * U11b: las frases preposicionales de un capítulo como `[versículo, desde,
+ * hasta, clase]` (posiciones de palabra en el versículo, desde 1). Clase:
+ * «a» adverbial (constituyente de la cláusula: va con el verbo), «p»
+ * predicado, «n» adnominal (va con un nombre). Preposición + infinitivo
+ * (`PrepCL`) no entra: es una cláusula y ya tiene su fila. Se omiten las que cruzan de
+ * versículo o tienen un hueco (otra palabra en medio que no es suya).
+ */
+export function frasesDelCapitulo(frases, cap, orden) {
+    const out = [];
+    let saltadas = 0;
+    for (const f of frases) {
+        // Preposición + infinitivo (`PrepCL`: לִרְאוֹת, ἐν τῷ σπείρειν) es una cláusula, no una frase.
+        if (f.rule === 'PrepCL') continue;
+        const ks = f.refs.map(capVers).filter(Boolean);
+        if (!ks.length || ks.some(k => k.cv !== ks[0].cv)) { if (ks.some(k => Number(k.cv.split(':')[0]) === cap)) saltadas++; continue; }
+        const [c, v] = ks[0].cv.split(':').map(Number);
+        if (c !== cap) continue;
+        const ns = [...new Set(ks.map(k => k.n))].sort((a, b) => a - b);
+        if (ns.some(n => !orden.has(`${v}!${n}`)) || ns[ns.length - 1] - ns[0] + 1 !== ns.length) { saltadas++; continue; }
+        out.push([v, ns[0], ns[ns.length - 1], f.role === 'p' ? 'p' : f.role ? 'a' : 'n']);
+    }
+    out.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    return { phrases: out, saltadas };
+}
+
+/**
+ * U10 (revisión del profesor 2026-11, Stg 3:5 «ἡλίκον πῦρ ἡλίκην ὕλην»): el
+ * MISMO lema dos veces en el versículo con distinta glosa en contexto de
+ * MACULA (ἡλίκον «small», ἡλίκην «how great»). Las dos llevan el mismo
+ * Louw-Nida (79.127, que abarca «qué grande» y «qué pequeño»), así que sólo la
+ * glosa las distingue. Se exporta la glosa (`g`) SÓLO de esas palabras.
+ *
+ * Las glosas se comparan por raíz (4 letras, sin plural ni posesivo, con los
+ * irregulares comunes): «sons» = «son», «gave» = «given». En los verbos la
+ * glosa cambia con el tiempo («said» / «say»), así que un verbo cuenta sólo si
+ * además Louw-Nida le da sentidos sin código común (Mt 27:24 ὁράω «saw» 24.1 /
+ * «see to it» 13.134). Quedan fuera las palabras de función y los nombres
+ * propios (93.x: dos Judas no son dos sentidos).
+ *
+ * Medido (2026-11-12) en el NT: 157 versículos. A mano, en una muestra de 50,
+ * la mitad son sentidos de verdad distintos (Lc 12:42 κύριος «Lord» / «master»,
+ * Ro 8:3 ἁμαρτία, Ga 4:6 υἱός) y la otra mitad, sinónimos («now» / «already»).
+ * Por eso es un DATO y una PISTA para el asistente, nunca un aviso: la glosa en
+ * contexto es correcta en los dos casos.
+ */
+const GLOSA_VACIA = new Set('a an the to of is was will be has have had are were been being it he she they i you we not do did does shall would should may might can could let am who whom which that this these those one ones thing things in on at by for with from as so how'.split(' '));
+const GLOSA_IRREGULAR = {
+    men: 'man', people: 'person', children: 'child', feet: 'foot', women: 'woman', brethren: 'brother', greater: 'great', greatest: 'great',
+    more: 'many', most: 'many', much: 'many', largest: 'large', larger: 'large', better: 'good', best: 'good', said: 'say', told: 'tell',
+    gave: 'give', given: 'give', came: 'come', saw: 'see', seen: 'see', found: 'find', kept: 'keep', lives: 'life', leaves: 'leaf',
+};
+const LEMA_DE_FUNCION = new Set(['αὐτός', 'ἐγώ', 'σύ', 'οὗτος', 'ὅς', 'τίς', 'τις', 'ἐκεῖνος', 'ἑαυτοῦ', 'ὅστις', 'ἡμεῖς', 'ὑμεῖς', 'πᾶς', 'ἄλλος', 'εἷς', 'ὅσος', 'καί', 'μή', 'οὐ', 'δέ', 'γάρ', 'εἰμί', 'ὁ', 'οὐδείς', 'μηδείς']);
+const CLASE_CON_SENTIDO = new Set(['noun', 'adj', 'adv', 'verb', 'pron']);
+export function raicesDeGlosa(en) {
+    const raices = new Set();
+    for (const x of (en ?? '').toLowerCase().replace(/[’']s\b/g, '').match(/[a-z]+/g) ?? []) {
+        if (GLOSA_VACIA.has(x)) continue;
+        let r = GLOSA_IRREGULAR[x] ?? x;
+        if (r.length > 3 && r.endsWith('ies')) r = `${r.slice(0, -3)}y`;
+        else if (r.length > 3 && r.endsWith('s') && !r.endsWith('ss')) r = r.slice(0, -1);
+        raices.add(r.slice(0, 4));
+    }
+    return raices;
+}
+/** Posiciones (en el versículo) de las palabras cuyo lema se repite con otra glosa en contexto. */
+export function glosasDistintas(ps) {
+    const marcadas = new Set();
+    const porLema = new Map();
+    ps.forEach((p, i) => {
+        if (!p.en || !CLASE_CON_SENTIDO.has(p.cls) || LEMA_DE_FUNCION.has(p.l) || /(^|\s)93\./.test(p.ln ?? '')) return;
+        porLema.set(p.l, [...(porLema.get(p.l) ?? []), i]);
+    });
+    for (const idx of porLema.values()) {
+        for (let a = 0; a < idx.length; a++) {
+            for (let b = a + 1; b < idx.length; b++) {
+                const pa = ps[idx[a]], pb = ps[idx[b]];
+                const ra = raicesDeGlosa(pa.en), rb = raicesDeGlosa(pb.en);
+                if (!ra.size || !rb.size || [...ra].some(r => rb.has(r))) continue;
+                const la = new Set((pa.ln ?? '').split(/\s+/).filter(Boolean)), lb = (pb.ln ?? '').split(/\s+/).filter(Boolean);
+                const lnDisjuntos = la.size > 0 && lb.length > 0 && !lb.some(x => la.has(x));
+                if (pa.cls === 'verb' && !lnDisjuntos) continue;
+                marcadas.add(idx[a]); marcadas.add(idx[b]);
+            }
+        }
+    }
+    return marcadas;
 }
 
 /** Sólo letras, sin acentos, marcas del aparato (⸀…⸅) ni números de variante. */
@@ -166,7 +273,7 @@ async function griego(only, informe) {
         const texto = await descargar('morphgnt', `${mg}-morphgnt.txt`);
         const xml = await descargar('maculaGreek', `SBLGNT/lowfat/${mac}.xml`);
         const filas = texto.split('\n').filter(Boolean).map(l => l.trim().split(/\s+/));
-        const { clausulas, palabras } = leerLowfat(xml);
+        const { clausulas, palabras, frases } = leerLowfat(xml);
         const maculaPorVers = new Map();
         for (const p of palabras) {
             const r = capVers(p.ref ?? '');
@@ -177,6 +284,7 @@ async function griego(only, informe) {
         let distintas = 0;
         const capitulos = new Map();
         const posEnVers = new Map();
+        const maculaDe = new Map();
         for (const [bcv, pos, parse, text, , , lemma] of filas) {
             const cap = Number(bcv.slice(2, 4)), vers = Number(bcv.slice(4, 6));
             const cv = `${cap}:${vers}`;
@@ -185,16 +293,32 @@ async function griego(only, informe) {
             const m = maculaPorVers.get(cv)?.[i];
             if (!m || m.n !== i + 1 || sinMarcas(m.text) !== sinMarcas(text)) distintas++;
             const lista = capitulos.get(cap) ?? [];
-            lista.push({ r: `${vers}!${i + 1}`, t: sinAparato(text), l: lemma, pos, parse, role: m?.role ?? '' });
+            // U3c (Stg 2:10 ἐν ἑνί = 89.5, «especificación»): sólo las preposiciones llevan su sentido de Louw-Nida.
+            const alineada = !!m && m.n === i + 1 && sinMarcas(m.text) === sinMarcas(text);
+            const ln = pos === 'P-' && alineada ? (m.ln ?? '').trim() : '';
+            const w = { r: `${vers}!${i + 1}`, t: sinAparato(text), l: lemma, pos, parse, role: m?.role ?? '', ...(ln ? { ln } : {}) };
+            lista.push(w);
             capitulos.set(cap, lista);
+            if (alineada) maculaDe.set(w, m);
+        }
+        // U10: la glosa en contexto, sólo de las palabras cuyo lema se repite en el versículo con otra glosa.
+        for (const lista of capitulos.values()) {
+            const porVers = new Map();
+            for (const w of lista) { const v = w.r.split('!')[0]; porVers.set(v, [...(porVers.get(v) ?? []), w]); }
+            for (const ws of porVers.values()) {
+                const ps = ws.map(w => { const m = maculaDe.get(w); return { l: w.l, cls: m?.cls ?? '', en: (m?.en ?? '').trim(), ln: (m?.ln ?? '').trim() }; });
+                for (const i of glosasDistintas(ps)) ws[i].g = ps[i].en;
+            }
         }
         // Palabras de MACULA de versículos que SBLGNT sí tiene y que nadie usó.
         for (const [cv, lista] of maculaPorVers) if ((posEnVers.get(cv) ?? 0) > 0 && lista.length !== posEnVers.get(cv)) distintas++;
-        informe.push({ lang: 'gr', book, palabras: filas.length, macula: palabras.length, distintas });
+        const frasesSaltadas = [...capitulos].reduce((n, [cap, words]) => n + frasesDelCapitulo(frases, cap, ordenDe(words)).saltadas, 0);
+        informe.push({ lang: 'gr', book, palabras: filas.length, macula: palabras.length, distintas, frasesSaltadas });
         if (distintas > 0) continue;
         limpiar(`gr/${book}`);
         for (const [cap, words] of capitulos) {
-            escribir(`gr/${book}/${cap}.json`, { lang: 'gr', book, chapter: cap, words, clauses: clausulasDelCapitulo(clausulas, palabras, cap, ordenDe(words)) });
+            const { phrases } = frasesDelCapitulo(frases, cap, ordenDe(words));
+            escribir(`gr/${book}/${cap}.json`, { lang: 'gr', book, chapter: cap, words, clauses: clausulasDelCapitulo(clausulas, palabras, cap, ordenDe(words)), phrases });
         }
     }
 }
@@ -211,7 +335,19 @@ async function griego(only, informe) {
 export function leerOshb(xml) {
     const out = new Map();
     for (const v of xml.matchAll(/<verse osisID="[^.]+\.(\d+)\.(\d+)">(.*?)<\/verse>/gs)) {
-        const ws = [...v[3].matchAll(/<w\s([^>]*)>(.*?)<\/w>/gs)].map(m => ({ ...attrs(m[1]), text: m[2].replace(/<[^>]+>/g, '') }));
+        // Revisión del profesor (2026-11): el tutor muestra el ketiv y su qere (Rut 2:1 מידע / מוֹדַע).
+        // Las palabras dentro de <rdg type="x-qere"> son QERE; un <rdg type="x-qere"/> vacío dice que
+        // el ketiv anterior se escribe y no se lee (ketiv sin qere, Rut 3:12 אם).
+        const ws = [];
+        let enQere = false;
+        for (const m of v[3].matchAll(/<w\s([^>]*)>(.*?)<\/w>|<rdg type="x-qere"\s*\/>|<rdg type="x-qere">|<\/rdg>/gs)) {
+            if (m[0].startsWith('<rdg') && m[0].endsWith('/>')) {
+                const ultima = ws[ws.length - 1];
+                if (ultima?.type === 'x-ketiv') ultima.sinQere = true;
+            } else if (m[0].startsWith('<rdg')) enQere = true;
+            else if (m[0] === '</rdg>') enQere = false;
+            else ws.push({ ...attrs(m[1]), text: m[2].replace(/<[^>]+>/g, ''), ...(enQere ? { qere: true } : {}) });
+        }
         out.set(`${v[1]}:${v[2]}`, ws);
     }
     return out;
@@ -230,13 +366,13 @@ async function hebreo(only, informe) {
         if (only && !only.has(book)) continue;
         const oshb = leerOshb(await descargar('morphhb', `wlc/${book}.xml`));
         const capitulos = [...new Set([...oshb.keys()].map(k => Number(k.split(':')[0])))].sort((a, b) => a - b);
-        let total = 0, distintas = 0, ketiv = 0, faltan = 0;
+        let total = 0, distintas = 0, ketiv = 0, faltan = 0, frasesSaltadas = 0;
         const desacuerdos = [];
         const salida = [];
         for (const cap of capitulos) {
             const xml = await descargar('maculaHebrew', `WLC/lowfat/${mac}-${String(cap).padStart(3, '0')}-lowfat.xml`);
             if (!xml) { faltan++; continue; }
-            const { clausulas, palabras } = leerLowfat(xml);
+            const { clausulas, palabras, frases } = leerLowfat(xml);
             const partes = new Map();
             for (const p of palabras) {
                 const r = capVers(p.ref ?? '');
@@ -263,15 +399,18 @@ async function hebreo(only, informe) {
                     words.push({
                         r: `${cv.split(':')[1]}!${i + 1}`, t: w.text.replace(/\//g, ''), l: w.lemma ?? '', m: w.morph ?? '',
                         role: principal?.role ?? '', ...(esKetiv ? { ketiv: true } : {}),
+                        ...(w.qere ? { qere: true } : {}), ...(w.sinQere ? { sinQere: true } : {}),
                         parts: ps.map(p => ({ t: p.text, m: p.morph, role: p.role })),
                     });
                 });
             }
             for (const k of partes.keys()) if (!usadas.has(k)) distintas++;
-            salida.push([cap, { lang: 'he', book, chapter: cap, words, clauses: clausulasDelCapitulo(clausulas, palabras, cap, ordenDe(words)) }]);
+            const { phrases, saltadas } = frasesDelCapitulo(frases, cap, ordenDe(words));
+            frasesSaltadas += saltadas;
+            salida.push([cap, { lang: 'he', book, chapter: cap, words, clauses: clausulasDelCapitulo(clausulas, palabras, cap, ordenDe(words)), phrases }]);
         }
         informe.push({
-            lang: 'he', book, palabras: total, distintas, ketiv,
+            lang: 'he', book, palabras: total, distintas, ketiv, frasesSaltadas,
             ...(desacuerdos.length ? { desacuerdos: desacuerdos.join(' · ') } : {}),
             ...(faltan ? { falta: `${faltan} cap. de MACULA` } : {}),
         });

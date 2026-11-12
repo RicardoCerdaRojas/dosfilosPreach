@@ -60,6 +60,9 @@ const DATOS = {
     infinitive: { candidate: INF, fn: 'genitive' as const, by: 'rule' as const, phraseReading: 'temporalAsSoonAs' as const },
     speech: { ordinal: 9, text: 'אֲכָלְךָ', kind: 'verb' as const, speaker: 'HABLANTE-יְהוָה', speakerOrdinals: [1] },
     fronted: { role: 'adv' as const, fronting: 'focus' as never },
+    ketivQere: { ordinal: 9, qere: 'אֲכָלְךָ', ketiv: 'KETIV-אכלך' },
+    disjunctive: { resolved: 'circumstantial' as const },
+    article: { ordinal: 9, antecedent: { text: 'ANTECEDENTE-הַגֹּרֶן', verse: 3 }, sameVerse: false },
     onInvestigate: vi.fn(),
 };
 
@@ -96,8 +99,8 @@ describe('Ficha hebrea — paridad: ningún dato se pierde', () => {
         const { container } = render(<FichaCompleta registro={BLOQUES_HEBREO} d={DATOS} />);
         const dibujados = new Set([...container.querySelectorAll('[data-ficha-bloque]')].map(e => e.getAttribute('data-ficha-bloque')));
         const sinDibujar = BLOQUES_HEBREO.map(b => b.id).filter(id => !dibujados.has(id));
-        // La función del participio y de כִּי no aplican a un infinitivo; la libre va dentro del bloque de la regla.
-        expect(sinDibujar.sort()).toEqual(['he.apertura', 'he.funcionKi', 'he.funcionParticipio', 'he.funcionSintactica']);
+        // La función del participio, de כִּי, del verbo finito y de la preposición no aplican a un infinitivo; la libre va dentro del bloque de la regla.
+        expect(sinDibujar.sort()).toEqual(['he.apertura', 'he.funcionKi', 'he.funcionParticipio', 'he.funcionPreposicion', 'he.funcionSintactica', 'he.funcionVerbo']);
     });
 
     it('el resumen (tooltip y tarjeta) lleva palabra, traducción, forma en una línea y la función', () => {
@@ -106,6 +109,10 @@ describe('Ficha hebrea — paridad: ningún dato se pierde', () => {
         for (const v of ['אֲכָלְךָ', 'TRADUCCION tu comer', 'QAL · verseAnalyzer.verbForms.INF_CONSTRUCT · 2MS', 'verseAnalyzer.infinitive.functions.genitive', 'wordFicha.origin.rule']) {
             expect(t, v).toContain(v);
         }
+        // La raíz con su transliteración (pedido del profesor, revisión 2026-11), sin su significado.
+        expect(t).toContain('אכל');
+        expect(t).toContain('RAIZ-TR-ʾ-k-l');
+        expect(t).not.toContain('SIGNIFICADO-RAIZ');
         // Lo largo no entra al resumen.
         expect(t).not.toContain('EXPLICACION-PEDAGOGICA');
         expect(t).not.toContain('PISTA-1');
@@ -200,6 +207,37 @@ describe('Ficha hebrea — lo que la revisión encontró perdido', () => {
     const ficha = (word: object, extra: object = {}) => render(<FichaCompleta registro={BLOQUES_HEBREO} d={{ word: { ...PALABRA, ...word } as WordAnalysis, ...extra }} />).container;
     it('sin traducción, la glosa (la cadena de respaldo del tooltip de antes)', () => {
         expect(ficha({ translation: '' }).textContent).toContain('«LEXICO comer»');
+    });
+    it('ketiv y qere (revisión del profesor, Rut 2:1): lo escrito y lo que se lee, en la ficha y en el tooltip', () => {
+        const ketivQere = { ordinal: 1, qere: 'מוֹדַע', ketiv: 'מידע' };
+        const c = ficha({}, { ketivQere }).textContent!;
+        for (const v of ['verseAnalyzer.ficha.ketivQere.title', 'verseAnalyzer.ficha.ketivQere.written', 'מידע', 'verseAnalyzer.ficha.ketivQere.read', 'מוֹדַע', 'verseAnalyzer.ficha.ketivQere.note']) expect(c, v).toContain(v);
+        const corto = render(<FichaResumen registro={BLOQUES_HEBREO} d={{ word: PALABRA, ketivQere }} />).container.textContent!;
+        expect(corto).toContain('מידע');
+        // Qere sin ketiv (Rut 3:5 אֵלַי): no hay «escrito»; se dice que se lee sin estar escrita.
+        const sinKetiv = ficha({}, { ketivQere: { ordinal: 5, qere: 'אֵלַי' } }).textContent!;
+        expect(sinKetiv).toContain('verseAnalyzer.ficha.ketivQere.onlyQere');
+        expect(sinKetiv).not.toContain('verseAnalyzer.ficha.ketivQere.written');
+        // Sin ketiv ni qere, nada.
+        expect(ficha({}).textContent).not.toContain('verseAnalyzer.ficha.ketivQere.title');
+    });
+    it('el sufijo pronominal como dato de la forma (revisión del profesor, Rut 3:3 כַּלֹּתוֹ): celda en la ficha y «suf.» en el tooltip', () => {
+        const suffix = { person: '3' as const, gender: 'm' as const, number: 's' as const, host: 'infinitive' as const };
+        const c = ficha({}, { suffix }).textContent!;
+        expect(c).toContain('verseAnalyzer.ficha.cells.suffix');
+        expect(c).toContain('verseAnalyzer.ficha.suffix.value');
+        const corto = render(<FichaResumen registro={BLOQUES_HEBREO} d={{ word: PALABRA, suffix }} />).container.textContent!;
+        expect(corto).toContain('verseAnalyzer.ficha.suffix.short');
+        expect(ficha({}).textContent).not.toContain('verseAnalyzer.ficha.cells.suffix');
+    });
+    it('waw disyuntiva (revisión del profesor, Rut 2:1 y 2:10): la regla siempre; el valor si el asistente lo eligió', () => {
+        const con = ficha({}, { disjunctive: { resolved: 'circumstantial' } }).textContent!;
+        for (const v of ['relations.disjunctive', 'resolved.circumstantial', 'notes.disjunctive']) expect(con, v).toContain(v);
+        const sin = ficha({}, { disjunctive: {} }).textContent!;
+        expect(sin).toContain('disjunctiveNoValue');
+        expect(sin).not.toContain('resolved.');
+        const corto = render(<FichaResumen registro={BLOQUES_HEBREO} d={{ word: PALABRA, disjunctive: { resolved: 'concessive' } }} />).container.textContent!;
+        expect(corto).toContain('relations.disjunctive · resolved.concessive');
     });
     it('«Apertura» en וַיְהִי', () => {
         const vh = { ...PALABRA.verbMorphology!, verbForm: 'WAYYIQTOL' as never };

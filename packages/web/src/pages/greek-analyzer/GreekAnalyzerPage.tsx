@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { FichaPanelGriego, TarjetasResumenGriego } from './FichasGriego';
 import type { DatosGriego } from './ficha/bloquesGriego';
 import { StructureSection } from '@/components/language-structure/StructureSection';
+import { frasePorOrdinal, useFrasesVisibles } from '@/components/language-structure/frases';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { mismasPalabras } from '@/components/language-structure/mismasPalabras';
 import { applyDiscourseRules, applyNominalRules, applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
@@ -54,6 +55,7 @@ export function GreekAnalyzerPage() {
         const v = Number(localStorage.getItem('greekAnalyzer.fontScale'));
         return (v === 0 || v === 1 || v === 2 ? v : 1) as GreekFontScale;
     });
+    const [frases, alternarFrases] = useFrasesVisibles('greekAnalyzer.frases');
     const [showTranslit, setShowTranslit] = useState(() => localStorage.getItem('greekAnalyzer.translit') !== '0');
     const [colorMode, setColorMode] = useState<GreekColorMode>(() => {
         const v = localStorage.getItem('greekAnalyzer.colorMode');
@@ -91,6 +93,7 @@ export function GreekAnalyzerPage() {
         alineados ? estructura.verbs : undefined,
         alineados ? estructura.nominal : undefined,
         alineados ? estructura.discourse : undefined,
+        alineados ? estructura.sameLemma : undefined,
     );
     // Las reglas de los verbos se aplican AL MOSTRAR: una regla mejorada llega a
     // los análisis ya guardados sin re-analizar (G2, como el hebreo).
@@ -107,6 +110,7 @@ export function GreekAnalyzerPage() {
                               estructura.nominal.agency,
                               estructura.nominal.anaphora,
                               estructura.nominal.autos,
+                              estructura.nominal.partitive,
                           ),
                           estructura.discourse,
                       ),
@@ -137,7 +141,9 @@ export function GreekAnalyzerPage() {
         : !insight
           ? { message: tEstructura('readingMissing.generate') }
           : insight.promptVersion !== GREEK_INSIGHT_PROMPT_VERSION
-            ? { message: tEstructura('readingMissing.stale'), action: reanalizar }
+            // Desde v11 el análisis SÍ tiene lectura de cláusulas: lo que le falta es lo posterior (v15:
+            // las pistas del perfecto proléptico y del artículo que retoma algo del párrafo).
+            ? { message: tEstructura((insight.promptVersion ?? 0) >= 11 ? 'readingMissing.staleNewer' : 'readingMissing.stale'), action: reanalizar }
             : !lecturas?.length && (estructura.nodes?.length ?? 0) > 0
               ? { message: tEstructura('readingMissing.empty'), action: reanalizar }
               : undefined;
@@ -201,6 +207,11 @@ export function GreekAnalyzerPage() {
         }
     };
 
+    const mismoLemaDe = (i: number) => {
+        const f = estructura.sameLemma.find(x => x.words.some(w => w.ordinal === i));
+        return f?.words.map(w => ({ text: data?.tokens[w.ordinal]?.text ?? '', gloss: w.gloss, translation: insight?.words[w.ordinal]?.translation, self: w.ordinal === i }));
+    };
+
     /** Los datos de la ficha de la palabra `i` (tooltip, tarjeta resumen y panel). */
     const datosGriego = (i: number): DatosGriego | null => {
         const tok = data?.tokens[i];
@@ -214,6 +225,13 @@ export function GreekAnalyzerPage() {
             bookCount: lemmaCounts[tok.lemma],
             bookName: libroActual ? nombre(libroActual) : book,
             fronted: frontedDe(i),
+            conditional: alineados ? estructura.conditionals.find(c => c.ordinal === i) : undefined,
+            // U3c (Stg 2:10 ἐν ἑνί): el sentido de Louw-Nida que MACULA da a la preposición.
+            ln: alineados ? estructura.words[i]?.ln : undefined,
+            // U9 (Stg 3:1): en la ficha del vocativo, la señal de apertura de sección.
+            opening: alineados && estructura.opening?.vocativeOrdinal === i ? { ...estructura.opening, imperative: estructura.opening.imperativeOrdinal !== undefined ? data?.tokens[estructura.opening.imperativeOrdinal]?.text : undefined } : undefined,
+            // U10 (Stg 3:5): el mismo lema otra vez en el versículo, con otra glosa en contexto (MACULA).
+            sameLemma: alineados ? mismoLemaDe(i) : undefined,
             onSaveFinding: insight && user?.uid && (claveDe(tok.text, i) || insight.words[i]) ? () => void guardarHallazgo(i) : undefined,
             saved: guardados.has(tok.lemma),
         };
@@ -282,6 +300,9 @@ export function GreekAnalyzerPage() {
                             seleccion={seleccion}
                             onSeleccion={abrirFicha}
                             frontedDe={frontedDe}
+                            datosDe={datosGriego}
+                            // U11b (Stg 2:16, 2:21): las frases preposicionales de MACULA, si las palabras calzan.
+                            {...(alineados ? { showPhrases: frases, onTogglePhrases: alternarFrases, frases: frasePorOrdinal(estructura.words, estructura.phrases) } : {})}
                         />
 
                         {/* LAS DOS TRADUCCIONES — el aporte del modelo, con caché
@@ -306,24 +327,12 @@ export function GreekAnalyzerPage() {
                             structure={estructura}
                             readings={lecturas}
                             readingNotice={avisoLectura}
+                            showPhrases={alineados && frases}
                             links={{
                                 toPageIndex: alinear,
                                 renderText: (i) => (data.tokens[i] ? pintarPalabraGriega(data.tokens[i]!, colorMode) : null),
-                                renderTooltip: (i) => {
-                                    const tok = data.tokens[i];
-                                    return tok ? (
-                                        <GreekWordTooltip
-                                            token={tok}
-                                            insight={insight?.words[i]}
-                                            keyInsight={claveDe(tok.text, i)}
-                                            relations={relacionesDe(i)}
-                                            objectCase={casoDelTermino(i)}
-                                            bookCount={lemmaCounts[tok.lemma]}
-                                            bookName={libroActual ? nombre(libroActual) : book}
-                                            fronted={frontedDe(i)}
-                                        />
-                                    ) : null;
-                                },
+                                // Los mismos datos que la tarjeta y la ficha (revisión adversarial: faltaban los nuevos).
+                                renderTooltip: (i) => { const d = datosGriego(i); return d ? <GreekWordTooltip {...d} /> : null; },
                                 onSelect: (i) => abrirFicha(i),
                                 selected: seleccion,
                             }}

@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { BookmarkPlus, Check, Star } from 'lucide-react';
-import { greekRecognitionClues, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
+import { greekRecognitionClues, louwNidaSenses, STRUCTURE_RULE_SOURCES, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
+import { AperturaSeccion, MismoLema, SentidoLouwNida } from './piezasDatosGriego';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
 import { cn } from '@/lib/utils';
 import { GreekAgencyBlock, GreekAnaphoraRuleNote, GreekAutosBlock } from '../GreekNominalRuleBlock';
@@ -71,6 +72,12 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
         Completo: function Rango({ d }) { const { t } = useTranslation('greekTutor'); return <FichaFilas filas={[[t('analyzer.fields.semanticRange'), d.insight!.semanticRange]]} />; },
     },
     {
+        // U10 (revisión del profesor, Stg 3:5 ἡλίκον «small» / ἡλίκην «how great»): el mismo lema otra vez en el
+        // versículo con otra glosa en contexto (dato de MACULA). Dato, no aviso: la mitad son sinónimos.
+        id: 'gr.mismoLema', dato: 'El mismo lema otra vez en el versículo, con otra glosa en contexto (dato de MACULA)', seccion: 'palabra', origen: 'datos', antes: [],
+        hay: (d) => (d.sameLemma?.length ?? 0) > 1, Completo: MismoLema,
+    },
+    {
         id: 'gr.frecuencia', dato: 'Frecuencia (NT, libro, palabra rara)', seccion: 'palabra', origen: 'datos', antes: ['tarjeta', 'tooltip'],
         // Mientras carga el índice (null) se monta para pedirlo; con 0 no hay nada que decir.
         hay: (d) => frecuenciaNT(d.token.lemma) !== 0,
@@ -136,15 +143,18 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
         },
     },
     {
-        id: 'gr.usoTiempo', dato: 'Uso del tiempo (indicativo)', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
-        hay: (d) => !!d.insight?.tenseUse, Completo: UsoTiempo,
+        // Mixto: la regla del perfecto proléptico acota y el asistente elige (U7).
+        id: 'gr.usoTiempo', dato: 'Uso del tiempo (indicativo)', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
+        hay: (d) => !!(d.insight?.tenseUse || d.insight?.tenseUseOptions), Completo: UsoTiempo,
     },
     {
-        id: 'gr.caso', dato: 'Función del caso, su puente de traducción y la función sintáctica', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip'],
+        // Mixto: el partitivo con ἐκ/ἀπό lo decide la regla (U3b); lo demás lo elige el asistente.
+        id: 'gr.caso', dato: 'Función del caso, su puente de traducción y la función sintáctica', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
         hay: (d) => !!(d.insight?.caseFunction && d.token.tag.case), Completo: FuncionCaso,
         Corto: function Corto({ d }) {
             const { t } = useTranslation('greekTutor');
-            return <p className="m-0 flex flex-wrap items-center gap-x-2"><FichaOrigenRotulo origen="eleccion" /><strong className="font-bold">{t(`analyzer.caseFn.${d.token.tag.case}.${d.insight!.caseFunction}`)}</strong></p>;
+            // El mismo origen que la ficha completa (revisión adversarial): el partitivo es regla.
+            return <p className="m-0 flex flex-wrap items-center gap-x-2"><FichaOrigenRotulo origen={d.insight!.nominalRule === 'partitiveEk' ? 'regla' : 'eleccion'} /><strong className="font-bold">{t(`analyzer.caseFn.${d.token.tag.case}.${d.insight!.caseFunction}`)}</strong></p>;
         },
     },
     {
@@ -162,6 +172,17 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
         hay: (d) => !!regimenDe(d), Completo: ({ d }) => <GreekPrepositionBlock lemma={d.token.lemma} usage={regimenDe(d)!} />,
     },
     {
+        // U9 (revisión del profesor, Stg 3:1): vocativo + imperativo o pregunta al comienzo. Señal, no regla (23/29 medido).
+        id: 'gr.apertura', dato: 'Vocativo al comienzo con imperativo o pregunta: señal de apertura de sección', seccion: 'contexto', origen: 'datos', antes: [],
+        hay: (d) => !!d.opening, Completo: AperturaSeccion,
+    },
+    {
+        // U3c (revisión del profesor, Stg 2:10 «ἐν ἑνί» = 89.5, especificación): el sentido EN ESTE VERSÍCULO según
+        // Louw-Nida, dato de MACULA. El régimen dice qué sentidos admite el caso; esto, cuál lee el dato aquí.
+        id: 'gr.sentidoLouwNida', dato: 'Sentido de la preposición en el versículo (Louw-Nida, dato de MACULA)', seccion: 'funcion', origen: 'datos', antes: [],
+        hay: (d) => d.token.pos === 'P' && louwNidaSenses(d.ln).length > 0, Completo: SentidoLouwNida,
+    },
+    {
         id: 'gr.articulo', dato: 'Uso del artículo, su antecedente y la regla de anáfora', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'],
         hay: (d) => !!d.insight?.articleUse,
         Completo: function Articulo({ d }) {
@@ -174,6 +195,40 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
                     {i.antecedent && <p className="m-0 text-[13px]"><span className="text-muted-foreground">{t('analyzer.articleUse.pointsBack')}: </span>{grc(i.antecedent)}</p>}
                     <GreekAnaphoraRuleNote insight={i} />
                 </div>
+            );
+        },
+    },
+    {
+        // Revisión del profesor (2026-11, Stg 2:14): la clase sólo se veía en «Estructura». En la
+        // ficha de εἰ/ἐάν, la clase (por el modo del verbo) y, en la 3.ª, su valor según Wallace p. 696.
+        id: 'gr.condicional', dato: 'Clase de la condicional y su valor (Wallace)', seccion: 'funcion', origen: 'regla', antes: [],
+        hay: (d) => !!d.conditional,
+        Completo: function Condicional({ d }) {
+            const { t } = useTranslation('greekTutor');
+            const { t: tl } = useTranslation('languageStructure');
+            const c = d.conditional!;
+            return (
+                <FichaFuncion
+                    titulo={t('analyzer.conditional.title')}
+                    nombre={tl(`classLabel.${c.conditionalClass}`)}
+                    origen="regla"
+                    reconoce={tl(`classNotes.${c.conditionalClass}`)}
+                    {...(c.use ? { texto: t(`analyzer.conditional.uses.${c.use}`) } : {})}
+                    fuentes={STRUCTURE_RULE_SOURCES[`class${c.conditionalClass}`]}
+                    testId="conditional"
+                />
+            );
+        },
+        Corto: function CondicionalCorto({ d }) {
+            const { t } = useTranslation('greekTutor');
+            const { t: tl } = useTranslation('languageStructure');
+            const c = d.conditional!;
+            return (
+                <p className="m-0 flex flex-wrap items-center gap-x-2">
+                    <FichaOrigenRotulo origen="regla" />
+                    <strong className="font-bold">{t('analyzer.conditional.title')} · {tl(`classLabel.${c.conditionalClass}`)}</strong>
+                    {c.use && <span className="text-muted-foreground">{t(`analyzer.conditional.short.${c.use}`)}</span>}
+                </p>
             );
         },
     },
@@ -267,6 +322,9 @@ export const DESTINO_INSIGHT: Readonly<Record<keyof GreekWordInsight, Destino>> 
     verbFunction: 'gr.funcionVerbo',
     verbRule: 'gr.funcionVerbo',
     tenseUse: 'gr.usoTiempo',
+    tenseRule: 'gr.usoTiempo',
+    tenseUseOptions: 'gr.usoTiempo',
+    tenseUseOutside: 'gr.usoTiempo',
     verbNote: 'gr.funcionVerbo',
     agency: 'gr.agencia',
     nominalRule: 'gr.agencia',

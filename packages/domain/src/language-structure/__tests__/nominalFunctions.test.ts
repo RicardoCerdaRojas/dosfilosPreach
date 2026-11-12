@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { verseWords, type ChapterStructure } from '../chapterStructure';
-import { applyNominalRules, buildNominalFactsTask, greekAgency, greekAnaphora, greekAutos } from '../nominalFunctions';
+import { applyNominalRules, buildNominalFactsTask, greekAgency, greekAnaphora, greekAnaphoraHints, greekAutos, greekPartitive } from '../nominalFunctions';
 import { greekDiscourseCandidates } from '../discourseFunctions';
 
 /** G3 — agencia (#G5) y artículo anafórico (#G6), los casos del profesor. */
@@ -57,6 +57,25 @@ describe('G3 — artículo anafórico', () => {
         expect(greekAnaphora(jn1, 38).map(x => texto(jn1, 38, x.headOrdinal))).not.toContain('Ἰησοῦς');
         // En Jn 10:11 sólo el segundo «ὁ ποιμήν» retoma; el ὁ de «ὁ καλός» no se cuenta por ποιμήν.
         expect(greekAnaphora(cargar('JHN/10.json'), 11)).toHaveLength(1);
+    });
+
+    it('Stg 2:14 «ἡ πίστις» retoma πίστιν del mismo versículo (Wallace p. 219 lo pone de ejemplo)', () => {
+        const ch = cargar('JAS/2.json');
+        expect(greekAnaphora(ch, 14).map(x => [texto(ch, 14, x.headOrdinal), x.antecedent])).toEqual([['πίστις', { text: 'πίστιν', verse: 14 }]]);
+    });
+
+    it('NO es anáfora (medido a mano, revisión 2026-11): monádicos οὐρανός (Mt 24:30, Hch 1:11), otro número (Ap 2:8 tras «ταῖς ἐκκλησίαις»), otro de una serie (1 Co 15:47, Ap 4:7)', () => {
+        const nucleos = (rel: string, v: number) => { const ch = cargar(rel); return greekAnaphora(ch, v).map(x => texto(ch, v, x.headOrdinal)); };
+        expect(nucleos('MAT/24.json', 30)).not.toContain('οὐρανῷ');
+        expect(nucleos('ACT/1.json', 11)).not.toContain('οὐρανόν');
+        expect(nucleos('REV/2.json', 8)).not.toContain('ἐκκλησίας');
+        expect(nucleos('1CO/15.json', 47)).not.toContain('ἄνθρωπος');
+        expect(nucleos('REV/4.json', 7)).not.toContain('ζῷον');
+        // Lo que sigue siendo anáfora: mismo número (Lc 5:3 «ἓν τῶν πλοίων», v. 2 «δύο πλοῖα»)
+        // y el MISMO ordinal en el antecedente (Mt 27:46 «τὴν ἐνάτην ὥραν», Ap 9:14 «τῷ ἕκτῳ ἀγγέλῳ»).
+        expect(nucleos('LUK/5.json', 3)).toContain('πλοίων');
+        expect(nucleos('MAT/27.json', 46)).toContain('ὥραν');
+        expect(nucleos('REV/9.json', 14)).toContain('ἀγγέλῳ');
     });
 
     it('dentro del mismo versículo (Jn 1:1, los dos ὁ λόγος que siguen al primero); θεός es monádico, no anáfora', () => {
@@ -130,6 +149,9 @@ describe('G3 — aplicado al mostrar', () => {
     it('respeta «monádico» o «por antonomasia» si el asistente lo eligió (lo dijo el profesor)', () => {
         expect(applyNominalRules([{}, {}, { articleUse: 'monadic' }], [], anafora)[2]).toEqual({ articleUse: 'monadic' });
     });
+    it('«con abstracto» no tapa la anáfora: retoma y particulariza a la vez (Wallace p. 219, Stg 2:14)', () => {
+        expect(applyNominalRules([{}, {}, { articleUse: 'abstract' }], [], anafora)[2]).toEqual({ articleUse: 'anaphoric', antecedent: 'νόμον, v. 8', nominalRule: 'anaphoraLemma' });
+    });
     it('el prompt da los hechos para explicarlos, no para decidirlos', () => {
         const t = buildNominalFactsTask(agencia, anafora, ['ἐλεγχόμενοι', 'ὑπὸ', 'τοῦ', 'νόμου']);
         expect(t).toMatch(/2\. ὑπὸ νόμου: AGENTE ÚLTIMO .* de la pasiva ἐλεγχόμενοι.*PERSONIFICACIÓN/);
@@ -143,5 +165,105 @@ describe('G3 — aplicado al mostrar', () => {
         expect(applyNominalRules([{ text: 'αὐτὸς', autosUse: 'intensive' as const, nominalRule: 'autosIntensive' as const }], [], [])[0]).toEqual({ text: 'αὐτὸς' });
         expect(buildNominalFactsTask([], [], ['ὅτι', 'αὐτὸς', 'ὁ', 'κύριος,'], autos)).toMatch(/2\. αὐτὸς: αὐτός INTENSIVO \(fuera del artículo, junto a κύριος\): «él mismo», realza a κύριος.*concordando con la palabra ESPAÑOLA que traduce κύριος/);
         expect(buildNominalFactsTask([], [], ['ἐπὶ', 'τὸ', 'αὐτό'], [{ ordinal: 2, use: 'identical', rule: 'autosIdentical', together: true }])).toMatch(/MODISMO: «juntos/);
+    });
+});
+
+/** Revisión del profesor (2026-11, Stg 2:17 y 2:20): el antecedente en el párrafo, como PISTA para el asistente. */
+describe('la pista del artículo que retoma algo del párrafo', () => {
+    const jas2 = cargar('JAS/2.json');
+    const pista = (v: number, palabra: string) => {
+        const ws = verseWords(jas2, v);
+        return greekAnaphoraHints(jas2, v).find(h => ws[h.ordinal + 1]?.t.replace(/[,.·;]/g, '') === palabra);
+    };
+
+    it('Stg 2:17 ἡ πίστις → la fe de 2:14; Stg 2:20 ἡ πίστις → la de 2:18', () => {
+        expect(pista(17, 'πίστις')?.antecedent).toEqual({ text: 'πίστις', verse: 14 });
+        expect(pista(20, 'πίστις')?.antecedent).toEqual({ text: 'πίστιν', verse: 18 });
+    });
+
+    it('no repite lo que ya decide la regla (mismo versículo o el anterior), ni busca más de cinco atrás', () => {
+        for (let v = 1; v <= 26; v++) {
+            const regla = new Set(greekAnaphora(jas2, v).map(a => a.ordinal));
+            for (const h of greekAnaphoraHints(jas2, v)) {
+                expect(regla.has(h.ordinal)).toBe(false);
+                expect(v - h.antecedent.verse).toBeGreaterThanOrEqual(2);
+                expect(v - h.antecedent.verse).toBeLessThanOrEqual(5);
+            }
+        }
+    });
+
+    it('la REGLA tampoco: «τοῦ θανάτου τοῦ δευτέρου» (Ap 2:11) no retoma 2:10; «τοὺς πατέρας ἡμῶν πρῶτον» (Hch 7:12, adverbial) sí', () => {
+        const rev2 = cargar('REV/2.json');
+        expect(greekAnaphora(rev2, 11).some(a => verseWords(rev2, 11)[a.headOrdinal]!.l === 'θάνατος')).toBe(false);
+        const act7 = cargar('ACT/7.json');
+        expect(greekAnaphora(act7, 12).map(a => verseWords(act7, 12)[a.headOrdinal]!.l)).toContain('πατήρ');
+    });
+
+    it('NO con un ordinal detrás del sustantivo: «ὁ θάνατος ὁ δεύτερος» (Ap 21:8) no retoma la muerte de 21:4', () => {
+        const rev = cargar('REV/21.json');
+        const ws = verseWords(rev, 8);
+        const i = ws.findIndex((w, k) => w.t.startsWith('θάνατος') && ws[k + 2]?.l === 'δεύτερος');
+        expect(i).toBeGreaterThan(0);
+        expect(greekAnaphoraHints(rev, 8).some(h => h.headOrdinal === i)).toBe(false);
+    });
+
+    it('el prompt la da como PISTA (decide el asistente), separada de los hechos', () => {
+        const ws = verseWords(jas2, 17).map(w => w.t);
+        const t = buildNominalFactsTask([], [], ws, [], greekAnaphoraHints(jas2, 17));
+        expect(t).toContain('PISTAS DEL TEXTO (decide tú con el contexto):');
+        expect(t).toMatch(/POSIBLE artículo anafórico — el mismo sustantivo aparece antes en el párrafo: πίστις \(v\. 14\)/);
+        expect(t).not.toContain('HECHOS QUE DA EL TEXTO');
+        expect(buildNominalFactsTask([], [], ws, [], [])).toBe('');
+    });
+});
+
+/** U3b (revisión del profesor, Stg 2:16 «τις ἐξ ὑμῶν»): el genitivo partitivo con ἐκ/ἀπό, por regla (Wallace p. 84). */
+describe('el genitivo partitivo con ἐκ/ἀπό', () => {
+    const terminos = (rel: string, v: number) => {
+        const ch = cargar(rel);
+        const ws = verseWords(ch, v);
+        return greekPartitive(ch, v).map(p => ws[p.ordinal]!.t.replace(/[,.·;’]/g, ''));
+    };
+
+    it('Stg 2:16 «εἴπῃ δέ τις αὐτοῖς ἐξ ὑμῶν»: ὑμῶν es el todo («alguno de entre ustedes»)', () => {
+        expect(terminos('JAS/2.json', 16)).toEqual(['ὑμῶν']);
+        expect(terminos('JHN/13.json', 23)).toEqual(['μαθητῶν']);
+        expect(terminos('MAT/25.json', 2)).toEqual(['αὐτῶν']);
+    });
+
+    it('NO: lugar (Mt 27:38 «εἷς ἐκ δεξιῶν»), τι neutro (2 Co 3:5), verbo o sustantivo en medio (Ap 22:19, Jn 6:13)', () => {
+        expect(terminos('MAT/27.json', 38)).toEqual([]);
+        expect(terminos('2CO/3.json', 5)).toEqual([]);
+        expect(terminos('REV/22.json', 19)).toEqual([]);
+        expect(terminos('JHN/6.json', 13)).toEqual([]);
+    });
+
+    it('NO si la parte no concuerda en género con el grupo (Lc 7:21 «πολλοὺς ἀπὸ νόσων», Hch 19:34 «μία ἐκ πάντων»)', () => {
+        expect(terminos('LUK/7.json', 21)).toEqual([]);
+        expect(terminos('ACT/19.json', 34)).toEqual([]);
+    });
+
+    it('NO si MACULA da a la preposición otro sentido que 63.20 (revisión adversarial): tiempo (Hch 9:33 «ἐξ ἐτῶν ὀκτώ»), separación (Lc 16:31 «τις ἐκ νεκρῶν ἀναστῇ»)', () => {
+        expect(terminos('ACT/9.json', 33)).toEqual([]);
+        expect(terminos('LUK/8.json', 43)).toEqual([]);
+        expect(terminos('LUK/16.json', 31)).toEqual([]);
+        expect(terminos('LUK/16.json', 30)).toEqual([]);
+    });
+
+    it('el numeral que concuerda con su sustantivo no es el todo: Ap 17:1 «εἷς ἐκ τῶν ἑπτὰ ἀγγέλων» → ἀγγέλων', () => {
+        expect(terminos('REV/17.json', 1)).toEqual(['ἀγγέλων']);
+        expect(terminos('REV/15.json', 7)).toEqual(['ζῴων']);
+    });
+
+    it('al mostrar, el término queda «partitive» por regla; y el prompt lo da como hecho', () => {
+        const ch = cargar('JAS/2.json');
+        const ws = verseWords(ch, 16);
+        const p = greekPartitive(ch, 16);
+        const palabras = ws.map(w => ({ text: w.t, caseFunction: 'objectOfPreposition' }));
+        const out = applyNominalRules(palabras, [], [], [], p);
+        expect(out[p[0]!.ordinal]).toMatchObject({ caseFunction: 'partitive', nominalRule: 'partitiveEk' });
+        expect(out[p[0]!.prepositionOrdinal]!.caseFunction).toBe('objectOfPreposition');
+        const t = buildNominalFactsTask([], [], ws.map(w => w.t), [], [], p);
+        expect(t).toMatch(/genitivo PARTITIVO — ἐξ \+ genitivo junto a τις/);
     });
 });

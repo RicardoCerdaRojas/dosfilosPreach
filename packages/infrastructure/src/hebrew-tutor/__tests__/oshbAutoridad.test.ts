@@ -53,9 +53,53 @@ describe('el prompt con las filas de «Estructura»', () => {
         expect(texto).not.toContain('"clauses": [');
         expect(texto).not.toMatch(/clauses MUST cover the whole verse/);
         // Las pautas de la waw siguen para la traducción.
-        expect(texto).toMatch(/waw disyuntiva de contraste →\s+«pero»/);
+        // Revisión del profesor (2026-11): la disyuntiva se traduce según el valor elegido, no «pero» por defecto.
+        expect(texto).toMatch(/según el VALOR que elijas/);
+        expect(texto).not.toMatch(/waw disyuntiva de contraste →\s+«pero»/);
         // Rut 1:14 (prueba del fundador): una nota decía «waw conjuntiva» donde la fila es disyuntiva.
         expect(texto).toMatch(/"exegeticalNotes" y la función de cada palabra usan los MISMOS nombres/);
+    });
+
+    it('REGRESIÓN (banco fuera de muestra, 2026-11-11): el esquema NO limita "resolved" a ground | content', () => {
+        // La plantilla decía «"resolved": "ground | content"» mientras la fila disyuntiva
+        // pedía elegir entre siete valores: en 2 Sam 7:2 el asistente omitió el valor y en
+        // Gn 18:27 escribió su duda dentro del JSON.
+        const disy = { ...fila, relation: 'disjunctive' as const, connector: '16!1' };
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [disy]);
+        expect(texto).toMatch(/ELEGIR "resolved": "contrast" o "circumstantial" o "ground" o "concessive"/);
+        expect(texto).not.toMatch(/"resolved": "ground \| content/);
+        expect(texto).toMatch(/"resolved": "string — only where the clause says ELEGIR \\"resolved\\": exactly one of the values listed there/);
+    });
+
+    it('los versículos vecinos van sólo como contexto, después del versículo a analizar (Gn 18:18 por 18:17)', () => {
+        const vecinos = { previous: { reference: 'Gn 18:17', hebrewText: 'הַמְכַסֶּה אֲנִי' }, next: { reference: 'Gn 18:19', hebrewText: 'כִּי יְדַעְתִּיו' } };
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [fila], [], [], [], [], vecinos);
+        expect(texto).toContain('VERSÍCULOS VECINOS — SÓLO CONTEXTO, NO LOS ANALICES NI LOS TRADUZCAS');
+        expect(texto).toContain('Anterior (Gn 18:17): הַמְכַסֶּה אֲנִי');
+        expect(texto).toContain('Siguiente (Gn 18:19): כִּי יְדַעְתִּיו');
+        expect(texto.indexOf('Texto hebreo:')).toBeLessThan(texto.indexOf('VERSÍCULOS VECINOS'));
+        // Sin vecinos (primer versículo de un libro sin anterior y sin siguiente), no hay sección.
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [fila])).not.toContain('VERSÍCULOS VECINOS');
+        const soloSiguiente = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [fila], [], [], [], [], { next: vecinos.next });
+        expect(soloSiguiente).not.toContain('Anterior (');
+    });
+
+    it('U5: con verbos finitos, el prompt trae su sección y el campo "verbFunction" en el esquema', () => {
+        const v = [{ ordinal: 1, text: 'אֶעֱשֶׂה', form: 'imperfect' as const, rule: 'vfYiqtolPrimera' as const, allowed: ['future', 'resolve'] as const, status: 'medida' as const }];
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], [], [], [], {}, v as never);
+        expect(texto).toContain('## VERBOS FINITOS: SU FUNCIÓN');
+        expect(texto).toMatch(/אֶעֱשֶׂה: imperfecto \(yiqtol\), elige "verbFunction" de: "future"/);
+        expect(texto).toContain('"verbFunction"');
+        expect(buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText))).not.toContain('## VERBOS FINITOS');
+    });
+
+    it('U3a: con preposiciones, su sección y "prepositionFunction"; la literal conserva el sentido base (Rut 2:7 «en»)', () => {
+        const p = [{ ordinal: 0, text: 'בָעֳמָרִים', preposition: 'b' as const, allowed: ['spatial', 'temporal'] as const }];
+        const texto = buildVerseAnalysisPrompt(verse as never, selectRelevantChunks(verse.hebrewText), [], 'es', [], [], [], [], [], {}, [], p as never);
+        expect(texto).toContain('## PREPOSICIONES: SU FUNCIÓN');
+        expect(texto).toContain('"prepositionFunction"');
+        expect(texto).toMatch(/Each PREPOSITION keeps its base sense here \(בְּ «en»/);
+        expect(texto).toMatch(/name both readings in exegeticalNotes/);
     });
 
     it('con quién habla (Rut 1:16), el prompt lo da como hecho decidido', () => {

@@ -126,6 +126,96 @@
         "substantive": "substantive: “the one who…”"
       }
     },
+    "preposition": {
+      "title": "Preposition {{p}}",
+      "functions": {
+        "spatial": "Spatial (place or direction)",
+        "temporal": "Temporal",
+        "instrumental": "Instrumental",
+        "adversative": "Adversative (against)",
+        "specification": "Specification (“with regard to”)",
+        "causal": "Causal",
+        "accompaniment": "Accompaniment",
+        "essence": "Essence (“as”, beth essentiae)",
+        "manner": "Manner",
+        "price": "Price (“in exchange for”)",
+        "agreement": "Agreement in measure (“about”)",
+        "correspondence": "Correspondence (“like”)",
+        "locative": "Locative (“in”, “at”)",
+        "purpose": "Purpose",
+        "quasiDatival": "Indirect object (“to”)",
+        "interest": "Interest (“for”, “on behalf of”)",
+        "product": "Product (“into”, “as”)",
+        "possession": "Possession (“X had”)",
+        "genitival": "Genitival (“of”, instead of the construct)",
+        "normative": "Normative (“according to”)",
+        "estimative": "Estimative (“in the eyes of”)",
+        "agent": "Agent (“by”, with a passive)",
+        "source": "Source (“from”)",
+        "material": "Material (“of”)",
+        "partitive": "Partitive (“some of”)",
+        "privative": "Privative (“without”, “away from”)",
+        "comparative": "Comparative (“more than”)",
+        "compound": "Compound (with another preposition)",
+        "vertical": "Above / below",
+        "horizontal": "Beside",
+        "duty": "Duty (“upon me”)",
+        "rank": "Rank (“over”)",
+        "emotive": "Emotive",
+        "terminative": "Destination (“to”, “toward”)",
+        "declarative": "Addressee (“to”)",
+        "perceptual": "Attention or inclination (“toward”)",
+        "addition": "Addition (“besides”)",
+        "personalComplement": "Recipient (“with”)",
+        "restrictive": "Restrictive (“except”)",
+        "degree": "Degree (“exceedingly”)",
+        "metaphorical": "Figurative (“after”, “under”)",
+        "substitution": "Substitution (“instead of”)",
+        "staticPosition": "Position (“on the spot”)",
+        "complement": "Complement (“with”)"
+      }
+    },
+    "verb": {
+      "title": {
+        "perfect": "Perfect (qatal)",
+        "imperfect": "Imperfect (yiqtol)",
+        "wayyiqtol": "Wayyiqtol",
+        "weqatal": "Weqatal",
+        "jussive": "Jussive",
+        "imperative": "Imperative",
+        "cohortative": "Cohortative"
+      },
+      "functions": {
+        "complete": "Complete action",
+        "stative": "State",
+        "experience": "Experience",
+        "rhetoricalFuture": "Rhetorical future (prophetic)",
+        "proverbial": "Proverbial (general truth)",
+        "performative": "Performative (happens as it is said)",
+        "future": "Future",
+        "customary": "Customary",
+        "progressive": "Progressive (ongoing)",
+        "conditional": "Conditional",
+        "permission": "Permission",
+        "obligation": "Obligation",
+        "command": "Command",
+        "preterite": "Preterite",
+        "wish": "Wish",
+        "benediction": "Benediction",
+        "prohibition": "Prohibition",
+        "promise": "Promise",
+        "resolve": "Resolve (“I will do it”)",
+        "exhortation": "Exhortation (“let us”)",
+        "sequential": "Sequential",
+        "consequential": "Consequential",
+        "narratival": "Narratival",
+        "epexegetical": "Epexegetical (explains what precedes)",
+        "dependent": "Dependent (after a temporal clause)",
+        "volitional": "Volitional (continues a command)",
+        "apodictic": "Apodictic (law or instruction)"
+      },
+      "cohortativeByFunction": "Cohortative by function · {{fn}}"
+    },
     "ki": {
       "title": "Particle כִּי",
       "functions": {
@@ -154,7 +244,25 @@
         "gender": "Gender",
         "number": "Number",
         "state": "State",
-        "temporalValue": "Temporal value"
+        "temporalValue": "Temporal value",
+        "suffix": "Suffix"
+      },
+      "suffix": {
+        "value": "{{pgn}} (“{{gloss}}”) · {{use}}",
+        "short": "suff. {{pgn}}",
+        "host": {
+          "infinitive": "subject or object of the infinitive",
+          "verb": "object of the verb",
+          "objectMarker": "direct object (with אֵת)",
+          "preposition": "object of the preposition",
+          "noun": "the possessor (“his…”, “my…”)",
+          "other": "attached pronoun"
+        },
+        "gloss": {
+          "1cs": "I / my / me", "2ms": "you / your", "2fs": "you / your", "3ms": "he / his / him", "3fs": "she / her",
+          "1cp": "we / our / us", "2mp": "you / your", "2fp": "you / your", "3mp": "they / their / them", "3fp": "they / their / them",
+          "2cs": "you / your", "3cs": "he / she / its", "2cp": "you / your", "1ms": "I / my / me"
+        }
       },
       "weakVerb": "Weak verb",
       "opening": "Opening",
@@ -168,6 +276,30 @@
       "weakVerbClass": "Classified as {{type}} in Farfán's root system.",
       "explanation": "Assistant's explanation",
       "investigate": "Investigate the word step by step",
+      "ketivQere": {
+        "title": "Ketiv and qere",
+        "written": "Written (ketiv)",
+        "read": "Read (qere)",
+        "note": "The Masoretes left the written text as it was and noted in the margin how to read it. In BHS, a small circle (°) over the word points to that marginal note. The analysis is of what is read.",
+        "onlyQere": "Read but not written (qere without ketiv): the Masoretes say to read this word although it is not in the consonantal text.",
+        "marker": "This word is read differently from how it is written (ketiv and qere)"
+      },
+      "article": {
+        "title": "Article",
+        "seenBefore": "was already mentioned in v. {{verse}}. The article may refer back to it (anaphoric article): check the context, since it may also be generic or point to something known.",
+        "seenSameVerse": "was already mentioned earlier in this verse. The article may refer back to it (anaphoric article): check the context, since it may also be generic or point to something known."
+      },
+      "role": {
+        "label": "Function in the clause (from the syntactic analysis of the text)",
+        "dataSource": "From MACULA, the open syntactic analysis of the Hebrew Bible (Clear Bible), reviewed by specialists. Not written by the assistant.",
+        "s": "subject",
+        "o": "direct object",
+        "o2": "second object",
+        "adv": "adverbial complement (place, direction, time or manner)",
+        "p": "predicate",
+        "conflict": "The assistant describes it differently. The MACULA data read it as {{role}}.",
+        "adverbialHint": "With a verb of motion, the adverbial complement is translated with “to” or “toward”."
+      },
       "recognizedBy": {
         "bInf": "Has the preposition בְּ attached: temporal (“when”), causal or instrumental.",
         "kInf": "Has the preposition כְּ attached: “as soon as”, “while” or comparison.",
@@ -207,7 +339,16 @@
         "kiPregunta": "The next word is interrogative.",
         "kiTrasNegacion": "Follows a negation: “but rather”, “except” or the cause of what is denied.",
         "kiInicial": "Opens the verse: condition, time, concession, assertion or cause.",
-        "kiGeneral": "No clue narrows the options: context decides."
+        "kiGeneral": "No clue narrows the options: context decides.",
+        "vfProhibicion": "אַל before the jussive: it forbids (“do not”).",
+        "vfYiqtolPrimera": "First-person yiqtol: it can be a cohortative by function even when the form does not show it (in a III-he verb the cohortative’s final ה- is not visible). Context decides: if the speaker commits or resolves, it is resolve.",
+        "vfPerfecto": "Perfect (qatal): the form allows these functions; context decides.",
+        "vfImperfecto": "Imperfect (yiqtol): the form allows these functions; context decides.",
+        "vfWayyiqtol": "Wayyiqtol (waw consecutive + yiqtol): the form allows these functions; context decides.",
+        "vfWeqatal": "Weqatal (waw consecutive + qatal): the form allows these functions; context decides.",
+        "vfYusivo": "Jussive: the form allows these functions; context decides.",
+        "vfImperativo": "Imperative: the form allows these functions; context decides.",
+        "vfCohortativo": "Cohortative (with the final ה-): the form allows these functions; context decides."
       }
     },
     "speech": {

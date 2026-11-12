@@ -1,4 +1,4 @@
-import { AArrowDown, AArrowUp, Copy, Eye, EyeOff, Printer, RefreshCw, Loader2, Check } from 'lucide-react';
+import { AArrowDown, AArrowUp, Copy, Eye, EyeOff, Printer, RefreshCw, Loader2, Check, Underline } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,9 @@ interface Props {
     onFontScale: (s: GreekFontScale) => void;
     showTranslit: boolean;
     onToggleTranslit: () => void;
+    /** U11b (Stg 2:16, 2:21): subrayar las frases preposicionales. Sin datos de estructura no se ofrece. */
+    showPhrases?: boolean;
+    onTogglePhrases?: () => void;
     /** Texto griego del versículo, para copiar. */
     greekText: string;
     /** Transliteración corrida, para copiar. */
@@ -37,6 +40,8 @@ export function GreekVerseTools({
     onFontScale,
     showTranslit,
     onToggleTranslit,
+    showPhrases,
+    onTogglePhrases,
     greekText,
     translitText,
     onReanalyze,
@@ -101,6 +106,19 @@ export function GreekVerseTools({
                 {showTranslit ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
                 {t('analyzer.tools.translit')}
             </button>
+
+            {onTogglePhrases && (
+                <button
+                    type="button"
+                    onClick={onTogglePhrases}
+                    className={cn(chip, showPhrases && 'text-foreground bg-muted/60')}
+                    title={t('analyzer.tools.phrasesToggle')}
+                    aria-pressed={!!showPhrases}
+                >
+                    <Underline className="h-3 w-3" />
+                    {t('analyzer.tools.phrases')}
+                </button>
+            )}
 
             <span className="inline-flex items-center rounded-md border border-border/60 bg-background">
                 <button

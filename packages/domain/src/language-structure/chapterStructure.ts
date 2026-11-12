@@ -29,11 +29,19 @@ export interface StructureWord {
     /** Griego: categoría y código de 8 posiciones de MorphGNT. */
     readonly pos?: string;
     readonly parse?: string;
+    /** Griego (U3c): el sentido de Louw-Nida que MACULA da a una PREPOSICIÓN («89.5»; a veces dos). */
+    readonly ln?: string;
+    /** Griego (U10, Stg 3:5): la glosa inglesa en contexto de MACULA, sólo si el lema se repite en el versículo con otra glosa. */
+    readonly g?: string;
     /** Hebreo: código de OSHB y piezas. */
     readonly m?: string;
     readonly parts?: readonly StructurePart[];
     /** Hebreo: la forma escrita (ketiv); se lee el qere que le sigue. */
     readonly ketiv?: boolean;
+    /** Hebreo: la forma que se lee (qere), escrita en el margen por los masoretas. */
+    readonly qere?: boolean;
+    /** Hebreo: un ketiv que se escribe y NO se lee (ketiv sin qere, Rut 3:12 אם). */
+    readonly sinQere?: boolean;
 }
 
 export interface StructureClause {
@@ -53,6 +61,34 @@ export interface ChapterStructure {
     readonly chapter: number;
     readonly words: readonly StructureWord[];
     readonly clauses: readonly StructureClause[];
+    /** U11b: las frases preposicionales de MACULA (las más externas). Falta en datos viejos. */
+    readonly phrases?: readonly StructurePhrase[];
+}
+
+/**
+ * U11b (revisión del profesor, Stg 2:16 ἐξ ὑμῶν, 2:18 χωρὶς τῶν ἔργων, 2:21 ἐξ ἔργων): una frase
+ * preposicional de MACULA como `[versículo, desde, hasta, clase]` (posiciones desde 1). Clase: «a»
+ * adverbial (constituyente de la cláusula: va con el verbo), «p» predicado, «n» adnominal (va con
+ * un nombre, dentro de un sintagma nominal).
+ */
+export type PhraseKind = 'a' | 'p' | 'n';
+export type StructurePhrase = readonly [verse: number, from: number, to: number, kind: PhraseKind];
+
+/** Una frase del versículo: sus palabras («verso!n», en orden, sin ketiv) y su clase. */
+export interface VersePhrase {
+    readonly rs: readonly string[];
+    readonly kind: PhraseKind;
+}
+
+export function versePhrases(ch: ChapterStructure, verse: number): VersePhrase[] {
+    const enVerso = new Set(verseWords(ch, verse).map(w => w.r));
+    return (ch.phrases ?? [])
+        .filter(([v]) => v === verse)
+        .map(([, desde, hasta, kind]) => ({
+            rs: Array.from({ length: hasta - desde + 1 }, (_, k) => `${verse}!${desde + k}`).filter(r => enVerso.has(r)),
+            kind,
+        }))
+        .filter(f => f.rs.length > 0);
 }
 
 export interface ILanguageStructureProvider {
@@ -65,6 +101,40 @@ const versoDe = (r: string) => Number(r.split('!')[0]);
 /** Las palabras de un versículo, en orden (sin los ketiv: se lee el qere). */
 export function verseWords(ch: ChapterStructure, verse: number): StructureWord[] {
     return ch.words.filter(w => versoDe(w.r) === verse && !w.ketiv);
+}
+
+/**
+ * Una palabra que se lee distinta de como está escrita (revisión del
+ * profesor, 2026-11: en la BHS, Rut 2:1 מוֹדַע lleva el círculo que remite al
+ * margen, donde está el ketiv מידע). `ordinal` es la posición del QERE entre
+ * las palabras del versículo (`verseWords`); `ketiv` falta si se lee una
+ * palabra que no está escrita (qere sin ketiv, Rut 3:5 אֵלַי).
+ */
+export interface KetivQereFact {
+    readonly ordinal: number;
+    readonly qere: string;
+    readonly ketiv?: string;
+}
+
+/** El ketiv y el qere del versículo, desde OSHB (las palabras marcadas por el build). */
+export function ketivQereOfVerse(ch: ChapterStructure, verse: number): KetivQereFact[] {
+    const todas = ch.words.filter(w => versoDe(w.r) === verse);
+    const ordinal = new Map(verseWords(ch, verse).map((w, i) => [w.r, i]));
+    const out: KetivQereFact[] = [];
+    for (let i = 0; i < todas.length; i++) {
+        if (!todas[i]!.qere || todas[i - 1]?.qere) continue;
+        // El tramo de qere y el de ketiv justo antes (un ketiv o un qere de dos palabras, Job 38:1).
+        let fin = i;
+        while (todas[fin + 1]?.qere) fin++;
+        let ini = i;
+        while (todas[ini - 1]?.ketiv && !todas[ini - 1]!.sinQere) ini--;
+        const qere = todas.slice(i, fin + 1).map(w => w.t).join(' ');
+        const ketiv = todas.slice(ini, i).map(w => w.t).join(' ');
+        const o = ordinal.get(todas[i]!.r);
+        if (o !== undefined) out.push({ ordinal: o, qere, ...(ketiv ? { ketiv } : {}) });
+        i = fin;
+    }
+    return out;
 }
 
 export interface VerseClauseNode {

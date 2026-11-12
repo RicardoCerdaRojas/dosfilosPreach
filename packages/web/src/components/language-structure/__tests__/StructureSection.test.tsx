@@ -3,13 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CLAUSE_RELATIONS, verseStructure, verseWords, type ChapterStructure } from '@dosfilos/domain';
+import { CLAUSE_RELATIONS, verseStructure, versePhrases, verseWords, type ChapterStructure } from '@dosfilos/domain';
+import { frasePorRef } from '../frases';
 import type { StructureWordLinks } from '../StructureSection';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (k: string) => k }),
 }));
-const { StructureFlow, StructureSection } = await import('../StructureSection');
+const { LeyendaFrases, StructureFlow, StructureSection } = await import('../StructureSection');
+const { StructureDiagram } = await import('../StructureDiagram');
 const { useVerseStructure } = await import('../useVerseStructure');
 const { TooltipProvider } = await import('@/components/ui/tooltip');
 
@@ -37,6 +39,64 @@ describe('StructureFlow (G1 + G5)', () => {
         const hamartian = screen.getByText('ἁμαρτίαν').parentElement!;
         expect(hamartian.className).toContain('outline-warning');
         expect(filas[2]!.textContent).toContain('fronted');
+    });
+
+    it('U11 (Stg 2:14): el 2.º miembro de la prótasis lo dice; la condición y la apódosis, no', () => {
+        render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 14)} />);
+        const filas = screen.getAllByTestId('structure-row');
+        expect(filas.map(f => !!f.querySelector('[data-testid="protasis-miembro"]'))).toEqual([false, false, true, false, false]);
+        expect(filas[2]!.textContent).toContain('relations.development');
+    });
+
+    it('U11b (Stg 2:16): con «Frases», «ἐξ ὑμῶν» punteada (va con τις) y «ἐν εἰρήνῃ» continua (va con el verbo); sin, nada', () => {
+        const { unmount } = render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 16)} phrases={frasePorRef(versePhrases(santiago2, 16))} />);
+        const ex = screen.getByText('ἐξ'), en = screen.getByText('ἐν');
+        expect([ex.dataset.frase, screen.getByText('ὑμῶν·').dataset.frase, en.dataset.frase]).toEqual(['n', 'n', 'a']);
+        expect(ex.className).toContain('decoration-dashed');
+        expect(en.className).toContain('underline');
+        expect(en.className).not.toContain('decoration-dashed');
+        expect(screen.getByText('εἴπῃ').className).not.toContain('underline');
+        unmount();
+        render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 16)} />);
+        expect(screen.getByText('ἐξ').className).not.toContain('underline');
+    });
+
+    it('U11b: la leyenda de las frases dice la forma de cada línea', () => {
+        render(<LeyendaFrases />);
+        expect(screen.getByTestId('phrases-legend').textContent).toBe('legendPhraseVerblegendPhraseNoun');
+    });
+
+    it('U11c Diagrama, Stg 2:14: la prótasis de dos miembros va en UN bloque con su barra y la flecha a la apódosis', () => {
+        render(<StructureDiagram lang="gr" nodes={verseStructure(santiago2, 14)} phrases={versePhrases(santiago2, 14)} />);
+        const bloque = screen.getByTestId('diagram-protasis');
+        expect(bloque.querySelectorAll('[data-testid="diagram-line"]')).toHaveLength(2);
+        expect(bloque.textContent).toContain('ἐὰν πίστιν λέγῃ τις ἔχειν');
+        expect(bloque.textContent).toContain('protasis · classLabel.3');
+        expect(bloque.textContent).toContain('protasisMember');
+        expect(bloque.textContent).toContain('diagramToApodosis');
+        expect(bloque.className).toContain('border-l-2');
+    });
+
+    it('U11c Diagrama, 1 Jn 4:20: la línea más profunda entre dos miembros («ὅτι Ἀγαπῶ τὸν θεόν») va DENTRO del corchete, que no se parte', () => {
+        const juan = cargar('gr/1JN/4.json');
+        render(<StructureDiagram lang="gr" nodes={verseStructure(juan, 20)} phrases={versePhrases(juan, 20)} />);
+        const bloques = screen.getAllByTestId('diagram-protasis');
+        expect(bloques).toHaveLength(1);
+        expect(bloques[0]!.querySelectorAll('[data-testid="diagram-line"]')).toHaveLength(3);
+        expect(bloques[0]!.textContent).toContain('ὅτι Ἀγαπῶ τὸν θεόν');
+    });
+
+    it('U11c Diagrama, Stg 2:18: las frases con el verbo en su línea, marcadas y subrayadas; hebreo sangra a la derecha', () => {
+        const { unmount } = render(<StructureDiagram lang="gr" nodes={verseStructure(santiago2, 18)} phrases={versePhrases(santiago2, 18)} />);
+        const frases = screen.getAllByTestId('diagram-line').filter(l => l.dataset.kind === 'phrase');
+        expect(frases.map(l => l.textContent)).toEqual(['└χωρὶς τῶν ἔργων,', '└ἐκ τῶν ἔργων μου']);
+        expect(screen.getByText('χωρὶς').className).toContain('underline');
+        unmount();
+        const rut = cargar('he/Ruth/1.json');
+        render(<StructureDiagram lang="he" nodes={verseStructure(rut, 1)} phrases={versePhrases(rut, 1)} />);
+        const sangrada = screen.getAllByTestId('diagram-line').find(l => l.style.marginRight && l.style.marginRight !== '0rem');
+        expect(sangrada).toBeDefined();
+        expect(screen.getAllByTestId('diagram-line').every(l => !l.style.marginLeft)).toBe(true);
     });
 
     it('la sangría sigue la profundidad, relativa a la fila menos profunda', () => {
@@ -168,6 +228,13 @@ describe('la lectura del asistente en cada fila (G1 + G5, opción b)', () => {
         expect(fila.textContent).not.toContain('frontedNote');
     });
 
+    it('waw disyuntiva: conserva su nombre y suma el valor elegido (revisión del profesor, Rut 2:10 «siendo yo»)', () => {
+        const rut = verseStructure(cargar('he/Ruth/2.json'), 10);
+        const disy = rut.find(n => n.relation === 'disjunctive')!;
+        render(<StructureFlow lang="he" nodes={rut} readings={[{ index: disy.index, anchor: disy.words[0]!.r, value: 'circunstancia', explanation: 'x', resolved: 'circumstantial' }]} />);
+        expect(screen.getByText('relations.disjunctive · resolved.circumstantial')).toBeInTheDocument();
+    });
+
     it('una lectura anclada a otra primera palabra no se muestra', () => {
         render(<StructureFlow lang="gr" nodes={jn316} readings={[{ index: ina.index, anchor: 'otra', value: 'x', explanation: 'y' }]} />);
         expect(screen.queryAllByTestId('clause-reading')).toHaveLength(0);
@@ -196,6 +263,21 @@ describe('StructureSection', () => {
         expect(pedidos).toEqual(['/language-data/v1/gr/JAS/2.json']);
     });
 
+    it('U11c: el selector Tarjetas | Diagrama cambia la vista y se recuerda', async () => {
+        localStorage.removeItem('estructura.vista');
+        const { unmount } = render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);
+        await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
+        expect(screen.getByText('view.cards').getAttribute('aria-pressed')).toBe('true');
+        fireEvent.click(screen.getByText('view.diagram'));
+        expect(screen.queryByTestId('structure-row')).toBeNull();
+        expect(screen.getByTestId('structure-diagram')).toBeInTheDocument();
+        expect(localStorage.getItem('estructura.vista')).toBe('diagram');
+        unmount();
+        render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);
+        await waitFor(() => expect(screen.getByTestId('structure-diagram')).toBeInTheDocument());
+        localStorage.removeItem('estructura.vista');
+    });
+
     it('al cambiar de capítulo no muestra las filas del anterior mientras llega el nuevo', async () => {
         const { rerender } = render(<Seccion lang="gr" book="JAS" chapter={2} verse={7} />);
         await waitFor(() => expect(screen.getAllByTestId('structure-row')).toHaveLength(2));
@@ -220,6 +302,8 @@ describe('StructureSection', () => {
         render(<Seccion lang="gr" book="MAT" chapter={1} verse={1} />);
         await waitFor(() => expect(screen.getAllByTestId('structure-row')).toHaveLength(1));
         expect(screen.getByText('verbless')).toBeInTheDocument();
+        // Y dice cómo se reconoce (pregunta del fundador sobre Stg 2:13).
+        expect(screen.getByText(/verblessNote/)).toBeInTheDocument();
     });
 
     it('sin lectura del asistente avisa por qué y ofrece pedirla', async () => {

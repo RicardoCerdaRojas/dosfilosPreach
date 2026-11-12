@@ -8,7 +8,7 @@ import {
 } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaCaja, FichaFuncion, FichaOrigenRotulo, type OrigenFuncion } from '@/components/word-ficha/FichaPiezas';
-import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView } from '@dosfilos/domain';
+import type { HebrewArticleFact, HebrewPrepositionView, HebrewVerbView, HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact, ResolvedRelation } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from '../components/MorphemeSpan';
@@ -24,6 +24,20 @@ export interface DatosHebreo {
     readonly infinitive?: HebrewInfinitiveView;
     readonly participle?: HebrewParticipleView;
     readonly ki?: HebrewKiView;
+    /** Ketiv y qere: lo que está escrito y lo que se lee (OSHB). */
+    readonly ketivQere?: KetivQereFact;
+    /** El sufijo pronominal (OSHB): persona, género, número y a qué va pegado. */
+    readonly suffix?: HebrewSuffix;
+    /** Abre una cláusula con waw disyuntiva; con el valor si el asistente lo eligió. */
+    readonly disjunctive?: { readonly resolved?: ResolvedRelation };
+    /** U4: el mismo sustantivo ya apareció poco antes (el artículo puede retomarlo). */
+    readonly article?: HebrewArticleFact;
+    /** El rol de la palabra en su oración según MACULA (s, o, adv…). */
+    readonly role?: string;
+    /** U5: la función del verbo finito (Arnold y Choi cap. 3), con el cohortativo por función. */
+    readonly verb?: HebrewVerbView;
+    /** U3a: la función de su preposición (A&C §4.1). */
+    readonly preposition?: HebrewPrepositionView;
     /** Abre el detective (verbos y nombres). */
     readonly onInvestigate?: () => void;
 }
@@ -49,7 +63,8 @@ export const investigable = (d: DatosHebreo) => {
     const c = d.word.category?.toUpperCase() ?? '';
     return !!d.onInvestigate && (c === 'VERB' || ['NOUN', 'PROPER_NOUN', 'ADJECTIVE', 'PRONOUN', 'PERSONAL_PRONOUN', 'DEMONSTRATIVE_PRONOUN', 'RELATIVE_PRONOUN'].includes(c));
 };
-export const funcionDeRegla = (d: DatosHebreo) => !!(d.infinitive || d.participle || d.ki);
+/** Con regla (o elección) para la palabra, la función libre del asistente va dentro de ese bloque. */
+export const funcionDeRegla = (d: DatosHebreo) => !!(d.infinitive || d.participle || d.ki || (d.verb && (d.verb.fn || d.verb.assistantReading)));
 
 /**
  * Un rótulo traducido o, si el asistente devolvió un valor fuera del catálogo, el valor tal cual — en vez de
@@ -105,6 +120,15 @@ export function useCeldas(d: DatosHebreo) {
     if (g) celdas.push({ label: t('verseAnalyzer.ficha.cells.gender'), value: rotulo(`verseAnalyzer.morphology.gender.${String(g).toUpperCase()}`, String(g)) });
     if (num) celdas.push({ label: t('verseAnalyzer.ficha.cells.number'), value: rotulo(`verseAnalyzer.morphology.number.${String(num).toUpperCase()}`, String(num)) });
     if (n?.state) celdas.push({ label: t('verseAnalyzer.ficha.cells.state'), value: rotulo(`verseAnalyzer.morphology.state.${String(n.state).toUpperCase()}`, String(n.state)) });
+    // El sufijo pronominal, de OSHB (revisión del profesor, Rut 3:3 כַּלֹּתוֹ: en un infinitivo es su sujeto u objeto).
+    if (d.suffix) {
+        const clave = `${d.suffix.person}${d.suffix.gender}${d.suffix.number}`;
+        celdas.push({
+            label: t('verseAnalyzer.ficha.cells.suffix'),
+            value: t('verseAnalyzer.ficha.suffix.value', { pgn: clave.toUpperCase(), gloss: t(`verseAnalyzer.ficha.suffix.gloss.${clave}`), use: t(`verseAnalyzer.ficha.suffix.host.${d.suffix.host}`) }),
+            ancha: true,
+        });
+    }
     if (v?.temporalValue) celdas.push({ label: t('verseAnalyzer.ficha.cells.temporalValue'), value: v.temporalValue, ancha: true });
     return celdas;
 }
@@ -119,11 +143,13 @@ export const pgn = (d: DatosHebreo) => {
 /** La línea de la forma en el resumen. */
 export function LineaForma({ d }: { d: DatosHebreo }) {
     const rotulo = useRotulo();
+    const { t } = useTranslation('hebrewTutor');
     const v = vm(d), n = nm(d);
     const partes = v
         ? [v.binyan, v.verbForm && rotulo(`verseAnalyzer.verbForms.${v.verbForm}`, String(v.verbForm)), pgn(d)]
         : [n?.gender && rotulo(`verseAnalyzer.morphology.gender.${String(n.gender).toUpperCase()}`, String(n.gender)), n?.number && rotulo(`verseAnalyzer.morphology.number.${String(n.number).toUpperCase()}`, String(n.number)), n?.state && rotulo(`verseAnalyzer.morphology.state.${String(n.state).toUpperCase()}`, String(n.state))];
-    const linea = partes.filter(Boolean).join(' · ');
+    const sufijo = d.suffix ? t('verseAnalyzer.ficha.suffix.short', { pgn: `${d.suffix.person}${d.suffix.gender}${d.suffix.number}`.toUpperCase() }) : '';
+    const linea = [...partes, sufijo].filter(Boolean).join(' · ');
     return linea ? <p className="m-0 font-medium text-foreground/85">{linea}</p> : null;
 }
 
@@ -136,7 +162,7 @@ type Vista<F extends string> = {
     readonly assistantReading?: F;
     readonly phraseReading?: F;
 };
-interface FuncionDeRegla<F extends string> {
+export interface FuncionDeRegla<F extends string> {
     view: Vista<F>;
     titulo: string;
     nombre: (f: F) => string;
@@ -147,7 +173,7 @@ interface FuncionDeRegla<F extends string> {
 /** Regla que decide, elección del asistente o, si nadie eligió, las opciones (sin atribuirlas a nadie). */
 const origenDe = <F extends string>(v: Vista<F>): OrigenFuncion => (v.by === 'rule' ? 'regla' : v.by === 'assistant' ? 'eleccion' : 'opciones');
 
-function BloqueRegla<F extends string>({ d, f }: { d: DatosHebreo; f: FuncionDeRegla<F> }) {
+export function BloqueRegla<F extends string>({ d, f }: { d: DatosHebreo; f: FuncionDeRegla<F> }) {
     const { t } = useTranslation('hebrewTutor');
     const { t: tl } = useTranslation('languageStructure');
     const { candidate, fn, by, assistantReading, phraseReading } = f.view;
@@ -169,7 +195,7 @@ function BloqueRegla<F extends string>({ d, f }: { d: DatosHebreo; f: FuncionDeR
     );
 }
 
-function CortoRegla<F extends string>({ f }: { f: FuncionDeRegla<F> }) {
+export function CortoRegla<F extends string>({ f }: { f: FuncionDeRegla<F> }) {
     const { candidate, fn } = f.view;
     return (
         <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">

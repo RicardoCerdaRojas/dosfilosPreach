@@ -13,8 +13,8 @@
  * cross-validation but is explicitly NOT presented as authoritative.
  */
 
-import type { HebrewInfinitiveCandidate, HebrewKiCandidate, HebrewParticipleCandidate, HebrewVerse, SpeechFact, StructureNode } from '@dosfilos/domain';
-import { buildClauseReadingTask, buildHebrewInfinitiveTask, buildHebrewKiTask, buildHebrewParticipleTask, buildSpeechFactsTask } from '@dosfilos/domain';
+import type { HebrewInfinitiveCandidate, HebrewKiCandidate, HebrewParticipleCandidate, HebrewPrepositionCandidate, HebrewVerbCandidate, HebrewVerse, NeighborVerses, SpeechFact, StructureNode } from '@dosfilos/domain';
+import { buildClauseReadingTask, buildHebrewFiniteVerbTask, buildHebrewPrepositionTask, buildHebrewInfinitiveTask, buildHebrewKiTask, buildHebrewParticipleTask, buildSpeechFactsTask } from '@dosfilos/domain';
 import type { LexicalEntry } from '@dosfilos/domain';
 import type { KnowledgeChunk } from '../knowledge/farfan-chunks.js';
 
@@ -26,7 +26,7 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
   "reference": "string — human-readable reference, e.g. 'Jonás 2:3'",
   "hebrewText": "string — full vocalized Hebrew text",
   "transliteration": "string — full academic transliteration of the verse",
-  "literalTranslation": "string — STRICT word-for-word translation. DO NOT apply idiomatic meaning here. Even if a phrase is an idiom, translate each word literally.",
+  "literalTranslation": "string — STRICT word-for-word translation. DO NOT apply idiomatic meaning here. Even if a phrase is an idiom, translate each word literally. Each PREPOSITION keeps its base sense here (בְּ «en», לְ «a/para», מִן «de/desde», עַל «sobre», אֶל «a/hacia», כְּ «como», עִם/אֵת «con», עַד «hasta»): the sense the context asks for goes in fluidTranslation, and if the reading is disputed (e.g. «en» or «entre» las gavillas), name both readings in exegeticalNotes.",
   "fluidTranslation": "string — natural, fluent Spanish translation using IDIOMATIC equivalents where applicable. Use the lexical glossary when provided.",
   "words": [
     {
@@ -42,6 +42,8 @@ Return ONLY a valid JSON object with the following structure (no markdown, no ex
       "explanation": "string — detailed pedagogical explanation (morphology, recognition clues, typology, temporal/aspectual value). FORMATTED WITH MARKDOWN. Use bold text, bullet points, and short paragraphs to make it highly structured and readable.",
       "infinitiveFunction": "string | null — SÓLO en los infinitivos de la sección INFINITIVOS: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
       "participleFunction": "string | null — SÓLO en los participios de la sección PARTICIPIOS: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
+      "prepositionFunction": "string | null — SÓLO en las palabras de la sección PREPOSICIONES: el id que elijas de la lista de su preposición. En las demás palabras, null.",
+      "verbFunction": "string | null — SÓLO en los verbos de la sección VERBOS FINITOS: el id que elijas de su lista. En las demás palabras, null.",
       "kiFunction": "string | null — SÓLO en las palabras כִּי de la sección כִּי: el id que te da esa sección (o el que elijas de su lista). En las demás palabras, null.",
       "verbMorphology": {
         "binyan": "QAL | NIFAL | PIEL | PUAL | HITPAEL | HIFIL | HOFAL",
@@ -125,19 +127,48 @@ CRITICAL RULES:
 - SOF PASUQ (Unicode U+05C3 ׃) and PASEQ (Unicode U+05C0 ׀) are verse-level punctuation marks, NOT part of any individual word. Do NOT include them in any word's "hebrewText" or in any morpheme "text" field. They are handled separately by the rendering pipeline.
 `;
 
+// ── Versículos vecinos ────────────────────────────────────────────────────────
+
+/**
+ * El asistente veía el versículo solo. El banco fuera de muestra de la waw
+ * disyuntiva (2026-11-11) falló donde el valor depende de lo que rodea al
+ * versículo: Gn 18:18 es causal por 18:17 («¿encubriré a Abraham…?») y 2 S 6:23
+ * cierra el episodio (Putnam §3.2.2a(3)). Van sólo como contexto: ni se
+ * analizan ni se traducen.
+ */
+function formatNeighbors(neighbors: NeighborVerses): string {
+  const filas = [
+    neighbors.previous ? `Anterior (${neighbors.previous.reference}): ${neighbors.previous.hebrewText}` : '',
+    neighbors.next ? `Siguiente (${neighbors.next.reference}): ${neighbors.next.hebrewText}` : '',
+  ].filter(Boolean);
+  if (!filas.length) return '';
+  return `
+### VERSÍCULOS VECINOS — SÓLO CONTEXTO, NO LOS ANALICES NI LOS TRADUZCAS
+${filas.join('\n')}
+Úsalos para decidir cómo se une ESTE versículo con lo que lo rodea (contraste con
+lo anterior, causa, apertura o cierre de una escena) y para traducirlo. Las
+palabras, las cláusulas y las traducciones son SÓLO del versículo a analizar.
+`;
+}
+
 // ── Lectura de cláusulas (G1 + G5) ────────────────────────────────────────────
 
 /**
  * Con estructura, la sección de cláusulas pasa de «pártelas» a «léelas». Las
  * pautas de la waw siguen valiendo para la TRADUCCIÓN: la relación ya viene
- * decidida por el dato y el asistente la usa (disyuntiva de contraste → «pero»).
+ * decidida por el dato y el asistente elige su VALOR. Revisión del profesor
+ * (2026-11): decía «disyuntiva de contraste → «pero»» y toda waw + no verbo
+ * salía contraste (Rut 1:21, 1:22, 2:10, 2:13); el profesor: disyuntiva no es
+ * necesariamente contrastiva (Putnam §3.2.2).
  */
 const SECCION_LECTURA = (tarea: string) => `## CLÁUSULAS: LA ESTRUCTURA YA ESTÁ DECIDIDA (campo "clauseReadings")
 
 Las cláusulas de este versículo, su dependencia y su conexión vienen del texto
 (MACULA). NO devuelvas el campo "clauses". La traducción y la función de cada
-palabra deben ser coherentes con esas conexiones: waw disyuntiva de contraste →
-«pero», no «y»; asíndeton → sin «y» agregada; wayyiqtol → secuencia narrativa.
+palabra deben ser coherentes con esas conexiones: la waw disyuntiva se traduce
+según el VALOR que elijas para su cláusula (contraste → «pero»; circunstancial →
+«siendo…», «mientras…»; concesiva → «aunque»; fondo o cierre → «y»), nunca
+«pero» por defecto; asíndeton → sin «y» agregada; wayyiqtol → secuencia narrativa.
 Las "exegeticalNotes" y la función de cada palabra usan los MISMOS nombres de
 relación que la lista de abajo: si una cláusula es «waw + no verbo (disyuntiva)»,
 no la llames «conjuntiva» en ninguna parte.
@@ -150,7 +181,7 @@ function conLectura(schema: string): string {
   if (inicio === -1 || fin === -1) return schema;
   return schema.slice(0, inicio)
     + `  "clauseReadings": [
-    { "n": "number — the clause number from CLÁUSULAS", "value": "string — 2 to 5 words in Spanish", "explanation": "string — one sentence", "resolved": "ground | content — only where asked", "fronting": "focus | frame — only where asked" }
+    { "n": "number — the clause number from CLÁUSULAS", "value": "string — 2 to 5 words in Spanish", "explanation": "string — one sentence", "resolved": "string — only where the clause says ELEGIR \\"resolved\\": exactly one of the values listed there, nothing else", "fronting": "focus | frame — only where asked" }
   ],
 `
     + schema.slice(fin)
@@ -319,12 +350,20 @@ export function buildVerseAnalysisPrompt(
   participles: readonly HebrewParticipleCandidate[] = [],
   /** R4: la función de cada כִּי (Arnold y Choi §4.3.4). */
   kis: readonly HebrewKiCandidate[] = [],
+  /** El versículo anterior y el siguiente, sólo como contexto (banco de la waw, 2026-11-11). */
+  neighbors: NeighborVerses = {},
+  /** U5 (Rut 3:5): la función de cada verbo finito (Arnold y Choi cap. 3), con el cohortativo por función. */
+  verbs: readonly HebrewVerbCandidate[] = [],
+  /** U3a (Rut 2:1, 2:7): la función de cada preposición (Arnold y Choi §4.1). */
+  prepositions: readonly HebrewPrepositionCandidate[] = [],
 ): string {
   const lectura = buildClauseReadingTask(structure);
   const habla = buildSpeechFactsTask(speech);
   const infinitivos = buildHebrewInfinitiveTask(infinitives);
   const participios = buildHebrewParticipleTask(participles);
   const particulaKi = buildHebrewKiTask(kis);
+  const verbosFinitos = buildHebrewFiniteVerbTask(verbs);
+  const preposiciones = buildHebrewPrepositionTask(prepositions);
   const langInstruction =
     language === 'es'
       ? 'IMPORTANT: Respond entirely in Spanish. Use clear academic Spanish appropriate for a Chilean seminary student.'
@@ -401,6 +440,8 @@ ${habla}
 ${infinitivos}
 ${participios}
 ${particulaKi}
+${verbosFinitos}
+${preposiciones}
 
 ${lectura ? SECCION_LECTURA(lectura) : `## REGLAS DE CLÁUSULAS (campo "clauses")
 
@@ -410,11 +451,13 @@ Mira la PRIMERA palabra de la cláusula:
 - וַ + prefijo (wayyiqtol) → WAYYIQTOL_CHAIN: sigue la cadena narrativa.
 - וְ + VERBO (incluido el weqatal) → WAW_CONJUNCTIVE: coordinación simple, «y».
 - וְ + NO VERBO (sujeto, objeto, adverbio, pronombre adelante) → WAW_DISJUNCTIVE:
-  la cláusula ROMPE la cadena. Su valor suele ser contraste («pero»),
-  circunstancia («mientras»), información de fondo o paréntesis («ahora bien»).
-  Ej. Rut 1:14 וַתִּשַּׁק עָרְפָּה לַחֲמוֹתָהּ | וְרוּת דָּבְקָה בָּהּ
-  → la segunda es disyuntiva de CONTRASTE: «pero Rut se quedó con ella».
-  NO la traduzcas con «y»; NO digas que el sujeto está «coordinado» con la anterior.
+  la cláusula ROMPE la cadena, pero NO siempre contrasta. Su valor puede ser
+  contraste («pero»), circunstancia («siendo…», «mientras…»), causa («porque»),
+  concesión («aunque»), paréntesis o fondo («y»), apertura o cierre de escena («y»).
+  Ej. Rut 1:14 וַתִּשַּׁק עָרְפָּה לַחֲמוֹתָהּ | וְרוּת דָּבְקָה בָּהּ → CONTRASTE: «pero Rut se quedó con ella».
+  Ej. Rut 2:10 … וְאָנֹכִי נָכְרִיָּה → CIRCUNSTANCIAL: «siendo yo extranjera».
+  Ej. Rut 1:22 … וְהֵמָּה בָּאוּ בֵּית לֶחֶם → CIERRE del episodio: «y ellas llegaron a Belén».
+  NO digas que el sujeto está «coordinado» con la anterior.
 - Sin conjunción → ASYNDETIC (asíndeton). Suele marcar clímax, declaración solemne,
   explicación o enumeración. Ej. Rut 1:16 … | עַמֵּךְ עַמִּי | וֵאלֹהַיִךְ אֱלֹהָי
   → «tu pueblo, mi pueblo» es una cláusula NOMINAL ASINDÉTICA (declaración solemne);
@@ -425,7 +468,7 @@ Mira la PRIMERA palabra de la cláusula:
 - La primera cláusula del versículo sin conector que analizar → FIRST.
 
 La función sintáctica de cada palabra y las traducciones deben ser coherentes con
-estas conexiones (disyuntiva de contraste → «pero»; asíndeton → sin «y» agregada).`}
+estas conexiones (la disyuntiva, según su valor; asíndeton → sin «y» agregada).`}
 
 ## REGLA DE TRADUCCIÓN PARA WAYYIQTOL (Pasado narrativo secuencial)
 
@@ -563,7 +606,7 @@ ${lexicalContext}
 
 Referencia: ${verse.displayReference}
 Texto hebreo: ${verse.hebrewText}
-
+${formatNeighbors(neighbors)}
 ## FORMATO DE RESPUESTA
 
 ${lectura ? conLectura(OUTPUT_SCHEMA) : OUTPUT_SCHEMA}

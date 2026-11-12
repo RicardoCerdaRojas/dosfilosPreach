@@ -761,6 +761,8 @@
     "tools": {
       "translit": "Translit.",
       "translitToggle": "Show or hide the transliteration — drop the crutch to really read the alphabet",
+      "phrases": "Phrases",
+      "phrasesToggle": "Underline the prepositional phrases: solid if it goes with the verb, dotted if it goes with a noun",
       "smaller": "Smaller text",
       "larger": "Larger text",
       "copyGreek": "Greek",
@@ -840,6 +842,25 @@
       "V": {
         "address": "Vocative of address"
       }
+    },
+    "opening": {
+      "title": "Section opening (signal)",
+      "withImperative": "Vocative at the start of the verse, with the imperative {{imp}}: in the letters, the author often opens a new unit this way (in James: 1:2, 1:19, 2:1, 3:1, 4:11, 5:7).",
+      "withQuestion": "Vocative at the start of the verse, with a question: in the letters, the author often opens a new unit this way (Jas 2:14).",
+      "note": "It is a signal, not a rule: it also appears in the middle of an argument (Jas 3:12, 5:9). Confirm it with the content."
+    },
+    "sameLemma": {
+      "title": "Same lemma in this verse",
+      "gloss": "gloss in context: “{{gloss}}”",
+      "note": "From MACULA: the same word appears again in this verse with another gloss in context. It may be a different sense (Jas 3:5: “how small” a fire, “how great” a forest) or just a nuance; translate it by its own."
+    },
+    "louwNida": {
+      "title": "Sense in this verse (Louw-Nida)",
+      "note": "From MACULA: the sense the analysis of the text gives this preposition here, by Louw and Nida's semantic domains. The case shows which senses are possible; this shows which one is read in this verse.",
+      "twoReadings": "From MACULA: it leaves {{count}} readings open here. Context decides between them."
+    },
+    "caseRule": {
+      "partitiveEk": "ἐκ or ἀπό + plural genitive next to a word that takes a part (τις, εἷς, οὐδείς, πολλοί, a numeral): the genitive is the whole from which that part is taken (“one of you”)."
     },
     "caseFnHint": {
       "subject": "Performs the action of the finite verb.",
@@ -966,9 +987,23 @@
       "contrast": "With other cases the sense changes:",
       "noObject": "Could not identify the governed term."
     },
+    "conditional": {
+      "title": "Conditional",
+      "uses": {
+        "presentGeneral": "Here, present general: a truth that holds whenever the condition is met (“if anyone…, then…”), not a future event. Wallace calls it a “fifth class” when the apodosis is present.",
+        "moreProbableFuture": "Here, more probable future: something that may happen and is expected (“if anyone asks you, you shall say…”)."
+      },
+      "short": {
+        "presentGeneral": "present general",
+        "moreProbableFuture": "more probable future"
+      }
+    },
     "verbFn": {
       "title": "Verb function",
       "tenseTitle": "Tense use",
+      "tenseRules": {
+        "prolepticPerfect": "Perfect in the apodosis of a future-looking condition (ἐάν + subjunctive) or with an indefinite subject (“whoever…”): it treats as done a state that has not yet come about. Wallace calls it proleptic and also allows gnomic (a general truth)."
+      },
       "functions": {
         "attributive": "Attributive participle",
         "substantival": "Substantival participle",
@@ -999,7 +1034,7 @@
         "emphaticNegation": "Emphatic negation (οὐ μή)",
         "inaClause": "Subjunctive after ἵνα/ὅπως",
         "conditional": "Conditional subjunctive (ἐάν)",
-        "indefinite": "Indefinite (with ἄν)",
+        "indefinite": "Indefinite (relative or temporal)",
         "command": "Command",
         "request": "Request",
         "permissive": "Permissive",
@@ -1046,11 +1081,12 @@
         "conditionalEan": "protasis with ἐάν",
         "ouMe": "οὐ μή + subjunctive",
         "prohibition": "μή + aorist subjunctive",
-        "indefinite": "with ἄν",
+        "indefinite": "with ἄν, ὅταν, ἕως, ἄχρι, μέχρι or πρίν",
+        "indefiniteRelative": "ὅστις + subjunctive, with or without ἄν: “whoever…”. It sets up a general case, like a condition (Wallace).",
         "hortatory": "1st person plural",
         "meGenoito": "μὴ γένοιτο",
         "presentProhibition": "μή + imperative",
-        "lest": "μή or μήποτε in a dependent clause"
+        "lest": "μήποτε, or μή after a verb of fearing or warning (βλέπω, φοβέομαι)"
       }
     },
     "agency": {
