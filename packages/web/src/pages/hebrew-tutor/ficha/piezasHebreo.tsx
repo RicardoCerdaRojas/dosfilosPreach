@@ -8,7 +8,7 @@ import {
 } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaCaja, FichaFuncion, FichaOrigenRotulo, type OrigenFuncion } from '@/components/word-ficha/FichaPiezas';
-import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView } from '@dosfilos/domain';
+import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, KetivQereFact } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from '../components/MorphemeSpan';
@@ -24,6 +24,8 @@ export interface DatosHebreo {
     readonly infinitive?: HebrewInfinitiveView;
     readonly participle?: HebrewParticipleView;
     readonly ki?: HebrewKiView;
+    /** Ketiv y qere: lo que está escrito y lo que se lee (OSHB). */
+    readonly ketivQere?: KetivQereFact;
     /** Abre el detective (verbos y nombres). */
     readonly onInvestigate?: () => void;
 }

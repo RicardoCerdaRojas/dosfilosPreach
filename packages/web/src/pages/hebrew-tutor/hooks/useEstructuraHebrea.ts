@@ -1,5 +1,5 @@
 import React from 'react';
-import { applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
@@ -103,7 +103,20 @@ export function useEstructuraHebrea(
         }
         return m;
     }, [estructura, alinear, analysis.words]);
-    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, sinLectura };
+    /**
+     * Índice del análisis → el ketiv y el qere de la palabra (revisión del profesor, 2026-11):
+     * el análisis es del qere; la ficha dice qué está escrito y lo marca con el círculo de la BHS.
+     */
+    const ketivQere = React.useMemo(() => {
+        const m = new Map<number, KetivQereFact>();
+        const indice = alinear(estructura.words);
+        for (const f of estructura.ketivQere ?? []) {
+            const i = indice[f.ordinal];
+            if (i !== undefined) m.set(i, f);
+        }
+        return m;
+    }, [estructura, alinear]);
+    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sinLectura };
 }
 
 /**

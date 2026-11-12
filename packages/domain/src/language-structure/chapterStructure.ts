@@ -34,6 +34,10 @@ export interface StructureWord {
     readonly parts?: readonly StructurePart[];
     /** Hebreo: la forma escrita (ketiv); se lee el qere que le sigue. */
     readonly ketiv?: boolean;
+    /** Hebreo: la forma que se lee (qere), escrita en el margen por los masoretas. */
+    readonly qere?: boolean;
+    /** Hebreo: un ketiv que se escribe y NO se lee (ketiv sin qere, Rut 3:12 אם). */
+    readonly sinQere?: boolean;
 }
 
 export interface StructureClause {
@@ -65,6 +69,40 @@ const versoDe = (r: string) => Number(r.split('!')[0]);
 /** Las palabras de un versículo, en orden (sin los ketiv: se lee el qere). */
 export function verseWords(ch: ChapterStructure, verse: number): StructureWord[] {
     return ch.words.filter(w => versoDe(w.r) === verse && !w.ketiv);
+}
+
+/**
+ * Una palabra que se lee distinta de como está escrita (revisión del
+ * profesor, 2026-11: en la BHS, Rut 2:1 מוֹדַע lleva el círculo que remite al
+ * margen, donde está el ketiv מידע). `ordinal` es la posición del QERE entre
+ * las palabras del versículo (`verseWords`); `ketiv` falta si se lee una
+ * palabra que no está escrita (qere sin ketiv, Rut 3:5 אֵלַי).
+ */
+export interface KetivQereFact {
+    readonly ordinal: number;
+    readonly qere: string;
+    readonly ketiv?: string;
+}
+
+/** El ketiv y el qere del versículo, desde OSHB (las palabras marcadas por el build). */
+export function ketivQereOfVerse(ch: ChapterStructure, verse: number): KetivQereFact[] {
+    const todas = ch.words.filter(w => versoDe(w.r) === verse);
+    const ordinal = new Map(verseWords(ch, verse).map((w, i) => [w.r, i]));
+    const out: KetivQereFact[] = [];
+    for (let i = 0; i < todas.length; i++) {
+        if (!todas[i]!.qere || todas[i - 1]?.qere) continue;
+        // El tramo de qere y el de ketiv justo antes (un ketiv o un qere de dos palabras, Job 38:1).
+        let fin = i;
+        while (todas[fin + 1]?.qere) fin++;
+        let ini = i;
+        while (todas[ini - 1]?.ketiv && !todas[ini - 1]!.sinQere) ini--;
+        const qere = todas.slice(i, fin + 1).map(w => w.t).join(' ');
+        const ketiv = todas.slice(ini, i).map(w => w.t).join(' ');
+        const o = ordinal.get(todas[i]!.r);
+        if (o !== undefined) out.push({ ordinal: o, qere, ...(ketiv ? { ketiv } : {}) });
+        i = fin;
+    }
+    return out;
 }
 
 export interface VerseClauseNode {

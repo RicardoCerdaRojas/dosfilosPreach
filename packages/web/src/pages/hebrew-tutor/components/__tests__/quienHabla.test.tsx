@@ -14,7 +14,7 @@ vi.mock('../../HebrewTutorProvider', () => ({ useHebrewTutor: () => ({}) }));
 vi.mock('../VerbDetectivePanel', () => ({ VerbDetectivePanel: () => null }));
 vi.mock('../NominalDetectivePanel', () => ({ NominalDetectivePanel: () => null }));
 const estado = vi.hoisted(() => ({
-    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[], participles: [] as unknown[], kis: [] as unknown[] },
+    estructura: { loading: false, unavailable: true, nodes: null, words: [] as unknown[], ordinal: new Map(), frontedByOrdinal: new Map(), speech: [] as unknown[], infinitives: [] as unknown[], participles: [] as unknown[], kis: [] as unknown[], ketivQere: [] as unknown[] },
 }));
 vi.mock('@/components/language-structure/useVerseStructure', () => ({
     useVerseStructure: () => estado.estructura,
@@ -72,6 +72,25 @@ describe('del dato a la ficha (revisión: el camino no tenía prueba)', () => {
         render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.1.16" /></TooltipProvider>);
         abrirFicha(0);
         expect(screen.getAllByTestId('speech-note')[0]!.textContent).toContain('verseAnalyzer.speech.verb {"speaker":"רוּת"}');
+    });
+});
+
+describe('ketiv y qere del dato a la página (revisión del profesor, Rut 2:1 מוֹדַע)', () => {
+    it('el círculo sobre la palabra en el versículo y el bloque en su ficha; nada en la vecina', () => {
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [], kis: [],
+            words: [{ r: '1!1', t: 'וּלְנָעֳמִי', l: 'c/l/5281', m: 'HC/R/Np', role: 'p' }, { r: '1!3', t: 'מוֹדַע', l: '4129', m: 'HNcmsa', role: 's' }],
+            ketivQere: [{ ordinal: 1, qere: 'מוֹדַע', ketiv: 'מידע' }],
+        };
+        const analisis = { reference: 'Rut 2:1', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
+            words: [
+                { hebrewText: 'וּלְנָעֳמִי', hebrewWord: 'וּלְנָעֳמִי', morphemes: [], category: 'NOUN', translation: 'y para Noemí' },
+                { hebrewText: 'מוֹדַע', hebrewWord: 'מוֹדַע', morphemes: [], category: 'NOUN', translation: 'un pariente' },
+            ] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.2.1" /></TooltipProvider>);
+        expect(screen.getAllByTestId('ketiv-qere-mark')).toHaveLength(1);
+        abrirFicha(1);
+        expect(screen.getByTestId('ficha-panel').textContent).toContain('מידע');
     });
 });
 
@@ -155,7 +174,7 @@ describe('R4: del dato a la tarjeta resumen y a la ficha', () => {
 
 describe('la ficha en el panel lateral', () => {
     it('tocar la palabra en el versículo abre su ficha; «siguiente» pasa a la otra sin cerrar', () => {
-        estado.estructura = { ...estado.estructura, unavailable: true, speech: [], infinitives: [], participles: [], kis: [] };
+        estado.estructura = { ...estado.estructura, unavailable: true, speech: [], infinitives: [], participles: [], kis: [], ketivQere: [] };
         const analisis = { reference: 'Rut 1:16', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [],
             words: [
                 { hebrewText: 'רוּת', hebrewWord: 'רוּת', morphemes: [], category: 'NOUN', translation: 'Rut' },

@@ -93,7 +93,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
   const [activeWordIndex, setActiveWordIndex] = React.useState<number | null>(null);
 
   // ── Estructura (G1 + G5): datos de MACULA, enlazados a las palabras del análisis ──
-  const { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, sinLectura } = useEstructuraHebrea(analysis, structureRef);
+  const { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sinLectura } = useEstructuraHebrea(analysis, structureRef);
   // H6: con formas corregidas según OSHB, la traducción literal es anterior a la corrección. La
   // fórmula de juramento no cuenta: su traducción la pone el código (H7), y en Rut 1:17 OSHB dice
   // imperfecto, así que esa «corrección» existe siempre, aun con la literal ya bien (prueba del fundador).
@@ -180,7 +180,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
   }, [analysis.words]);
 
   /** Los datos de la ficha de cada palabra (tooltip, tarjeta resumen y panel). */
-  const datosFicha = useDatosHebreo(analysis, { antepuestas, discurso, infinitivos, participios, kis }, handleInvestigate);
+  const datosFicha = useDatosHebreo(analysis, { antepuestas, discurso, infinitivos, participios, kis, ketivQere }, handleInvestigate);
 
   /** Prev/next words for contextual display in the detective hero card */
   const detectiveAdjacentWords = React.useMemo(() => {
@@ -399,6 +399,17 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
                       {isVerb && syntacticMark && (
                         <span className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${SYNTACTIC_DOT[syntacticMark]}`} />
                       )}
+                      {/* Ketiv y qere: el círculo de la BHS sobre la palabra (revisión del profesor, Rut 2:1) */}
+                      {ketivQere.has(i) && (
+                        <span
+                          className="absolute -top-1.5 left-1/2 -translate-x-1/2 font-sans text-base leading-none text-primary"
+                          title={t('verseAnalyzer.ficha.ketivQere.marker')}
+                          aria-label={t('verseAnalyzer.ficha.ketivQere.marker')}
+                          data-testid="ketiv-qere-mark"
+                        >
+                          °
+                        </span>
+                      )}
                       {/* Hebrew — dual rendering strategy */}
                       <span>{pintarPalabra(w)}</span>
                     {/* Per-word transliteration */}
@@ -414,7 +425,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
                     )}
                   </span>
                 </TooltipTrigger>
-                <WordTooltipContent word={w} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} infinitive={infinitivos.get(i)} participle={participios.get(i)} ki={kis.get(i)} />
+                <WordTooltipContent word={w} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} infinitive={infinitivos.get(i)} participle={participios.get(i)} ki={kis.get(i)} ketivQere={ketivQere.get(i)} />
               </Tooltip>
             );
           })}
@@ -561,7 +572,7 @@ export const VerseAnalysisResult: React.FC<VerseAnalysisResultProps> = ({
             toPageIndex: alinear,
             renderText: i => (analysis.words[i] ? pintarPalabra(analysis.words[i]!) : null),
             renderTooltip: i =>
-              analysis.words[i] ? <WordTooltipContent word={analysis.words[i]!} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} infinitive={infinitivos.get(i)} participle={participios.get(i)} ki={kis.get(i)} /> : null,
+              analysis.words[i] ? <WordTooltipContent word={analysis.words[i]!} side="bottom" fronted={antepuestas.get(i)} speech={discurso.get(i)} infinitive={infinitivos.get(i)} participle={participios.get(i)} ki={kis.get(i)} ketivQere={ketivQere.get(i)} /> : null,
             onSelect: handleHeaderWordClick,
             selected: activeWordIndex,
           }}

@@ -94,6 +94,38 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
         hay: (d) => !!d.word.lemmaGloss,
         Completo: function Lexico({ d }) { const { t } = useTranslation('hebrewTutor'); return <FichaFilas filas={[[t('verseAnalyzer.ficha.lexicon'), <strong className="font-semibold">{d.word.lemmaGloss}</strong>]]} />; },
     },
+    {
+        // Revisión del profesor (2026-11, Rut 2:1 מוֹדַע): en la BHS el círculo remite al margen,
+        // donde está el ketiv. Sale de OSHB: la palabra analizada es el qere.
+        id: 'he.ketivQere', dato: 'Ketiv y qere: lo escrito y lo que se lee', seccion: 'palabra', origen: 'datos', antes: [],
+        hay: (d) => !!d.ketivQere,
+        Completo: function KetivQere({ d }) {
+            const { t } = useTranslation('hebrewTutor');
+            const f = d.ketivQere!;
+            return (
+                <FichaCaja titulo={t('verseAnalyzer.ficha.ketivQere.title')}>
+                    {f.ketiv
+                        ? <FichaFilas filas={[[t('verseAnalyzer.ficha.ketivQere.written'), he(f.ketiv, 'text-lg')], [t('verseAnalyzer.ficha.ketivQere.read'), he(f.qere, 'text-lg')]]} />
+                        : null}
+                    <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">
+                        {t(f.ketiv ? 'verseAnalyzer.ficha.ketivQere.note' : 'verseAnalyzer.ficha.ketivQere.onlyQere')}
+                    </p>
+                </FichaCaja>
+            );
+        },
+        Corto: function KetivQereCorto({ d }) {
+            const { t } = useTranslation('hebrewTutor');
+            const f = d.ketivQere!;
+            return (
+                <p className="m-0 flex flex-wrap items-baseline gap-x-1.5 text-sm text-foreground">
+                    <span className="text-muted-foreground">°</span>
+                    {f.ketiv
+                        ? <>{t('verseAnalyzer.ficha.ketivQere.written')} {he(f.ketiv, 'text-base')}</>
+                        : t('verseAnalyzer.ficha.ketivQere.title')}
+                </p>
+            );
+        },
+    },
 
     // LA FORMA
     {

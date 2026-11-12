@@ -127,6 +127,14 @@
       "weakVerbClass": "Se clasifica como {{type}} en el sistema de raíces de Farfán.",
       "explanation": "Explicación del asistente",
       "investigate": "Investigar la palabra paso a paso",
+      "ketivQere": {
+        "title": "Ketiv y qere",
+        "written": "Escrito (ketiv)",
+        "read": "Se lee (qere)",
+        "note": "Los masoretas dejaron el texto escrito como estaba y anotaron en el margen cómo leerlo. En la BHS, un círculo (°) sobre la palabra remite a esa nota del margen. El análisis es de lo que se lee.",
+        "onlyQere": "Se lee sin estar escrita (qere sin ketiv): los masoretas indican leer esta palabra aunque no está en el texto consonántico.",
+        "marker": "Esta palabra se lee distinta de como está escrita (ketiv y qere)"
+      },
       "recognizedBy": {
         "bInf": "Lleva la preposición בְּ pegada: temporal («cuando»), causal o instrumental.",
         "kInf": "Lleva la preposición כְּ pegada: «en cuanto», «mientras» o comparación.",

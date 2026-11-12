@@ -168,6 +168,14 @@
       "weakVerbClass": "Classified as {{type}} in Farfán's root system.",
       "explanation": "Assistant's explanation",
       "investigate": "Investigate the word step by step",
+      "ketivQere": {
+        "title": "Ketiv and qere",
+        "written": "Written (ketiv)",
+        "read": "Read (qere)",
+        "note": "The Masoretes left the written text as it was and noted in the margin how to read it. In BHS, a small circle (°) over the word points to that marginal note. The analysis is of what is read.",
+        "onlyQere": "Read but not written (qere without ketiv): the Masoretes say to read this word although it is not in the consonantal text.",
+        "marker": "This word is read differently from how it is written (ketiv and qere)"
+      },
       "recognizedBy": {
         "bInf": "Has the preposition בְּ attached: temporal (“when”), causal or instrumental.",
         "kInf": "Has the preposition כְּ attached: “as soon as”, “while” or comparison.",

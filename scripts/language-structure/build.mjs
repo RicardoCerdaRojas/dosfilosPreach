@@ -211,7 +211,19 @@ async function griego(only, informe) {
 export function leerOshb(xml) {
     const out = new Map();
     for (const v of xml.matchAll(/<verse osisID="[^.]+\.(\d+)\.(\d+)">(.*?)<\/verse>/gs)) {
-        const ws = [...v[3].matchAll(/<w\s([^>]*)>(.*?)<\/w>/gs)].map(m => ({ ...attrs(m[1]), text: m[2].replace(/<[^>]+>/g, '') }));
+        // Revisión del profesor (2026-11): el tutor muestra el ketiv y su qere (Rut 2:1 מידע / מוֹדַע).
+        // Las palabras dentro de <rdg type="x-qere"> son QERE; un <rdg type="x-qere"/> vacío dice que
+        // el ketiv anterior se escribe y no se lee (ketiv sin qere, Rut 3:12 אם).
+        const ws = [];
+        let enQere = false;
+        for (const m of v[3].matchAll(/<w\s([^>]*)>(.*?)<\/w>|<rdg type="x-qere"\s*\/>|<rdg type="x-qere">|<\/rdg>/gs)) {
+            if (m[0].startsWith('<rdg') && m[0].endsWith('/>')) {
+                const ultima = ws[ws.length - 1];
+                if (ultima?.type === 'x-ketiv') ultima.sinQere = true;
+            } else if (m[0].startsWith('<rdg')) enQere = true;
+            else if (m[0] === '</rdg>') enQere = false;
+            else ws.push({ ...attrs(m[1]), text: m[2].replace(/<[^>]+>/g, ''), ...(enQere ? { qere: true } : {}) });
+        }
         out.set(`${v[1]}:${v[2]}`, ws);
     }
     return out;
@@ -263,6 +275,7 @@ async function hebreo(only, informe) {
                     words.push({
                         r: `${cv.split(':')[1]}!${i + 1}`, t: w.text.replace(/\//g, ''), l: w.lemma ?? '', m: w.morph ?? '',
                         role: principal?.role ?? '', ...(esKetiv ? { ketiv: true } : {}),
+                        ...(w.qere ? { qere: true } : {}), ...(w.sinQere ? { sinQere: true } : {}),
                         parts: ps.map(p => ({ t: p.text, m: p.morph, role: p.role })),
                     });
                 });

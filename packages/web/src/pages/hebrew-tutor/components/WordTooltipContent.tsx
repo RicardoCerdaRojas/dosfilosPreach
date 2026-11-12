@@ -9,7 +9,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TooltipContent } from '@/components/ui/tooltip';
-import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, WordAnalysis } from '@dosfilos/domain';
+import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, KetivQereFact, WordAnalysis } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaResumen } from '@/components/word-ficha/Ficha';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
@@ -27,9 +27,11 @@ interface WordTooltipContentProps {
   participle?: HebrewParticipleView;
   /** R4: la función de כִּי (Arnold y Choi §4.3.4). */
   ki?: HebrewKiView;
+  /** Ketiv y qere (revisión del profesor, 2026-11). */
+  ketivQere?: KetivQereFact;
 }
 
-export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({ word, side = 'bottom', fronted, speech, infinitive, participle, ki }) => {
+export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({ word, side = 'bottom', fronted, speech, infinitive, participle, ki, ketivQere }) => {
   const { t } = useTranslation('languageStructure');
   return (
     <TooltipContent
@@ -38,7 +40,7 @@ export const WordTooltipContent: React.FC<WordTooltipContentProps> = ({ word, si
       collisionPadding={16}
       className="z-50 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card p-0 text-card-foreground shadow-2xl [&>svg]:bg-card [&>svg]:fill-card"
     >
-      <FichaResumen registro={BLOQUES_HEBREO} d={{ word, fronted, speech, infinitive, participle, ki }} pie={t('wordFicha.openFicha')} />
+      <FichaResumen registro={BLOQUES_HEBREO} d={{ word, fronted, speech, infinitive, participle, ki, ketivQere }} pie={t('wordFicha.openFicha')} />
     </TooltipContent>
   );
 };

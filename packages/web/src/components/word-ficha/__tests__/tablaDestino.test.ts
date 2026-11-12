@@ -19,6 +19,11 @@ describe('tabla de destino de la ficha de palabra', () => {
         expect(readFileSync(DOC, 'utf8')).toBe(generada);
     });
     it('cada bloque dice dónde estaba antes, salvo los nuevos del rediseño', () => {
-        for (const f of [...filasDestino('he', BLOQUES_HEBREO), ...filasDestino('gr', BLOQUES_GRIEGO)]) expect(f.antes.length, f.id).toBeGreaterThan(0);
+        // Datos que no existían antes del rediseño, con la revisión que los pidió.
+        const NUEVOS = new Set(['he.ketivQere' /* revisión del profesor, 2026-11, Rut 2:1 */]);
+        for (const f of [...filasDestino('he', BLOQUES_HEBREO), ...filasDestino('gr', BLOQUES_GRIEGO)]) {
+            if (NUEVOS.has(f.id)) expect(f.antes, f.id).toEqual([]);
+            else expect(f.antes.length, f.id).toBeGreaterThan(0);
+        }
     });
 });

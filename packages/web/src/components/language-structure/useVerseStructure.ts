@@ -9,6 +9,8 @@ import {
     hebrewInfinitiveCandidates,
     hebrewParticipleCandidates,
     hebrewKiCandidates,
+    ketivQereOfVerse,
+    type KetivQereFact,
     type HebrewInfinitiveCandidate,
     type HebrewParticipleCandidate,
     type HebrewKiCandidate,
@@ -51,6 +53,8 @@ export interface VerseStructureState {
     infinitives: readonly HebrewInfinitiveCandidate[];
     participles: readonly HebrewParticipleCandidate[];
     kis: readonly HebrewKiCandidate[];
+    /** Sólo hebreo: lo que se lee distinto de como está escrito (ketiv y qere, Rut 2:1). */
+    ketivQere: readonly KetivQereFact[];
 }
 
 /**
@@ -96,7 +100,8 @@ export function useVerseStructure(
         const infinitives = actual?.chapter && lang === 'he' ? hebrewInfinitiveCandidates(actual.chapter, verse) : [];
         const participles = actual?.chapter && lang === 'he' ? hebrewParticipleCandidates(actual.chapter, verse) : [];
         const kis = actual?.chapter && lang === 'he' ? hebrewKiCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis };
+        const ketivQere = actual?.chapter && lang === 'he' ? ketivQereOfVerse(actual.chapter, verse) : [];
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere };
     }, [actual, key, verse, lang]);
 }
 

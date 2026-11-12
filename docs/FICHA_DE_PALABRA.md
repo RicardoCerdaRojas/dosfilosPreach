@@ -5,7 +5,7 @@
 
 Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, en qué sección queda, si entra en el resumen (tooltip y tarjeta) y de dónde sale.
 
-## Hebreo (21 bloques)
+## Hebreo (22 bloques)
 
 | # | Bloque | Dato | Antes | Sección | Resumen | De dónde sale |
 |---|---|---|---|---|---|---|
@@ -17,19 +17,20 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 6 | `he.traduccion` | Traducción en contexto (con respaldo: glosa, raíz…) | tarjeta, tooltip, panel | Encabezado | sí | asistente |
 | 7 | `he.raiz` | Raíz, su transliteración y su significado | tarjeta, tooltip | La palabra | sí | asistente |
 | 8 | `he.lexico` | Léxico (glosa) | tarjeta, tooltip | La palabra | — | asistente |
-| 9 | `he.celdas` | Binyan, forma, tipo de raíz, persona, género, número, estado y valor temporal | tarjeta, tooltip | La forma | sí | asistente |
-| 10 | `he.correccionesOshb` | Correcciones de OSHB (cada diferencia) | tooltip | La forma | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 11 | `he.pistas` | Cómo se reconoce: la forma (pistas) | tarjeta, tooltip, panel | La forma | — | asistente |
-| 12 | `he.morfemas` | Morfemas, uno por uno (dagesh forte ◌ּ), y la guía de colores | tarjeta, tooltip, panel | La forma | — | asistente |
-| 13 | `he.detectiveVerbo` | Detective del verbo (fuerte o débil) y su clasificación en Farfán | panel | La forma | — | asistente |
-| 14 | `he.funcionInfinitivo` | Función del infinitivo | tarjeta, tooltip | Su función | sí | regla + asistente |
-| 15 | `he.funcionParticipio` | Función del participio | tarjeta, tooltip | Su función | sí | regla + asistente |
-| 16 | `he.funcionKi` | Función de כִּי | tarjeta, tooltip | Su función | sí | regla + asistente |
-| 17 | `he.funcionSintactica` | Función sintáctica (texto del asistente) | tarjeta, tooltip, panel | Su función | sí | asistente |
-| 18 | `he.quienHabla` | Quién habla y a quién | tarjeta, tooltip | En el contexto | — | regla |
-| 19 | `he.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 20 | `he.explicacion` | Explicación pedagógica (con su formato) | tarjeta, panel | Para estudiar | — | asistente |
-| 21 | `he.investigar` | Investigar la palabra paso a paso (detective) | tarjeta | Acciones | — | — |
+| 9 | `he.ketivQere` | Ketiv y qere: lo escrito y lo que se lee |  | La palabra | sí | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 10 | `he.celdas` | Binyan, forma, tipo de raíz, persona, género, número, estado y valor temporal | tarjeta, tooltip | La forma | sí | asistente |
+| 11 | `he.correccionesOshb` | Correcciones de OSHB (cada diferencia) | tooltip | La forma | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 12 | `he.pistas` | Cómo se reconoce: la forma (pistas) | tarjeta, tooltip, panel | La forma | — | asistente |
+| 13 | `he.morfemas` | Morfemas, uno por uno (dagesh forte ◌ּ), y la guía de colores | tarjeta, tooltip, panel | La forma | — | asistente |
+| 14 | `he.detectiveVerbo` | Detective del verbo (fuerte o débil) y su clasificación en Farfán | panel | La forma | — | asistente |
+| 15 | `he.funcionInfinitivo` | Función del infinitivo | tarjeta, tooltip | Su función | sí | regla + asistente |
+| 16 | `he.funcionParticipio` | Función del participio | tarjeta, tooltip | Su función | sí | regla + asistente |
+| 17 | `he.funcionKi` | Función de כִּי | tarjeta, tooltip | Su función | sí | regla + asistente |
+| 18 | `he.funcionSintactica` | Función sintáctica (texto del asistente) | tarjeta, tooltip, panel | Su función | sí | asistente |
+| 19 | `he.quienHabla` | Quién habla y a quién | tarjeta, tooltip | En el contexto | — | regla |
+| 20 | `he.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 21 | `he.explicacion` | Explicación pedagógica (con su formato) | tarjeta, panel | Para estudiar | — | asistente |
+| 22 | `he.investigar` | Investigar la palabra paso a paso (detective) | tarjeta | Acciones | — | — |
 
 ## Griego (23 bloques)
 

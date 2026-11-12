@@ -60,6 +60,7 @@ const DATOS = {
     infinitive: { candidate: INF, fn: 'genitive' as const, by: 'rule' as const, phraseReading: 'temporalAsSoonAs' as const },
     speech: { ordinal: 9, text: 'אֲכָלְךָ', kind: 'verb' as const, speaker: 'HABLANTE-יְהוָה', speakerOrdinals: [1] },
     fronted: { role: 'adv' as const, fronting: 'focus' as never },
+    ketivQere: { ordinal: 9, qere: 'אֲכָלְךָ', ketiv: 'KETIV-אכלך' },
     onInvestigate: vi.fn(),
 };
 
@@ -204,6 +205,19 @@ describe('Ficha hebrea — lo que la revisión encontró perdido', () => {
     const ficha = (word: object, extra: object = {}) => render(<FichaCompleta registro={BLOQUES_HEBREO} d={{ word: { ...PALABRA, ...word } as WordAnalysis, ...extra }} />).container;
     it('sin traducción, la glosa (la cadena de respaldo del tooltip de antes)', () => {
         expect(ficha({ translation: '' }).textContent).toContain('«LEXICO comer»');
+    });
+    it('ketiv y qere (revisión del profesor, Rut 2:1): lo escrito y lo que se lee, en la ficha y en el tooltip', () => {
+        const ketivQere = { ordinal: 1, qere: 'מוֹדַע', ketiv: 'מידע' };
+        const c = ficha({}, { ketivQere }).textContent!;
+        for (const v of ['verseAnalyzer.ficha.ketivQere.title', 'verseAnalyzer.ficha.ketivQere.written', 'מידע', 'verseAnalyzer.ficha.ketivQere.read', 'מוֹדַע', 'verseAnalyzer.ficha.ketivQere.note']) expect(c, v).toContain(v);
+        const corto = render(<FichaResumen registro={BLOQUES_HEBREO} d={{ word: PALABRA, ketivQere }} />).container.textContent!;
+        expect(corto).toContain('מידע');
+        // Qere sin ketiv (Rut 3:5 אֵלַי): no hay «escrito»; se dice que se lee sin estar escrita.
+        const sinKetiv = ficha({}, { ketivQere: { ordinal: 5, qere: 'אֵלַי' } }).textContent!;
+        expect(sinKetiv).toContain('verseAnalyzer.ficha.ketivQere.onlyQere');
+        expect(sinKetiv).not.toContain('verseAnalyzer.ficha.ketivQere.written');
+        // Sin ketiv ni qere, nada.
+        expect(ficha({}).textContent).not.toContain('verseAnalyzer.ficha.ketivQere.title');
     });
     it('«Apertura» en וַיְהִי', () => {
         const vh = { ...PALABRA.verbMorphology!, verbForm: 'WAYYIQTOL' as never };

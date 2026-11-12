@@ -8,6 +8,16 @@ describe('lectura de OSHB', () => {
         const ws = leerOshb(xml).get('6:4');
         expect(ws.map(w => w.text)).toEqual(['שְׁמַ֖ע', 'יִשְׂרָאֵ֑ל']);
     });
+    it('ketiv con su qere, ketiv sin qere y qere sin ketiv (Rut 2:1, 3:12, 3:5; revisión del profesor, 2026-11)', () => {
+        const xml = '<verse osisID="Ruth.2.1"><w lemma="c/l/5281" morph="HC/R/Np">וּ/לְ/נָעֳמִ֞י</w> <w type="x-ketiv" lemma="3045" morph="HVPsmsa">מידע</w><note type="variant"><catchWord>מידע</catchWord><rdg type="x-qere"><w lemma="4129" morph="HNcmsa">מוֹדַ֣ע</w></rdg></note> <w lemma="l/376" morph="HR/Ncmsc/Sp3fs">לְ/אִישָׁ֗/הּ</w></verse>'
+            + '<verse osisID="Ruth.3.12"><w lemma="3588 a" morph="HC">כִּ֥י</w> <w type="x-ketiv" lemma="518 a" morph="HC">אם</w><note type="variant"><catchWord>אם</catchWord><rdg type="x-qere"/></note> <w lemma="1350 a" morph="HVqrmsa">גֹאֵ֖ל</w></verse>'
+            + '<verse osisID="Ruth.3.5"><w lemma="559" morph="HVqi2fs">תֹּאמְרִ֥י</w> <note type="variant"><rdg type="x-qere"><w lemma="413" morph="HR/Sp1cs">אֵלַ֖/י</w></rdg></note> <w lemma="6213 a" morph="HVqi1cs">אֶֽעֱשֶֽׂה</w></verse>';
+        const o = leerOshb(xml);
+        const marcas = (k) => o.get(k).map(w => [w.text, w.type === 'x-ketiv' ? 'K' : '', w.qere ? 'Q' : '', w.sinQere ? 'sinQ' : ''].filter(Boolean).join(' '));
+        expect(marcas('2:1')).toEqual(['וּ/לְ/נָעֳמִ֞י', 'מידע K', 'מוֹדַ֣ע Q', 'לְ/אִישָׁ֗/הּ']);
+        expect(marcas('3:12')).toEqual(['כִּ֥י', 'אם K sinQ', 'גֹאֵ֖ל']);
+        expect(marcas('3:5')).toEqual(['תֹּאמְרִ֥י', 'אֵלַ֖/י Q', 'אֶֽעֱשֶֽׂה']);
+    });
 });
 
 describe('texto griego', () => {
