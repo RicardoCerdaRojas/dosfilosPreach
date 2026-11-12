@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
-import type { WordAnalysis } from '@dosfilos/domain';
+import { STRUCTURE_RULE_SOURCES, type WordAnalysis } from '@dosfilos/domain';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
@@ -160,6 +160,32 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
     { id: 'he.funcionInfinitivo', dato: 'Función del infinitivo', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.infinitive, Completo: InfinitivoCompleto, Corto: InfinitivoCorto },
     { id: 'he.funcionParticipio', dato: 'Función del participio', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.participle, Completo: ParticipioCompleto, Corto: ParticipioCorto },
     { id: 'he.funcionKi', dato: 'Función de כִּי', seccion: 'funcion', origen: 'mixto', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.ki, Completo: KiCompleto, Corto: KiCorto },
+    {
+        // Revisión del profesor (2026-11, Rut 2:1): «waw + no verbo introduce una cláusula disyuntiva,
+        // pero no necesariamente contrastiva». La regla la dice el dato; el valor, el asistente.
+        id: 'he.wawDisyuntiva', dato: 'Waw disyuntiva (waw + no verbo) y su valor', seccion: 'funcion', origen: 'mixto', antes: [],
+        hay: (d) => !!d.disjunctive,
+        Completo: function WawDisyuntiva({ d }) {
+            const { t } = useTranslation('languageStructure');
+            const r = d.disjunctive!.resolved;
+            return (
+                <FichaFuncion
+                    titulo={t('relations.disjunctive')}
+                    {...(r ? { nombre: t(`resolved.${r}`) } : {})}
+                    origen={r ? 'eleccion' : 'regla'}
+                    reconoce={t('notes.disjunctive')}
+                    {...(r ? {} : { texto: t('disjunctiveNoValue') })}
+                    fuentes={STRUCTURE_RULE_SOURCES.disjunctive}
+                    testId="waw-disyuntiva"
+                />
+            );
+        },
+        Corto: function WawDisyuntivaCorta({ d }) {
+            const { t } = useTranslation('languageStructure');
+            const r = d.disjunctive!.resolved;
+            return <p className="m-0 font-medium text-foreground/85">{t('relations.disjunctive')}{r ? ` · ${t(`resolved.${r}`)}` : ''}</p>;
+        },
+    },
     {
         // Sin regla para esta palabra, la función la da el asistente (con regla, va dentro de su bloque).
         id: 'he.funcionSintactica', dato: 'Función sintáctica (texto del asistente)', seccion: 'funcion', origen: 'asistente', antes: ['tarjeta', 'tooltip', 'panel'],

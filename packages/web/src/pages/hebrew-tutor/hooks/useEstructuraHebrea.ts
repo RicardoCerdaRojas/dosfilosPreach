@@ -1,5 +1,5 @@
 import React from 'react';
-import { applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, type HebrewSuffix, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, readingFor, type HebrewSuffix, type ResolvedRelation, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
@@ -61,13 +61,17 @@ export function useEstructuraHebrea(
     }, [estructura, alinear, analysis.words]);
     /**
      * Por qué no hay lectura: un análisis anterior a v3 («stale») o uno nuevo en
-     * el que el asistente no la devolvió o no pasó la validación («empty»). Se
-     * dice y se ofrece re-analizar (la traducción corregida se conserva).
+     * el que el asistente no la devolvió o no pasó la validación («empty»). Un
+     * v3 SÍ tiene lectura, pero su waw disyuntiva salía «pero» por defecto
+     * («staleWaw», revisión del profesor 2026-11). Se dice y se ofrece re-analizar
+     * (la traducción corregida se conserva).
      */
-    const sinLectura: 'stale' | 'empty' | null =
-        (analysis.promptVersion ?? 1) < HEBREW_ANALYSIS_PROMPT_VERSION ? 'stale'
-            : !analysis.clauseReadings?.length && (estructura.nodes?.length ?? 0) > 0 ? 'empty'
-                : null;
+    const version = analysis.promptVersion ?? 1;
+    const sinLectura: 'stale' | 'staleWaw' | 'empty' | null =
+        version < 3 ? 'stale'
+            : version < HEBREW_ANALYSIS_PROMPT_VERSION ? 'staleWaw'
+                : !analysis.clauseReadings?.length && (estructura.nodes?.length ?? 0) > 0 ? 'empty'
+                    : null;
     /**
      * R4 — índice del análisis → la función del infinitivo: la regla (medida)
      * propone; la elección del asistente vale si está en su lista y, si no, se
@@ -130,7 +134,25 @@ export function useEstructuraHebrea(
         });
         return m;
     }, [estructura, alinear]);
-    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, sinLectura };
+    /**
+     * Índice del análisis → la waw disyuntiva que abre su cláusula y el valor que eligió el
+     * asistente (revisión del profesor, Rut 2:1: «waw + no verbo → disyuntiva, no
+     * necesariamente contrastiva»). La ficha de esa palabra lo dice.
+     */
+    const disyuntivas = React.useMemo(() => {
+        const m = new Map<number, { resolved?: ResolvedRelation }>();
+        const indice = alinear(estructura.words);
+        for (const n of estructura.nodes ?? []) {
+            if (n.relation !== 'disjunctive' || !n.connector) continue;
+            const o = estructura.ordinal.get(n.connector);
+            const i = o === undefined ? undefined : indice[o];
+            if (i === undefined) continue;
+            const resolved = readingFor(n, analysis.clauseReadings)?.resolved;
+            m.set(i, resolved ? { resolved } : {});
+        }
+        return m;
+    }, [estructura, alinear, analysis.clauseReadings]);
+    return { estructura, alinear, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, sinLectura };
 }
 
 /**

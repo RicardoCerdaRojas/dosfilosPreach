@@ -735,9 +735,15 @@ modal, o habitual; el wayyiqtol tiene valor de pasado narrativo.
 objeto o un adverbio y DESPUÉS el verbo (o no hay verbo), la cláusula interrumpe la
 secuencia. Según el contexto expresa:
 - **contraste**: «Orpá besó a su suegra, **pero** Rut se quedó con ella» (Rut 1:14);
-- **circunstancia** simultánea o de fondo: «**mientras** …», «estando …»;
-- **paréntesis** o información de trasfondo para el lector;
-- **comienzo** de una nueva escena.
+- **circunstancia** simultánea o de fondo: «¿por qué hallé gracia… **siendo yo** extranjera?» (Rut 2:10);
+- **causa**: «**porque** el SEÑOR ha dado testimonio contra mí» (una lectura de Rut 1:21);
+- **concesión**: «**aunque** yo no soy como una de tus siervas» (Rut 2:13);
+- **paréntesis** o información de trasfondo para el lector: «**Y** Noemí tenía un pariente…» (Rut 2:1);
+- **comienzo** de una nueva escena, o **cierre** que resume un episodio: «**y** ellas llegaron a Belén…» (Rut 1:22).
+
+Disyuntiva NO quiere decir contrastiva: la waw corta la cadena del wayyiqtol, y el
+valor lo da el contexto (Putnam §3.2.2). Traducir «pero» por defecto inventa una
+oposición que el texto no tiene.
 
 **Asíndeton** (sin conjunción): una cláusula que entra sin waw ni partícula. Marca
 énfasis, clímax, explicación o enumeración solemne: «tu pueblo, mi pueblo; y tu Dios,

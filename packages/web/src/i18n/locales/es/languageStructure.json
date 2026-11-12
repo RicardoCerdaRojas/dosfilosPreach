@@ -6,6 +6,7 @@
   "noClauses": "Este versículo no tiene palabras en los datos sintácticos.",
   "protasis": "Prótasis",
   "apodosis": "Apódosis",
+  "disjunctiveNoValue": "El valor (contraste, circunstancia, causa, concesión…) lo elige el asistente al analizar el versículo; si no aparece, re-analízalo.",
   "verbless": "Nominal (sin verbo)",
   "verblessNote": "Sin verbo finito: la cópula («es», «será») se sobreentiende, y lo que se dice del sujeto es el predicado (Pred).",
   "fronted": "Antepuesto al verbo: {{roles}}.",
@@ -70,7 +71,7 @@
     "negativePurpose": "«Para que no».",
     "chain": "El wayyiqtol hace avanzar la narración.",
     "conjunctive": "La waw se une a un verbo: sigue la línea de lo anterior.",
-    "disjunctive": "La waw va antes de algo que no es verbo y corta la cadena: contraste, circunstancia o cambio de tema.",
+    "disjunctive": "La waw va antes de algo que no es verbo y corta la cadena del wayyiqtol. No es necesariamente contraste: puede ser circunstancia, causa, concesión, paréntesis, apertura o cierre; lo decide el contexto.",
     "asyndetic": "Sin conjunción: la relación con lo anterior queda implícita.",
     "speech": "Empieza lo que se dice, después de «dijo».",
     "question": "εἰ interrogativo: «si…», no una condición.",
@@ -99,7 +100,13 @@
     "purpose": "Propósito",
     "result": "Resultado",
     "ground": "Causa",
-    "content": "Contenido"
+    "content": "Contenido",
+    "contrast": "Contraste («pero»)",
+    "circumstantial": "Circunstancial («siendo…», «mientras…»)",
+    "concessive": "Concesiva («aunque»)",
+    "background": "Paréntesis o fondo («y»)",
+    "opening": "Abre una escena",
+    "closing": "Cierra o resume («y»)"
   },
   "resolvedNote": "El texto deja abierto «{{open}}»; el asistente lo lee como {{choice}}.",
   "fronting": {
@@ -111,6 +118,7 @@
   "readingMissing": {
     "generate": "Genera el análisis para ver la lectura de cada cláusula.",
     "stale": "Este análisis se generó antes de la lectura de cláusulas. Re-analiza el versículo para verla.",
+    "staleWaw": "Este análisis es anterior a los valores de la waw disyuntiva: la traducía «pero» por defecto. Re-analiza el versículo para actualizar la lectura y las traducciones (tu traducción corregida se conserva).",
     "reanalyze": "Re-analizar",
     "generateButton": "Generar análisis",
     "empty": "El asistente no devolvió la lectura de las cláusulas en este análisis. Re-analiza el versículo para pedirla."

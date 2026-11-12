@@ -130,14 +130,19 @@ CRITICAL RULES:
 /**
  * Con estructura, la sección de cláusulas pasa de «pártelas» a «léelas». Las
  * pautas de la waw siguen valiendo para la TRADUCCIÓN: la relación ya viene
- * decidida por el dato y el asistente la usa (disyuntiva de contraste → «pero»).
+ * decidida por el dato y el asistente elige su VALOR. Revisión del profesor
+ * (2026-11): decía «disyuntiva de contraste → «pero»» y toda waw + no verbo
+ * salía contraste (Rut 1:21, 1:22, 2:10, 2:13); el profesor: disyuntiva no es
+ * necesariamente contrastiva (Putnam §3.2.2).
  */
 const SECCION_LECTURA = (tarea: string) => `## CLÁUSULAS: LA ESTRUCTURA YA ESTÁ DECIDIDA (campo "clauseReadings")
 
 Las cláusulas de este versículo, su dependencia y su conexión vienen del texto
 (MACULA). NO devuelvas el campo "clauses". La traducción y la función de cada
-palabra deben ser coherentes con esas conexiones: waw disyuntiva de contraste →
-«pero», no «y»; asíndeton → sin «y» agregada; wayyiqtol → secuencia narrativa.
+palabra deben ser coherentes con esas conexiones: la waw disyuntiva se traduce
+según el VALOR que elijas para su cláusula (contraste → «pero»; circunstancial →
+«siendo…», «mientras…»; concesiva → «aunque»; fondo o cierre → «y»), nunca
+«pero» por defecto; asíndeton → sin «y» agregada; wayyiqtol → secuencia narrativa.
 Las "exegeticalNotes" y la función de cada palabra usan los MISMOS nombres de
 relación que la lista de abajo: si una cláusula es «waw + no verbo (disyuntiva)»,
 no la llames «conjuntiva» en ninguna parte.
@@ -410,11 +415,13 @@ Mira la PRIMERA palabra de la cláusula:
 - וַ + prefijo (wayyiqtol) → WAYYIQTOL_CHAIN: sigue la cadena narrativa.
 - וְ + VERBO (incluido el weqatal) → WAW_CONJUNCTIVE: coordinación simple, «y».
 - וְ + NO VERBO (sujeto, objeto, adverbio, pronombre adelante) → WAW_DISJUNCTIVE:
-  la cláusula ROMPE la cadena. Su valor suele ser contraste («pero»),
-  circunstancia («mientras»), información de fondo o paréntesis («ahora bien»).
-  Ej. Rut 1:14 וַתִּשַּׁק עָרְפָּה לַחֲמוֹתָהּ | וְרוּת דָּבְקָה בָּהּ
-  → la segunda es disyuntiva de CONTRASTE: «pero Rut se quedó con ella».
-  NO la traduzcas con «y»; NO digas que el sujeto está «coordinado» con la anterior.
+  la cláusula ROMPE la cadena, pero NO siempre contrasta. Su valor puede ser
+  contraste («pero»), circunstancia («siendo…», «mientras…»), causa («porque»),
+  concesión («aunque»), paréntesis o fondo («y»), apertura o cierre de escena («y»).
+  Ej. Rut 1:14 וַתִּשַּׁק עָרְפָּה לַחֲמוֹתָהּ | וְרוּת דָּבְקָה בָּהּ → CONTRASTE: «pero Rut se quedó con ella».
+  Ej. Rut 2:10 … וְאָנֹכִי נָכְרִיָּה → CIRCUNSTANCIAL: «siendo yo extranjera».
+  Ej. Rut 1:22 … וְהֵמָּה בָּאוּ בֵּית לֶחֶם → CIERRE del episodio: «y ellas llegaron a Belén».
+  NO digas que el sujeto está «coordinado» con la anterior.
 - Sin conjunción → ASYNDETIC (asíndeton). Suele marcar clímax, declaración solemne,
   explicación o enumeración. Ej. Rut 1:16 … | עַמֵּךְ עַמִּי | וֵאלֹהַיִךְ אֱלֹהָי
   → «tu pueblo, mi pueblo» es una cláusula NOMINAL ASINDÉTICA (declaración solemne);
@@ -425,7 +432,7 @@ Mira la PRIMERA palabra de la cláusula:
 - La primera cláusula del versículo sin conector que analizar → FIRST.
 
 La función sintáctica de cada palabra y las traducciones deben ser coherentes con
-estas conexiones (disyuntiva de contraste → «pero»; asíndeton → sin «y» agregada).`}
+estas conexiones (la disyuntiva, según su valor; asíndeton → sin «y» agregada).`}
 
 ## REGLA DE TRADUCCIÓN PARA WAYYIQTOL (Pasado narrativo secuencial)
 

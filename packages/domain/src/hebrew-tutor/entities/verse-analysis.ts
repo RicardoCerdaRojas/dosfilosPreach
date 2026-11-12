@@ -203,8 +203,11 @@ export interface LexicalNote {
  *   1 — sin versión (todo lo anterior a la fase de módulos de idioma).
  *   2 — OSHB como autoridad, cláusulas, volitivos y fórmula de juramento.
  *   3 — la estructura sale de MACULA; el asistente LEE cada fila (`clauseReadings`).
+ *   4 — la waw disyuntiva elige su valor de una lista (contraste, circunstancial,
+ *       causal, concesiva, fondo, apertura, cierre) y la traducción lo sigue; ya no
+ *       es «pero» por defecto (revisión del profesor, 2026-11, Rut 1:21-2:13).
  */
-export const HEBREW_ANALYSIS_PROMPT_VERSION = 3;
+export const HEBREW_ANALYSIS_PROMPT_VERSION = 4;
 
 // ── Clauses ───────────────────────────────────────────────────────────────────
 

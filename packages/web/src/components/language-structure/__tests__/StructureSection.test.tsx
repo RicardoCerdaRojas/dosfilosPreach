@@ -168,6 +168,13 @@ describe('la lectura del asistente en cada fila (G1 + G5, opción b)', () => {
         expect(fila.textContent).not.toContain('frontedNote');
     });
 
+    it('waw disyuntiva: conserva su nombre y suma el valor elegido (revisión del profesor, Rut 2:10 «siendo yo»)', () => {
+        const rut = verseStructure(cargar('he/Ruth/2.json'), 10);
+        const disy = rut.find(n => n.relation === 'disjunctive')!;
+        render(<StructureFlow lang="he" nodes={rut} readings={[{ index: disy.index, anchor: disy.words[0]!.r, value: 'circunstancia', explanation: 'x', resolved: 'circumstantial' }]} />);
+        expect(screen.getByText('relations.disjunctive · resolved.circumstantial')).toBeInTheDocument();
+    });
+
     it('una lectura anclada a otra primera palabra no se muestra', () => {
         render(<StructureFlow lang="gr" nodes={jn316} readings={[{ index: ina.index, anchor: 'otra', value: 'x', explanation: 'y' }]} />);
         expect(screen.queryAllByTestId('clause-reading')).toHaveLength(0);

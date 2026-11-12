@@ -61,6 +61,7 @@ const DATOS = {
     speech: { ordinal: 9, text: 'אֲכָלְךָ', kind: 'verb' as const, speaker: 'HABLANTE-יְהוָה', speakerOrdinals: [1] },
     fronted: { role: 'adv' as const, fronting: 'focus' as never },
     ketivQere: { ordinal: 9, qere: 'אֲכָלְךָ', ketiv: 'KETIV-אכלך' },
+    disjunctive: { resolved: 'circumstantial' as const },
     onInvestigate: vi.fn(),
 };
 
@@ -227,6 +228,15 @@ describe('Ficha hebrea — lo que la revisión encontró perdido', () => {
         const corto = render(<FichaResumen registro={BLOQUES_HEBREO} d={{ word: PALABRA, suffix }} />).container.textContent!;
         expect(corto).toContain('verseAnalyzer.ficha.suffix.short');
         expect(ficha({}).textContent).not.toContain('verseAnalyzer.ficha.cells.suffix');
+    });
+    it('waw disyuntiva (revisión del profesor, Rut 2:1 y 2:10): la regla siempre; el valor si el asistente lo eligió', () => {
+        const con = ficha({}, { disjunctive: { resolved: 'circumstantial' } }).textContent!;
+        for (const v of ['relations.disjunctive', 'resolved.circumstantial', 'notes.disjunctive']) expect(con, v).toContain(v);
+        const sin = ficha({}, { disjunctive: {} }).textContent!;
+        expect(sin).toContain('disjunctiveNoValue');
+        expect(sin).not.toContain('resolved.');
+        const corto = render(<FichaResumen registro={BLOQUES_HEBREO} d={{ word: PALABRA, disjunctive: { resolved: 'concessive' } }} />).container.textContent!;
+        expect(corto).toContain('relations.disjunctive · resolved.concessive');
     });
     it('«Apertura» en וַיְהִי', () => {
         const vh = { ...PALABRA.verbMorphology!, verbForm: 'WAYYIQTOL' as never };

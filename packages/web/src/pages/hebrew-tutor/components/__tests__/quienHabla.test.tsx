@@ -109,6 +109,23 @@ describe('el sufijo pronominal del dato a la página (revisión del profesor, Ru
     });
 });
 
+describe('la waw disyuntiva y su valor, de la lectura a la ficha (revisión del profesor, Rut 2:10)', () => {
+    it('la ficha de וְאָנֹכִי dice «waw disyuntiva» y el valor que eligió el asistente', () => {
+        const w = { r: '10!13', t: 'וְאָנֹכִי', l: 'c/595', m: 'HC/Pp1cs', role: 's' };
+        estado.estructura = {
+            ...estado.estructura, unavailable: false, speech: [], infinitives: [], participles: [], kis: [], ketivQere: [],
+            words: [w], ordinal: new Map([[w.r, 0]]),
+            nodes: [{ index: 7, depth: 0, words: [{ r: w.r, t: w.t, role: 's' }], connector: w.r, relation: 'disjunctive', isApodosis: false, verbless: true, fronted: [] }] as never,
+        };
+        const analisis = { reference: 'Rut 2:10', hebrewText: '', literalTranslation: '', fluidTranslation: '', verbTable: [], exegeticalNotes: [], promptVersion: 4,
+            clauseReadings: [{ index: 7, anchor: w.r, value: 'circunstancia', explanation: 'x', resolved: 'circumstantial' }],
+            words: [{ hebrewText: 'וְאָנֹכִי', hebrewWord: 'וְאָנֹכִי', morphemes: [], category: 'PRONOUN', translation: 'siendo yo' }] };
+        render(<TooltipProvider><VerseAnalysisResult analysis={analisis as never} verseReference="Ruth.2.10" /></TooltipProvider>);
+        abrirFicha(0);
+        expect(screen.getByTestId('ficha-panel').textContent).toContain('resolved.circumstantial');
+    });
+});
+
 describe('el hablante con su nombre en español (prueba del fundador: «Habla רוּת» en medio de la frase)', () => {
     it('toma la traducción de la palabra del hablante en el análisis: «Rut»', () => {
         estado.estructura = {

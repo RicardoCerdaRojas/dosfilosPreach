@@ -18,7 +18,11 @@ import type { ClauseRelation, ConstituentRole, StructureNode } from './verseStru
  * piden comparar; lo que se puede comprobar, se comprueba aquí.
  */
 
-export type ResolvedRelation = 'purpose' | 'result' | 'ground' | 'content';
+export type ResolvedRelation =
+    | 'purpose' | 'result' | 'ground' | 'content'
+    // Waw disyuntiva (revisión del profesor, 2026-11): corta la cadena, pero NO siempre contrasta.
+    // Putnam §3.2.2 (parentética inicial, medial o terminal; adversativa), A&C 4.3.3 (a) y (e).
+    | 'contrast' | 'circumstantial' | 'concessive' | 'background' | 'opening' | 'closing';
 export type FrontingFunction = 'focus' | 'frame';
 
 export interface ClauseReading {
@@ -36,6 +40,8 @@ export interface ClauseReading {
 const OPCIONES: Partial<Record<ClauseRelation, readonly ResolvedRelation[]>> = {
     purposeOrResult: ['purpose', 'result'],
     groundOrContent: ['ground', 'content'],
+    // Rut 1:14 contraste; 1:21 circunstancial o causal; 1:22 cierre; 2:1 fondo; 2:10 circunstancial; 2:13 concesiva.
+    disjunctive: ['contrast', 'circumstantial', 'ground', 'concessive', 'background', 'opening', 'closing'],
 };
 
 const RELACION_ES: Record<ClauseRelation, string> = {
@@ -87,7 +93,16 @@ cambies ni la discutas; léela. Por cada cláusula numerada abajo devuelve:
 - "resolved": SÓLO donde la cláusula dice ELEGIR "resolved". «purpose»
   (propósito: lo que se busca) o «result» (resultado: lo que se sigue); «ground»
   (causa: «porque») o «content» (contenido: «que», lo dicho o sabido). En las
-  demás, omítelo;
+  demás, omítelo.
+  En una waw + no verbo (disyuntiva) la waw CORTA la cadena, pero NO siempre
+  contrasta: elige su valor y TRADUCE según él, en la palabra y en las dos
+  traducciones —«contrast» (dos protagonistas o hechos opuestos: «pero», «mas»),
+  «circumstantial» (la situación en que ocurre lo principal: gerundio o
+  «mientras», «siendo yo…»), «ground» (la razón: «porque», «ya que»),
+  «concessive» (a pesar de: «aunque»), «background» (paréntesis o dato de fondo
+  para el lector: «y», o sin conjunción), «opening» (abre una escena: sin
+  conjunción o «y») o «closing» (cierra o resume un episodio: «y»). Ante la
+  duda entre contraste y otro valor, NO elijas contraste;
 - "fronting": SÓLO donde dice ELEGIR "fronting". «focus» si lo antepuesto es
   lo nuevo, lo contrastado o lo enfatizado; «frame» si fija el tema, el tiempo
   o el escenario de lo que sigue. En las demás, omítelo.

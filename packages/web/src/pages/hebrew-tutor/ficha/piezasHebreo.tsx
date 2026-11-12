@@ -8,7 +8,7 @@ import {
 } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaCaja, FichaFuncion, FichaOrigenRotulo, type OrigenFuncion } from '@/components/word-ficha/FichaPiezas';
-import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact } from '@dosfilos/domain';
+import type { HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact, ResolvedRelation } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import type { SpeechView } from '../hooks/useEstructuraHebrea';
 import { MorphemeSpan, MORPHEME_BADGE_STYLES, getMorphemeCategory } from '../components/MorphemeSpan';
@@ -28,6 +28,8 @@ export interface DatosHebreo {
     readonly ketivQere?: KetivQereFact;
     /** El sufijo pronominal (OSHB): persona, género, número y a qué va pegado. */
     readonly suffix?: HebrewSuffix;
+    /** Abre una cláusula con waw disyuntiva; con el valor si el asistente lo eligió. */
+    readonly disjunctive?: { readonly resolved?: ResolvedRelation };
     /** Abre el detective (verbos y nombres). */
     readonly onInvestigate?: () => void;
 }

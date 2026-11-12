@@ -6,6 +6,7 @@
   "noClauses": "This verse has no words in the syntactic data.",
   "protasis": "Protasis",
   "apodosis": "Apodosis",
+  "disjunctiveNoValue": "The value (contrast, circumstance, cause, concession…) is chosen by the assistant when it analyzes the verse; if it is missing, re-analyze it.",
   "verbless": "Verbless",
   "verblessNote": "No finite verb: the copula (\"is\", \"will be\") is understood, and what is said of the subject is the predicate (Pred).",
   "fronted": "Before the verb: {{roles}}.",
@@ -70,7 +71,7 @@
     "negativePurpose": "«Lest».",
     "chain": "The wayyiqtol moves the narrative forward.",
     "conjunctive": "The waw joins a verb: it continues the previous line.",
-    "disjunctive": "The waw stands before something that is not a verb and breaks the chain: contrast, circumstance or change of topic.",
+    "disjunctive": "The waw stands before something that is not a verb and breaks the wayyiqtol chain. It is not necessarily contrastive: it can be circumstance, cause, concession, parenthesis, opening or closing; the context decides.",
     "asyndetic": "No conjunction: the link with what precedes is implicit.",
     "speech": "What is said begins, after «said».",
     "question": "Interrogative εἰ: «whether…», not a condition.",
@@ -99,7 +100,13 @@
     "purpose": "Purpose",
     "result": "Result",
     "ground": "Ground",
-    "content": "Content"
+    "content": "Content",
+    "contrast": "Contrast (“but”)",
+    "circumstantial": "Circumstantial (“being…”, “while…”)",
+    "concessive": "Concessive (“although”)",
+    "background": "Parenthesis or background (“and”)",
+    "opening": "Opens a scene",
+    "closing": "Closes or sums up (“and”)"
   },
   "resolvedNote": "The text leaves «{{open}}» open; the assistant reads it as {{choice}}.",
   "fronting": {
@@ -111,6 +118,7 @@
   "readingMissing": {
     "generate": "Generate the analysis to see the reading of each clause.",
     "stale": "This analysis was generated before the clause reading. Re-analyze the verse to see it.",
+    "staleWaw": "This analysis predates the values of the disjunctive waw: it translated it “but” by default. Re-analyze the verse to update the reading and the translations (your corrected translation is kept).",
     "reanalyze": "Re-analyze",
     "generateButton": "Generate analysis",
     "empty": "The assistant did not return the clause reading in this analysis. Re-analyze the verse to request it."

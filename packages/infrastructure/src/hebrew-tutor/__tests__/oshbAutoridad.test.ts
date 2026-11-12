@@ -53,7 +53,9 @@ describe('el prompt con las filas de «Estructura»', () => {
         expect(texto).not.toContain('"clauses": [');
         expect(texto).not.toMatch(/clauses MUST cover the whole verse/);
         // Las pautas de la waw siguen para la traducción.
-        expect(texto).toMatch(/waw disyuntiva de contraste →\s+«pero»/);
+        // Revisión del profesor (2026-11): la disyuntiva se traduce según el valor elegido, no «pero» por defecto.
+        expect(texto).toMatch(/según el VALOR que elijas/);
+        expect(texto).not.toMatch(/waw disyuntiva de contraste →\s+«pero»/);
         // Rut 1:14 (prueba del fundador): una nota decía «waw conjuntiva» donde la fila es disyuntiva.
         expect(texto).toMatch(/"exegeticalNotes" y la función de cada palabra usan los MISMOS nombres/);
     });

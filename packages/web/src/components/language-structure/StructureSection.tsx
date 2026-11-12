@@ -168,7 +168,11 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                                     className="rounded-full border border-border bg-muted/40 px-2 py-0.5 font-semibold text-foreground"
                                     title={lectura?.resolved ? t('resolvedNote', { open: t(`relations.${n.relation}`), choice: t(`resolved.${lectura.resolved}`) }) : undefined}
                                 >
-                                    {lectura?.resolved ? t(`resolved.${lectura.resolved}`) : t(`relations.${n.relation}`)}
+                                    {lectura?.resolved
+                                        // La waw disyuntiva conserva su nombre y suma el valor (revisión del profesor, Rut 2:1:
+                                        // «waw + no verbo → disyuntiva, no necesariamente contrastiva»).
+                                        ? (n.relation === 'disjunctive' ? `${t('relations.disjunctive')} · ${t(`resolved.${lectura.resolved}`)}` : t(`resolved.${lectura.resolved}`))
+                                        : t(`relations.${n.relation}`)}
                                 </span>
                                 {n.verbless && <span className="text-muted-foreground">{t('verbless')}</span>}
                             </div>
