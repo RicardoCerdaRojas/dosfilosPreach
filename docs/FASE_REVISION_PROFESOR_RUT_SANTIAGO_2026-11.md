@@ -335,6 +335,10 @@ Lectura (medido):
 - Banco: 10 de 11 con pistas contra 5 de 10 sin ellas. Stg 2:17, 2:20 y 2:11 quedan como pidió el profesor; 1 Co 15:13 sigue intensivo. Ap 21:8 lo elige anafórico el asistente por su cuenta, sin pista: es variación del modelo.
 - El griego no tiene el problema de repetición del hebreo: 3 caídas a Gemini en 30 días, ninguna por tope de fichas.
 
+**U3, medición previa (2026-11-12):**
+- La ל de posesión como regla no sirve. Con ל + rol «predicado» de MACULA en una cláusula sin verbo hay 1.263 candidatos y 3 de 20 son posesión. Exigiendo sujeto indefinido o אֵין/יֵשׁ/היה quedan 329, con 3 o 4 de 20. El resto son títulos de salmos, finalidad, listas e interés. Propuesta: la función de cada preposición hebrea la ELIGE el asistente de la lista de A&C cap. 4, con las definiciones del libro, igual que el verbo en U5.
+- MACULA griego trae el código de Louw-Nida de cada preposición (Stg 2:16 ἐν = 13.8), pero no el nombre de los dominios. Para mostrarlo hay que regenerar los datos y tener una fuente de los nombres: falta decidir.
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.
