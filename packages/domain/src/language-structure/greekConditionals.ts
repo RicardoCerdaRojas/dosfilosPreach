@@ -34,8 +34,16 @@ export function greekConditionals(ch: ChapterStructure, verse: number): Conditio
     const porRef = new Map(ws.map(w => [w.r, w]));
     const filas = verseStructure(ch, verse);
     const apodosis = filas.filter(f => f.isApodosis);
+    // Con DOS condiciones, una «apódosis» que es coordinada (καί, δέ) puede ser otro miembro de la
+    // prótasis si viene DESPUÉS de las condiciones: en 1 Co 7:36 «Εἰ … νομίζει, ἐὰν ᾖ ὑπέρακμος, καὶ οὕτως
+    // ὀφείλει γίνεσθαι» la apódosis es «ποιείτω». Ahí no se da el valor (pendientes de la revisión,
+    // 2026-11-13). Con una sola condición, con una apódosis que no coordina (Jn 13:17) o que va antes
+    // (1 Co 14:6 «Νῦν δέ… τί ὑμᾶς ὠφελήσω»), sí. Medido en el NT: sólo cambia 1 Co 7:36.
+    const condiciones = filas.filter(f => f.relation === 'condition').length;
+    const COORDINADA = new Set(['addition', 'development']);
     const uso = (): ThirdClassUse | undefined => {
-        if (apodosis.length !== 1) return undefined;
+        const trasCondicion = filas.indexOf(apodosis[0]!) > filas.findIndex(f => f.relation === 'condition');
+        if (apodosis.length !== 1 || (condiciones > 1 && trasCondicion && COORDINADA.has(apodosis[0]!.relation))) return undefined;
         const a = apodosis[0]!;
         const v = a.words.map(t => porRef.get(t.r)).find(w => ['I', 'S', 'O', 'D'].includes(modo(w)));
         if (!v) return a.verbless ? 'presentGeneral' : undefined;
