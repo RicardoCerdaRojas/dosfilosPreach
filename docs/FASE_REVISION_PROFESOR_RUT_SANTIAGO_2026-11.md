@@ -422,6 +422,78 @@ Lectura (medido):
 - Defectos previos fuera del diff: Mt 17:9, Lc 2:15, Hch 27:29, Mt 24:4 y el orden de filas de Mc 12:19.
 - `yarn banco` solo monta tarjetas del trabajo exegético, así que la ficha y «Estructura» se vieron en el recorrido del fundador en el navegador.
 
+## Etapa 2 (2026-11-13): pendientes y quiasmo
+
+Rama `feat/revision-profesor-pendientes`. El PR #830 se fusionó y se desplegó el 2026-11-12. El fundador le mostró el avance al profesor: «vamos bien».
+
+**P1 (`7a2a3b20`), subjuntivo y ἐάν partícula.** Son defectos que ya estaban en main. Cambian 78 decisiones de verbo en el NT, todas revisadas a mano.
+- **El subordinante va ANTES del verbo:**
+  - Mt 17:9 «Μηδενὶ εἴπητε … ἕως οὗ» pasa a prohibición.
+  - Lc 2:15 «Διέλθωμεν δὴ ἕως Βηθλέεμ» pasa a exhortativo.
+- **«No sea que»** con el μή en su propia cláusula (Mt 24:4, Mc 13:5) o tras un participio de temor (Hch 27:29, Hch 23:10): 10 casos.
+- **ἐάν partícula** (MorphGNT `X-`) hace de ἄν: relativo o temporal indefinido, 62 casos (49 tras un relativo). Tras un relativo, el ἐάν conjunción (`C-`) sigue siendo condición (Mt 21:24, Jn 21:25, Heb 13:23).
+- **En «Estructura»:** Mc 6:23 «Ὅ ἐάν» ya no sale condición.
+
+**P2 (`bff345a6`), 1 Co 7:36.**
+- Con dos condiciones, una «apódosis» coordinada que viene después es otro miembro de la prótasis: no se da el valor.
+- Medido: exigir una sola condición quitaba 7 valores correctos. Este criterio cambia solo 1 Co 7:36.
+
+**P3 (`3db966ba`), Mc 12:19.**
+- Cada conector de una coordinación múltiple (`Conj3CL`) va a su cláusula.
+- Cambian 177 versículos y la muestra mejora entera. El caso más visible: la genealogía de Mt 1:13 salía «δὲ δὲ Ἐλιακὶμ δὲ…» en una sola fila.
+
+**P4 (`d018ea24`), frases con pospositiva.**
+- De las 210 frases griegas omitidas por un hueco, 165 lo tenían por δέ, γάρ…
+- Ahora el dato guarda qué posición salta y se recuperan 160 frases (Mt 11:12 «ἀπὸ δὲ τῶν ἡμερῶν»).
+
+**Quiasmo (`367b187f`): repetición en espejo, como dato.**
+- **Decisiones del fundador:**
+  - se rotula «repetición en espejo: puede ser un quiasmo», nunca «Regla»;
+  - se ve en tres lugares: letras A B B′ A′ en el Diagrama, aviso en las dos vistas y bloque en la ficha;
+  - solo griego, dentro del versículo, sin tocar el prompt.
+- **Medido:** ver «Espejo: precisión medida a ciegas» abajo. La versión final da 88 versículos y 77 % de precisión, medida a ciegas fuera de muestra.
+- Stg 2:18 da el espejo exacto del profesor.
+
+**Revisión adversarial de la etapa 2 (dos revisores).**
+- **Verbos:** los 78 cambios, leídos uno por uno, están bien.
+- **Corregido:**
+  - **Espejo:** la primera cifra (217) se había juzgado con una muestra elegida. Ahora B y B′ no van pegados, se excluye el paralelismo y los cuantificadores, y hay un tope de 15 palabras. La precisión real se midió después, a ciegas.
+  - **Aviso y ficha:** sin la puntuación pegada, con una prueba que usa la interpolación real.
+  - **Varios conectores:** también cuando la palabra siguiente está en una nieta (Lc 11:10). Las filas con la conjunción repetida bajan de 234 en `main` a 17.
+  - **Invariante nueva sobre el corpus:** dentro de cada fila, las palabras van en el orden del texto.
+- **Quedan:**
+  - 17 filas con la conjunción repetida que vienen de envoltorios anidados (Mt 13:15, Jn 12:40, Hch 28:27).
+  - 5 filas que suman un segundo conector (Mc 4:22 «ἀλλ’ ἵνα»).
+  - Una fila de solo «γάρ» en Mt 6:24, Lc 16:13 y Jn 5:22.
+
+**Espejo: precisión medida a ciegas (2026-11-13, a pedido del fundador: «afinemos todo lo que podamos»).**
+- La muestra de 30 que juzgué yo daba 28 de 30. Un revisor independiente, clasificando a ciegas una muestra nueva, dio **17 de 30 (57 %)**.
+- El patrón: dos cláusulas paralelas cortadas por la mitad parecían espejo.
+- **Criterio nuevo:** cada mitad es UN bloque (una cláusula y lo que cuelga de ella), y las mitades van en filas distintas. Pueden estar anidadas, como en Stg 2:18.
+- **Medido FUERA de la muestra de diseño**, con otro revisor a ciegas: **23 de 30 (77 %)**. Ahora son 88 versículos.
+- **Fallos que quedan:**
+  - narración sin figura (Jn 19:29, Lc 5:7, Lc 11:1);
+  - dos paralelos (1 Co 7:14, Ap 1:20);
+  - dos elecciones de par discutibles (Lc 6:42, Lc 6:43).
+- **Se pierde** Mt 13:15 / Hch 28:27 (Is 6:10), cuyas mitades abarcan varias cláusulas.
+- **Reglas probadas y descartadas, porque empeoraban:**
+  - «paralelismo» y «lista»: quitaban quiasmos famosos (Mt 11:27, Lc 9:24, 1 Jn 4:16);
+  - preferir lemas que aparecen dos veces, y A en el mismo lugar: sobreajustaban y perdían espejos verdaderos.
+
+**Espejo: lista curada con fuentes (2026-11-13, decisión del fundador).** Como el detector acertaba el 77 % medido a ciegas y el NT es un texto cerrado, ahora se muestra una LISTA REVISADA. El detector queda solo para proponer candidatos.
+- **Fuentes del fundador** (escaneos de Internet Archive):
+  - Lund, *Chiasmus in the New Testament* (1942, edición única; desfase hoja → página: 18);
+  - Bullinger, *Figures of Speech Used in the Bible* (reimpresión Baker 1968, ISBN 978-0-8010-0559-6; desfase 52). Bullinger nombra la figura: Epanodos o Antimetábole.
+- **Cómo se armó:** un revisor juzgó los 90 candidatos con los textos de las dos obras y corrigió 6 pares. Se cruzó con las muestras ciegas: coinciden en 45 de 50. Quedó fuera todo lo que alguna revisión juzgó paralelo o débil, y lo dudoso sin segunda opinión.
+- **Resultado:** **74 versículos**, 15 con fuente verificada con página (cotejo de 425 citas, 0 fallos). Se agregaron Mt 13:15 y Hch 28:27 (Is 6:10).
+- **Error del revisor corregido:** en 1 Co 14:22 Lund propone INVERTIR dos términos, así que no apoya el texto como está; el versículo queda sin fuente.
+- **Cotejo:** `cotejar-citas.py` suma una rama para Lund y Bullinger. La referencia del versículo, suelta, en rango o en lista, tiene que estar impresa en la página citada.
+- **Para revisar:** la lista legible para el fundador está en `docs/REPETICION_EN_ESPEJO_LISTA.md`.
+
+**Pendiente:**
+- El hebreo (paralelismo poético) y el quiasmo entre versículos: medirlos aparte.
+- Mc 8:38 queda con un orden de filas raro («γὰρ ἐὰν»).
+
 **Diferencias que quedan con el profesor (leído):**
 - Stg 2:18 «κἀγώ σοι δείξω» sigue sangrado: MACULA lo cuelga de δεῖξον como objeto, y el profesor lo pone al margen.
 - El quiasmo de 2:18 queda para una etapa posterior.

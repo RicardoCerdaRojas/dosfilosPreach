@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
     NOMINAL_RULE_SOURCES,
     prepositionUsage, TENSE_RULE_SOURCES, tenseUseSources, translationBridge, VERB_RULE_SOURCES, verbFunctionSources,
-    type ConditionalFact, type GreekCase, type GreekKeyInsight, type GreekVerbForm, type GreekWordInsight, type GreekWordToken,
+    type ConditionalFact, type GreekCase, type MirrorPosition, type RuleSource, type GreekKeyInsight, type GreekVerbForm, type GreekWordInsight, type GreekWordToken,
 } from '@dosfilos/domain';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaFuncion } from '@/components/word-ficha/FichaPiezas';
@@ -32,6 +32,8 @@ export interface DatosGriego {
      * (MACULA). Cada aparición, con su glosa y la traducción del análisis; `self` es esta palabra.
      */
     readonly sameLemma?: readonly { readonly text: string; readonly gloss: string; readonly translation?: string; readonly self: boolean }[];
+    /** Repetición en espejo (Stg 2:18): la letra de esta palabra y las cuatro palabras del espejo. */
+    readonly mirror?: { readonly position: MirrorPosition; readonly a: string; readonly b: string; readonly b2: string; readonly a2: string; readonly sources?: readonly RuleSource[] };
     /** Guardar el hallazgo para el sermón. */
     readonly onSaveFinding?: () => void;
     readonly saved?: boolean;

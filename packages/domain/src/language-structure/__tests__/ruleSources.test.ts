@@ -58,9 +58,14 @@ describe('R0 — sólo se cita lo verificado', () => {
         }
     });
 
-    it('sólo se verifica contra una edición fijada (año e ISBN de la obra)', () => {
+    it('sólo se verifica contra una edición fijada (año e ISBN de la obra; sin ISBN, sólo una obra anterior al ISBN con su edición descrita)', () => {
         for (const s of todas.filter(x => x.verified)) {
-            expect(WORKS[s.work].isbn, s.work).toMatch(/^978-/);
+            const w = WORKS[s.work];
+            if (w.isbn) expect(w.isbn, s.work).toMatch(/^978-/);
+            else {
+                expect(w.year, `${s.work}: sin ISBN sólo antes de 1970`).toBeLessThan(1970);
+                expect(w.edition, `${s.work}: falta la edición del ejemplar`).toBeTruthy();
+            }
         }
         // Arnold y Choi: el ejemplar cotejado es la 1.ª edición (2003); la 2.ª pagina distinto.
         expect(WORKS.arnoldChoi.year).toBe(2003);

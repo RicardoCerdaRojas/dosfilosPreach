@@ -127,7 +127,7 @@ export function leerLowfat(xml) {
         const cons = tope && tope.cls !== 'cl' ? tope.cons : '';
         // `ln`: el sentido de Louw-Nida que MACULA da a la palabra (revisión del profesor, U3c: el de las preposiciones griegas).
         // `cls` y `en` (U10, Stg 3:5 ἡλίκον «small» / ἡλίκην «how great»): la clase y la glosa inglesa EN CONTEXTO.
-        palabras.push({ id: a['xml:id'], ref: a.ref, text: m[3], role: rol(a.role) || cons, morph: a.morph ?? '', clause: cl, ln: a.ln ?? '', cls: a.class ?? '', en: a.english ?? '' });
+        palabras.push({ id: a['xml:id'], ref: a.ref, text: m[3], role: rol(a.role) || cons, morph: a.morph ?? '', clause: cl, ln: a.ln ?? '', cls: a.class ?? '', en: a.english ?? '', lemma: a.lemma ?? '' });
     }
     return { clausulas, palabras, frases };
 }
@@ -140,7 +140,9 @@ export function leerLowfat(xml) {
  * (`PrepCL`) no entra: es una cláusula y ya tiene su fila. Se omiten las que cruzan de
  * versículo o tienen un hueco (otra palabra en medio que no es suya).
  */
-export function frasesDelCapitulo(frases, cap, orden) {
+/** Pospositivas que MACULA deja fuera de la frase aunque van dentro («Ἀπὸ δὲ τῶν ἡμερῶν», Mt 11:12). */
+const POSPOSITIVAS = new Set(['δέ', 'γάρ', 'μέν', 'οὖν', 'γε', 'τε', 'ἄν']);
+export function frasesDelCapitulo(frases, cap, orden, lemaDe = () => '') {
     const out = [];
     let saltadas = 0;
     for (const f of frases) {
@@ -151,8 +153,14 @@ export function frasesDelCapitulo(frases, cap, orden) {
         const [c, v] = ks[0].cv.split(':').map(Number);
         if (c !== cap) continue;
         const ns = [...new Set(ks.map(k => k.n))].sort((a, b) => a - b);
-        if (ns.some(n => !orden.has(`${v}!${n}`)) || ns[ns.length - 1] - ns[0] + 1 !== ns.length) { saltadas++; continue; }
-        out.push([v, ns[0], ns[ns.length - 1], f.role === 'p' ? 'p' : f.role ? 'a' : 'n']);
+        if (ns.some(n => !orden.has(`${v}!${n}`))) { saltadas++; continue; }
+        // Un hueco de sólo pospositivas (δέ, γάρ…) no corta la frase: se guarda qué posiciones salta (pendientes
+        // de la revisión, 2026-11-13: eran 165 de las 210 frases griegas omitidas). Otro hueco, sí.
+        const huecos = [];
+        for (let n = ns[0]; n <= ns[ns.length - 1]; n++) if (!ns.includes(n)) huecos.push(n);
+        const ref0 = f.refs[0].split(' ')[0];
+        if (huecos.some(n => !POSPOSITIVAS.has(lemaDe(`${ref0} ${c}:${v}!${n}`)))) { saltadas++; continue; }
+        out.push([v, ns[0], ns[ns.length - 1], f.role === 'p' ? 'p' : f.role ? 'a' : 'n', ...(huecos.length ? [huecos] : [])]);
     }
     out.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
     return { phrases: out, saltadas };
@@ -312,12 +320,14 @@ async function griego(only, informe) {
         }
         // Palabras de MACULA de versículos que SBLGNT sí tiene y que nadie usó.
         for (const [cv, lista] of maculaPorVers) if ((posEnVers.get(cv) ?? 0) > 0 && lista.length !== posEnVers.get(cv)) distintas++;
-        const frasesSaltadas = [...capitulos].reduce((n, [cap, words]) => n + frasesDelCapitulo(frases, cap, ordenDe(words)).saltadas, 0);
+        const lemaMacula = new Map(palabras.map(p => [p.ref, p.lemma]));
+        const lemaDe = (r) => lemaMacula.get(r) ?? '';
+        const frasesSaltadas = [...capitulos].reduce((n, [cap, words]) => n + frasesDelCapitulo(frases, cap, ordenDe(words), lemaDe).saltadas, 0);
         informe.push({ lang: 'gr', book, palabras: filas.length, macula: palabras.length, distintas, frasesSaltadas });
         if (distintas > 0) continue;
         limpiar(`gr/${book}`);
         for (const [cap, words] of capitulos) {
-            const { phrases } = frasesDelCapitulo(frases, cap, ordenDe(words));
+            const { phrases } = frasesDelCapitulo(frases, cap, ordenDe(words), lemaDe);
             escribir(`gr/${book}/${cap}.json`, { lang: 'gr', book, chapter: cap, words, clauses: clausulasDelCapitulo(clausulas, palabras, cap, ordenDe(words)), phrases });
         }
     }

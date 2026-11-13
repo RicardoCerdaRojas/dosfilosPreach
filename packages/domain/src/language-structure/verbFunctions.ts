@@ -132,7 +132,15 @@ const SUBORDINANTES: ReadonlySet<string> = new Set(['ἵνα', 'ὅπως', 'ἐ
 function subordinanteCercano(c: Contexto): string | undefined {
     for (const cl of [c.clausula, ...c.arriba]) {
         // ἕως, μέχρι, ἄχρι pueden traer rol en MACULA («ἕως οὗ», Hch 23:14): cuentan igual.
-        const s = cl.find(x => SUBORDINANTES.has(x.l) && (!x.role || INDEFINIDOS.has(x.l))) ?? cl.find(x => x.l === 'ἄν');
+        // El subordinante va ANTES del verbo: un «ἕως» detrás es otra cosa (Mt 17:9 «Μηδενὶ εἴπητε … ἕως
+        // οὗ», Lc 2:15 «Διέλθωμεν δὴ ἕως Βηθλέεμ», preposición). Pendientes de la revisión, 2026-11-13.
+        const antes = (x: StructureWord) => c.ws.indexOf(x) < c.i;
+        const s = cl.find(x => SUBORDINANTES.has(x.l) && (!x.role || INDEFINIDOS.has(x.l)) && antes(x)) ?? cl.find(x => x.l === 'ἄν' && antes(x));
+        // «ὃς ἐάν», «ὅσα ἐάν», «ὅπου ἐάν» (1 Jn 4:15, Mt 7:12): MorphGNT etiqueta ese ἐάν como PARTÍCULA (X-),
+        // que hace de ἄν: relativo indefinido (Wallace p. 478), no condición. El ἐάν conjunción (C-) tras un
+        // relativo sí es condición: Mt 21:24 «ὃν ἐὰν εἴπητέ μοι», Jn 21:25, Heb 13:23 (medido en el NT: ἐάν X-, 62 veces, 49 tras un
+        // relativo y 13 tras ὁσάκις/ἡνίκα/καθό/ὅ τι; ἐάν C- tras un relativo, 3).
+        if (s?.l === 'ἐάν' && s.pos === 'X-') return 'ἄν';
         if (s) return s.l;
         // Una cláusula con verbo propio (distinto) corta la búsqueda: ya es otra oración.
         if (cl !== c.clausula && cl.some(x => x.role === 'v' && x !== c.w)) return undefined;
@@ -164,9 +172,19 @@ const esFinito = (w: StructureWord | undefined) => ['I', 'S', 'D', 'O'].includes
  * pero rige λάλει.
  */
 function bajoTemor(c: Contexto): boolean {
-    if (c.clausula[0]?.l !== 'μή' || !c.madreConVerbo) return false;
-    const mh = c.ws.indexOf(c.clausula[0]);
-    for (let k = mh - 1; k >= 0; k--) if (esFinito(c.ws[k])) return TEMOR_O_ADVERTENCIA.has(c.ws[k]!.l);
+    // El μή abre la cláusula, o MACULA lo deja solo en una madre (`PtclCL`): «Βλέπετε μή τις ὑμᾶς
+    // πλανήσῃ» (Mt 24:4, Mc 13:5), «φοβούμενοί τε μή που … ἐκπέσωμεν» (Hch 27:29).
+    const mhPalabra = c.clausula[0]?.l === 'μή' ? c.clausula[0]
+        : c.arriba[0]?.length === 1 && c.arriba[0][0]!.l === 'μή' ? c.arriba[0][0] : undefined;
+    if (!mhPalabra) return false;
+    // El verbo que rige es el más cercano antes del μή, finito o PARTICIPIO (φοβούμενοι). Una cita queda
+    // fuera porque su verbo más cercano es el de decir. No se exige que esté en una cláusula madre: en
+    // el NT eso sólo cambiaba Heb 12:25 «Βλέπετε μὴ παραιτήσησθε», y lo dejaba sin regla.
+    const mh = c.ws.indexOf(mhPalabra);
+    for (let k = mh - 1; k >= 0; k--) {
+        const v = c.ws[k]!;
+        if (esFinito(v) || modo(v) === 'P') return TEMOR_O_ADVERTENCIA.has(v.l);
+    }
     return false;
 }
 

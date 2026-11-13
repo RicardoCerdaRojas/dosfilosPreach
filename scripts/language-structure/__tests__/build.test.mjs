@@ -146,3 +146,18 @@ describe('U11b: el rol de la frase que lo trae el grupo que la envuelve (Mt 23:3
     });
 });
 
+describe('pendientes: la frase con una pospositiva en medio («Ἀπὸ δὲ τῶν ἡμερῶν», Mt 11:12)', () => {
+    const orden = new Map(Array.from({ length: 9 }, (_, i) => [`12!${i + 1}`, i]));
+    const lemas = { 'X 11:12!2': 'δέ', 'X 11:12!5': 'βαπτιστής' };
+    const lemaDe = r => lemas[r] ?? '';
+    it('un hueco de sólo pospositivas no corta la frase: se guarda qué posición salta', () => {
+        const fs = [{ role: 'adv', rule: 'PrepNp', refs: ['X 11:12!1', 'X 11:12!3', 'X 11:12!4'] }];
+        expect(frasesDelCapitulo(fs, 11, orden, lemaDe)).toEqual({ phrases: [[12, 1, 4, 'a', [2]]], saltadas: 0 });
+    });
+    it('otro hueco sí la corta; sin lemas (hebreo), como antes', () => {
+        const fs = [{ role: 'adv', rule: 'PrepNp', refs: ['X 11:12!4', 'X 11:12!6'] }];
+        expect(frasesDelCapitulo(fs, 11, orden, lemaDe).saltadas).toBe(1);
+        expect(frasesDelCapitulo([{ role: 'adv', rule: 'PrepNp', refs: ['X 11:12!1', 'X 11:12!3'] }], 11, orden).saltadas).toBe(1);
+    });
+});
+

@@ -3,7 +3,7 @@ import { BookmarkPlus, Check, Star } from 'lucide-react';
 import { greekRecognitionClues, louwNidaSenses, STRUCTURE_RULE_SOURCES, translationBridge, type GreekKeyInsight, type GreekWordInsight, type GreekWordToken } from '@dosfilos/domain';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
-import { AperturaSeccion, MismoLema, SentidoLouwNida } from './piezasDatosGriego';
+import { AperturaSeccion, MismoLema, RepeticionEspejo, SentidoLouwNida } from './piezasDatosGriego';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
 import { cn } from '@/lib/utils';
 import { GreekAgencyBlock, GreekAnaphoraRuleNote, GreekAutosBlock } from '../GreekNominalRuleBlock';
@@ -173,6 +173,10 @@ export const BLOQUES_GRIEGO: FichaRegistro<DatosGriego> = [
     },
     {
         // U9 (revisión del profesor, Stg 3:1): vocativo + imperativo o pregunta al comienzo. Señal, no regla (23/29 medido).
+        id: 'gr.espejo', dato: 'Repetición en espejo de lemas (A B | B′ A′), dato del texto; puede ser un quiasmo', seccion: 'contexto', origen: 'datos', antes: [],
+        hay: (d) => !!d.mirror, Completo: RepeticionEspejo,
+    },
+    {
         id: 'gr.apertura', dato: 'Vocativo al comienzo con imperativo o pregunta: señal de apertura de sección', seccion: 'contexto', origen: 'datos', antes: [],
         hay: (d) => !!d.opening, Completo: AperturaSeccion,
     },

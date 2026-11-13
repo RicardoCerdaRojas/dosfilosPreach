@@ -28,3 +28,16 @@ describe('la condicional en la ficha de su partícula', () => {
         expect(en('JAS/2.json', 9)).toEqual([{ ordinal: 0, conditionalClass: 1, palabra: 'εἰ' }]);
     });
 });
+
+/** Pendientes de la revisión (2026-11-13): el valor de la 3.ª clase con dos condiciones en el versículo. */
+describe('3.ª clase con dos condiciones', () => {
+    const uso = (rel: string, v: number) => greekConditionals(JSON.parse(readFileSync(fileURLToPath(new URL(`../../../../web/public/language-data/v1/gr/${rel}`, import.meta.url)), 'utf8')), v).map(c => c.use ?? '-');
+    it('1 Co 7:36: la «apódosis» coordinada tras las condiciones es otro miembro de la prótasis → sin valor', () => {
+        expect(uso('1CO/7.json', 36)).toEqual(['-', '-']);
+    });
+    it('con la apódosis antes (1 Co 14:6) o sin coordinar (Jn 13:17), el valor sigue', () => {
+        expect(uso('1CO/14.json', 6)).toEqual(['moreProbableFuture', 'moreProbableFuture']);
+        expect(uso('JHN/13.json', 17)).toContain('presentGeneral');
+    });
+});
+

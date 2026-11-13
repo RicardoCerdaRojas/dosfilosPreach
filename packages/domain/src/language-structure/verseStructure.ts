@@ -83,6 +83,8 @@ const rolDe = (r: string): ConstituentRole => (ROLES.has(r) ? (r as ConstituentR
 
 // ── Griego ────────────────────────────────────────────────────────────────────
 
+/** Antes de un ἐάν partícula, lo hacen temporal indefinido («cada vez que»). */
+const TEMPORAL_INDEFINIDO: ReadonlySet<string> = new Set(['ὁσάκις', 'ἡνίκα', 'ὅτε', 'ὡς']);
 /** Antes de ἐάν hacen de él un relativo indefinido («ὃ ἐάν», «ὅπου ἐάν»). */
 const RELATIVOS: ReadonlySet<string> = new Set(['ὅς', 'ὅστις', 'ὅσος', 'ὅπου', 'οἷος', 'ὁποῖος', 'ὅθεν']);
 
@@ -306,10 +308,14 @@ export function verseStructure(ch: ChapterStructure, verse: number): StructureNo
                 if (regla === 'PtclCL' && conector.l === 'εἰ') {
                     // MACULA marca así el εἰ interrogativo («si ya había muerto», Mc 15:44).
                     relation = 'question';
-                } else if (conector.l === 'ἐάν' && antes && (antes.pos === 'RR' || RELATIVOS.has(antes.l))) {
-                    // «ὃ ἐάν»: relativo indefinido («lo que»), no condición (1 Jn 3:22).
-                    // El conector es el relativo, que MACULA deja en la hija: así se funden.
-                    relation = 'relative';
+                } else if (conector.l === 'ἐάν' && (conector.pos === 'X-' || (antes && (antes.pos === 'RR' || RELATIVOS.has(antes.l))))) {
+                    // ἐάν PARTÍCULA (MorphGNT X-) hace de ἄν: «ὃ ἐάν» relativo indefinido («lo que», 1 Jn 3:22),
+                    // «ὁσάκις ἐάν» temporal indefinido («cada vez que», 1 Co 11:25, Ap 11:6; en 1 Co 11:26 la fila
+                    // lleva la relación de su γάρ, y 2 Co 3:16 la de su ἡνίκα). No es
+                    // condición. El ἐάν conjunción (C-) tras un relativo (Mt 21:24, Jn 21:25, Heb 13:23) se lee
+                    // condición en la ficha del verbo, pero aquí sigue en la fila de su relativa: MACULA deja el
+                    // relativo en la hija y una fila de sólo «ἐάν» se leía peor. Pendientes de la revisión, 2026-11-13.
+                    relation = antes && TEMPORAL_INDEFINIDO.has(antes.l) ? 'time' : 'relative';
                     connector = null;
                 } else if (conector.l === 'εἰ' && tras?.l === 'μή' && !sub.some(w => ['I', 'S', 'O'].includes(modo(w)))) {
                     // «εἰ μή» sin verbo: «sino», «excepto» (Mt 12:4).
@@ -482,6 +488,35 @@ function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: Readon
             const enHijas = new Set(hijas.flatMap(h => h.tokens.map(t => t.r)));
             const propias = madre.tokens.filter(t => !enHijas.has(t.r));
             if (propias.some(t => t.role && t.r !== madre.connector)) continue;
+            // Una coordinación de tres o más (`Conj3CL`, Mc 12:19 «ἀποθάνῃ καὶ καταλίπῃ γυναῖκα καὶ μὴ ἀφῇ
+            // τέκνον») trae VARIOS conectores: cada uno va a la cláusula que lo sigue. Juntos en la última
+            // («καὶ καὶ μὴ ἀφῇ») la fila se ordenaba por el primer καί, antes de «καταλίπῃ» (pendientes de la
+            // revisión, 2026-11-13).
+            if (propias.length > 1 && propias.every(t => !t.role && CONECTOR_GRIEGO[lemaDe.get(t.r) ?? ''])) {
+                // La palabra que sigue puede estar en una NIETA (el participio sujeto: Lc 11:10 «καὶ ὁ ζητῶν
+                // εὑρίσκει»): el destino es la hija de la que cuelga esa fila (revisión adversarial).
+                const hijaDe = (r: string | undefined) => {
+                    let f = r === undefined ? undefined : filas.find(x => x.tokens.some(t => t.r === r));
+                    while (f && !hijas.includes(f)) f = filas.find(x => x.index === f!.parent);
+                    return f;
+                };
+                const destinos = propias.map(p => hijaDe(siguiente(p.r)));
+                if (destinos.every(Boolean) && new Set(destinos).size === destinos.length) {
+                    propias.forEach((p, k) => {
+                        const h = destinos[k]!;
+                        h.tokens = [p, ...h.tokens].sort(orden);
+                        if (!h.connector) { h.connector = p.r; h.relation = CONECTOR_GRIEGO[lemaDe.get(p.r)!]!; }
+                    });
+                    for (const h of hijas) {
+                        h.parent = madre.parent;
+                        if (madre.isApodosis && h.relation !== 'condition') h.isApodosis = true;
+                    }
+                    for (const f of filas) if (desciendeDe(f.index, madre.index)) f.depth -= 1;
+                    filas = filas.filter(f => f !== madre);
+                    cambio = true;
+                    break;
+                }
+            }
             const ultima = propias[propias.length - 1];
             const sigue = ultima ? siguiente(ultima.r) : madre.tokens[0]?.r;
             const hija = sigue === undefined ? undefined : hijas.find(h => h.tokens.some(t => t.r === sigue));

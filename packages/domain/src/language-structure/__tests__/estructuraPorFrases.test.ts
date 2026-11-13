@@ -61,7 +61,7 @@ describe('Estructura por frases (U11a, revisión del profesor)', () => {
         const ap = filas('gr/REV/3.json', 20);
         expect(fila(ap, 'καὶ ἀνοίξῃ')).toMatchObject({ isApodosis: false, conditionGroup: fila(ap, 'ἐάν').conditionGroup });
         expect(fila(ap, 'καὶ εἰσελεύσομαι').isApodosis).toBe(true);
-        expect(fila(filas('gr/MRK/12.json', 19), 'καταλίπῃ').isApodosis).toBe(false);
+        expect(fila(filas('gr/MRK/12.json', 19), 'καὶ καταλίπῃ').isApodosis).toBe(false);
     });
 
     it('revisión adversarial: la cita alrededor de un «φησίν» parentético sigue en su fila, con su apódosis (Hch 25:5)', () => {
@@ -76,6 +76,27 @@ describe('Estructura por frases (U11a, revisión del profesor)', () => {
         const s = filas('he/1Sam/17.json', 9);
         const miembro = s.find(n => n.conditionGroup !== undefined && n.relation !== 'condition')!;
         expect(miembro.isApodosis).toBe(false);
+    });
+
+    it('pendientes: ἐάν PARTÍCULA no es condición — Mc 6:23 «Ὅ ἐάν με αἰτήσῃς» relativa, 2 Co 3:16 «ἡνίκα ἐάν» temporal; sin fila de sólo «ἐάν»', () => {
+        const mc = filas('gr/MRK/6.json', 23);
+        expect(fila(mc, 'Ὅ ἐάν').relation).toBe('relative');
+        expect(mc.some(n => n.relation === 'condition')).toBe(false);
+        expect(fila(filas('gr/2CO/3.json', 16), 'ἡνίκα ἐὰν').relation).toBe('time');
+        // 1 Co 11:26 «ὁσάκις γὰρ ἐὰν ἐσθίητε»: ya no es condición; la fila lleva la relación de su γάρ.
+        expect(fila(filas('gr/1CO/11.json', 26), 'ὁσάκις').relation).toBe('ground');
+        expect(filas('gr/COL/3.json', 17).some(n => texto(n) === 'ἐὰν')).toBe(false);
+    });
+
+    it('pendientes: una coordinación de varios conectores pone cada uno en su cláusula, en el orden del texto (Mc 12:19, Mt 1:13, Jn 10:28)', () => {
+        expect(filas('gr/MRK/12.json', 19).filter(n => n.conditionGroup !== undefined).map(texto))
+            .toEqual(['ἐάν τινος ἀδελφὸς ἀποθάνῃ', 'καὶ καταλίπῃ γυναῖκα', 'καὶ μὴ ἀφῇ τέκνον,']);
+        expect(filas('gr/MAT/1.json', 13).map(texto)).toEqual([
+            'Ζοροβαβὲλ δὲ ἐγέννησεν τὸν Ἀβιούδ,', 'Ἀβιοὺδ δὲ ἐγέννησεν τὸν Ἐλιακίμ,', 'Ἐλιακὶμ δὲ ἐγέννησεν τὸν Ἀζώρ,',
+        ]);
+        expect(filas('gr/JHN/10.json', 28).every(n => !texto(n).startsWith('καὶ καὶ'))).toBe(true);
+        // Revisión adversarial: la palabra que sigue al καί está en una NIETA (el participio sujeto, Lc 11:10).
+        expect(filas('gr/LUK/11.json', 10).filter(n => n.relation === 'addition').map(texto)).toEqual(['καὶ εὑρίσκει,', 'καὶ ἀνοιγήσεται.']);
     });
 
     it('hebreo: אִם puede envolver la oración entera — la apódosis no entra al grupo (Am 9:3); Lv 13:28, prótasis de tres', () => {

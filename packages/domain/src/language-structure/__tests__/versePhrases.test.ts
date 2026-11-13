@@ -25,6 +25,11 @@ describe('frases preposicionales del versículo (U11b)', () => {
         expect(textos(cargar('he/Ruth/2.json'), 1).map(([, k]) => k)).toEqual(['p', 'n', 'n']);
     });
 
+    it('pendientes: la frase salta la pospositiva (Mt 11:12 «ἀπὸ δὲ τῶν ἡμερῶν Ἰωάννου τοῦ βαπτιστοῦ»): el δέ no es de la frase', () => {
+        const [primera] = textos(cargar('gr/MAT/11.json'), 12);
+        expect(primera).toEqual(['ἀπὸ τῶν ἡμερῶν Ἰωάννου τοῦ βαπτιστοῦ', 'a']);
+    });
+
     it('sin frases en los datos (datos viejos), nada', () => {
         expect(versePhrases({ ...cargar('gr/JAS/2.json'), phrases: undefined }, 16)).toEqual([]);
     });

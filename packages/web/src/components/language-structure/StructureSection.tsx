@@ -18,7 +18,7 @@ import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VerseStructureState } from './useVerseStructure';
 import { frasePorRef, SUBRAYADO_FRASE } from './frases';
 import { StructureDiagram } from './StructureDiagram';
-import type { PhraseKind } from '@dosfilos/domain';
+import type { MirrorPosition, PhraseKind } from '@dosfilos/domain';
 
 /** Las relaciones que llevan una nota de la regla (`notes.*` en el locale). */
 const CON_NOTA: ReadonlySet<ClauseRelation> = new Set([
@@ -34,6 +34,9 @@ function fuentesDe(n: StructureNode): RuleSource[] {
     if (n.fronted.length) claves.push('fronted');
     return claves.flatMap(k => STRUCTURE_RULE_SOURCES[k]);
 }
+
+/** La palabra sin la puntuación pegada («πίστιν.» → «πίστιν»), para citarla en una frase. */
+const limpia = (s: string | undefined) => (s ?? '').replace(/[,.·;:]/g, '');
 
 /** Más sangría que esto no cabe en un teléfono; la jerarquía se sigue leyendo. */
 const MAX_SANGRIA = 5;
@@ -286,6 +289,13 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
     const pageIndex = React.useMemo(() => (mapear ? mapear(words) : undefined), [mapear, words]);
     const frases = React.useMemo(() => (showPhrases ? frasePorRef(structure.phrases) : undefined), [showPhrases, structure.phrases]);
     const [vista, cambiarVista] = useVistaEstructura();
+    // La repetición en espejo (Stg 2:18): palabra → su letra (A, B, B′, A′) y el texto del aviso.
+    const m = structure.mirror;
+    const espejo = React.useMemo(() => {
+        if (!m) return undefined;
+        const r = (o: number) => words[o]?.r ?? '';
+        return new Map<string, MirrorPosition>([[r(m.a), 'A'], [r(m.b), 'B'], [r(m.b2), 'B2'], [r(m.a2), 'A2']]);
+    }, [m, words]);
 
     return (
         <section className="rounded-xl border border-border bg-card p-5 print:break-inside-avoid">
@@ -336,9 +346,15 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
                             )}
                         </div>
                     )}
+                    {m && (
+                        // Dato, no rótulo: si es un quiasmo lo decide quien lee (revisión del profesor, Stg 2:18).
+                        <p className="mb-3 rounded-lg border border-dashed border-border px-3 py-2 text-[12.5px] text-muted-foreground" data-testid="mirror-notice">
+                            {t('mirrorNotice', { a: limpia(words[m.a]?.t), b: limpia(words[m.b]?.t), b2: limpia(words[m.b2]?.t), a2: limpia(words[m.a2]?.t) })}
+                        </p>
+                    )}
                     {vista === 'diagram' ? (
                         <>
-                            <StructureDiagram lang={lang} nodes={nodes} phrases={structure.phrases} underline={frases} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} />
+                            <StructureDiagram lang={lang} nodes={nodes} phrases={structure.phrases} underline={frases} mirror={espejo} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} />
                             {frases && <div className="mt-1.5"><LeyendaFrases /></div>}
                             <p className="mt-3 text-[11px] text-muted-foreground">{t('diagramNote')}</p>
                         </>

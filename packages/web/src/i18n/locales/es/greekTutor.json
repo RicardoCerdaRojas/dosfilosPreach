@@ -878,6 +878,11 @@
       "gloss": "glosa en contexto: «{{gloss}}»",
       "note": "Dato de MACULA: la misma palabra aparece otra vez en este versículo con otra glosa en contexto. Puede ser un sentido distinto (Stg 3:5: «qué pequeño» fuego, «qué grande» bosque) o solo un matiz; tradúcela según el suyo."
     },
+    "mirror": {
+      "title": "Repetición en espejo",
+      "position": "Esta palabra es {{pos}} en el espejo {{a}} · {{b}} | {{b2}} · {{a2}}.",
+      "note": "Dato del texto: los lemas se repiten en orden inverso. Puede ser un quiasmo; confírmalo con el sentido."
+    },
     "louwNida": {
       "title": "Sentido en este versículo (Louw-Nida)",
       "note": "Dato de MACULA: el sentido que el análisis del texto da a esta preposición aquí, según los dominios semánticos de Louw y Nida. El régimen dice qué sentidos admite el caso; esto dice cuál se lee en este versículo.",

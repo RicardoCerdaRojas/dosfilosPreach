@@ -263,6 +263,18 @@ describe('StructureSection', () => {
         expect(pedidos).toEqual(['/language-data/v1/gr/JAS/2.json']);
     });
 
+    it('revisión del profesor (Stg 2:18): el aviso de la repetición en espejo en las dos vistas, y las letras A B B′ A′ en el Diagrama', async () => {
+        localStorage.removeItem('estructura.vista');
+        render(<Seccion lang="gr" book="JAS" chapter={2} verse={18} />);
+        await waitFor(() => expect(screen.getByTestId('mirror-notice')).toBeInTheDocument());
+        expect(screen.getByTestId('mirror-notice').textContent).toBe('mirrorNotice');
+        expect(screen.queryAllByTestId('mirror-letter')).toHaveLength(0);
+        fireEvent.click(screen.getByText('view.diagram'));
+        expect(screen.getByTestId('mirror-notice')).toBeInTheDocument();
+        expect(screen.getAllByTestId('mirror-letter').map(e => e.textContent)).toEqual(['mirrorLetter.A', 'mirrorLetter.B', 'mirrorLetter.B2', 'mirrorLetter.A2']);
+        localStorage.removeItem('estructura.vista');
+    });
+
     it('U11c: el selector Tarjetas | Diagrama cambia la vista y se recuerda', async () => {
         localStorage.removeItem('estructura.vista');
         const { unmount } = render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);

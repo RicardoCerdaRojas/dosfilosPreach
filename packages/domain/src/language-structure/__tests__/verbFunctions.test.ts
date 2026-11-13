@@ -282,3 +282,34 @@ describe('la pista del perfecto proléptico en la 1.ª clase', () => {
         expect(tarea).toContain('"intensive" o "extensive"');
     });
 });
+
+/** Pendientes de la revisión del profesor (2026-11-13): defectos de las reglas del subjuntivo que ya estaban en main. */
+describe('subjuntivo: el subordinante va antes del verbo; «no sea que» con μή aparte o tras un participio; ἐάν partícula', () => {
+    it('un ἕως DESPUÉS del verbo no lo hace indefinido: Mt 17:9 «Μηδενὶ εἴπητε … ἕως οὗ» (prohibición), Lc 2:15 «Διέλθωμεν δὴ ἕως Βηθλέεμ» (exhortativo)', () => {
+        expect(verbo('MAT/17.json', 9, 'εἴπητε').rule).toBe('prohibition');
+        expect(verbo('MAT/17.json', 9, 'ἐγερθῇ').rule).toBe('indefinite');
+        expect(verbo('LUK/2.json', 15, 'Διέλθωμεν').rule).toBe('hortatory');
+    });
+
+    it('«no sea que» con el μή en su propia cláusula (Mt 24:4 «Βλέπετε μή τις … πλανήσῃ») o tras un participio de temor (Hch 27:29 «φοβούμενοί τε μή που … ἐκπέσωμεν»)', () => {
+        expect(verbo('MAT/24.json', 4, 'πλανήσῃ').rule).toBe('lest');
+        expect(verbo('MRK/13.json', 5, 'πλανήσῃ').rule).toBe('lest');
+        expect(verbo('ACT/27.json', 29, 'ἐκπέσωμεν').rule).toBe('lest');
+        expect(verbo('ACT/23.json', 10, 'διασπασθῇ').rule).toBe('lest');
+        expect(verbo('HEB/12.json', 25, 'παραιτήσησθε').rule).toBe('lest');
+    });
+
+    it('NO: una cita tras un verbo de decir sigue siendo prohibición (Stg 2:11, Hch 18:9 «μὴ σιωπήσῃς»)', () => {
+        expect(verbo('JAS/2.json', 11, 'φονεύσῃς').rule).toBe('prohibition');
+        expect(verbo('ACT/18.json', 9, 'σιωπήσῃς').rule).toBe('prohibition');
+    });
+
+    it('ἐάν PARTÍCULA (MorphGNT X-) hace de ἄν: relativo o temporal indefinido (Col 3:23 «ὃ ἐὰν ποιῆτε», 1 Co 11:25 «ὁσάκις ἐὰν πίνητε»); el ἐάν CONJUNCIÓN tras un relativo es condición (Heb 13:23, Mt 21:24)', () => {
+        expect(verbo('COL/3.json', 23, 'ποιῆτε').rule).toBe('indefinite');
+        expect(verbo('1CO/11.json', 25, 'πίνητε').rule).toBe('indefinite');
+        expect(verbo('1JN/4.json', 15, 'ὁμολογήσῃ').rule).toBe('indefinite');
+        expect(verbo('HEB/13.json', 23, 'ἔρχηται').rule).toBe('conditionalEan');
+        expect(verbo('MAT/21.json', 24, 'εἴπητέ').rule).toBe('conditionalEan');
+    });
+});
+

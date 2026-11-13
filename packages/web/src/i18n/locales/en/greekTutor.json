@@ -854,6 +854,11 @@
       "gloss": "gloss in context: “{{gloss}}”",
       "note": "From MACULA: the same word appears again in this verse with another gloss in context. It may be a different sense (Jas 3:5: “how small” a fire, “how great” a forest) or just a nuance; translate it by its own."
     },
+    "mirror": {
+      "title": "Mirror repetition",
+      "position": "This word is {{pos}} in the mirror {{a}} · {{b}} | {{b2}} · {{a2}}.",
+      "note": "From the text: the lemmas repeat in reverse order. It may be a chiasm; confirm it with the sense."
+    },
     "louwNida": {
       "title": "Sense in this verse (Louw-Nida)",
       "note": "From MACULA: the sense the analysis of the text gives this preposition here, by Louw and Nida's semantic domains. The case shows which senses are possible; this shows which one is read in this verse.",
