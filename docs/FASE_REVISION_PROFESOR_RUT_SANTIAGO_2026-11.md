@@ -422,6 +422,42 @@ Lectura (medido):
 - Defectos previos fuera del diff: Mt 17:9, Lc 2:15, Hch 27:29, Mt 24:4 y el orden de filas de Mc 12:19.
 - `yarn banco` solo monta tarjetas del trabajo exegético, así que la ficha y «Estructura» se vieron en el recorrido del fundador en el navegador.
 
+## Etapa 2 (2026-11-13): pendientes y quiasmo
+
+Rama `feat/revision-profesor-pendientes`. El PR #830 se fusionó y se desplegó el 2026-11-12. El fundador le mostró el avance al profesor: «vamos bien».
+
+**P1 (`7a2a3b20`), subjuntivo y ἐάν partícula.** Son defectos que ya estaban en main. Cambian 78 decisiones de verbo en el NT, todas revisadas a mano.
+- **El subordinante va ANTES del verbo:**
+  - Mt 17:9 «Μηδενὶ εἴπητε … ἕως οὗ» pasa a prohibición.
+  - Lc 2:15 «Διέλθωμεν δὴ ἕως Βηθλέεμ» pasa a exhortativo.
+- **«No sea que»** con el μή en su propia cláusula (Mt 24:4, Mc 13:5) o tras un participio de temor (Hch 27:29, Hch 23:10): 10 casos.
+- **ἐάν partícula** (MorphGNT `X-`) hace de ἄν: relativo o temporal indefinido, 61 casos. Tras un relativo, el ἐάν conjunción (`C-`) sigue siendo condición (Mt 21:24, Jn 21:25, Heb 13:23).
+- **En «Estructura»:** Mc 6:23 «Ὅ ἐάν» ya no sale condición.
+
+**P2 (`bff345a6`), 1 Co 7:36.**
+- Con dos condiciones, una «apódosis» coordinada que viene después es otro miembro de la prótasis: no se da el valor.
+- Medido: exigir una sola condición quitaba 7 valores correctos. Este criterio cambia solo 1 Co 7:36.
+
+**P3 (`3db966ba`), Mc 12:19.**
+- Cada conector de una coordinación múltiple (`Conj3CL`) va a su cláusula.
+- Cambian 177 versículos y la muestra mejora entera. El caso más visible: la genealogía de Mt 1:13 salía «δὲ δὲ Ἐλιακὶμ δὲ…» en una sola fila.
+
+**P4 (`d018ea24`), frases con pospositiva.**
+- De las 210 frases griegas omitidas por un hueco, 165 lo tenían por δέ, γάρ…
+- Ahora el dato guarda qué posición salta y se recuperan 160 frases (Mt 11:12 «ἀπὸ δὲ τῶν ἡμερῶν»).
+
+**Quiasmo (`367b187f`): repetición en espejo, como dato.**
+- **Decisiones del fundador:**
+  - se rotula «repetición en espejo: puede ser un quiasmo», nunca «Regla»;
+  - se ve en tres lugares: letras A B B′ A′ en el Diagrama, aviso en las dos vistas y bloque en la ficha;
+  - solo griego, dentro del versículo, sin tocar el prompt.
+- **Medido:** 217 versículos del NT. En una muestra de 30, todas son repeticiones en espejo de verdad y unas 3 de 4 son notables.
+- Stg 2:18 da el espejo exacto del profesor.
+
+**Pendiente:**
+- El hebreo (paralelismo poético) y el quiasmo entre versículos: medirlos aparte.
+- Mc 8:38 queda con un orden de filas raro («γὰρ ἐὰν»).
+
 **Diferencias que quedan con el profesor (leído):**
 - Stg 2:18 «κἀγώ σοι δείξω» sigue sangrado: MACULA lo cuelga de δεῖξον como objeto, y el profesor lo pone al margen.
 - El quiasmo de 2:18 queda para una etapa posterior.
