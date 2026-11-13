@@ -21,8 +21,15 @@ describe('repetición en espejo (A B | B′ A′)', () => {
 
     it('los conocidos: Mt 19:30 πρῶτοι ἔσχατοι | ἔσχατοι πρῶτοι; 2 P 3:8; Stg 2:13', () => {
         expect(espejo('gr/MAT/19.json', 30)).toEqual(['πρῶτοι', 'ἔσχατοι', 'ἔσχατοι', 'πρῶτοι']);
-        expect(espejo('gr/2PE/3.json', 8)).toEqual(['ἡμέρα', 'χίλια', 'χίλια', 'ἡμέρα']);
+        // «ἡμέρα … χίλια ἔτη καὶ χίλια ἔτη ὡς ἡμέρα»: «χίλια ἔτη» se repite en paralelo; el espejo es ἡμέρα · ἔτη | ἔτη · ἡμέρα.
+        expect(espejo('gr/2PE/3.json', 8)).toEqual(['ἡμέρα', 'ἔτη', 'ἔτη', 'ἡμέρα']);
         expect(espejo('gr/JAS/2.json', 13)).toEqual(['κρίσις', 'ἔλεος', 'ἔλεος', 'κρίσεως']);
+    });
+
+    it('NO (revisión adversarial): repetición pegada (Mt 7:22 «Κύριε κύριε»), paralelismo (Mt 25:20 «πέντε τάλαντα … πέντε τάλαντα»), demasiado lejos (Jn 8:44)', () => {
+        expect(espejo('gr/MAT/7.json', 22)).toBeUndefined();
+        expect(espejo('gr/MAT/25.json', 20)).toBeUndefined();
+        expect(espejo('gr/JHN/8.json', 44)).toBeUndefined();
     });
 
     it('NO: nombres propios (Mt 1:12, la genealogía), sin espejo (Stg 2:10), hebreo', () => {
@@ -38,12 +45,12 @@ describe('repetición en espejo (A B | B′ A′)', () => {
         expect(mirrorPositionOf(undefined, 0)).toBeUndefined();
     });
 
-    it('medido en el NT: 217 versículos (si cambia, revisar la muestra antes de aceptar la cifra nueva)', () => {
+    it('medido en el NT: 136 versículos (si cambia, revisar una muestra AL AZAR antes de aceptar la cifra nueva)', () => {
         let n = 0;
         for (const libro of readdirSync(`${RAIZ}gr`)) for (const cap of readdirSync(`${RAIZ}gr/${libro}`)) {
             const ch = cargar(`gr/${libro}/${cap}`);
             for (const v of new Set(ch.words.map(w => Number(w.r.split('!')[0])))) if (greekMirrorRepetition(ch, v)) n++;
         }
-        expect(n).toBe(217);
+        expect(n).toBe(136);
     }, 120_000);
 });

@@ -35,6 +35,9 @@ function fuentesDe(n: StructureNode): RuleSource[] {
     return claves.flatMap(k => STRUCTURE_RULE_SOURCES[k]);
 }
 
+/** La palabra sin la puntuación pegada («πίστιν.» → «πίστιν»), para citarla en una frase. */
+const limpia = (s: string | undefined) => (s ?? '').replace(/[,.·;:]/g, '');
+
 /** Más sangría que esto no cabe en un teléfono; la jerarquía se sigue leyendo. */
 const MAX_SANGRIA = 5;
 
@@ -346,7 +349,7 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
                     {m && (
                         // Dato, no rótulo: si es un quiasmo lo decide quien lee (revisión del profesor, Stg 2:18).
                         <p className="mb-3 rounded-lg border border-dashed border-border px-3 py-2 text-[12.5px] text-muted-foreground" data-testid="mirror-notice">
-                            {t('mirrorNotice', { a: words[m.a]?.t, b: words[m.b]?.t, b2: words[m.b2]?.t, a2: words[m.a2]?.t })}
+                            {t('mirrorNotice', { a: limpia(words[m.a]?.t), b: limpia(words[m.b]?.t), b2: limpia(words[m.b2]?.t), a2: limpia(words[m.a2]?.t) })}
                         </p>
                     )}
                     {vista === 'diagram' ? (

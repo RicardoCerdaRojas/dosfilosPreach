@@ -431,7 +431,7 @@ Rama `feat/revision-profesor-pendientes`. El PR #830 se fusionó y se desplegó 
   - Mt 17:9 «Μηδενὶ εἴπητε … ἕως οὗ» pasa a prohibición.
   - Lc 2:15 «Διέλθωμεν δὴ ἕως Βηθλέεμ» pasa a exhortativo.
 - **«No sea que»** con el μή en su propia cláusula (Mt 24:4, Mc 13:5) o tras un participio de temor (Hch 27:29, Hch 23:10): 10 casos.
-- **ἐάν partícula** (MorphGNT `X-`) hace de ἄν: relativo o temporal indefinido, 61 casos. Tras un relativo, el ἐάν conjunción (`C-`) sigue siendo condición (Mt 21:24, Jn 21:25, Heb 13:23).
+- **ἐάν partícula** (MorphGNT `X-`) hace de ἄν: relativo o temporal indefinido, 62 casos (49 tras un relativo). Tras un relativo, el ἐάν conjunción (`C-`) sigue siendo condición (Mt 21:24, Jn 21:25, Heb 13:23).
 - **En «Estructura»:** Mc 6:23 «Ὅ ἐάν» ya no sale condición.
 
 **P2 (`bff345a6`), 1 Co 7:36.**
@@ -451,8 +451,20 @@ Rama `feat/revision-profesor-pendientes`. El PR #830 se fusionó y se desplegó 
   - se rotula «repetición en espejo: puede ser un quiasmo», nunca «Regla»;
   - se ve en tres lugares: letras A B B′ A′ en el Diagrama, aviso en las dos vistas y bloque en la ficha;
   - solo griego, dentro del versículo, sin tocar el prompt.
-- **Medido:** 217 versículos del NT. En una muestra de 30, todas son repeticiones en espejo de verdad y unas 3 de 4 son notables.
+- **Medido:** 136 versículos del NT, tras la revisión adversarial. Muestra al azar de 30: 28 espejos de verdad y 2 paralelismos (Mt 10:41, Ap 4:7). La primera cifra (217) se había juzgado con una muestra elegida, no al azar.
 - Stg 2:18 da el espejo exacto del profesor.
+
+**Revisión adversarial de la etapa 2 (dos revisores).**
+- **Verbos:** los 78 cambios, leídos uno por uno, están bien.
+- **Corregido:**
+  - **Espejo:** la primera cifra (217) se había juzgado con una muestra elegida. Ahora B y B′ no van pegados, se excluye el paralelismo y los cuantificadores, y hay un tope de 15 palabras. Quedan 136 versículos; en una muestra al azar de 30, 28 son espejo.
+  - **Aviso y ficha:** sin la puntuación pegada, con una prueba que usa la interpolación real.
+  - **Varios conectores:** también cuando la palabra siguiente está en una nieta (Lc 11:10). Las filas con la conjunción repetida bajan de 234 en `main` a 17.
+  - **Invariante nueva sobre el corpus:** dentro de cada fila, las palabras van en el orden del texto.
+- **Quedan:**
+  - 17 filas con la conjunción repetida que vienen de envoltorios anidados (Mt 13:15, Jn 12:40, Hch 28:27).
+  - 5 filas que suman un segundo conector (Mc 4:22 «ἀλλ’ ἵνα»).
+  - Una fila de solo «γάρ» en Mt 6:24, Lc 16:13 y Jn 5:22.
 
 **Pendiente:**
 - El hebreo (paralelismo poético) y el quiasmo entre versículos: medirlos aparte.

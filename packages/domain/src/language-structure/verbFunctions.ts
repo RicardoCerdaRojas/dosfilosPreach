@@ -138,7 +138,8 @@ function subordinanteCercano(c: Contexto): string | undefined {
         const s = cl.find(x => SUBORDINANTES.has(x.l) && (!x.role || INDEFINIDOS.has(x.l)) && antes(x)) ?? cl.find(x => x.l === 'ἄν' && antes(x));
         // «ὃς ἐάν», «ὅσα ἐάν», «ὅπου ἐάν» (1 Jn 4:15, Mt 7:12): MorphGNT etiqueta ese ἐάν como PARTÍCULA (X-),
         // que hace de ἄν: relativo indefinido (Wallace p. 478), no condición. El ἐάν conjunción (C-) tras un
-        // relativo sí es condición: Mt 21:24 «ὃν ἐὰν εἴπητέ μοι», Jn 21:25, Heb 13:23 (medido en el NT: 44 y 3).
+        // relativo sí es condición: Mt 21:24 «ὃν ἐὰν εἴπητέ μοι», Jn 21:25, Heb 13:23 (medido en el NT: ἐάν X-, 62 veces, 49 tras un
+        // relativo y 13 tras ὁσάκις/ἡνίκα/καθό/ὅ τι; ἐάν C- tras un relativo, 3).
         if (s?.l === 'ἐάν' && s.pos === 'X-') return 'ἄν';
         if (s) return s.l;
         // Una cláusula con verbo propio (distinto) corta la búsqueda: ya es otra oración.

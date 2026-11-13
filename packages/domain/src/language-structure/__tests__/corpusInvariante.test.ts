@@ -28,6 +28,9 @@ describe('estructura — invariante sobre todo el corpus', () => {
                     if (vista.join() !== esperadas.join()) malos.push(`${libro} ${archivo} ${v}`);
                     // U11: ninguna fila con nivel negativo; un grupo de prótasis tiene su condición y otro miembro más.
                     if (nodos.some(n => n.depth < 0)) malos.push(`${libro} ${archivo} ${v} (nivel)`);
+                    // Revisión adversarial (etapa 2): dentro de cada fila, las palabras en el orden del texto.
+                    const pos = new Map(ch.words.map((w, k) => [w.r, k]));
+                    if (nodos.some(n => n.words.some((w, k) => k > 0 && pos.get(w.r)! < pos.get(n.words[k - 1]!.r)!))) malos.push(`${libro} ${archivo} ${v} (orden)`);
                     const grupos = new Map<number, string[]>();
                     for (const n of nodos) if (n.conditionGroup !== undefined) grupos.set(n.conditionGroup, [...(grupos.get(n.conditionGroup) ?? []), n.relation]);
                     for (const rs of grupos.values()) if (rs.length < 2 || !rs.includes('condition')) malos.push(`${libro} ${archivo} ${v} (grupo)`);

@@ -310,7 +310,8 @@ export function verseStructure(ch: ChapterStructure, verse: number): StructureNo
                     relation = 'question';
                 } else if (conector.l === 'ἐάν' && (conector.pos === 'X-' || (antes && (antes.pos === 'RR' || RELATIVOS.has(antes.l))))) {
                     // ἐάν PARTÍCULA (MorphGNT X-) hace de ἄν: «ὃ ἐάν» relativo indefinido («lo que», 1 Jn 3:22),
-                    // «ὁσάκις ἐάν», «ἡνίκα ἐάν» temporal indefinido («cada vez que», 1 Co 11:26, 2 Co 3:16). No es
+                    // «ὁσάκις ἐάν» temporal indefinido («cada vez que», 1 Co 11:25, Ap 11:6; en 1 Co 11:26 la fila
+                    // lleva la relación de su γάρ, y 2 Co 3:16 la de su ἡνίκα). No es
                     // condición. El ἐάν conjunción (C-) tras un relativo (Mt 21:24, Jn 21:25, Heb 13:23) se lee
                     // condición en la ficha del verbo, pero aquí sigue en la fila de su relativa: MACULA deja el
                     // relativo en la hija y una fila de sólo «ἐάν» se leía peor. Pendientes de la revisión, 2026-11-13.
@@ -492,7 +493,14 @@ function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: Readon
             // («καὶ καὶ μὴ ἀφῇ») la fila se ordenaba por el primer καί, antes de «καταλίπῃ» (pendientes de la
             // revisión, 2026-11-13).
             if (propias.length > 1 && propias.every(t => !t.role && CONECTOR_GRIEGO[lemaDe.get(t.r) ?? ''])) {
-                const destinos = propias.map(p => { const sg = siguiente(p.r); return hijas.find(h => h.tokens.some(t => t.r === sg)); });
+                // La palabra que sigue puede estar en una NIETA (el participio sujeto: Lc 11:10 «καὶ ὁ ζητῶν
+                // εὑρίσκει»): el destino es la hija de la que cuelga esa fila (revisión adversarial).
+                const hijaDe = (r: string | undefined) => {
+                    let f = r === undefined ? undefined : filas.find(x => x.tokens.some(t => t.r === r));
+                    while (f && !hijas.includes(f)) f = filas.find(x => x.index === f!.parent);
+                    return f;
+                };
+                const destinos = propias.map(p => hijaDe(siguiente(p.r)));
                 if (destinos.every(Boolean) && new Set(destinos).size === destinos.length) {
                     propias.forEach((p, k) => {
                         const h = destinos[k]!;

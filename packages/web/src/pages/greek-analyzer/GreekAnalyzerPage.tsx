@@ -211,7 +211,7 @@ export function GreekAnalyzerPage() {
     const espejoDe = (i: number) => {
         const m = estructura.mirror;
         const pos = mirrorPositionOf(m, i);
-        const tx = (o: number) => data?.tokens[o]?.text ?? '';
+        const tx = (o: number) => (data?.tokens[o]?.text ?? '').replace(/[,.·;:]/g, '');
         return m && pos ? { position: pos, a: tx(m.a), b: tx(m.b), b2: tx(m.b2), a2: tx(m.a2) } : undefined;
     };
     const mismoLemaDe = (i: number) => {
