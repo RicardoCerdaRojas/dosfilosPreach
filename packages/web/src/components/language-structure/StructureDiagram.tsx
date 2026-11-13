@@ -13,11 +13,11 @@ import {
 } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
-import { SUBRAYADO_FRASE } from './frases';
+import { MAX_SANGRIA_FILAS, SUBRAYADO_FRASE } from './frases';
 import type { StructureWordLinks } from './StructureSection';
 
-/** Más sangría que esto no cabe en un teléfono. */
-const MAX_SANGRIA = 6;
+/** La de las tarjetas, más la línea «└» de la frase. */
+const MAX_SANGRIA = MAX_SANGRIA_FILAS + 1;
 
 interface Props {
     lang: StructureLanguage;

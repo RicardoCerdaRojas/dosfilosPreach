@@ -39,3 +39,10 @@ export function useFrasesVisibles(clave: string): [boolean, () => void] {
     });
     return [visibles, alternar];
 }
+
+/**
+ * La sangría máxima de una fila de «Estructura», en las tarjetas y en el Diagrama: más no cabe en un teléfono
+ * y la jerarquía se sigue leyendo. Medido (2026-11-13): ninguna fila del NT ni del AT pasa de 5 niveles sobre
+ * la primera. El Diagrama suma uno para la línea «└» de la frase que cuelga del verbo.
+ */
+export const MAX_SANGRIA_FILAS = 5;

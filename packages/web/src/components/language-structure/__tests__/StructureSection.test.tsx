@@ -27,18 +27,18 @@ const cargar = (rel: string): ChapterStructure => JSON.parse(archivo(rel));
 const santiago2 = cargar('gr/JAS/2.json');
 
 describe('StructureFlow (G1 + G5)', () => {
-    it('Stg 2:9: prótasis con su clase, apódosis, conector punteado y objeto antepuesto resaltado', () => {
+    it('Stg 2:9: prótasis con su clase (y su δέ, como en el texto), apódosis, conector punteado y objeto antepuesto resaltado', () => {
         render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 9)} />);
         const filas = screen.getAllByTestId('structure-row');
-        expect(filas).toHaveLength(5);
-        expect(filas[1]!.textContent).toContain('protasis · classLabel.1');
-        expect(filas[1]!.textContent).toContain('classNotes.1');
-        expect(filas[2]!.textContent).toContain('apodosis');
+        expect(filas).toHaveLength(4);
+        expect(filas[0]!.textContent).toContain('protasis · classLabel.1');
+        expect(filas[0]!.textContent).toContain('classNotes.1');
+        expect(filas[1]!.textContent).toContain('apodosis');
         const ei = screen.getByText('εἰ').parentElement!;
         expect(ei.className).toContain('outline-dashed');
         const hamartian = screen.getByText('ἁμαρτίαν').parentElement!;
         expect(hamartian.className).toContain('outline-warning');
-        expect(filas[2]!.textContent).toContain('fronted');
+        expect(filas[1]!.textContent).toContain('fronted');
     });
 
     it('U11 (Stg 2:14): el 2.º miembro de la prótasis lo dice; la condición y la apódosis, no', () => {
@@ -102,7 +102,7 @@ describe('StructureFlow (G1 + G5)', () => {
     it('la sangría sigue la profundidad, relativa a la fila menos profunda', () => {
         render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 9)} />);
         const sangrias = screen.getAllByTestId('structure-row').map(f => f.style.marginLeft);
-        expect(sangrias).toEqual(['0rem', '3rem', '1.5rem', '3rem', '4.5rem']);
+        expect(sangrias).toEqual(['1.5rem', '0rem', '1.5rem', '3rem']);
     });
 
     it('si ninguna fila está en el nivel 0 (el versículo empieza dentro de otra cláusula), no sangra de más', () => {
@@ -177,7 +177,7 @@ describe('la fuente de cada fila con regla', () => {
         render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 9)} />);
         const toggles = screen.getAllByTestId('source-toggle');
         expect(toggles.length).toBeGreaterThan(0);
-        fireEvent.click(toggles[1]!);
+        fireEvent.click(toggles[0]!);
         expect(screen.getByTestId('source-note').textContent).toContain('First Class Condition');
     });
 
@@ -198,7 +198,7 @@ describe('la fuente de cada fila con regla', () => {
             );
         };
         render(<Pagina />);
-        fireEvent.click(screen.getAllByTestId('source-toggle')[1]!);
+        fireEvent.click(screen.getAllByTestId('source-toggle')[0]!);
         expect(screen.getByTestId('source-note').textContent).toContain('First Class Condition');
     });
 });

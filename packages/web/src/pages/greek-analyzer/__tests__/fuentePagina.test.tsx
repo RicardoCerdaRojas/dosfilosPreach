@@ -41,7 +41,7 @@ describe('«Fuente» en la página griega (Stg 2:9)', () => {
     it('se abre al tocarlo', async () => {
         render(<TooltipProvider><GreekAnalyzerPage /></TooltipProvider>);
         await waitFor(() => expect(screen.getAllByTestId('source-toggle').length).toBeGreaterThan(0));
-        fireEvent.click(screen.getAllByTestId('source-toggle')[1]!);
+        fireEvent.click(screen.getAllByTestId('source-toggle')[0]!);
         await waitFor(() => expect(screen.getByTestId('source-note').textContent).toContain('First Class Condition'));
     });
 });

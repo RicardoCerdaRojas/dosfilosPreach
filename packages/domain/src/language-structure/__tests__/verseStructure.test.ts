@@ -25,15 +25,15 @@ describe('verseStructure — griego', () => {
     const stg1 = cargar('gr/JAS/1.json');
     const stg2 = cargar('gr/JAS/2.json');
 
-    it('Stg 2:9: δέ abre la oración; prótasis de 1.ª clase; apódosis con el objeto adelantado', () => {
+    it('Stg 2:9: δέ va en la fila de la prótasis, como en el texto, y su relación en la apódosis; prótasis de 1.ª clase; apódosis con el objeto adelantado', () => {
         const ns = verseStructure(stg2, 9);
-        expect(texto(ns[0]!)).toBe('δὲ');
-        expect(ns[0]).toMatchObject({ relation: 'development' });
         const prot = fila(ns, 'εἰ');
+        expect(prot).toBe(ns[0]);
         expect(prot).toMatchObject({ relation: 'condition', conditionalClass: 1, isApodosis: false });
-        expect(texto(prot)).toBe('εἰ προσωπολημπτεῖτε');
+        expect(texto(prot)).toBe('εἰ δὲ προσωπολημπτεῖτε');
+        expect(conector(prot)).toBe('εἰ');
         const apo = fila(ns, 'ἁμαρτίαν');
-        expect(apo).toMatchObject({ relation: 'main', isApodosis: true });
+        expect(apo).toMatchObject({ relation: 'development', isApodosis: true });
         expect(apo.fronted.map(f => f.role)).toEqual(['o']);
         expect(fila(ns, 'ἐλεγχόμενοι')).toMatchObject({ relation: 'participial', depth: apo.depth + 1 });
         expect(fila(ns, 'ὡς')).toMatchObject({ relation: 'comparison', verbless: true });
@@ -56,13 +56,13 @@ describe('verseStructure — griego', () => {
         expect(ns[1]).toMatchObject({ relation: 'participial', depth: ns[0]!.depth + 1 });
     });
 
-    it('Stg 1:5: Εἰ se funde con su verbo (la clase se mira en la hija); δέ queda como fila propia; καί coordina dentro de la apódosis', () => {
+    it('Stg 1:5: Εἰ se funde con su verbo (la clase se mira en la hija); δέ va con él, como en el texto, y su relación a la apódosis; καί coordina dentro de la apódosis', () => {
         const ns = verseStructure(stg1, 5);
-        expect(texto(ns[0]!)).toBe('δέ');
         const prot = fila(ns, 'Εἰ');
-        expect(texto(prot)).toBe('Εἰ τις ὑμῶν λείπεται σοφίας');
+        expect(prot).toBe(ns[0]);
+        expect(texto(prot)).toBe('Εἰ δέ τις ὑμῶν λείπεται σοφίας');
         expect(prot).toMatchObject({ relation: 'condition', conditionalClass: 1 });
-        expect(fila(ns, 'αἰτείτω')).toMatchObject({ isApodosis: true });
+        expect(fila(ns, 'αἰτείτω')).toMatchObject({ relation: 'development', isApodosis: true });
         expect(fila(ns, 'καὶ δοθήσεται')).toMatchObject({ relation: 'addition', isApodosis: true });
         expect(fila(ns, 'καὶ μὴ')).toMatchObject({ relation: 'addition', isApodosis: false });
     });
@@ -73,9 +73,11 @@ describe('verseStructure — griego', () => {
         expect(fila(jn, 'οὐκ ἂν')).toMatchObject({ isApodosis: true });
         expect(fila(verseStructure(cargar('gr/1JN/1.json'), 9), 'ἐὰν')).toMatchObject({ conditionalClass: 3 });
         const pe = verseStructure(cargar('gr/1PE/3.json'), 14);
-        const prot = fila(pe, 'εἰ');
+        const prot = fila(pe, 'ἀλλ’ εἰ');
         expect(prot).toMatchObject({ conditionalClass: 4, relation: 'condition' });
-        expect(texto(prot)).toBe('εἰ καὶ πάσχοιτε διὰ δικαιοσύνην');
+        expect(texto(prot)).toBe('ἀλλ εἰ καὶ πάσχοιτε διὰ δικαιοσύνην');
+        // El ἀλλά da su relación a la apódosis «μακάριοι».
+        expect(fila(pe, 'μακάριοι')).toMatchObject({ relation: 'contrast', isApodosis: true });
         // καί adverbial («aun si»): ni conector ni adelantado.
         expect(conector(prot)).toBe('εἰ');
         expect(prot.fronted).toEqual([]);
@@ -100,7 +102,7 @@ describe('verseStructure — revisión adversarial de G1 + G5', () => {
 
     it('«ὃ ἐάν» es relativo indefinido, en una sola fila (1 Jn 3:22)', () => {
         const ns = verseStructure(cargar('gr/1JN/3.json'), 22);
-        expect(fila(ns, 'ὃ ἐὰν')).toMatchObject({ relation: 'relative' });
+        expect(fila(ns, 'καὶ ὃ ἐὰν')).toMatchObject({ relation: 'relative' });
         expect(ns.some(n => n.relation === 'condition')).toBe(false);
     });
 

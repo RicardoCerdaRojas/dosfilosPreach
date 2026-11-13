@@ -16,7 +16,7 @@ import { SourceNote } from './SourceNote';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VerseStructureState } from './useVerseStructure';
-import { frasePorRef, SUBRAYADO_FRASE } from './frases';
+import { frasePorRef, MAX_SANGRIA_FILAS, SUBRAYADO_FRASE } from './frases';
 import { StructureDiagram } from './StructureDiagram';
 import type { MirrorPosition, PhraseKind } from '@dosfilos/domain';
 
@@ -38,8 +38,6 @@ function fuentesDe(n: StructureNode): RuleSource[] {
 /** La palabra sin la puntuación pegada («πίστιν.» → «πίστιν»), para citarla en una frase. */
 const limpia = (s: string | undefined) => (s ?? '').replace(/[,.·;:]/g, '');
 
-/** Más sangría que esto no cabe en un teléfono; la jerarquía se sigue leyendo. */
-const MAX_SANGRIA = 5;
 
 /** Las mismas clases en la palabra y en la leyenda: lo que se explica es lo que se ve. */
 const CHIP = 'inline-flex flex-col items-center rounded-md bg-muted/50 px-2 pb-0.5 pt-0.5';
@@ -104,7 +102,7 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
     return (
         <ol className="space-y-2">
             {nodes.map(n => {
-                const sangria = Math.min(n.depth - base, MAX_SANGRIA);
+                const sangria = Math.min(n.depth - base, MAX_SANGRIA_FILAS);
                 const adelantados = new Set(n.fronted.flatMap(f => f.rs));
                 const lectura = readingFor(n, readings);
                 const roles = n.fronted.map(f => t(`roleNames.${f.role}`)).join(', ');

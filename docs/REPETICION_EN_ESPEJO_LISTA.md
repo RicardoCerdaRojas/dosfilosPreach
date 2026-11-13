@@ -1,6 +1,6 @@
 # Repetición en espejo: la lista curada del NT griego
 
-Esta es la lista que se muestra en el analizador (`packages/domain/src/language-structure/greekMirrorList.ts`). Revisión del profesor, 2026-11, Stg 2:18. **Se generó para que la revise el fundador:** se puede marcar cualquier fila para quitarla o para corregir su par.
+Esta es la lista que se muestra en el analizador (`packages/domain/src/language-structure/greekMirrorList.ts`). Revisión del profesor, 2026-11, Stg 2:18. **Confirmada por el fundador el 2026-11-13:** los 74 versículos quedan como están.
 
 **Cómo se armó (2026-11-13):**
 1. El detector propuso 88 candidatos. Se agregaron a mano Mt 13:15 y Hch 28:27, que vienen de Is 6:10.
