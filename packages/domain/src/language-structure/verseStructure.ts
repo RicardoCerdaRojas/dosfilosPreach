@@ -83,6 +83,8 @@ const rolDe = (r: string): ConstituentRole => (ROLES.has(r) ? (r as ConstituentR
 
 // ── Griego ────────────────────────────────────────────────────────────────────
 
+/** Antes de un ἐάν partícula, lo hacen temporal indefinido («cada vez que»). */
+const TEMPORAL_INDEFINIDO: ReadonlySet<string> = new Set(['ὁσάκις', 'ἡνίκα', 'ὅτε', 'ὡς']);
 /** Antes de ἐάν hacen de él un relativo indefinido («ὃ ἐάν», «ὅπου ἐάν»). */
 const RELATIVOS: ReadonlySet<string> = new Set(['ὅς', 'ὅστις', 'ὅσος', 'ὅπου', 'οἷος', 'ὁποῖος', 'ὅθεν']);
 
@@ -306,10 +308,13 @@ export function verseStructure(ch: ChapterStructure, verse: number): StructureNo
                 if (regla === 'PtclCL' && conector.l === 'εἰ') {
                     // MACULA marca así el εἰ interrogativo («si ya había muerto», Mc 15:44).
                     relation = 'question';
-                } else if (conector.l === 'ἐάν' && antes && (antes.pos === 'RR' || RELATIVOS.has(antes.l))) {
-                    // «ὃ ἐάν»: relativo indefinido («lo que»), no condición (1 Jn 3:22).
-                    // El conector es el relativo, que MACULA deja en la hija: así se funden.
-                    relation = 'relative';
+                } else if (conector.l === 'ἐάν' && (conector.pos === 'X-' || (antes && (antes.pos === 'RR' || RELATIVOS.has(antes.l))))) {
+                    // ἐάν PARTÍCULA (MorphGNT X-) hace de ἄν: «ὃ ἐάν» relativo indefinido («lo que», 1 Jn 3:22),
+                    // «ὁσάκις ἐάν», «ἡνίκα ἐάν» temporal indefinido («cada vez que», 1 Co 11:26, 2 Co 3:16). No es
+                    // condición. El ἐάν conjunción (C-) tras un relativo (Mt 21:24, Jn 21:25, Heb 13:23) se lee
+                    // condición en la ficha del verbo, pero aquí sigue en la fila de su relativa: MACULA deja el
+                    // relativo en la hija y una fila de sólo «ἐάν» se leía peor. Pendientes de la revisión, 2026-11-13.
+                    relation = antes && TEMPORAL_INDEFINIDO.has(antes.l) ? 'time' : 'relative';
                     connector = null;
                 } else if (conector.l === 'εἰ' && tras?.l === 'μή' && !sub.some(w => ['I', 'S', 'O'].includes(modo(w)))) {
                     // «εἰ μή» sin verbo: «sino», «excepto» (Mt 12:4).

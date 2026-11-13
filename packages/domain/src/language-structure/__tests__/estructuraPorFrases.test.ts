@@ -78,6 +78,14 @@ describe('Estructura por frases (U11a, revisión del profesor)', () => {
         expect(miembro.isApodosis).toBe(false);
     });
 
+    it('pendientes: ἐάν PARTÍCULA no es condición — Mc 6:23 «Ὅ ἐάν με αἰτήσῃς» relativa, 2 Co 3:16 «ἡνίκα ἐάν» temporal; sin fila de sólo «ἐάν»', () => {
+        const mc = filas('gr/MRK/6.json', 23);
+        expect(fila(mc, 'Ὅ ἐάν').relation).toBe('relative');
+        expect(mc.some(n => n.relation === 'condition')).toBe(false);
+        expect(fila(filas('gr/2CO/3.json', 16), 'ἡνίκα ἐὰν').relation).toBe('time');
+        expect(filas('gr/COL/3.json', 17).some(n => texto(n) === 'ἐὰν')).toBe(false);
+    });
+
     it('hebreo: אִם puede envolver la oración entera — la apódosis no entra al grupo (Am 9:3); Lv 13:28, prótasis de tres', () => {
         expect(filas('he/Amos/9.json', 3).some(n => n.conditionGroup !== undefined)).toBe(false);
         const lv = filas('he/Lev/13.json', 28);
