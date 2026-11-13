@@ -14,10 +14,17 @@ import { verseStructure } from './verseStructure.js';
  * descarta si A y A′ comparten fila de «Estructura» y B y B′ también. Si hay varias, la más corta (en
  * empate, la primera).
  *
- * Medido (2026-11-13) en el NT: 136 versículos. Muestra AL AZAR de 30 (semilla fija, revisión
- * adversarial): 28 son espejo de verdad (Jn 16:28, 2 Co 2:16, Mc 2:27, 1 Jn 4:20, Hch 28:27…) y 2 son
- * paralelismo (Mt 10:41, Ap 4:7). La primera versión (217) se había juzgado con una muestra elegida, no
- * al azar, y traía «Κύριε κύριε» (Mt 7:22), paralelismos (Mt 25:20) y espejos de hasta 34 palabras.
+ * Medido (2026-11-13) en el NT: 88 versículos. Precisión clasificada A CIEGAS por revisores
+ * independientes, sobre muestras al azar:
+ *   - versión sin el criterio de bloques: 17 de 30 (57 %);
+ *   - con él, en una muestra NUEVA (fuera de la que sirvió para diseñarlo): 23 de 30 (77 %). Fallan
+ *     la narración sin figura (Jn 19:29, Lc 5:7, Lc 11:1), dos paralelos (1 Co 7:14, Ap 1:20) y dos
+ *     elecciones de par discutibles (Lc 6:42 ojo/viga en vez de paja/viga, que abarca 28 palabras; Lc 6:43).
+ * Sensibilidad: de 29 quiasmos conocidos (lista armada de memoria, no de un manual), salen los de
+ * palabras dentro del versículo, salvo Mt 13:15 / Hch 28:27 (Is 6:10), cuyas mitades abarcan varias
+ * cláusulas; no salen los de sentido (Mt 6:24, Flp 1:21) ni los que cruzan de versículo, por diseño.
+ * Afinar más con reglas sobre las mismas muestras empeoraba (sobreajuste): se dejó aquí.
+ * La primera versión (217) se había juzgado con una muestra elegida, no al azar.
  * Sin ἔχω, Stg 2:18 daba «πίστιν ἔχεις | ἔχω πίστιν»; sin nombres propios caen la genealogía (Mt 1)
  * y la fórmula «Χριστῷ Ἰησοῦ | Ἰησοῦ Χριστοῦ».
  */
@@ -45,7 +52,14 @@ export function greekMirrorRepetition(ch: ChapterStructure, verse: number): Mirr
     const seq = ws.map((w, i) => ({ l: w.l, i })).filter((_, i) => deContenido(ws[i]!));
     if (seq.length < 4) return undefined;
     const filas = verseStructure(ch, verse);
-    const filaDe = (i: number) => filas.findIndex(f => f.words.some(t => t.r === ws[i]!.r));
+    const clausulaDe = (i: number) => filas.find(f => f.words.some(t => t.r === ws[i]!.r))?.index;
+    /** ¿x es y o cuelga de y en el árbol de MACULA? */
+    const bajo = (x: number | undefined, y: number | undefined) => {
+        if (x === undefined || y === undefined) return false;
+        for (let p: number | null = x; p !== null; p = p >= 0 ? ch.clauses[p]?.p ?? null : null) if (p === y) return true;
+        return false;
+    };
+    const juntos = (x: number | undefined, y: number | undefined) => bajo(x, y) || bajo(y, x);
     let mejor: MirrorFact | undefined;
     for (let j = 0; j < seq.length; j++) for (let k = j + 1; k < seq.length; k++) {
         const B = seq[j]!, B2 = seq[k]!;
@@ -64,7 +78,14 @@ export function greekMirrorRepetition(ch: ChapterStructure, verse: number): Mirr
             const limpio = !seq.slice(a + 1, j).some(x => x.l === A.l || x.l === B.l)
                 && !seq.slice(k + 1, m2).some(x => x.l === A.l || x.l === B.l)
                 && !entre.some(x => x.l === A.l);
-            if (!limpio || A2.i - A.i > MAX_ABARCA || (filaDe(A.i) === filaDe(A2.i) && filaDe(B.i) === filaDe(B2.i))) continue;
+            // Cada mitad es UN bloque (una cláusula y lo que cuelga de ella: Lc 14:11 «ὁ ὑψῶν … ταπεινωθήσεται»)
+            // y las dos mitades van en filas distintas (pueden estar anidadas: Stg 2:18, donde MACULA cuelga
+            // «κἀγώ σοι δείξω» de «δεῖξόν μοι»). Sin esto, dos cláusulas paralelas cortadas por la mitad parecían
+            // espejo (1 Co 14:15, 1 Jn 5:6). Muestra ciega de 30 (revisor independiente): sin el criterio, 17
+            // espejos; con él, pasan 20 y 17 son espejo (85 %), sin perder ninguno de los 17.
+            const [ca, cb, cb2, ca2] = [A.i, B.i, B2.i, A2.i].map(clausulaDe);
+            const dosBloques = juntos(ca, cb) && juntos(cb2, ca2) && ca !== ca2 && cb !== cb2 && ca !== cb2 && cb !== ca2;
+            if (!limpio || A2.i - A.i > MAX_ABARCA || !dosBloques) continue;
             if (!mejor || A2.i - A.i < mejor.a2 - mejor.a) mejor = { a: A.i, b: B.i, b2: B2.i, a2: A2.i };
             break;
         }

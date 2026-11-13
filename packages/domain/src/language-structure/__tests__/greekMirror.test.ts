@@ -32,6 +32,11 @@ describe('repetición en espejo (A B | B′ A′)', () => {
         expect(espejo('gr/JHN/8.json', 44)).toBeUndefined();
     });
 
+    it('NO (muestra ciega): dos cláusulas paralelas cortadas por la mitad (1 Co 14:15 «προσεύξομαι τῷ πνεύματι … ψαλῶ τῷ πνεύματι», 1 Jn 5:6 «ὕδατος καὶ αἵματος» dos veces)', () => {
+        expect(espejo('gr/1CO/14.json', 15)).toBeUndefined();
+        expect(espejo('gr/1JN/5.json', 6)).toBeUndefined();
+    });
+
     it('NO: nombres propios (Mt 1:12, la genealogía), sin espejo (Stg 2:10), hebreo', () => {
         expect(espejo('gr/MAT/1.json', 12)).toBeUndefined();
         expect(espejo('gr/JAS/2.json', 10)).toBeUndefined();
@@ -45,12 +50,12 @@ describe('repetición en espejo (A B | B′ A′)', () => {
         expect(mirrorPositionOf(undefined, 0)).toBeUndefined();
     });
 
-    it('medido en el NT: 136 versículos (si cambia, revisar una muestra AL AZAR antes de aceptar la cifra nueva)', () => {
+    it('medido en el NT: 88 versículos (si cambia, clasificar una muestra AL AZAR y a ciegas antes de aceptar la cifra nueva)', () => {
         let n = 0;
         for (const libro of readdirSync(`${RAIZ}gr`)) for (const cap of readdirSync(`${RAIZ}gr/${libro}`)) {
             const ch = cargar(`gr/${libro}/${cap}`);
             for (const v of new Set(ch.words.map(w => Number(w.r.split('!')[0])))) if (greekMirrorRepetition(ch, v)) n++;
         }
-        expect(n).toBe(136);
+        expect(n).toBe(88);
     }, 120_000);
 });

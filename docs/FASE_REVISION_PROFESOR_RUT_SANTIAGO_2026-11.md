@@ -451,13 +451,13 @@ Rama `feat/revision-profesor-pendientes`. El PR #830 se fusionó y se desplegó 
   - se rotula «repetición en espejo: puede ser un quiasmo», nunca «Regla»;
   - se ve en tres lugares: letras A B B′ A′ en el Diagrama, aviso en las dos vistas y bloque en la ficha;
   - solo griego, dentro del versículo, sin tocar el prompt.
-- **Medido:** 136 versículos del NT, tras la revisión adversarial. Muestra al azar de 30: 28 espejos de verdad y 2 paralelismos (Mt 10:41, Ap 4:7). La primera cifra (217) se había juzgado con una muestra elegida, no al azar.
+- **Medido:** ver «Espejo: precisión medida a ciegas» abajo. La versión final da 88 versículos y 77 % de precisión, medida a ciegas fuera de muestra.
 - Stg 2:18 da el espejo exacto del profesor.
 
 **Revisión adversarial de la etapa 2 (dos revisores).**
 - **Verbos:** los 78 cambios, leídos uno por uno, están bien.
 - **Corregido:**
-  - **Espejo:** la primera cifra (217) se había juzgado con una muestra elegida. Ahora B y B′ no van pegados, se excluye el paralelismo y los cuantificadores, y hay un tope de 15 palabras. Quedan 136 versículos; en una muestra al azar de 30, 28 son espejo.
+  - **Espejo:** la primera cifra (217) se había juzgado con una muestra elegida. Ahora B y B′ no van pegados, se excluye el paralelismo y los cuantificadores, y hay un tope de 15 palabras. La precisión real se midió después, a ciegas.
   - **Aviso y ficha:** sin la puntuación pegada, con una prueba que usa la interpolación real.
   - **Varios conectores:** también cuando la palabra siguiente está en una nieta (Lc 11:10). Las filas con la conjunción repetida bajan de 234 en `main` a 17.
   - **Invariante nueva sobre el corpus:** dentro de cada fila, las palabras van en el orden del texto.
@@ -465,6 +465,20 @@ Rama `feat/revision-profesor-pendientes`. El PR #830 se fusionó y se desplegó 
   - 17 filas con la conjunción repetida que vienen de envoltorios anidados (Mt 13:15, Jn 12:40, Hch 28:27).
   - 5 filas que suman un segundo conector (Mc 4:22 «ἀλλ’ ἵνα»).
   - Una fila de solo «γάρ» en Mt 6:24, Lc 16:13 y Jn 5:22.
+
+**Espejo: precisión medida a ciegas (2026-11-13, a pedido del fundador: «afinemos todo lo que podamos»).**
+- La muestra de 30 que juzgué yo daba 28 de 30. Un revisor independiente, clasificando a ciegas una muestra nueva, dio **17 de 30 (57 %)**.
+- El patrón: dos cláusulas paralelas cortadas por la mitad parecían espejo.
+- **Criterio nuevo:** cada mitad es UN bloque (una cláusula y lo que cuelga de ella), y las mitades van en filas distintas. Pueden estar anidadas, como en Stg 2:18.
+- **Medido FUERA de la muestra de diseño**, con otro revisor a ciegas: **23 de 30 (77 %)**. Ahora son 88 versículos.
+- **Fallos que quedan:**
+  - narración sin figura (Jn 19:29, Lc 5:7, Lc 11:1);
+  - dos paralelos (1 Co 7:14, Ap 1:20);
+  - dos elecciones de par discutibles (Lc 6:42, Lc 6:43).
+- **Se pierde** Mt 13:15 / Hch 28:27 (Is 6:10), cuyas mitades abarcan varias cláusulas.
+- **Reglas probadas y descartadas, porque empeoraban:**
+  - «paralelismo» y «lista»: quitaban quiasmos famosos (Mt 11:27, Lc 9:24, 1 Jn 4:16);
+  - preferir lemas que aparecen dos veces, y A en el mismo lugar: sobreajustaban y perdían espejos verdaderos.
 
 **Pendiente:**
 - El hebreo (paralelismo poético) y el quiasmo entre versículos: medirlos aparte.
