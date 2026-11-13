@@ -31,7 +31,7 @@ import type { HebrewKiFunction } from './hebrewKi.js';
  * sección con `verified` sólo después de cotejarla con el ejemplar.
  */
 
-export type WorkId = 'wallace' | 'runge' | 'arnoldChoi' | 'putnam' | 'louwNida' | 'professor';
+export type WorkId = 'wallace' | 'runge' | 'arnoldChoi' | 'putnam' | 'louwNida' | 'lund' | 'bullinger' | 'professor';
 
 export interface Work {
     readonly author: string;
@@ -40,6 +40,11 @@ export interface Work {
     readonly year: number;
     readonly publisher?: string;
     readonly isbn?: string;
+    /**
+     * Sólo para una obra ANTERIOR al ISBN: qué edición e impresión es el ejemplar cotejado (las páginas son
+     * de ésa). Lund 1942 tuvo una sola edición de la UNC Press.
+     */
+    readonly edition?: string;
 }
 
 export const WORKS: Readonly<Record<WorkId, Work>> = {
@@ -51,6 +56,10 @@ export const WORKS: Readonly<Record<WorkId, Work>> = {
     louwNida: { author: 'Johannes P. Louw y Eugene A. Nida', title: 'Greek-English Lexicon of the New Testament Based on Semantic Domains', year: 1988, publisher: 'United Bible Societies', isbn: '978-0-8267-0341-5' },
     // La obra que usa el profesor (revisión 2026-11). Se cita por sección: el PDF del fundador no trae páginas impresas.
     putnam: { author: 'Frederick C. Putnam', title: 'Clave Putnam: La Biblia hebrea', year: 1996, publisher: 'Stylus Publishing (Ridley Park, PA)' },
+    // La repetición en espejo (revisión del profesor, Stg 2:18): ejemplares del fundador (escaneos de Internet Archive).
+    lund: { author: 'Nils W. Lund', title: 'Chiasmus in the New Testament: A Study in Formgeschichte', year: 1942, publisher: 'University of North Carolina Press', edition: '1.ª y única edición (1942); ejemplar: escaneo de Internet Archive «chiasmusinnewtes0000nils»' },
+    // El escaneo es la reimpresión de Baker (1968) de la edición de 1898; las páginas son de ésa.
+    bullinger: { author: 'E. W. Bullinger', title: 'Figures of Speech Used in the Bible', year: 1968, publisher: 'Baker Book House (Grand Rapids); reimpresión de la edición de Eyre & Spottiswoode, 1898', isbn: '978-0-8010-0559-6' },
     // Lo ven todos los usuarios: «profesor del fundador» no les dice nada.
     professor: { author: 'Revisión docente', title: 'Dos Filos Preach', year: 2026 },
 };
@@ -447,3 +456,29 @@ export const SAME_LEMMA_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 3
 
 /** La repetición en espejo (A B | B′ A′), dato del texto; el profesor marcó Stg 2:18. */
 export const MIRROR_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 2:18 πίστιν … ἔργων | ἔργων … πίστιν')];
+
+/**
+ * Las fuentes de cada versículo de la lista curada (`greekMirrorList.ts`): Lund trata el pasaje como
+ * quiasmo; Bullinger, con la figura que nombra (Antimetábole, Epanodos…). La página es la impresa,
+ * cotejada con `cotejar-citas.py` (la referencia del versículo tiene que estar en esa página).
+ */
+const MIRROR_ON = '2026-11-13';
+const LU = (ref: string, page: number): RuleSource => ({ work: 'lund', section: `Quiasmo · ${ref}`, topic: 'el quiasmo', verified: { page: String(page), method: 'pdf', on: MIRROR_ON } });
+const BU = (figure: string, ref: string, page: number): RuleSource => ({ work: 'bullinger', section: `${figure} · ${ref}`, topic: 'la repetición en orden inverso', verified: { page: String(page), method: 'pdf', on: MIRROR_ON } });
+export const MIRROR_LIST_SOURCES: Readonly<Record<string, readonly RuleSource[]>> = {
+    '1CO 11:8': [LU('1 Co 11:8', 148), BU('Antimetábole', '1 Co 11:8', 303)],
+    '1CO 11:9': [LU('1 Co 11:9', 148), BU('Antimetábole', '1 Co 11:9', 303)],
+    '1CO 11:11': [LU('1 Co 11:11', 148)],
+    '1CO 11:12': [LU('1 Co 11:12', 148)],
+    '1CO 6:13': [LU('1 Co 6:13', 145)],
+    'GAL 5:17': [BU('Antimetábole', 'Gá 5:17', 303)],
+    'JHN 1:1': [BU('Clímax (por inversión)', 'Jn 1:1', 257)],
+    'JHN 8:47': [BU('Antimetábole', 'Jn 8:47', 302)],
+    'LUK 9:24': [LU('Lc 9:24', 298)],
+    'MAT 10:39': [LU('Mt 10:39', 298)],
+    'MAT 11:27': [LU('Mt 11:27', 298)],
+    'MAT 16:25': [LU('Mt 16:25', 298)],
+    'MAT 23:12': [LU('Mt 23:12', 310)],
+    'MRK 2:27': [LU('Mc 2:27', 32), BU('Antimetábole', 'Mc 2:27', 302)],
+    'MAT 13:15': [LU('Mt 13:15', 234)],
+};

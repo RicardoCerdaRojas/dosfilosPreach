@@ -283,5 +283,12 @@ describe('Ficha griega — repetición en espejo', () => {
         render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: PISTIN } as never} />);
         expect(screen.queryByTestId('repeticion-espejo')).toBeNull();
     });
+    it('con las fuentes del versículo (Mc 2:27: Lund y Bullinger, con página)', async () => {
+        const { MIRROR_LIST_SOURCES, MIRROR_SOURCES } = await import('@dosfilos/domain');
+        render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: PISTIN, mirror: { position: 'A', a: 'σάββατον', b: 'ἄνθρωπον', b2: 'ἄνθρωπος', a2: 'σάββατον', sources: [...MIRROR_LIST_SOURCES['MRK 2:27']!, ...MIRROR_SOURCES] } } as never} />);
+        const b = screen.getByTestId('repeticion-espejo');
+        expect(b.textContent).toContain('Lund');
+        expect(b.textContent).toContain('Bullinger');
+    });
 });
 

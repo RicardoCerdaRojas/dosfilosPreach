@@ -1,5 +1,7 @@
 import { verseWords, type ChapterStructure } from './chapterStructure.js';
 import { verseStructure } from './verseStructure.js';
+import { MIRROR_LIST } from './greekMirrorList.js';
+import { MIRROR_LIST_SOURCES, MIRROR_SOURCES, type RuleSource } from './ruleSources.js';
 
 /**
  * Revisión del profesor (2026-11, p. 15, Stg 2:18): él marca «πίστιν (A) … ἔργων (B) | ἔργων (B′) …
@@ -34,6 +36,8 @@ export interface MirrorFact {
     readonly b: number;
     readonly b2: number;
     readonly a2: number;
+    /** De dónde sale: Lund o Bullinger cuando tratan el versículo, y la indicación del profesor. */
+    readonly sources?: readonly RuleSource[];
 }
 
 export type MirrorPosition = 'A' | 'B' | 'B2' | 'A2';
@@ -46,7 +50,28 @@ const MAX_ABARCA = 15;
 const deContenido = (w: { pos?: string; l: string }) =>
     /^(N|V|A)/.test(w.pos ?? '') && !FUERA.has(w.l) && w.l[0] === w.l[0]!.toLowerCase();
 
+/**
+ * Lo que se MUESTRA: la repetición en espejo del versículo si está en la lista curada (`greekMirrorList.ts`),
+ * con las posiciones de sus cuatro palabras y sus fuentes. El detector de abajo sólo propone candidatos.
+ */
 export function greekMirrorRepetition(ch: ChapterStructure, verse: number): MirrorFact | undefined {
+    if (ch.lang !== 'gr') return undefined;
+    const ref = `${ch.book} ${ch.chapter}:${verse}`;
+    const par = MIRROR_LIST[ref];
+    if (!par) return undefined;
+    const limpia = (t: string) => t.replace(/[,.·;:’⸀-⸅\d]/g, '').normalize('NFC');
+    const ws = verseWords(ch, verse).map(w => limpia(w.t));
+    const pos: number[] = [];
+    for (const palabra of par) {
+        const i = ws.findIndex((t, k) => k > (pos[pos.length - 1] ?? -1) && t === limpia(palabra));
+        if (i < 0) return undefined;
+        pos.push(i);
+    }
+    return { a: pos[0]!, b: pos[1]!, b2: pos[2]!, a2: pos[3]!, sources: [...(MIRROR_LIST_SOURCES[ref] ?? []), ...MIRROR_SOURCES] };
+}
+
+/** El detector: propone candidatos para revisar (no se muestra; ver la lista curada). */
+export function greekMirrorCandidates(ch: ChapterStructure, verse: number): MirrorFact | undefined {
     if (ch.lang !== 'gr') return undefined;
     const ws = verseWords(ch, verse);
     const seq = ws.map((w, i) => ({ l: w.l, i })).filter((_, i) => deContenido(ws[i]!));

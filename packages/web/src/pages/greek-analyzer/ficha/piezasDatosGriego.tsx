@@ -86,7 +86,7 @@ export function RepeticionEspejo({ d }: { d: DatosGriego }) {
     const { t: tE } = useTranslation('languageStructure');
     const m = d.mirror!;
     return (
-        <FichaCaja titulo={t('analyzer.mirror.title')} pie={<SourceNote sources={MIRROR_SOURCES} />} testId="repeticion-espejo">
+        <FichaCaja titulo={t('analyzer.mirror.title')} pie={<SourceNote sources={m.sources ?? MIRROR_SOURCES} />} testId="repeticion-espejo">
             <p className="m-0 text-[13.5px] leading-relaxed">
                 {t('analyzer.mirror.position', { pos: tE(`mirrorLetter.${m.position}`), a: m.a, b: m.b, b2: m.b2, a2: m.a2 })}
             </p>

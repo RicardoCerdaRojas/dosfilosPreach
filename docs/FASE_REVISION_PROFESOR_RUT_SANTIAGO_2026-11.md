@@ -480,6 +480,16 @@ Rama `feat/revision-profesor-pendientes`. El PR #830 se fusionó y se desplegó 
   - «paralelismo» y «lista»: quitaban quiasmos famosos (Mt 11:27, Lc 9:24, 1 Jn 4:16);
   - preferir lemas que aparecen dos veces, y A en el mismo lugar: sobreajustaban y perdían espejos verdaderos.
 
+**Espejo: lista curada con fuentes (2026-11-13, decisión del fundador).** Como el detector acertaba el 77 % medido a ciegas y el NT es un texto cerrado, ahora se muestra una LISTA REVISADA. El detector queda solo para proponer candidatos.
+- **Fuentes del fundador** (escaneos de Internet Archive):
+  - Lund, *Chiasmus in the New Testament* (1942, edición única; desfase hoja → página: 18);
+  - Bullinger, *Figures of Speech Used in the Bible* (reimpresión Baker 1968, ISBN 978-0-8010-0559-6; desfase 52). Bullinger nombra la figura: Epanodos o Antimetábole.
+- **Cómo se armó:** un revisor juzgó los 90 candidatos con los textos de las dos obras y corrigió 6 pares. Se cruzó con las muestras ciegas: coinciden en 45 de 50. Quedó fuera todo lo que alguna revisión juzgó paralelo o débil, y lo dudoso sin segunda opinión.
+- **Resultado:** **74 versículos**, 15 con fuente verificada con página (cotejo de 425 citas, 0 fallos). Se agregaron Mt 13:15 y Hch 28:27 (Is 6:10).
+- **Error del revisor corregido:** en 1 Co 14:22 Lund propone INVERTIR dos términos, así que no apoya el texto como está; el versículo queda sin fuente.
+- **Cotejo:** `cotejar-citas.py` suma una rama para Lund y Bullinger. La referencia del versículo, suelta, en rango o en lista, tiene que estar impresa en la página citada.
+- **Para revisar:** la lista legible para el fundador está en `docs/REPETICION_EN_ESPEJO_LISTA.md`.
+
 **Pendiente:**
 - El hebreo (paralelismo poético) y el quiasmo entre versículos: medirlos aparte.
 - Mc 8:38 queda con un orden de filas raro («γὰρ ἐὰν»).
