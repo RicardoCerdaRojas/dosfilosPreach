@@ -11,6 +11,8 @@ import {
     type SameLemmaFact,
     versePhrases,
     type VersePhrase,
+    greekMirrorRepetition,
+    type MirrorFact,
     greekAutos,
     greekVerbCandidates,
     hebrewSpeechFacts,
@@ -87,6 +89,8 @@ export interface VerseStructureState {
     phrases: readonly VersePhrase[];
     /** ¿El capítulo trae frases? Un JSON viejo en caché (sin `phrases`) no dice que no haya: dice que no se sabe. */
     phrasesKnown: boolean;
+    /** Sólo griego: la repetición en espejo de lemas (A B | B′ A′), dato; Stg 2:18. */
+    mirror?: MirrorFact;
 }
 
 /**
@@ -140,10 +144,11 @@ export function useVerseStructure(
         const sameLemma = griego ? greekSameLemma(griego, verse) : [];
         const phrases = actual?.chapter ? versePhrases(actual.chapter, verse) : [];
         const phrasesKnown = !!actual?.chapter?.phrases;
+        const mirror = griego ? greekMirrorRepetition(griego, verse) : undefined;
         const articles = actual?.chapter && lang === 'he' ? hebrewArticleAntecedents(actual.chapter, verse) : [];
         const hebrewVerbs = actual?.chapter && lang === 'he' ? hebrewFiniteVerbCandidates(actual.chapter, verse) : [];
         const hebrewPrepositions = actual?.chapter && lang === 'he' ? hebrewPrepositionCandidates(actual.chapter, verse) : [];
-        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, sameLemma, phrases, phrasesKnown, ...(opening ? { opening } : {}) };
+        return { loading: !!key && !actual, unavailable: !!actual && !actual.chapter, nodes, words, ordinal, frontedByOrdinal, verbs, nominal, discourse, speech, infinitives, participles, kis, ketivQere, conditionals, articles, hebrewVerbs, hebrewPrepositions, sameLemma, phrases, phrasesKnown, ...(opening ? { opening } : {}), ...(mirror ? { mirror } : {}) };
     }, [actual, key, verse, lang]);
 }
 

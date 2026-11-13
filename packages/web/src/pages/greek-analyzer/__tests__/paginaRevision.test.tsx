@@ -27,8 +27,8 @@ vi.mock('../FichasGriego', () => ({
     TarjetasResumenGriego: ({ onAbrir, total }: { onAbrir: (i: number) => void; total: number }) => (
         <>{Array.from({ length: total }, (_, i) => <button key={i} type="button" data-testid={`tarjeta-${i}`} onClick={() => onAbrir(i)} />)}</>
     ),
-    FichaPanelGriego: ({ abierta, datos }: { abierta: number | null; datos: (i: number) => { opening?: object; ln?: string; sameLemma?: object } | null }) =>
-        abierta === null ? null : <div data-testid="panel-datos">{JSON.stringify({ opening: datos(abierta)?.opening ?? null, ln: datos(abierta)?.ln ?? null, sameLemma: datos(abierta)?.sameLemma ?? null })}</div>,
+    FichaPanelGriego: ({ abierta, datos }: { abierta: number | null; datos: (i: number) => { opening?: object; ln?: string; sameLemma?: object; mirror?: object } | null }) =>
+        abierta === null ? null : <div data-testid="panel-datos">{JSON.stringify({ opening: datos(abierta)?.opening ?? null, ln: datos(abierta)?.ln ?? null, sameLemma: datos(abierta)?.sameLemma ?? null, mirror: datos(abierta)?.mirror ?? null })}</div>,
 }));
 vi.mock('@dosfilos/infrastructure', async (orig) => ({ ...(await orig<object>()), FirestoreGreekFindingsRepository: class {} }));
 const { GreekAnalyzerPage } = await import('../GreekAnalyzerPage');
@@ -68,4 +68,14 @@ describe('de los datos a la ficha (página griega, revisión del profesor)', () 
         expect((await abrir(i + 1)).sameLemma).toBeNull();
         expect(pedido.mock.lastCall?.[7]).toEqual([{ lemma: 'ἡλίκος', words: [{ ordinal: i, gloss: 'small' }, { ordinal: i + 2, gloss: 'how great' }] }]);
     });
+
+    it('Stg 2:18: las cuatro palabras del espejo llevan su letra (πίστιν A … πίστιν A′); las demás, nada', async () => {
+        ref.cap = 2; ref.v = 18;
+        render(<TooltipProvider><GreekAnalyzerPage /></TooltipProvider>);
+        const toks = tokensDe(2, 18);
+        const ultima = toks.length - 1;
+        expect((await abrir(ultima)).mirror).toEqual(expect.objectContaining({ position: 'A2', a: expect.stringMatching(/^πίστιν/), b: expect.stringMatching(/^ἔργων/) }));
+        expect((await abrir(0)).mirror).toBeNull();
+    });
 });
+

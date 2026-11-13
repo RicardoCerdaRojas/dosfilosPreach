@@ -7,6 +7,13 @@
   },
   "diagramToApodosis": "→ apodosis:",
   "diagramNote": "One line per clause, indented under the one that contains it; the prepositional phrase that goes with the verb on its own line (└); a protasis with several members joined by the bar. The assistant's readings and each clause's notes are under «Cards».",
+  "mirrorNotice": "Mirror repetition: {{a}} · {{b}} | {{b2}} · {{a2}}. It may be a chiasm; confirm it with the sense.",
+  "mirrorLetter": {
+    "A": "A",
+    "B": "B",
+    "B2": "B′",
+    "A2": "A′"
+  },
   "intro": "Each clause sits under the one that contains it, with its connector and its relation: that comes from the text and fixed rules. What is marked «Assistant» is its reading.",
   "loading": "Loading the structure…",
   "unavailable": "The structure of this verse is not available.",

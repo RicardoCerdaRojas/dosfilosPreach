@@ -444,3 +444,6 @@ export const SECTION_OPENING_SOURCES: readonly RuleSource[] = [P('2026-10-14 · 
 
 /** U10 — el mismo lema con distinta glosa en contexto (dato de MACULA), indicado por el profesor (Stg 3:5). */
 export const SAME_LEMMA_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 3:5 ἡλίκον … ἡλίκην')];
+
+/** La repetición en espejo (A B | B′ A′), dato del texto; el profesor marcó Stg 2:18. */
+export const MIRROR_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 2:18 πίστιν … ἔργων | ἔργων … πίστιν')];

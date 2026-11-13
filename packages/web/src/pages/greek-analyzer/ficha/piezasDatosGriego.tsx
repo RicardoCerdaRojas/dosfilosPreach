@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { louwNidaSenses, louwNidaSources, SAME_LEMMA_SOURCES, SECTION_OPENING_SOURCES } from '@dosfilos/domain';
+import { louwNidaSenses, louwNidaSources, MIRROR_SOURCES, SAME_LEMMA_SOURCES, SECTION_OPENING_SOURCES } from '@dosfilos/domain';
 import { SourceNote } from '@/components/language-structure/SourceNote';
 import { FichaCaja } from '@/components/word-ficha/FichaPiezas';
 import type { DatosGriego } from './piezasGriego';
@@ -73,6 +73,24 @@ export function MismoLema({ d }: { d: DatosGriego }) {
                 ))}
             </ul>
             <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">{t('analyzer.sameLemma.note')}</p>
+        </FichaCaja>
+    );
+}
+
+/**
+ * Revisión del profesor (2026-11, Stg 2:18 «πίστιν (A) … ἔργων (B) | ἔργων (B′) … πίστιν (A′)»): la
+ * repetición en espejo de lemas, como DATO. Si es un quiasmo lo decide quien lee.
+ */
+export function RepeticionEspejo({ d }: { d: DatosGriego }) {
+    const { t } = useTranslation('greekTutor');
+    const { t: tE } = useTranslation('languageStructure');
+    const m = d.mirror!;
+    return (
+        <FichaCaja titulo={t('analyzer.mirror.title')} pie={<SourceNote sources={MIRROR_SOURCES} />} testId="repeticion-espejo">
+            <p className="m-0 text-[13.5px] leading-relaxed">
+                {t('analyzer.mirror.position', { pos: tE(`mirrorLetter.${m.position}`), a: m.a, b: m.b, b2: m.b2, a2: m.a2 })}
+            </p>
+            <p className="m-0 mt-1.5 text-[12.5px] leading-snug text-muted-foreground">{t('analyzer.mirror.note')}</p>
         </FichaCaja>
     );
 }

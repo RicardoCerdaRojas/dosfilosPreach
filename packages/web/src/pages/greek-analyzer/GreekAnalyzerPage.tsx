@@ -19,7 +19,7 @@ import { StructureSection } from '@/components/language-structure/StructureSecti
 import { frasePorOrdinal, useFrasesVisibles } from '@/components/language-structure/frases';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { mismasPalabras } from '@/components/language-structure/mismasPalabras';
-import { applyDiscourseRules, applyNominalRules, applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, type StructureWord } from '@dosfilos/domain';
+import { applyDiscourseRules, applyNominalRules, applyVerbRules, GREEK_INSIGHT_PROMPT_VERSION, mirrorPositionOf, type StructureWord } from '@dosfilos/domain';
 
 /**
  * El ANALIZADOR griego — espejo del analizador hebreo, versículo a versículo:
@@ -207,6 +207,13 @@ export function GreekAnalyzerPage() {
         }
     };
 
+    /** Revisión del profesor (Stg 2:18): la letra de la palabra en la repetición en espejo, con las cuatro palabras. */
+    const espejoDe = (i: number) => {
+        const m = estructura.mirror;
+        const pos = mirrorPositionOf(m, i);
+        const tx = (o: number) => data?.tokens[o]?.text ?? '';
+        return m && pos ? { position: pos, a: tx(m.a), b: tx(m.b), b2: tx(m.b2), a2: tx(m.a2) } : undefined;
+    };
     const mismoLemaDe = (i: number) => {
         const f = estructura.sameLemma.find(x => x.words.some(w => w.ordinal === i));
         return f?.words.map(w => ({ text: data?.tokens[w.ordinal]?.text ?? '', gloss: w.gloss, translation: insight?.words[w.ordinal]?.translation, self: w.ordinal === i }));
@@ -232,6 +239,7 @@ export function GreekAnalyzerPage() {
             opening: alineados && estructura.opening?.vocativeOrdinal === i ? { ...estructura.opening, imperative: estructura.opening.imperativeOrdinal !== undefined ? data?.tokens[estructura.opening.imperativeOrdinal]?.text : undefined } : undefined,
             // U10 (Stg 3:5): el mismo lema otra vez en el versículo, con otra glosa en contexto (MACULA).
             sameLemma: alineados ? mismoLemaDe(i) : undefined,
+            mirror: alineados ? espejoDe(i) : undefined,
             onSaveFinding: insight && user?.uid && (claveDe(tok.text, i) || insight.words[i]) ? () => void guardarHallazgo(i) : undefined,
             saved: guardados.has(tok.lemma),
         };
