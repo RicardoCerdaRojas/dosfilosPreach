@@ -487,6 +487,28 @@ function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: Readon
             const enHijas = new Set(hijas.flatMap(h => h.tokens.map(t => t.r)));
             const propias = madre.tokens.filter(t => !enHijas.has(t.r));
             if (propias.some(t => t.role && t.r !== madre.connector)) continue;
+            // Una coordinación de tres o más (`Conj3CL`, Mc 12:19 «ἀποθάνῃ καὶ καταλίπῃ γυναῖκα καὶ μὴ ἀφῇ
+            // τέκνον») trae VARIOS conectores: cada uno va a la cláusula que lo sigue. Juntos en la última
+            // («καὶ καὶ μὴ ἀφῇ») la fila se ordenaba por el primer καί, antes de «καταλίπῃ» (pendientes de la
+            // revisión, 2026-11-13).
+            if (propias.length > 1 && propias.every(t => !t.role && CONECTOR_GRIEGO[lemaDe.get(t.r) ?? ''])) {
+                const destinos = propias.map(p => { const sg = siguiente(p.r); return hijas.find(h => h.tokens.some(t => t.r === sg)); });
+                if (destinos.every(Boolean) && new Set(destinos).size === destinos.length) {
+                    propias.forEach((p, k) => {
+                        const h = destinos[k]!;
+                        h.tokens = [p, ...h.tokens].sort(orden);
+                        if (!h.connector) { h.connector = p.r; h.relation = CONECTOR_GRIEGO[lemaDe.get(p.r)!]!; }
+                    });
+                    for (const h of hijas) {
+                        h.parent = madre.parent;
+                        if (madre.isApodosis && h.relation !== 'condition') h.isApodosis = true;
+                    }
+                    for (const f of filas) if (desciendeDe(f.index, madre.index)) f.depth -= 1;
+                    filas = filas.filter(f => f !== madre);
+                    cambio = true;
+                    break;
+                }
+            }
             const ultima = propias[propias.length - 1];
             const sigue = ultima ? siguiente(ultima.r) : madre.tokens[0]?.r;
             const hija = sigue === undefined ? undefined : hijas.find(h => h.tokens.some(t => t.r === sigue));
