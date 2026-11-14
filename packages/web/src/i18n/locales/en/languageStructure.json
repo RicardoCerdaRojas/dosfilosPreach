@@ -5,6 +5,11 @@
     "cards": "Cards",
     "diagram": "Diagram"
   },
+  "textSizeNow": "Text size: {{pct}}%",
+  "text": {
+    "smaller": "Smaller text",
+    "bigger": "Larger text"
+  },
   "diagramToApodosis": "→ apodosis:",
   "diagramNote": "One line per clause, indented under the one that contains it; the prepositional phrase that goes with the verb on its own line (└); a protasis with several members joined by the bar. The assistant's readings and each clause's notes are under «Cards».",
   "mirrorNotice": "Mirror repetition: {{a}} · {{b}} | {{b2}} · {{a2}}. It may be a chiasm; confirm it with the sense.",

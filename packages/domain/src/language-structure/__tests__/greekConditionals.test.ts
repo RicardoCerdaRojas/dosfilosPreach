@@ -35,6 +35,11 @@ describe('3.ª clase con dos condiciones', () => {
     it('1 Co 7:36: la «apódosis» coordinada tras las condiciones es otro miembro de la prótasis → sin valor', () => {
         expect(uso('1CO/7.json', 36)).toEqual(['-', '-']);
     });
+    it('varias apódosis coordinadas que dicen lo mismo dan el valor (Mt 17:20 «ἐρεῖτε … καὶ μεταβήσεται», Jn 7:37 «ἐρχέσθω … καὶ πινέτω»); si no coinciden, no', () => {
+        expect(uso('MAT/17.json', 20)).toEqual(['moreProbableFuture']);
+        expect(uso('JHN/7.json', 37)).toEqual(['moreProbableFuture']);
+        expect(uso('1JN/1.json', 7)).toEqual(['presentGeneral']);
+    });
     it('con la apódosis antes (1 Co 14:6) o sin coordinar (Jn 13:17), el valor sigue', () => {
         expect(uso('1CO/14.json', 6)).toEqual(['moreProbableFuture', 'moreProbableFuture']);
         expect(uso('JHN/13.json', 17)).toContain('presentGeneral');

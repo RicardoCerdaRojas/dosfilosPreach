@@ -492,12 +492,73 @@ Rama `feat/revision-profesor-pendientes`. El PR #830 se fusionó y se desplegó 
 
 **Pendiente:**
 - El hebreo (paralelismo poético) y el quiasmo entre versículos: medirlos aparte.
-- Mc 8:38 queda con un orden de filas raro («γὰρ ἐὰν»).
+- ~~Mc 8:38 queda con un orden de filas raro («γὰρ ἐὰν»).~~ Resuelto en la etapa 3.
 
 **Diferencias que quedan con el profesor (leído):**
-- Stg 2:18 «κἀγώ σοι δείξω» sigue sangrado: MACULA lo cuelga de δεῖξον como objeto, y el profesor lo pone al margen.
-- El quiasmo de 2:18 queda para una etapa posterior.
-- Mc 12:19 conserva un desorden previo de filas: «καὶ καὶ μὴ ἀφῇ» sale antes de «καταλίπῃ».
+- ~~Stg 2:18 «κἀγώ σοι δείξω» sigue sangrado.~~ Resuelto en la etapa 3: va al margen.
+- ~~El quiasmo de 2:18 queda para una etapa posterior.~~ Hecho (repetición en espejo, lista curada).
+- ~~Mc 12:19 conserva un desorden previo de filas.~~ Resuelto en la etapa 2.
+
+**Lista de la repetición en espejo:** el fundador CONFIRMÓ los 74 versículos el 2026-11-13 (`docs/REPETICION_EN_ESPEJO_LISTA.md`).
+
+## Etapa 3 (2026-11-13): los pendientes de «Estructura»
+
+Rama `fix/estructura-pendientes`. El PR #831 se fusionó y se desplegó el mismo día. Decisiones del fundador: resolver los defectos chicos de «Estructura», adoptar la posición del profesor en Stg 2:18, y después seguir con el espejo hebreo y el maqaf.
+
+**El hallazgo:** lo anotado como «una fila de sólo γάρ en Mt 6:24» era la punta de algo mayor. Medido en el NT griego: **2.612 filas de sólo conector** («καὶ» sobre 1 Co 10:3, «δὲ» sobre «θέλω», «γὰρ» sobre «Οἴδαμεν»).
+- **Causas (leído en MACULA):**
+  - un nodo de MACULA sin palabras en el versículo entre el conector y su cláusula, como en 1 Co 10:3, coordinación de cuatro miembros entre versículos;
+  - la palabra que sigue al conector está en una NIETA, no en una hija;
+  - la regla de G1 + G5 «dos conectores distintos no caben en una fila».
+
+**La regla nueva (solo griego; el hebreo queda idéntico, 0 versículos cambian):**
+- **Dónde va el conector:** en la fila donde sigue el texto. Si es pospositivo (δέ, γάρ, οὖν, τε, μέν), va con la palabra que lo precede: «Θέλω δὲ», «ὅστις γὰρ ἄν», «Ὅτε οὖν». El orden del texto se respeta, como en los diagramas del profesor.
+- **Su relación:** va a la oración que el conector une. En una prótasis antepuesta queda así: «καὶ ἐὰν βασιλεία… μερισθῇ» es condición, y «οὐ δύναται σταθῆναι» es adición y apódosis (Mc 3:24).
+- **Orden de fusión:** primero los conectores que subordinan (εἰ, ἐάν, ὅτι, ἵνα…), después los que coordinan. Por eso «Νῦν δέ, … ἐὰν ἔλθω» (1 Co 14:6) sigue siendo condición.
+- **El pospositivo espera** a que se funda lo que hay en el camino; no cae en la palabra siguiente. Así queda «ἀνοίξας δὲ…» en Hch 8:35.
+- **Dos conectores en una fila:** se permiten, como los escribe el profesor («ἢ γὰρ τὸν ἕνα μισήσει», «ὃς γὰρ ἐὰν ἐπαισχυνθῇ», «Εἰ δέ τις»), salvo que la madre traiga palabras. Mt 12:4 «οὐδὲ τοῖς μετ’ αὐτοῦ» no se pega a su «εἰ μή».
+- **Coordinaciones de varios miembros:** cada καί va a su miembro (Mc 10:34, Mt 13:15). La coordinada que sigue al primer miembro queda a su mismo nivel (2 Co 4:9).
+- **Stg 2:18, como el profesor:** «κἀγώ σοι δείξω» va al margen, como adición. Las 13 filas con crasis de καί (κἀγώ, κἀκεῖ, κἀκεῖνος) que MACULA marca objeto son coordinadas, revisadas una por una. Lo dicho queda dentro de la cita, y tras καθώς es la principal del correlativo (Jn 10:15).
+
+**Medido:**
+- Filas de sólo conector: 2.612 → **15** (correlativos que abarcan dos cláusulas).
+- Un mismo conector rotula una sola fila (invariante en CI).
+- Conjunción repetida al comienzo («καὶ καὶ»): 13 → **0**.
+- Cambian 2.659 versículos griegos.
+- **Muestras al azar con semilla, juzgadas por mí:**
+  - primera muestra: los daños que salieron se corrigieron (1 Co 14:6, Mt 16:26, Hch 13:41, Ro 11:24, Mt 12:4, Heb 1:8, Hch 1:6);
+  - muestra final, 16 versículos: 13 mejoran, 3 quedan iguales y 0 empeoran.
+- **Valor de la 3.ª clase** (`greekConditionals`):
+  - ahora se da también con varias apódosis coordinadas que dicen lo mismo, como Mt 17:20 «ἐρεῖτε … καὶ μεταβήσεται»;
+  - gana 21 versículos y no pierde ninguno; los 21 los leí y están bien;
+  - la prueba de «apódosis coordinada» (1 Co 7:36) mira ahora si su καί/δέ abre la fila.
+- **Lecturas ya generadas:** se enlazan por cláusula y primera palabra, y 2.048 filas cambiaban de primera palabra.
+  - `readingFor` ahora sigue a la cláusula si la palabra ancla sigue en la fila;
+  - descarta `resolved` o `fronting` si ya no calzan;
+  - quedan sin lectura 313 filas (226 versículos), casi todas filas que eran sólo un conector. Re-analizar las recupera.
+  - El conector se resalta donde está la palabra, aunque su relación la lleve otra fila (1.473 filas).
+- **Sangría:** ninguna fila del NT ni del AT pasa de 5 niveles sobre la primera. Las tarjetas y el Diagrama comparten ahora el tope (`MAX_SANGRIA_FILAS`).
+- **Mutaciones:** 17, una por regla. Todas las caza una prueba, salvo «esperar envoltorios en el camino», que quedó redundante con la espera del pospositivo y se quitó (corpus idéntico).
+
+**Revisión adversarial (revisor independiente, sin ver mis muestras):**
+- Muestra a ciegas de 50 versículos con semilla: **43 mejores, 5 iguales, 2 peores**. Los 2 peores eran del defecto 1.
+- Hebreo: 0 diferencias en el JSON completo. No se pierden ni duplican palabras.
+- **Seis defectos verificados, todos corregidos con prueba y mutación:**
+  1. El mismo conector rotulaba dos filas (202 versículos, como Mc 16:16): `poner` devuelve la fila que recibió la relación.
+  2. El reparto de καί movía pospositivos lejos de su palabra (Lc 11:35 «σκόπει οὖν»).
+  3. La crasis le ganaba a un δέ real (Mt 16:18 «κἀγὼ δέ»): ahora se aplica después de fundir y sólo sin conector.
+  4. Una crasis en la apódosis sacaba de la sangría a su prótasis (2 Ti 2:12).
+  5. Un participio se llevaba la relación cuando su cabeza ya traía conector (Gá 2:17).
+  6. Conectores huérfanos donde `main` los fundía: Ro 4:23 (no contiguos, pero a la misma fila) y Hch 4:32 (fase 3: lo que espera un envoltorio que nunca se funde va igual a su palabra).
+- **Quedan como duda de diseño:**
+  - un participio hija directa toma la relación del conector (Mt 6:3), y una nieta se la da a su verbo;
+  - una lectura vieja con `value` escrito para «principal» junto a una fila que ahora dice «desarrollo».
+
+**Quedan:**
+- 15 filas de sólo conector, sobre todo correlativos «μέν … δέ» y «τε … τε» (Ro 14:8).
+- Algunas apódosis sin marcar que ya faltaban antes (Mt 24:43 «ἐγρηγόρησεν ἄν»).
+
+**A−/A+ de «Estructura» (2026-11-14, pedido del fundador al ver Gn 9:6 en el Diagrama).** La sección tiene su propio tamaño del texto original, en tarjetas y diagrama: 6 escalones (0,85× a 2,1×), recordado en el navegador (`estructura.tamano`). En el escalón inicial queda exactamente como antes: hebreo 1,25rem y griego 1,125rem, los dos con interlineado 1,75rem (la revisión adversarial midió que `text-lg`/`text-xl` le ganaban a `leading-snug` en twMerge). Las letras del espejo van en em y nunca bajan de 10px. En los topes el botón queda `aria-disabled`, no `disabled`, para que el foco del teclado no se pierda; el grupo anuncia el tamaño actual. Es independiente del A−/A+ del versículo de la página hebrea. Mutaciones: validación del valor guardado, clic en el tope e interlineado fijo; las tres las detectan las pruebas.
 
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.

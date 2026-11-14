@@ -16,13 +16,13 @@ const diagrama = (ch: ChapterStructure, v: number) => {
 };
 
 describe('diagrama por frases (U11c)', () => {
-    it('Stg 2:18: «χωρὶς τῶν ἔργων» y «ἐκ τῶν ἔργων μου» bajan un nivel; «τὴν πίστιν» vuelve a su cláusula', () => {
+    it('Stg 2:18: «χωρὶς τῶν ἔργων» y «ἐκ τῶν ἔργων μου» bajan un nivel; «τὴν πίστιν» vuelve a su cláusula; «κἀγώ σοι δείξω» al margen, como el profesor', () => {
         expect(diagrama(santiago2, 18).slice(3)).toEqual([
             [0, 'clause', 'δεῖξόν μοι τὴν πίστιν σου'],
             [1, 'phrase', 'χωρὶς τῶν ἔργων,'],
-            [1, 'clause', 'κἀγώ σοι δείξω'],
-            [2, 'phrase', 'ἐκ τῶν ἔργων μου'],
-            [1, 'continuation', 'τὴν πίστιν.'],
+            [0, 'clause', 'κἀγώ σοι δείξω'],
+            [1, 'phrase', 'ἐκ τῶν ἔργων μου'],
+            [0, 'continuation', 'τὴν πίστιν.'],
         ]);
     });
 

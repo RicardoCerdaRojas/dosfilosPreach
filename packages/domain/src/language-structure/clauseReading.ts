@@ -159,7 +159,21 @@ export function parseClauseReadings(raw: unknown, nodes: readonly StructureNode[
     return out;
 }
 
-/** La lectura de una fila, si la hay y sigue anclada a la misma primera palabra. */
+/**
+ * La lectura de una fila, si la hay y sigue anclada: su primera palabra, o (pendientes de «Estructura»,
+ * 2026-11-13) la misma cláusula con aquella palabra todavía en la fila. Al poner el conector en su fila («καὶ
+ * ἐὰν…», «Θέλω δὲ…»), 2.048 filas griegas cambiaron de primera palabra y perdían la lectura ya generada. Lo que
+ * dependía de la relación o de lo antepuesto se descarta si ya no calza.
+ */
 export function readingFor(node: StructureNode, readings: readonly ClauseReading[] | undefined): ClauseReading | undefined {
-    return readings?.find(r => r.index === node.index && r.anchor === node.words[0]?.r);
+    const exacta = readings?.find(r => r.index === node.index && r.anchor === node.words[0]?.r);
+    if (exacta) return exacta;
+    const r = readings?.find(x => x.index === node.index && node.words.some(w => w.r === x.anchor));
+    if (!r) return undefined;
+    const { resolved, fronting, ...resto } = r;
+    return {
+        ...resto,
+        ...(resolved && OPCIONES[node.relation]?.includes(resolved) ? { resolved } : {}),
+        ...(fronting && node.fronted.length ? { fronting } : {}),
+    };
 }

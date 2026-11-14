@@ -76,6 +76,16 @@ describe('lectura de cláusulas — validación', () => {
         expect(readingFor(stg29[0]!, [{ ...l!, anchor: 'otra' }])).toBeUndefined();
     });
 
+    it('sí sigue a su cláusula si la palabra ancla sigue en la fila (el conector entró delante: «εἰ δὲ…», Stg 2:9); lo que ya no calza se descarta', () => {
+        const prot = stg29.find(f => f.relation === 'condition')!;
+        const vieja = { index: prot.index, anchor: prot.words[2]!.r, value: 'condición real', explanation: 'e', resolved: 'purpose' as const, fronting: 'focus' as const };
+        const l = readingFor(prot, [vieja]);
+        expect(l?.value).toBe('condición real');
+        expect(l).not.toHaveProperty('resolved');
+        expect(l).not.toHaveProperty('fronting');
+        expect(readingFor(prot, [{ ...vieja, index: prot.index + 999 }])).toBeUndefined();
+    });
+
     it('no es una lista: nada', () => {
         expect(parseClauseReadings('basura', jn316)).toEqual([]);
     });

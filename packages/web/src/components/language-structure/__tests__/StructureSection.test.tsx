@@ -27,18 +27,24 @@ const cargar = (rel: string): ChapterStructure => JSON.parse(archivo(rel));
 const santiago2 = cargar('gr/JAS/2.json');
 
 describe('StructureFlow (G1 + G5)', () => {
-    it('Stg 2:9: prótasis con su clase, apódosis, conector punteado y objeto antepuesto resaltado', () => {
+    it('Stg 2:9: prótasis con su clase (y su δέ, como en el texto), apódosis, conector punteado y objeto antepuesto resaltado', () => {
         render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 9)} />);
         const filas = screen.getAllByTestId('structure-row');
-        expect(filas).toHaveLength(5);
-        expect(filas[1]!.textContent).toContain('protasis · classLabel.1');
-        expect(filas[1]!.textContent).toContain('classNotes.1');
-        expect(filas[2]!.textContent).toContain('apodosis');
+        expect(filas).toHaveLength(4);
+        expect(filas[0]!.textContent).toContain('protasis · classLabel.1');
+        expect(filas[0]!.textContent).toContain('classNotes.1');
+        expect(filas[1]!.textContent).toContain('apodosis');
         const ei = screen.getByText('εἰ').parentElement!;
         expect(ei.className).toContain('outline-dashed');
         const hamartian = screen.getByText('ἁμαρτίαν').parentElement!;
         expect(hamartian.className).toContain('outline-warning');
-        expect(filas[2]!.textContent).toContain('fronted');
+        expect(filas[1]!.textContent).toContain('fronted');
+    });
+
+    it('el conector se resalta donde está la palabra, aunque su relación la lleve la apódosis (Mc 3:24 «καὶ ἐὰν…»)', () => {
+        render(<StructureFlow lang="gr" nodes={verseStructure(cargar('gr/MRK/3.json'), 24)} />);
+        expect(screen.getByText('καὶ').parentElement!.className).toContain('outline-dashed');
+        expect(screen.getByText('ἐὰν').parentElement!.className).toContain('outline-dashed');
     });
 
     it('U11 (Stg 2:14): el 2.º miembro de la prótasis lo dice; la condición y la apódosis, no', () => {
@@ -102,7 +108,7 @@ describe('StructureFlow (G1 + G5)', () => {
     it('la sangría sigue la profundidad, relativa a la fila menos profunda', () => {
         render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 9)} />);
         const sangrias = screen.getAllByTestId('structure-row').map(f => f.style.marginLeft);
-        expect(sangrias).toEqual(['0rem', '3rem', '1.5rem', '3rem', '4.5rem']);
+        expect(sangrias).toEqual(['1.5rem', '0rem', '1.5rem', '3rem']);
     });
 
     it('si ninguna fila está en el nivel 0 (el versículo empieza dentro de otra cláusula), no sangra de más', () => {
@@ -177,7 +183,7 @@ describe('la fuente de cada fila con regla', () => {
         render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 9)} />);
         const toggles = screen.getAllByTestId('source-toggle');
         expect(toggles.length).toBeGreaterThan(0);
-        fireEvent.click(toggles[1]!);
+        fireEvent.click(toggles[0]!);
         expect(screen.getByTestId('source-note').textContent).toContain('First Class Condition');
     });
 
@@ -198,7 +204,7 @@ describe('la fuente de cada fila con regla', () => {
             );
         };
         render(<Pagina />);
-        fireEvent.click(screen.getAllByTestId('source-toggle')[1]!);
+        fireEvent.click(screen.getAllByTestId('source-toggle')[0]!);
         expect(screen.getByTestId('source-note').textContent).toContain('First Class Condition');
     });
 });
@@ -245,6 +251,9 @@ describe('StructureSection', () => {
     const pedidos: string[] = [];
     beforeEach(() => {
         pedidos.length = 0;
+        // La vista y el tamaño se guardan en el navegador: cada prueba empieza de cero.
+        localStorage.removeItem('estructura.vista');
+        localStorage.removeItem('estructura.tamano');
         vi.stubGlobal('fetch', vi.fn(async (url: string) => {
             pedidos.push(url);
             const rel = url.replace('/language-data/v1/', '');
@@ -288,6 +297,73 @@ describe('StructureSection', () => {
         render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);
         await waitFor(() => expect(screen.getByTestId('structure-diagram')).toBeInTheDocument());
         localStorage.removeItem('estructura.vista');
+    });
+
+    it('A−/A+ de «Estructura»: agranda el texto original en tarjetas y diagrama (Stg 2:18, también las letras del espejo), se recuerda y se apaga en los topes', async () => {
+        const tamanos = (sel: string) => new Set([...document.querySelectorAll<HTMLElement>(sel)].map(e => e.style.fontSize));
+        const { unmount } = render(<Seccion lang="gr" book="JAS" chapter={2} verse={18} />);
+        await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
+        // Tarjetas: el tamaño de antes (griego 1.125rem) y crece con A+.
+        expect(tamanos('[data-testid="structure-row"] span[lang="grc"]')).toEqual(new Set(['1.125rem']));
+        // El interlineado de antes (1.75rem, el de text-lg) en el escalón inicial, y crece con la letra.
+        expect(new Set([...document.querySelectorAll<HTMLElement>('[data-testid="structure-row"] span[lang="grc"]')].map(e => e.style.lineHeight))).toEqual(new Set(['1.75rem']));
+        expect(screen.getByRole('group', { name: 'textSizeNow' })).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+        expect(tamanos('[data-testid="structure-row"] span[lang="grc"]')).toEqual(new Set(['1.35rem']));
+        expect(localStorage.getItem('estructura.tamano')).toBe('2');
+        // Diagrama: el mismo tamaño, y la letra del espejo va en em (crece con la palabra).
+        fireEvent.click(screen.getByText('view.diagram'));
+        expect(tamanos('[data-testid="diagram-line"] > span[lang="grc"]')).toEqual(new Set(['1.35rem']));
+        expect(screen.getAllByTestId('mirror-letter')).toHaveLength(4);
+        expect(screen.getAllByTestId('mirror-letter')[0]!.className).toContain('0.5em');
+        // Al volver a la página, el tamaño elegido sigue.
+        unmount();
+        render(<Seccion lang="gr" book="JAS" chapter={2} verse={18} />);
+        await waitFor(() => expect(screen.getByTestId('structure-diagram')).toBeInTheDocument());
+        expect(tamanos('[data-testid="diagram-line"] > span[lang="grc"]')).toEqual(new Set(['1.35rem']));
+        // Topes: A+ hasta el último escalón se apaga; A− hasta el primero, también.
+        for (let k = 0; k < 6; k++) fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+        expect(screen.getByTestId('estructura-texto-bigger').getAttribute('aria-disabled')).toBe('true');
+        // En el tope, otro clic no hace nada y el botón sigue enfocable (no `disabled`).
+        fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+        expect(localStorage.getItem('estructura.tamano')).toBe('5');
+        expect(screen.getByTestId('estructura-texto-bigger')).not.toBeDisabled();
+        expect(tamanos('[data-testid="diagram-line"] > span[lang="grc"]')).toEqual(new Set(['2.3625rem']));
+        for (let k = 0; k < 8; k++) fireEvent.click(screen.getByTestId('estructura-texto-smaller'));
+        expect(screen.getByTestId('estructura-texto-smaller').getAttribute('aria-disabled')).toBe('true');
+        expect(screen.getByTestId('estructura-texto-bigger').getAttribute('aria-disabled')).toBe('false');
+        expect(localStorage.getItem('estructura.tamano')).toBe('0');
+    });
+
+    it('en hebreo (Gn 9:6) el tamaño base es el de antes (1.25rem) y crece igual', async () => {
+        const tamanos = () => new Set([...document.querySelectorAll<HTMLElement>('[data-testid="structure-row"] span[lang="he"]')].map(e => e.style.fontSize));
+        render(<Seccion lang="he" book="Gen" chapter={9} verse={6} />);
+        await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
+        expect(tamanos()).toEqual(new Set(['1.25rem']));
+        fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+        expect(tamanos()).toEqual(new Set(['1.5rem']));
+        // Y el diagrama hebreo, con el mismo tamaño y el interlineado proporcional.
+        fireEvent.click(screen.getByText('view.diagram'));
+        const lineas = [...document.querySelectorAll<HTMLElement>('[data-testid="diagram-line"] > span[lang="he"]')];
+        expect(lineas.length).toBeGreaterThan(0);
+        expect(new Set(lineas.map(e => `${e.style.fontSize} ${e.style.lineHeight}`))).toEqual(new Set(['1.5rem 2.1rem']));
+    });
+
+    it('un tamaño guardado roto (texto, fuera de rango) vuelve al de siempre', async () => {
+        for (const malo of ['x', '99', '-1', '1.5']) {
+            localStorage.setItem('estructura.tamano', malo);
+            const { unmount } = render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);
+            await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
+            expect(new Set([...document.querySelectorAll<HTMLElement>('[data-testid="structure-row"] span[lang="grc"]')].map(e => e.style.fontSize))).toEqual(new Set(['1.125rem']));
+            // Vuelve al escalón inicial de verdad: los dos botones habilitados y A+ sube UN escalón.
+            expect(screen.getByTestId('estructura-texto-smaller').getAttribute('aria-disabled')).toBe('false');
+            expect(screen.getByTestId('estructura-texto-bigger').getAttribute('aria-disabled')).toBe('false');
+            fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+            expect(new Set([...document.querySelectorAll<HTMLElement>('[data-testid="structure-row"] span[lang="grc"]')].map(e => e.style.fontSize))).toEqual(new Set(['1.35rem']));
+            expect(localStorage.getItem('estructura.tamano')).toBe('2');
+            unmount();
+        }
+        localStorage.removeItem('estructura.tamano');
     });
 
     it('al cambiar de capítulo no muestra las filas del anterior mientras llega el nuevo', async () => {

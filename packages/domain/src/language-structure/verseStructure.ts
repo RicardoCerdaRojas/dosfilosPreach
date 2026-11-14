@@ -183,6 +183,12 @@ function relacionHebrea(
  */
 const DECIR_GRIEGO: ReadonlySet<string> = new Set(['λέγω', 'φημί', 'ἀποκρίνομαι', 'κράζω', 'λαλέω']);
 
+/**
+ * Revisión del profesor (Stg 2:18, 2026-11): «δεῖξόν μοι τὴν πίστιν σου… κἀγώ σοι δείξω…» va al margen, como
+ * coordinada. Son καί + pronombre o adverbio en una palabra (crasis); κἄν (καὶ ἐάν) no, que es condición.
+ */
+const CRASIS_KAI: ReadonlySet<string> = new Set(['κἀγώ', 'κἀκεῖ', 'κἀκεῖθεν', 'κἀκεῖνος']);
+
 const NEGACIONES: ReadonlySet<string> = new Set(['μή', 'οὐ', 'οὐκ', 'οὐχ', LEMA.lo, LEMA.al]);
 
 function adelantados(
@@ -377,6 +383,17 @@ export function verseStructure(ch: ChapterStructure, verse: number): StructureNo
         f.isApodosis = apodosis.has(f.index)
             || (f.relation !== 'condition' && f.parent !== null && apodosis.has(f.parent) && !conFila.has(f.parent));
     }
+    // La madre, para fundir, es la cláusula más cercana CON fila en el versículo. MACULA puede poner entre
+    // las dos un nodo sin palabras aquí (1 Co 10:3: el «καὶ» de una coordinación de cuatro, con la cláusula
+    // colgando de un nodo que sólo tiene palabras en otro versículo); así la fila de sólo «καὶ» no hallaba
+    // a su hija y quedaba sola (pendientes de «Estructura», 2026-11-13).
+    const conFilaArriba = (p: number | null) => {
+        while (p !== null && !conFila.has(p)) p = ch.clauses[p]?.p ?? null;
+        return p;
+    };
+    // Sólo en griego: en hebreo la conjunción va pegada a su cláusula y no queda fila de sólo conector; ahí
+    // el mismo cambio movía la sangría de 4.000 versículos y la empeoraba (Dt 26:5, Is 65:14).
+    if (ch.lang === 'gr') for (const f of parcial) f.parent = conFilaArriba(f.parent);
     return fundirEnvoltorios(ch, parcial, posicion).map(f => ({
         index: f.index,
         depth: f.depth,
@@ -420,9 +437,15 @@ interface Fila {
  * conector se queda y lo de abajo va sangrado.
  */
 const POSPOSITIVOS: ReadonlySet<string> = new Set(['δέ', 'γάρ', 'οὖν', 'τε', 'μέν']);
+const ESPERA = 'espera' as const;
 
 function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: ReadonlyMap<string, number>): Fila[] {
     const lemaDe = new Map(ch.words.map(w => [w.r, w.l]));
+    const posDe = new Map(ch.words.map(w => [w.r, w.pos ?? '']));
+    const palabraDe = new Map(ch.words.map(w => [w.r, w]));
+    const modoDe = (r: string) => { const w = palabraDe.get(r); return w ? modo(w) : ''; };
+    /** Una fila con algo más que conectores y partículas (1 Co 12:5 «καὶ ὁ αὐτὸς κύριος» no trae roles, pero es cláusula). */
+    const deVerdad = (f: Fila) => f.tokens.some(t => t.role || (!CONECTOR_GRIEGO[lemaDe.get(t.r) ?? ''] && !/^[CX]/.test(posDe.get(t.r) ?? '')));
     const desciendeDe = (i: number, ancestro: number) => {
         for (let p = ch.clauses[i]?.p ?? null; p !== null; p = ch.clauses[p]?.p ?? null) if (p === ancestro) return true;
         return false;
@@ -479,34 +502,150 @@ function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: Readon
             break;
         }
     }
+    const DE_FORMA_FILA: ReadonlySet<ClauseRelation> = new Set(['main', 'asyndetic', 'participial', 'infinitival']);
+    const COORDINANTE: ReadonlySet<ClauseRelation> = new Set(['addition', 'development', 'contrast', 'alternative', 'ground', 'inference']);
+    // Griego: una coordinación de varios miembros cuyo ÚLTIMO miembro es la propia cláusula (`Conj4CL`, Mc 10:34
+    // «καὶ ἐμπτύσουσιν αὐτῷ καὶ μαστιγώσουσιν αὐτὸν καὶ ἀποκτενοῦσιν») trae todos los καί: «καὶ καὶ καὶ
+    // ἀποκτενοῦσιν». Cada καί va a la hija cuya palabra sigue; la madre se queda con el suyo (pendientes de
+    // «Estructura», 2026-11-13: Mt 13:15, Jn 12:40, Hch 28:27).
+    if (ch.lang === 'gr') for (const madre of filas) {
+        if (!madre.tokens.some(t => t.role)) continue;
+        for (const c of [...madre.tokens]) {
+            // Sólo los que coordinan: el εἰ de «Κύριε, εἰ…» (Hch 1:6) se queda con su vocativo.
+            if (c.role || !COORDINANTE.has(CONECTOR_GRIEGO[lemaDe.get(c.r) ?? ''] ?? 'main')) continue;
+            // El pospositivo va con la palabra que lo PRECEDE: si ésa no está en la hija, se queda (Lc 11:35
+            // «σκόπει οὖν», revisión adversarial).
+            const r = POSPOSITIVOS.has(lemaDe.get(c.r) ?? '') ? ch.words[pos(c) - 1]?.r : siguiente(c.r);
+            const hija = filas.find(f => f.parent === madre.index && f.tokens.some(t => t.r === r));
+            if (!hija || hija.connector) continue;
+            madre.tokens = madre.tokens.filter(t => t !== c);
+            hija.tokens = [c, ...hija.tokens].sort(orden);
+            hija.connector = c.r;
+            if (DE_FORMA_FILA.has(hija.relation)) hija.relation = CONECTOR_GRIEGO[lemaDe.get(c.r)!]!;
+            if (madre.connector === c.r) {
+                const propio = madre.tokens.find(t => !t.role && CONECTOR_GRIEGO[lemaDe.get(t.r) ?? '']);
+                madre.connector = propio?.r ?? null;
+                // Sin su conector, la madre vuelve a la relación por su forma («διωκόμενοι ἀλλ’ οὐκ
+                // ἐγκαταλειπόμενοι», 2 Co 4:9: «διωκόμενοι» es participio, no «contraste»).
+                if (!propio && madre.conditionalClass === undefined) {
+                    const modos = madre.tokens.filter(t => t.role === 'v').map(t => modoDe(t.r));
+                    madre.relation = modos.includes('P') ? 'participial' : modos.includes('N') ? 'infinitival' : 'main';
+                }
+            }
+            // La coordinada que va DESPUÉS de la madre queda a su mismo nivel (2 Co 4:9, Mt 21:21 «Ἄρθητι καὶ
+            // βλήθητι»): MACULA la cuelga del primer miembro.
+            // Sólo si la madre es de verdad el primer miembro (trae verbo); en Ef 6:4 «Καὶ οἱ πατέρες, μὴ
+            // παροργίζετε… ἀλλὰ ἐκτρέφετε…» es el vocativo que envuelve a los dos.
+            const miembro = madre.tokens.some(t => t.role === 'v' || t.role === 'vc');
+            if (miembro && pos(hija.tokens[0]!) > Math.max(...madre.tokens.map(pos)) && hija.depth > madre.depth) {
+                const baja = hija.depth - madre.depth;
+                const sub = new Set([hija.index]);
+                for (const f of filas) if (desciendeDe(f.index, hija.index)) sub.add(f.index);
+                for (const f of filas) if (sub.has(f.index)) f.depth -= baja;
+                hija.parent = madre.parent;
+            }
+        }
+    }
+    // Griego: primero los envoltorios que subordinan (ἐάν, ὅτι, ἵνα…) y después los que coordinan (καί, δέ,
+    // γάρ, οὖν…). Así «Νῦν δέ, … ἐὰν ἔλθω» (1 Co 14:6) recibe primero su ἐάν y queda condición; el δέ se
+    // suma después a una fila que ya tiene relación.
+    // Fase 3: lo que quedó esperando un envoltorio que nunca se funde (Hch 4:32 «καὶ οὐδὲ … ἀλλ’») va a su
+    // palabra igual.
+    let fase: 1 | 2 | 3 = ch.lang === 'gr' ? 1 : 2;
     let cambio = true;
-    while (cambio) {
+    while (cambio || fase < 3) {
+        if (!cambio) fase = fase === 1 ? 2 : 3;
         cambio = false;
         for (const madre of filas) {
+            if (fase === 1 && COORDINANTE.has(madre.relation)) continue;
             const hijas = filas.filter(f => f.parent === madre.index);
             if (!hijas.length) continue;
             const enHijas = new Set(hijas.flatMap(h => h.tokens.map(t => t.r)));
             const propias = madre.tokens.filter(t => !enHijas.has(t.r));
             if (propias.some(t => t.role && t.r !== madre.connector)) continue;
+            // La palabra que sigue al conector puede estar en una NIETA (el participio sujeto: Lc 11:10 «καὶ ὁ
+            // ζητῶν εὑρίσκει»; la prótasis antepuesta: Mc 3:24 «καὶ ἐὰν βασιλεία… μερισθῇ, οὐ δύναται…»). La
+            // CABEZA es la hija de la que cuelga esa fila; el conector va a la fila donde está la palabra, para
+            // que se lea en el orden del texto (pendientes de «Estructura», 2026-11-13: 2.612 filas griegas de
+            // sólo conector, como «καὶ» sobre 1 Co 10:3).
+            /** El pospositivo va con la palabra que lo precede («Θέλω δὲ», «ὅστις γὰρ ἄν», «Ὅτε οὖν»). */
+            const previaDe = (t: StructureToken) =>
+                ch.lang === 'gr' && POSPOSITIVOS.has(lemaDe.get(t.r) ?? '') ? ch.words[pos(t) - 1]?.r : undefined;
+            const filaDe = (r: string | undefined) => (r === undefined ? undefined : filas.find(x => x !== madre && x.tokens.some(t => t.r === r)));
+            /** La hija de la que cuelga `f`. */
+            const cabezaDe = (f: Fila | undefined) => {
+                while (f && !hijas.includes(f)) f = filas.find(x => x.index === f!.parent);
+                return f;
+            };
+            /**
+             * El griego busca también en las nietas, si la cabeza es una cláusula de verdad: si es otro
+             * envoltorio de sólo conector («ἐὰν» sobre «… δὲ …», Mt 16:26), se espera a que ése se funda
+             * primero. El hebreo, como antes, sólo en las hijas.
+             */
+            const bajoMadre = (f: Fila) => {
+                for (let x: Fila | undefined = f; x; x = filas.find(y => y.index === x!.parent)) if (hijas.includes(x)) return true;
+                return false;
+            };
+            /** La fila destino; `ESPERA` si cuelga de la madre pero hay un envoltorio por fundir en el camino. */
+            const destinoDe = (r: string | undefined): Fila | typeof ESPERA | undefined => {
+                if (r === undefined) return undefined;
+                if (ch.lang !== 'gr') return hijas.find(h => h.tokens.some(t => t.r === r));
+                const f = filaDe(r);
+                if (!f || !bajoMadre(f)) return undefined;
+                const c = cabezaDe(f);
+                if (fase === 3) return deVerdad(f) ? f : undefined;
+                // La fila destino también es una cláusula de verdad: un «γάρ» no entra al envoltorio «ἢ … ἢ»
+                // antes de que éste reparta sus conectores (Mt 6:24 «ἢ γὰρ τὸν ἕνα μισήσει»). Y el pospositivo
+                // espera a su palabra, no cae en la que sigue (Hch 8:35 «ἀνοίξας δὲ … ὁ Φίλιππος»).
+                return c && deVerdad(f) && (c === f || deVerdad(c)) ? f : ESPERA;
+            };
+            /**
+             * Pone los conectores `cs` en la fila `t`. Si `t` es hija directa, toma la relación del conector,
+             * como antes; si es una nieta, la toma la CABEZA, que es la oración que el conector une. La relación
+             * por forma (participio, infinitivo) cede ante el conector; la asíndeton, ante el discurso.
+             */
+            const DE_FORMA = DE_FORMA_FILA;
+            /** Devuelve la fila que recibió la relación, si alguna. */
+            const poner = (cs: readonly StructureToken[], t: Fila, relation: ClauseRelation, connector: string | null, clase: Fila['conditionalClass']): Fila | undefined => {
+                t.tokens = [...cs, ...t.tokens].sort(orden);
+                // En una nieta, la relación va a la CABEZA si es una oración con verbo y sin conector propio
+                // (Mc 3:24 «καὶ ἐὰν … μερισθῇ, οὐ δύναται»; Mt 18:31 «ἰδόντες οὖν … ἐλυπήθησαν»; Lc 11:10 «καὶ ὁ
+                // ζητῶν εὑρίσκει»); si no, a la fila misma (1 Co 12:5, donde la cabeza ya trae su καί; Hch 13:41,
+                // donde la «cabeza» es el sustantivo suelto «ἔργον»).
+                const apta = (f: Fila) => !f.connector && DE_FORMA.has(f.relation);
+                const cabeza = hijas.includes(t) ? t : cabezaDe(t);
+                const conVerbo = !!cabeza?.tokens.some(x => x.role === 'v' || x.role === 'vc');
+                // Un participio o infinitivo no la toma si su cabeza ya trae conector (Gá 2:17 «εἰ δὲ ζητοῦντες …
+                // εὑρέθημεν»: el «desarrollo» caía en el participio y la prótasis quedaba en otra fila).
+                const tToma = apta(t) && (!cabeza?.connector || t.relation === 'main' || t.relation === 'asyndetic');
+                const recibe = cabeza === t ? t : cabeza && apta(cabeza) && conVerbo ? cabeza : tToma ? t : undefined;
+                if (!recibe) return undefined;
+                // Un conector que subordina (εἰ, ἐάν, ὅτι…) pasa por encima del que coordina: MACULA deja a veces
+                // el καί de la coordinación en la fila del primer miembro (Jn 14:3 «ἐὰν πορευθῶ καὶ ἑτοιμάσω»,
+                // Hch 25:11 «εἰ μὲν οὖν ἀδικῶ καὶ…»), y esa fila es la prótasis.
+                const subordina = relation !== 'main' && !COORDINANTE.has(relation);
+                if (recibe.connector && recibe.connector !== connector && !(subordina && COORDINANTE.has(recibe.relation))) return undefined;
+                if (relation !== 'main' && (connector || recibe.relation === 'main' || recibe.relation === 'asyndetic')) {
+                    recibe.relation = relation;
+                    recibe.connector = connector;
+                    recibe.conditionalClass = clase;
+                    return recibe;
+                }
+                return undefined;
+            };
             // Una coordinación de tres o más (`Conj3CL`, Mc 12:19 «ἀποθάνῃ καὶ καταλίπῃ γυναῖκα καὶ μὴ ἀφῇ
             // τέκνον») trae VARIOS conectores: cada uno va a la cláusula que lo sigue. Juntos en la última
             // («καὶ καὶ μὴ ἀφῇ») la fila se ordenaba por el primer καί, antes de «καταλίπῃ» (pendientes de la
             // revisión, 2026-11-13).
-            if (propias.length > 1 && propias.every(t => !t.role && CONECTOR_GRIEGO[lemaDe.get(t.r) ?? ''])) {
-                // La palabra que sigue puede estar en una NIETA (el participio sujeto: Lc 11:10 «καὶ ὁ ζητῶν
-                // εὑρίσκει»): el destino es la hija de la que cuelga esa fila (revisión adversarial).
-                const hijaDe = (r: string | undefined) => {
-                    let f = r === undefined ? undefined : filas.find(x => x.tokens.some(t => t.r === r));
-                    while (f && !hijas.includes(f)) f = filas.find(x => x.index === f!.parent);
-                    return f;
-                };
-                const destinos = propias.map(p => hijaDe(siguiente(p.r)));
-                if (destinos.every(Boolean) && new Set(destinos).size === destinos.length) {
-                    propias.forEach((p, k) => {
-                        const h = destinos[k]!;
-                        h.tokens = [p, ...h.tokens].sort(orden);
-                        if (!h.connector) { h.connector = p.r; h.relation = CONECTOR_GRIEGO[lemaDe.get(p.r)!]!; }
-                    });
+            // También el par «μέν … δέ» (1 Co 1:18 «τοῖς μὲν ἀπολλυμένοις … τοῖς δὲ σῳζομένοις»): cada
+            // pospositivo va con la palabra que lo precede. μέν no tiene relación propia: sólo se pone.
+            const reparte = (t: StructureToken) => !t.role && (!!CONECTOR_GRIEGO[lemaDe.get(t.r) ?? ''] || (ch.lang === 'gr' && lemaDe.get(t.r) === 'μέν'));
+            if (propias.length > 1 && propias.every(reparte)) {
+                const destinos = propias.map(p => destinoDe(previaDe(p)) ?? destinoDe(siguiente(p.r)));
+                if (destinos.includes(ESPERA)) continue;
+                const listos = destinos as (Fila | undefined)[];
+                if (listos.every(Boolean) && new Set(listos.map(cabezaDe)).size === listos.length) {
+                    propias.forEach((p, k) => poner([p], listos[k]!, CONECTOR_GRIEGO[lemaDe.get(p.r)!] ?? 'main', p.r, undefined));
                     for (const h of hijas) {
                         h.parent = madre.parent;
                         if (madre.isApodosis && h.relation !== 'condition') h.isApodosis = true;
@@ -517,19 +656,42 @@ function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: Readon
                     break;
                 }
             }
+            // Lo propio de la madre va junto: si está repartido por el versículo (Mt 7:22 «οὐ … καὶ … καὶ», Ap 1:5
+            // «Τῷ … καὶ»), no es un prefijo y no se funde.
+            const contiguas = propias.every((t, k) => k === 0 || pos(t) === pos(propias[k - 1]!) + 1);
+            if (ch.lang === 'gr' && !contiguas) {
+                // Salvo que cada una vaya a la MISMA fila: «Οὐκ ἐγράφη δὲ» (Ro 4:23), el δέ con su ἐγράφη.
+                const cada = propias.map(p => destinoDe(previaDe(p)) ?? destinoDe(siguiente(p.r)));
+                const una = cada[0];
+                if (!una || una === ESPERA || cada.some(d => d !== una) || !propias.every(t => CONECTOR_GRIEGO[lemaDe.get(t.r) ?? ''] || /^[CX]/.test(posDe.get(t.r) ?? '') || NEGACIONES.has(lemaDe.get(t.r) ?? ''))) continue;
+            }
+            const primera = propias[0];
             const ultima = propias[propias.length - 1];
+            // El pospositivo va con la palabra que lo precede; si esa palabra no cuelga de la madre, con la que sigue.
             const sigue = ultima ? siguiente(ultima.r) : madre.tokens[0]?.r;
-            const hija = sigue === undefined ? undefined : hijas.find(h => h.tokens.some(t => t.r === sigue));
-            if (!hija) continue;
-            // Dos conectores distintos («δέ» sobre «Εἰ») no caben en una fila.
-            if (madre.connector && hija.connector && madre.connector !== hija.connector) continue;
-            hija.tokens = [...propias, ...hija.tokens].sort(orden);
-            // La relación por forma (participio, infinitivo) cede ante el conector;
-            // la asíndeton (lo que queda sin conector) cede ante el discurso de la madre.
-            if (madre.relation !== 'main' && (madre.connector || hija.relation === 'main' || hija.relation === 'asyndetic')) {
-                hija.relation = madre.relation;
-                hija.connector = madre.connector;
-                hija.conditionalClass = madre.conditionalClass;
+            const antes = primera ? destinoDe(previaDe(primera)) : undefined;
+            const hija = antes ?? destinoDe(sigue);
+            if (!hija || hija === ESPERA) continue;
+            // A una nieta sólo bajan conectores y partículas. Lo que trae palabras («πρὸς δὲ τὸν υἱόν», Heb 1:8)
+            // es una cláusula: no se pega a la cita que sigue.
+            const particulas = propias.every(t => CONECTOR_GRIEGO[lemaDe.get(t.r) ?? ''] || /^[CX]/.test(posDe.get(t.r) ?? ''));
+            if (!hijas.includes(hija) && !particulas) continue;
+            // Hebreo: dos conectores distintos no caben en una fila (decisión de G1 + G5). En griego sí, como los
+            // escribe el profesor: «ὃς γὰρ ἐὰν ἐπαισχυνθῇ» (Mc 8:38), «ἢ γὰρ τὸν ἕνα μισήσει» (Mt 6:24), «Εἰ δέ
+            // τις» (Stg 1:5). La fila conserva su relación (relativa, alternativa, condición).
+            if (madre.connector && hija.connector && madre.connector !== hija.connector) {
+                if (ch.lang !== 'gr') continue;
+                // Sólo si lo propio de la madre son conectores y partículas: «οὐδὲ τοῖς μετ’ αὐτοῦ» (Mt 12:4)
+                // es una cláusula, no se pega a su «εἰ μή».
+                if (propias.some(t => !CONECTOR_GRIEGO[lemaDe.get(t.r) ?? ''] && !/^[CX]/.test(posDe.get(t.r) ?? ''))) continue;
+            }
+            const recibio = poner(propias, hija, madre.relation, madre.connector, madre.conditionalClass);
+            // Si nadie la recibió (la hija ya traía su conector), la relación de la madre va a la otra hija que es
+            // la oración que une (Stg 1:5 «Εἰ δέ τις … λείπεται σοφίας, αἰτείτω»: «αἰτείτω» es desarrollo y
+            // apódosis). Si ya la recibió la cabeza, no: un conector rotula UNA fila (revisión adversarial: Mc 16:16).
+            if (ch.lang === 'gr' && !recibio && madre.connector && madre.relation !== 'main') {
+                const cabezas = hijas.filter(h => h !== hija && !h.connector && DE_FORMA_FILA.has(h.relation));
+                if (cabezas.length === 1) { cabezas[0]!.relation = madre.relation; cabezas[0]!.connector = madre.connector; }
             }
             for (const h of hijas) {
                 h.parent = madre.parent;
@@ -548,6 +710,17 @@ function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: Readon
             break;
         }
     }
+    // Griego: κἀγώ, κἀκεῖ, κἀκεῖνος son καί + otra palabra (crasis): la fila que abren es una coordinada.
+    // Después de fundir, y sólo si la fila quedó sin conector: en «κἀγὼ δέ σοι λέγω» (Mt 16:18) el conector es
+    // el δέ y el καί es «también» (revisión adversarial). Tras «καθώς» tampoco: «καθὼς γινώσκει με ὁ πατὴρ κἀγὼ
+    // γινώσκω τὸν πατέρα» (Jn 10:15) es la principal del correlativo («así también yo»).
+    if (ch.lang === 'gr') for (const f of filas) {
+        const w0 = f.tokens[0];
+        if (!w0 || f.connector || f.relation !== 'main' || !CRASIS_KAI.has(lemaDe.get(w0.r) ?? '')) continue;
+        if (filas.some(g => g.relation === 'comparison' && g.tokens[0] && pos(g.tokens[0]) < pos(w0))) continue;
+        f.relation = 'addition';
+        f.connector = w0.r;
+    }
     // U11 (revisión del profesor, Stg 2:19 «καὶ τὰ δαιμόνια πιστεύουσιν καὶ
     // φρίσσουσιν»): MACULA coordina con un nodo que trae el SEGUNDO miembro y
     // cuelga el primero de él. Una hija que va entera ANTES de una madre que
@@ -563,12 +736,30 @@ function fundirEnvoltorios(ch: ChapterStructure, filas: Fila[], posicion: Readon
         if (!madre.connector || !COORDINA.has(madre.relation) || madre.tokens[0]?.r !== madre.connector) continue;
         const inicio = pos(madre.tokens[0]!);
         for (const hija of filas.filter(f => f.parent === madre.index)) {
-            if (Math.max(...hija.tokens.map(pos)) >= inicio) continue;
+            // La prótasis no es una coordinada: conserva su sangría (2 Ti 2:12 «εἰ ἀρνησόμεθα, κἀκεῖνος ἀρνήσεται»).
+            if (Math.max(...hija.tokens.map(pos)) >= inicio || hija.relation === 'condition') continue;
             const sube = hija.depth - madre.depth;
             if (sube <= 0) continue;
             for (const f of filas) if (f === hija || bajoFila(f, hija)) f.depth -= sube;
             hija.parent = madre.parent;
+            // La primera coordinada de una apódosis también es apódosis (Mt 12:11 «οὐχὶ κρατήσει αὐτὸ καὶ ἐγερεῖ»).
+            if (ch.lang === 'gr' && madre.isApodosis) hija.isApodosis = true;
         }
+    }
+    // Revisión del profesor (Stg 2:18): MACULA cuelga «κἀγώ σοι δείξω» de «δεῖξόν μοι» como su OBJETO, y el
+    // profesor la pone al margen: es la coordinada que sigue. Medido en el NT (2026-11-13): las 13 filas con
+    // crasis de καί que MACULA marca objeto son coordinadas (Jn 20:15 «εἰπέ μοι… κἀγὼ αὐτὸν ἀρῶ», Jn 11:54
+    // «κἀκεῖ ἔμεινεν», 2 Co 12:20); van al nivel de la cláusula de la que colgaban.
+    if (ch.lang === 'gr') for (const f of filas) {
+        const w0 = f.tokens[0];
+        // Lo dicho ya está a su nivel, dentro de la cita (Stg 2:18 «Σὺ πίστιν ἔχεις κἀγὼ ἔργα ἔχω»).
+        if (!w0 || f.relation === 'speech' || !CRASIS_KAI.has(lemaDe.get(w0.r) ?? '') || !['o', 'o2'].includes(ch.clauses[f.index]?.role ?? '')) continue;
+        const madre = porIndice.get(f.parent ?? NaN);
+        if (!madre || f.depth <= madre.depth) continue;
+        const sube = f.depth - madre.depth;
+        for (const g of filas) if (g === f || bajoFila(g, f)) g.depth -= sube;
+        f.parent = madre.parent;
+        if (madre.isApodosis) f.isApodosis = true;
     }
     filas.sort((a, b) => clave(a) - clave(b));
     // El grupo de prótasis (revisión adversarial, 2026-11-12): la condición PRIMERO y, después, sus

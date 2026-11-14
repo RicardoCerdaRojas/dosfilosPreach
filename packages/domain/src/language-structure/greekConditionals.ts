@@ -10,7 +10,7 @@ import { verseStructure } from './verseStructure.js';
  * and Semantics») distingue: una conexión lógica en el presente («presente
  * general»; con presente indicativo en la apódosis la llama «quinta clase»), un
  * caso meramente hipotético, y un hecho futuro más probable. Aquí se decide por
- * el verbo de la apódosis, sólo cuando el versículo tiene UNA apódosis:
+ * el verbo de la apódosis (si hay varias coordinadas, sólo cuando todas dicen lo mismo):
  *   - presente indicativo, o sin verbo (Stg 2:14 «Τί τὸ ὄφελος…;») → presente general;
  *   - futuro indicativo o imperativo → futuro más probable.
  * Lo demás queda sin valor: la clase sola.
@@ -41,15 +41,24 @@ export function greekConditionals(ch: ChapterStructure, verse: number): Conditio
     // (1 Co 14:6 «Νῦν δέ… τί ὑμᾶς ὠφελήσω»), sí. Medido en el NT: sólo cambia 1 Co 7:36.
     const condiciones = filas.filter(f => f.relation === 'condition').length;
     const COORDINADA = new Set(['addition', 'development']);
-    const uso = (): ThirdClassUse | undefined => {
-        const trasCondicion = filas.indexOf(apodosis[0]!) > filas.findIndex(f => f.relation === 'condition');
-        if (apodosis.length !== 1 || (condiciones > 1 && trasCondicion && COORDINADA.has(apodosis[0]!.relation))) return undefined;
-        const a = apodosis[0]!;
+    const valor = (a: (typeof apodosis)[number]): ThirdClassUse | undefined => {
         const v = a.words.map(t => porRef.get(t.r)).find(w => ['I', 'S', 'O', 'D'].includes(modo(w)));
         if (!v) return a.verbless ? 'presentGeneral' : undefined;
         if (modo(v) === 'I' && tiempo(v) === 'P') return 'presentGeneral';
         if ((modo(v) === 'I' && tiempo(v) === 'F') || modo(v) === 'D') return 'moreProbableFuture';
         return undefined;
+    };
+    const uso = (): ThirdClassUse | undefined => {
+        const trasCondicion = filas.indexOf(apodosis[0]!) > filas.findIndex(f => f.relation === 'condition');
+        // Coordinada de verdad: su καί/δέ abre la fila. En 1 Co 14:6 el δέ de «Νῦν δέ» le da la relación a la
+        // apódosis, pero está en la fila de la prótasis: no es un miembro coordinado (pendientes de «Estructura»).
+        if (!apodosis.length) return undefined;
+        const coordinada = COORDINADA.has(apodosis[0]!.relation) && apodosis[0]!.words.some(t => t.r === apodosis[0]!.connector);
+        if (condiciones > 1 && trasCondicion && coordinada) return undefined;
+        // Varias apódosis coordinadas (Mt 17:20 «ἐρεῖτε … καὶ μεταβήσεται», Jn 7:37 «ἐρχέσθω … καὶ πινέτω»): el
+        // valor sólo si todas dicen lo mismo.
+        const valores = new Set(apodosis.map(valor));
+        return valores.size === 1 ? [...valores][0] : undefined;
     };
     const out: ConditionalFact[] = [];
     for (const f of filas) {
