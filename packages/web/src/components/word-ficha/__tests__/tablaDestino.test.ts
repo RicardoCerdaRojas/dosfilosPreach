@@ -20,7 +20,7 @@ describe('tabla de destino de la ficha de palabra', () => {
     });
     it('cada bloque dice dónde estaba antes, salvo los nuevos del rediseño', () => {
         // Datos que no existían antes del rediseño, con la revisión que los pidió.
-        const NUEVOS = new Set(['he.ketivQere' /* revisión del profesor, 2026-11, Rut 2:1 */, 'gr.condicional' /* ídem, Stg 2:14 */, 'he.wawDisyuntiva' /* ídem, Rut 2:1 */, 'he.articulo' /* ídem, Rut 3:6 */, 'he.funcionVerbo' /* ídem, Rut 3:5 */, 'he.funcionPreposicion' /* ídem, Rut 2:1 */, 'gr.sentidoLouwNida' /* ídem, Stg 2:10 */, 'gr.apertura' /* ídem, Stg 3:1 */, 'gr.mismoLema' /* ídem, Stg 3:5 */, 'gr.espejo' /* ídem, Stg 2:18 */]);
+        const NUEVOS = new Set(['he.ketivQere' /* revisión del profesor, 2026-11, Rut 2:1 */, 'gr.condicional' /* ídem, Stg 2:14 */, 'he.wawDisyuntiva' /* ídem, Rut 2:1 */, 'he.articulo' /* ídem, Rut 3:6 */, 'he.funcionVerbo' /* ídem, Rut 3:5 */, 'he.funcionPreposicion' /* ídem, Rut 2:1 */, 'gr.sentidoLouwNida' /* ídem, Stg 2:10 */, 'gr.apertura' /* ídem, Stg 3:1 */, 'gr.mismoLema' /* ídem, Stg 3:5 */, 'gr.espejo' /* ídem, Stg 2:18 */, 'he.espejo' /* pendientes, 2026-11-13: el espejo en hebreo */]);
         for (const f of [...filasDestino('he', BLOQUES_HEBREO), ...filasDestino('gr', BLOQUES_GRIEGO)]) {
             if (NUEVOS.has(f.id)) expect(f.antes, f.id).toEqual([]);
             else expect(f.antes.length, f.id).toBeGreaterThan(0);

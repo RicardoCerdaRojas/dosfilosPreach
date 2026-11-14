@@ -275,8 +275,8 @@ describe('Ficha griega — repetición en espejo', () => {
     it('dice la letra de la palabra, el espejo y que es un dato (puede ser un quiasmo), con la indicación del profesor', () => {
         render(<FichaCompleta registro={BLOQUES_GRIEGO} d={{ token: PISTIN, mirror: { position: 'A', a: 'πίστιν', b: 'ἔργων,', b2: 'ἔργων', a2: 'πίστιν.' } } as never} />);
         const b = screen.getByTestId('repeticion-espejo');
-        expect(b.textContent).toContain('analyzer.mirror.position');
-        expect(b.textContent).toContain('analyzer.mirror.note');
+        expect(b.textContent).toContain('mirrorFicha.position');
+        expect(b.textContent).toContain('mirrorFicha.note');
         expect(b.textContent).toContain('Stg 2:18');
     });
     it('sin espejo, no hay bloque', () => {

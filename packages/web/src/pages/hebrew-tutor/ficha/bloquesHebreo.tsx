@@ -4,6 +4,7 @@ import { STRUCTURE_RULE_SOURCES, type WordAnalysis } from '@dosfilos/domain';
 import { ArticuloAntecedente, FuncionSintactica } from './piezasDatosHebreo';
 import { PreposicionCompleta, PreposicionCorta, VerboCompleto, VerboCorto } from './piezasVerboHebreo';
 import { FrontedNote } from '@/components/language-structure/FrontedNote';
+import { RepeticionEspejo } from '@/components/language-structure/RepeticionEspejo';
 import type { FichaRegistro } from '@/components/word-ficha/fichaRegistro';
 import { FichaCaja, FichaCeldas, FichaFilas, FichaFuncion, FichaOrigenRotulo, FichaPistas } from '@/components/word-ficha/FichaPiezas';
 import { SpeechNote } from '../components/SpeechNote';
@@ -209,6 +210,10 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
         // medido a mano, el artículo retoma al antecedente en 72–92 % de los casos según la distancia.
         id: 'he.articulo', dato: 'El sustantivo con artículo ya se nombró antes (posible artículo anafórico)', seccion: 'contexto', origen: 'datos', antes: [],
         hay: (d) => !!d.article, Completo: ArticuloAntecedente,
+    },
+    {
+        id: 'he.espejo', dato: 'Repetición en espejo de lemas (A B | B′ A′), dato del texto; puede ser un quiasmo', seccion: 'contexto', origen: 'datos', antes: [],
+        hay: (d) => !!d.mirror, Completo: ({ d }) => <RepeticionEspejo m={d.mirror!} lang="he" />,
     },
     { id: 'he.antepuesta', dato: 'Antepuesta al verbo', seccion: 'contexto', origen: 'datos', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.fronted, Completo: ({ d }) => <FrontedNote fronted={d.fronted} /> },
 

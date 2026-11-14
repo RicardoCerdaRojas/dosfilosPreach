@@ -11,7 +11,7 @@ import {
     type SameLemmaFact,
     versePhrases,
     type VersePhrase,
-    greekMirrorRepetition,
+    mirrorRepetition,
     type MirrorFact,
     greekAutos,
     greekVerbCandidates,
@@ -144,7 +144,7 @@ export function useVerseStructure(
         const sameLemma = griego ? greekSameLemma(griego, verse) : [];
         const phrases = actual?.chapter ? versePhrases(actual.chapter, verse) : [];
         const phrasesKnown = !!actual?.chapter?.phrases;
-        const mirror = griego ? greekMirrorRepetition(griego, verse) : undefined;
+        const mirror = actual?.chapter ? mirrorRepetition(actual.chapter, verse) : undefined;
         const articles = actual?.chapter && lang === 'he' ? hebrewArticleAntecedents(actual.chapter, verse) : [];
         const hebrewVerbs = actual?.chapter && lang === 'he' ? hebrewFiniteVerbCandidates(actual.chapter, verse) : [];
         const hebrewPrepositions = actual?.chapter && lang === 'he' ? hebrewPrepositionCandidates(actual.chapter, verse) : [];

@@ -587,3 +587,56 @@ Rama `fix/estructura-pendientes`. El PR #831 se fusionó y se desplegó el mismo
 **Abierto:**
 - **Putnam y Wallace:** ¿hay ejemplar para cotejar? En Wallace: las páginas del proléptico (Stg 2:10), del anafórico (Stg 2:14) y de la 3.ª clase.
 - **Rut 2:7:** ¿literal «en» y una nota con las dos lecturas (recomendado), o adoptar la del profesor?
+
+---
+
+## Etapa 4 (2026-11-13): espejo en hebreo y palabras unidas por maqaf
+
+Rama `feat/espejo-hebreo-maqaf`, desde `origin/main`, en paralelo a la etapa 3 (`fix/estructura-pendientes`). Decisión del fundador: avanzar con los puntos 7 y 8 mientras revisa la etapa 3 en local.
+
+**Punto 8: maqaf. Medido; no hace falta cambiar código.**
+- **El riesgo:** si el análisis junta dos palabras unidas por maqaf en una tarjeta, los datos de las dos chocan. De verbo, preposición y ketiv/qere queda el último; de sufijo y rol, el primero.
+- **Exposición máxima en el AT** (OSHB, si se juntaran todos los grupos con maqaf): 41.064 grupos.
+  - Chocarían 99 preposiciones, 26 sufijos, 10 verbos y 1 infinitivo.
+  - En 8.368 grupos, las dos palabras traen roles distintos.
+- **Producción** (lectura con OK del fundador, sólo conteo): 176 análisis y 2.398 palabras.
+  - 5 palabras tienen un maqaf adentro, en 4 análisis viejos sin versión de prompt.
+  - Las 5 son fragmentos rotos («ת־הַ», «ל־רֹ֥»), del error de letras corridas que se corrigió en #726.
+  - Las versiones actuales del prompt (3 a 5) no juntan ninguna: el prompt exige separarlas.
+- **Conclusión:** el choque no ocurre con el prompt actual. Esos 4 análisis viejos se recuperan con «Re-analizar».
+
+**Punto 7: repetición en espejo en el hebreo.** Igual que en el griego, se muestra una lista curada y el detector sólo propone.
+- **El detector** (`hebrewMirrorCandidates`): el criterio del griego sobre el lema de OSHB.
+  - Cuenta sustantivos comunes, verbos y adjetivos.
+  - No cuentan אמר, היה, כל, YHWH, אלהים, אשר, יש, אין, los nombres propios ni los números.
+  - Da **284 candidatos** en el AT. Ninguno en Rut ni en Jonás, y apenas 2 en Salmos y 2 en Proverbios: el paralelismo poético repite el sentido con sinónimos, no la misma palabra.
+- **Curación:**
+  - Tres revisores con las páginas de Lund y Bullinger marcaron 123 como espejo y corrigieron 6 pares.
+  - Un cuarto revisor, a ciegas y estricto, juzgó esos 123 con 30 de control. Confirmó 74, y de los 30 de control rechazó 29.
+  - Entran los 74 que aprobaron las dos revisiones.
+- **Sensibilidad:** de los 4 ejemplos de inversión dentro de un versículo que da Bullinger para el AT, el detector sólo ve Gn 9:6.
+  - Éx 9:31 e Is 6:10 abarcan varias cláusulas.
+  - Is 5:20 lleva B y B′ juntas, que es la regla que excluye «Κύριε κύριε».
+  - Los tres se agregan a mano, con Bullinger.
+- **Lista:** 77 versículos (`hebrewMirrorList.ts`). Para revisar: `docs/REPETICION_EN_ESPEJO_HEBREO_LISTA.md`.
+- **Fuentes:** 4, todas de Bullinger con página: Éx 9:31 e Is 6:10 (Epánodo, p. 299), Is 5:20 (Antimetábole, p. 301) e Is 50:1 (Paralelismo introvertido, p. 359).
+  - Cotejadas con `cotejar-citas.py`, que suma los libros Éx e Is y tolera que el OCR lea «Isa. 1. 1» por «Isa. l. 1».
+  - Mutación: cambiar la página de dos de ellas hace fallar el cotejo.
+- **Interfaz:**
+  - `mirrorRepetition` sirve para los dos idiomas, y `useVerseStructure` la usa también en hebreo.
+  - El aviso de «Estructura» y las letras del Diagrama salen solos.
+  - La ficha hebrea suma el bloque `he.espejo`. El bloque de la ficha es común a griego y hebreo (`RepeticionEspejo`), y sus textos pasaron a `languageStructure`.
+
+**Revisión adversarial (revisor independiente):** las 77 entradas resuelven, y A con A′ y B con B′ comparten el lema de OSHB en todas. Las 4 páginas de Bullinger se cotejaron con la capa del libro. Tres defectos, corregidos:
+1. El hebreo del aviso y de la ficha salía con la fuente de la interfaz, sin `font-hebrew`, que es la que pone bien los acentos. Ahora cada palabra va en su escritura y aislada de la dirección del texto (`fraseConPalabras`), con prueba.
+2. El enlace de la ficha (palabra del análisis → letra) no tenía prueba. Ahora la tiene, con Gn 9:6. Si un análisis viejo junta con maqaf dos de las cuatro palabras, queda la primera letra; con los prompts actuales no pasa (punto 8).
+3. La prueba de las claves de fuentes saltaba las hebreas que empiezan con número («2Kgs …»). Ahora una sola prueba cubre las dos listas.
+- Además:
+  - las 77 posiciones quedan fijadas en una instantánea;
+  - el OCR sólo tolera «1» por la «l» romana, no la «i», que confundía «ii» con «li»;
+  - en el hebreo, la fuente base dice «Stg 2:18, llevado al hebreo; cada versículo, juicio de cuatro revisores», en vez de la nota griega sola;
+  - 2 R 5:18 abarca 24 palabras y es el único sobre 15: el marco lo eligió la revisión, a propósito, con prueba.
+
+**Queda para diseñar (con el fundador):**
+- El quiasmo que cruza de un versículo a otro: la vista de hoy es por versículo.
+- El paralelismo poético por sinónimos (Salmos): no es repetición de la misma palabra.

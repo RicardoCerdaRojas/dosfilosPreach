@@ -1,9 +1,10 @@
 import React from 'react';
-import { applyHebrewFiniteVerb, applyHebrewPreposition, applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, readingFor, type HebrewSuffix, type HebrewArticleFact, type HebrewVerbView, type HebrewPrepositionView, type ResolvedRelation, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type PhraseKind, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
+import { applyHebrewFiniteVerb, applyHebrewPreposition, applyHebrewInfinitive, applyHebrewKi, applyHebrewParticiple, hebrewSuffix, HEBREW_ANALYSIS_PROMPT_VERSION, mirrorPositionOf, readingFor, type HebrewSuffix, type HebrewArticleFact, type HebrewVerbView, type HebrewPrepositionView, type ResolvedRelation, type HebrewInfinitiveView, type HebrewKiView, type HebrewParticipleView, type KetivQereFact, type PhraseKind, type SpeechFact, type StructureWord, type VerseAnalysis } from '@dosfilos/domain';
 import { conLectura, useVerseStructure } from '@/components/language-structure/useVerseStructure';
 import { alinearConAnalisis } from '@/components/language-structure/alinearHebreo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { frasePorRef } from '@/components/language-structure/frases';
+import type { MirrorView } from '@/components/language-structure/RepeticionEspejo';
 
 /** Un hecho de «quién habla» con los nombres en el idioma del análisis. */
 export type SpeechView = SpeechFact & { readonly speakerName?: string; readonly addresseeName?: string };
@@ -219,7 +220,24 @@ export function useEstructuraHebrea(
         });
         return m;
     }, [estructura, alinear]);
-    return { estructura, alinear, frases, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, articulos, roles, verbos, preposiciones, sinLectura };
+    /**
+     * Índice del análisis → la repetición en espejo vista desde esa palabra (la lista curada del hebreo, como
+     * Stg 2:18 en el griego; pendientes de la revisión del profesor, 2026-11-13).
+     */
+    const espejos = React.useMemo(() => {
+        const m = new Map<number, MirrorView>();
+        const e = estructura.mirror;
+        if (!e) return m;
+        const indice = alinear(estructura.words);
+        const tx = (o: number) => (estructura.words[o]?.t ?? '').replace(/[\u05BE\u05C3\u05C0]/g, '');
+        for (const o of [e.a, e.b, e.b2, e.a2]) {
+            const i = indice[o];
+            const position = mirrorPositionOf(e, o);
+            if (i !== undefined && position && !m.has(i)) m.set(i, { position, a: tx(e.a), b: tx(e.b), b2: tx(e.b2), a2: tx(e.a2), ...(e.sources ? { sources: e.sources } : {}) });
+        }
+        return m;
+    }, [estructura, alinear]);
+    return { estructura, alinear, frases, antepuestas, discurso, infinitivos, participios, kis, ketivQere, sufijos, disyuntivas, articulos, roles, verbos, preposiciones, espejos, sinLectura };
 }
 
 /**

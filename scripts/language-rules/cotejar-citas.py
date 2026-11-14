@@ -23,10 +23,12 @@ for arg in [a for a in sys.argv[2:] if '=' in a]:
     obra,resto=arg.split('=',1); ruta,off=resto.rsplit(':',1)
     # Ligaduras tipográficas de la capa («inﬁnitive»).
     libros[obra]=(open(ruta).read().translate(str.maketrans({'ﬁ':'fi','ﬂ':'fl','ﬀ':'ff','ﬃ':'ffi','ﬄ':'ffl'})).split('\f'),int(off))
-LIBRO_EN={'Mt':['Matt','Mt'],'Mc':['Mark','Mk'],'Lc':['Luke','Lk'],'Jn':['John','Jn'],'Hch':['Acts'],'Ro':['Rom'],'1 Co':['1 Cor','I Cor'],'2 Co':['2 Cor','II Cor'],'Gá':['Gal'],'Ef':['Eph'],'Flp':['Phil'],'Col':['Col'],'1 Ts':['1 Thess','I Thess'],'2 Ts':['2 Thess','II Thess'],'1 Ti':['1 Tim','I Tim'],'2 Ti':['2 Tim','II Tim'],'Heb':['Heb'],'Stg':['Jas','James'],'1 P':['1 Pet','I Pet'],'2 P':['2 Pet','II Pet'],'1 Jn':['1 John','I John'],'Ap':['Rev']}
+LIBRO_EN={'Mt':['Matt','Mt'],'Mc':['Mark','Mk'],'Lc':['Luke','Lk'],'Jn':['John','Jn'],'Hch':['Acts'],'Ro':['Rom'],'1 Co':['1 Cor','I Cor'],'2 Co':['2 Cor','II Cor'],'Gá':['Gal'],'Ef':['Eph'],'Flp':['Phil'],'Col':['Col'],'1 Ts':['1 Thess','I Thess'],'2 Ts':['2 Thess','II Thess'],'1 Ti':['1 Tim','I Tim'],'2 Ti':['2 Tim','II Tim'],'Heb':['Heb'],'Stg':['Jas','James'],'1 P':['1 Pet','I Pet'],'2 P':['2 Pet','II Pet'],'1 Jn':['1 John','I John'],'Ap':['Rev'],
+    # AT (repetición en espejo en hebreo, pendientes de la revisión del profesor, 2026-11-13).
+    'Éx':['Ex','Exod'],'Is':['Isa','Isaiah']}
 def romano(n):
     out=''
-    for v,r in ((10,'x'),(9,'ix'),(5,'v'),(4,'iv'),(1,'i')):
+    for v,r in ((100,'c'),(90,'xc'),(50,'l'),(40,'xl'),(10,'x'),(9,'ix'),(5,'v'),(4,'iv'),(1,'i')):
         while n>=v: out+=r; n-=v
     return out
 def cita_en_pagina(seccion,pagina):
@@ -37,7 +39,10 @@ def cita_en_pagina(seccion,pagina):
     libro,c,v=m.group(1),int(m.group(2)),int(m.group(3))
     for a in LIBRO_EN.get(libro,[]):
         base=a.replace(' ',r'\s*')+r'\.?\s*'
-        for cap in (str(c)+r'\s*:\s*',romano(c)+r'\s*\.\s*'):
+        # El OCR de Bullinger lee a veces la «l» romana como «1» («Isa. 1. 1» por «Isa. l. 1», Is 50:1). Sólo esa
+        # letra: tolerar también la «i» confundía «ii» con «li» (revisión adversarial).
+        rom=''.join({'l':'[l1]'}.get(x,x) for x in romano(c))
+        for cap in (str(c)+r'\s*:\s*',rom+r'\s*\.\s*'):
             for hit in re.finditer(base+cap+r'(\d+(?:\s*[-–,]\s*\d+)*)',pagina,re.I):
                 nums=hit.group(1)
                 for tramo in re.split(r'\s*,\s*',nums):

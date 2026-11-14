@@ -1,7 +1,8 @@
-import { verseWords, type ChapterStructure } from './chapterStructure.js';
+import { verseWords, type ChapterStructure, type StructureWord } from './chapterStructure.js';
 import { verseStructure } from './verseStructure.js';
 import { MIRROR_LIST } from './greekMirrorList.js';
-import { MIRROR_LIST_SOURCES, MIRROR_SOURCES, type RuleSource } from './ruleSources.js';
+import { MIRROR_LIST_HE } from './hebrewMirrorList.js';
+import { MIRROR_LIST_SOURCES, MIRROR_SOURCES, MIRROR_SOURCES_HE, type RuleSource } from './ruleSources.js';
 
 /**
  * Revisión del profesor (2026-11, p. 15, Stg 2:18): él marca «πίστιν (A) … ἔργων (B) | ἔργων (B′) …
@@ -55,11 +56,20 @@ const deContenido = (w: { pos?: string; l: string }) =>
  * con las posiciones de sus cuatro palabras y sus fuentes. El detector de abajo sólo propone candidatos.
  */
 export function greekMirrorRepetition(ch: ChapterStructure, verse: number): MirrorFact | undefined {
-    if (ch.lang !== 'gr') return undefined;
+    return ch.lang === 'gr' ? mirrorRepetition(ch, verse) : undefined;
+}
+
+/**
+ * La repetición en espejo del versículo, en griego o en hebreo, si está en su lista curada (el hebreo:
+ * `hebrewMirrorList.ts`, revisada con Lund y Bullinger igual que la griega; pendientes de la revisión del
+ * profesor, 2026-11-13).
+ */
+export function mirrorRepetition(ch: ChapterStructure, verse: number): MirrorFact | undefined {
     const ref = `${ch.book} ${ch.chapter}:${verse}`;
-    const par = MIRROR_LIST[ref];
+    const par = (ch.lang === 'gr' ? MIRROR_LIST : MIRROR_LIST_HE)[ref];
     if (!par) return undefined;
-    const limpia = (t: string) => t.replace(/[,.·;:’⸀-⸅\d]/g, '').normalize('NFC');
+    // Sin puntuación pegada: en griego coma, punto, variantes; en hebreo maqaf, sof pasuq y paseq.
+    const limpia = (t: string) => t.normalize('NFC').replace(/[,.·;:’⸀-⸅\d\u05BE\u05C3\u05C0]/g, '');
     const ws = verseWords(ch, verse).map(w => limpia(w.t));
     const pos: number[] = [];
     for (const palabra of par) {
@@ -67,14 +77,30 @@ export function greekMirrorRepetition(ch: ChapterStructure, verse: number): Mirr
         if (i < 0) return undefined;
         pos.push(i);
     }
-    return { a: pos[0]!, b: pos[1]!, b2: pos[2]!, a2: pos[3]!, sources: [...(MIRROR_LIST_SOURCES[ref] ?? []), ...MIRROR_SOURCES] };
+    return { a: pos[0]!, b: pos[1]!, b2: pos[2]!, a2: pos[3]!, sources: [...(MIRROR_LIST_SOURCES[ref] ?? []), ...(ch.lang === 'gr' ? MIRROR_SOURCES : MIRROR_SOURCES_HE)] };
 }
 
 /** El detector: propone candidatos para revisar (no se muestra; ver la lista curada). */
 export function greekMirrorCandidates(ch: ChapterStructure, verse: number): MirrorFact | undefined {
-    if (ch.lang !== 'gr') return undefined;
+    return ch.lang === 'gr' ? candidatos(ch, verse, w => w.l, deContenido) : undefined;
+}
+
+/** Hebreo: «אמר», «היה», «כל», YHWH, «אלהים», «אשר», «יש», «אין» no cuentan; tampoco nombres propios ni números. */
+const FUERA_HE: ReadonlySet<string> = new Set(['559', '1961', '3605', '3068', '430', '834', '3426', '369']);
+const lemaHe = (w: StructureWord) => w.l.replace(/^([a-z]+\/)+/, '').replace(/\s.*$/, '');
+const deContenidoHe = (w: StructureWord) => (w.parts ?? []).some(p => /^(Nc|V|Aa)/.test(p.m)) && !FUERA_HE.has(lemaHe(w));
+
+/**
+ * El detector hebreo (sólo propone): el mismo criterio que el griego, sobre el lema de OSHB. Medido
+ * (2026-11-13): 284 candidatos en el AT; con ellos se armó la lista curada.
+ */
+export function hebrewMirrorCandidates(ch: ChapterStructure, verse: number): MirrorFact | undefined {
+    return ch.lang === 'he' ? candidatos(ch, verse, lemaHe, deContenidoHe) : undefined;
+}
+
+function candidatos(ch: ChapterStructure, verse: number, lema: (w: StructureWord) => string, contenido: (w: StructureWord) => boolean): MirrorFact | undefined {
     const ws = verseWords(ch, verse);
-    const seq = ws.map((w, i) => ({ l: w.l, i })).filter((_, i) => deContenido(ws[i]!));
+    const seq = ws.map((w, i) => ({ l: lema(w), i })).filter((_, i) => contenido(ws[i]!));
     if (seq.length < 4) return undefined;
     const filas = verseStructure(ch, verse);
     const clausulaDe = (i: number) => filas.find(f => f.words.some(t => t.r === ws[i]!.r))?.index;

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { verseWords, type ChapterStructure } from '../chapterStructure';
 import { greekMirrorCandidates, greekMirrorRepetition, mirrorPositionOf } from '../greekMirror';
 import { MIRROR_LIST } from '../greekMirrorList';
+import { MIRROR_LIST_HE } from '../hebrewMirrorList';
 import { formatCitation, MIRROR_LIST_SOURCES } from '../ruleSources';
 
 /**
@@ -62,7 +63,8 @@ describe('repetición en espejo: la lista curada', () => {
     });
 
     it('toda fuente de la lista es de un versículo de la lista', () => {
-        expect(Object.keys(MIRROR_LIST_SOURCES).filter(r => !(r in MIRROR_LIST))).toEqual([]);
+        // Griego («MRK 2:27») y hebreo («Isa 5:20», «2Kgs 5:18»), en una sola prueba (revisión adversarial).
+        expect(Object.keys(MIRROR_LIST_SOURCES).filter(r => !(r in MIRROR_LIST) && !(r in MIRROR_LIST_HE))).toEqual([]);
     });
 
     it('la posición de cada palabra; fuera del espejo, ninguna', () => {

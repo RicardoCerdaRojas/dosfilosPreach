@@ -6,6 +6,7 @@ import {
     HEBREW_KI_SOURCES, HEBREW_PARTICIPLE_SOURCES, hebrewInfinitiveSources,
     type HebrewInfinitiveFunction, type HebrewKiFunction, type HebrewParticipleFunction, type RuleSource, type WordAnalysis,
 } from '@dosfilos/domain';
+import type { MirrorView } from '@/components/language-structure/RepeticionEspejo';
 import type { FrontedInfo } from '@/components/language-structure/FrontedNote';
 import { FichaCaja, FichaFuncion, FichaOrigenRotulo, type OrigenFuncion } from '@/components/word-ficha/FichaPiezas';
 import type { HebrewArticleFact, HebrewPrepositionView, HebrewVerbView, HebrewInfinitiveView, HebrewKiView, HebrewParticipleView, HebrewSuffix, KetivQereFact, ResolvedRelation } from '@dosfilos/domain';
@@ -38,6 +39,8 @@ export interface DatosHebreo {
     readonly verb?: HebrewVerbView;
     /** U3a: la función de su preposición (A&C §4.1). */
     readonly preposition?: HebrewPrepositionView;
+    /** Repetición en espejo (lista curada): la letra de esta palabra y las cuatro palabras. */
+    readonly mirror?: MirrorView;
     /** Abre el detective (verbos y nombres). */
     readonly onInvestigate?: () => void;
 }
