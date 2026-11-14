@@ -458,7 +458,7 @@ export const SAME_LEMMA_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 3
 export const MIRROR_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 2:18 πίστιν … ἔργων | ἔργων … πίστιν')];
 
 /**
- * Las fuentes de cada versículo de la lista curada (`greekMirrorList.ts`): Lund trata el pasaje como
+ * Las fuentes de cada versículo de la lista curada (`greekMirrorList.ts`, `hebrewMirrorList.ts`): Lund trata el pasaje como
  * quiasmo; Bullinger, con la figura que nombra (Antimetábole, Epanodos…). La página es la impresa,
  * cotejada con `cotejar-citas.py` (la referencia del versículo tiene que estar en esa página).
  */
@@ -481,4 +481,9 @@ export const MIRROR_LIST_SOURCES: Readonly<Record<string, readonly RuleSource[]>
     'MAT 23:12': [LU('Mt 23:12', 310)],
     'MRK 2:27': [LU('Mc 2:27', 32), BU('Antimetábole', 'Mc 2:27', 302)],
     'MAT 13:15': [LU('Mt 13:15', 234)],
+    // Hebreo (`hebrewMirrorList.ts`): Bullinger, con la página impresa (hoja del PDF − 52).
+    'Exod 9:31': [BU('Epánodo', 'Éx 9:31', 299)],
+    'Isa 5:20': [BU('Antimetábole', 'Is 5:20', 301)],
+    'Isa 6:10': [BU('Epánodo', 'Is 6:10', 299)],
+    'Isa 50:1': [BU('Paralelismo introvertido', 'Is 50:1', 359)],
 };

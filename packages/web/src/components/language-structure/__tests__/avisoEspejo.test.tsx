@@ -25,4 +25,12 @@ describe('aviso de la repetición en espejo', () => {
         await waitFor(() => expect(screen.getByTestId('mirror-notice')).toBeInTheDocument());
         expect(screen.getByTestId('mirror-notice').textContent).toBe('mirrorNotice|πίστιν·ἔργων|ἔργων·πίστιν');
     });
+
+    it('en hebreo también (lista curada del AT): Gn 9:6 «שֹׁפֵךְ דַּם | דָּמוֹ יִשָּׁפֵךְ»', async () => {
+        const Hebreo = () => <StructureSection lang="he" structure={useVerseStructure('he', 'Gen', 9, 6)} />;
+        render(<Hebreo />);
+        await waitFor(() => expect(screen.getByTestId('mirror-notice')).toBeInTheDocument());
+        const sinAcentos = (t: string) => t.normalize('NFD').replace(/[\u0591-\u05AF\u05BD]/g, '').normalize('NFC');
+        expect(sinAcentos(screen.getByTestId('mirror-notice').textContent ?? '')).toBe(sinAcentos('mirrorNotice|שֹׁפֵךְ·דַּם|דָּמוֹ·יִשָּׁפֵךְ'));
+    });
 });

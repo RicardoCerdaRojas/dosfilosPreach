@@ -188,5 +188,10 @@
     "close": "Close the card",
     "panelDescription": "Full word card: its form, its function in the verse and the sources.",
     "reference": "{{ref}} · word {{n}} of {{total}}"
+  },
+  "mirrorFicha": {
+    "title": "Mirror repetition",
+    "position": "This word is {{pos}} in the mirror {{a}} · {{b}} | {{b2}} · {{a2}}.",
+    "note": "From the text: the lemmas repeat in reverse order. It may be a chiasm; confirm it with the sense."
   }
 }

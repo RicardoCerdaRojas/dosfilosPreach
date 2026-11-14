@@ -188,5 +188,10 @@
     "close": "Cerrar la ficha",
     "panelDescription": "Ficha completa de la palabra: su forma, su función en el versículo y las fuentes.",
     "reference": "{{ref}} · palabra {{n}} de {{total}}"
+  },
+  "mirrorFicha": {
+    "title": "Repetición en espejo",
+    "position": "Esta palabra es {{pos}} en el espejo {{a}} · {{b}} | {{b2}} · {{a2}}.",
+    "note": "Dato del texto: los lemas se repiten en orden inverso. Puede ser un quiasmo; confírmalo con el sentido."
   }
 }

@@ -62,7 +62,8 @@ describe('repetición en espejo: la lista curada', () => {
     });
 
     it('toda fuente de la lista es de un versículo de la lista', () => {
-        expect(Object.keys(MIRROR_LIST_SOURCES).filter(r => !(r in MIRROR_LIST))).toEqual([]);
+        // Las claves del griego son en mayúsculas («MRK 2:27»); las del hebreo, «Isa 5:20» (hebrewMirror.test.ts).
+        expect(Object.keys(MIRROR_LIST_SOURCES).filter(r => /^[A-Z0-9]+ /.test(r) && !(r in MIRROR_LIST))).toEqual([]);
     });
 
     it('la posición de cada palabra; fuera del espejo, ninguna', () => {

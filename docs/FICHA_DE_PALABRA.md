@@ -5,7 +5,7 @@
 
 Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, en qué sección queda, si entra en el resumen (tooltip y tarjeta) y de dónde sale.
 
-## Hebreo (26 bloques)
+## Hebreo (27 bloques)
 
 | # | Bloque | Dato | Antes | Sección | Resumen | De dónde sale |
 |---|---|---|---|---|---|---|
@@ -32,9 +32,10 @@ Cada fila es un bloque de la ficha: el dato, dónde estaba antes del rediseño, 
 | 21 | `he.funcionSintactica` | Función sintáctica (texto del asistente) | tarjeta, tooltip, panel | Su función | sí | asistente |
 | 22 | `he.quienHabla` | Quién habla y a quién | tarjeta, tooltip | En el contexto | — | regla |
 | 23 | `he.articulo` | El sustantivo con artículo ya se nombró antes (posible artículo anafórico) |  | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 24 | `he.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
-| 25 | `he.explicacion` | Explicación pedagógica (con su formato) | tarjeta, panel | Para estudiar | — | asistente |
-| 26 | `he.investigar` | Investigar la palabra paso a paso (detective) | tarjeta | Acciones | — | — |
+| 24 | `he.espejo` | Repetición en espejo de lemas (A B | B′ A′), dato del texto; puede ser un quiasmo |  | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 25 | `he.antepuesta` | Antepuesta al verbo | tarjeta, tooltip | En el contexto | — | datos (OSHB, MorphGNT, MACULA o conteo propio) |
+| 26 | `he.explicacion` | Explicación pedagógica (con su formato) | tarjeta, panel | Para estudiar | — | asistente |
+| 27 | `he.investigar` | Investigar la palabra paso a paso (detective) | tarjeta | Acciones | — | — |
 
 ## Griego (28 bloques)
 

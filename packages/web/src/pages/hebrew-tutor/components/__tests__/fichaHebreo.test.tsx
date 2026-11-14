@@ -63,6 +63,7 @@ const DATOS = {
     ketivQere: { ordinal: 9, qere: 'אֲכָלְךָ', ketiv: 'KETIV-אכלך' },
     disjunctive: { resolved: 'circumstantial' as const },
     article: { ordinal: 9, antecedent: { text: 'ANTECEDENTE-הַגֹּרֶן', verse: 3 }, sameVerse: false },
+    mirror: { position: 'A' as const, a: 'אֲכָלְךָ', b: 'B', b2: 'B2', a2: 'A2' },
     onInvestigate: vi.fn(),
 };
 
@@ -74,6 +75,7 @@ const VALORES = [
     'OSHB-CODIGO-HVqc/Sp2ms', 'verseAnalyzer.categories.VERB', 'verseAnalyzer.morphology.gender.M', 'verseAnalyzer.morphology.number.S',
     'verseAnalyzer.infinitive.functions.genitive', 'verseAnalyzer.ficha.recognizedBy.trasConstructo', 'HABLANTE-יְהוָה',
     'verseAnalyzer.ficha.weakVerb', 'verseAnalyzer.ficha.weakVerbRules', 'verseAnalyzer.ficha.investigate', 'cardFrontedChosen',
+    'mirrorFicha.position', 'mirrorFicha.note',
 ];
 
 describe('Ficha hebrea — paridad: ningún dato se pierde', () => {
