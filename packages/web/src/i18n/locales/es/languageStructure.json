@@ -5,7 +5,7 @@
     "cards": "Tarjetas",
     "diagram": "Diagrama"
   },
-  "textSize": "Tamaño del texto",
+  "textSizeNow": "Tamaño del texto: {{pct}} %",
   "text": {
     "smaller": "Achicar el texto",
     "bigger": "Agrandar el texto"

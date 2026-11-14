@@ -558,6 +558,8 @@ Rama `fix/estructura-pendientes`. El PR #831 se fusionó y se desplegó el mismo
 - 15 filas de sólo conector, sobre todo correlativos «μέν … δέ» y «τε … τε» (Ro 14:8).
 - Algunas apódosis sin marcar que ya faltaban antes (Mt 24:43 «ἐγρηγόρησεν ἄν»).
 
+**A−/A+ de «Estructura» (2026-11-14, pedido del fundador al ver Gn 9:6 en el Diagrama).** La sección tiene su propio tamaño del texto original, en tarjetas y diagrama: 6 escalones (0,85× a 2,1×), recordado en el navegador (`estructura.tamano`). En el escalón inicial queda exactamente como antes: hebreo 1,25rem y griego 1,125rem, los dos con interlineado 1,75rem (la revisión adversarial midió que `text-lg`/`text-xl` le ganaban a `leading-snug` en twMerge). Las letras del espejo van en em y nunca bajan de 10px. En los topes el botón queda `aria-disabled`, no `disabled`, para que el foco del teclado no se pierda; el grupo anuncia el tamaño actual. Es independiente del A−/A+ del versículo de la página hebrea. Mutaciones: validación del valor guardado, clic en el tope e interlineado fijo; las tres las detectan las pruebas.
+
 **Hallazgos de producción, anteriores a esta fase:**
 - gpt-6-luna repite el JSON hasta el tope de tokens (1:21: 32.768 de salida; banco: 5 de 22); el servidor lo toma por «incompleta» y cae a Gemini en silencio, así que se paga dos veces. La raíz es el esquema estricto (pendiente G0): el proxy ya acepta `responseSchema` y `OpenAiLlmClient` lo manda como `json_schema` estricto.
 - El rechazo de OpenAI es intermitente (ver arriba); producción cae a Gemini en silencio.

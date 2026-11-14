@@ -16,7 +16,7 @@ import { SourceNote } from './SourceNote';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VerseStructureState } from './useVerseStructure';
-import { ESCALA_INICIAL, ESCALAS_ESTRUCTURA, frasePorRef, MAX_SANGRIA_FILAS, SUBRAYADO_FRASE, tamanoOriginal } from './frases';
+import { ESCALA_INICIAL, ESCALAS_ESTRUCTURA, frasePorRef, MAX_SANGRIA_FILAS, SUBRAYADO_FRASE, estiloOriginal } from './frases';
 import { StructureDiagram } from './StructureDiagram';
 import type { MirrorPosition, PhraseKind } from '@dosfilos/domain';
 
@@ -149,8 +149,8 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                                             <span
                                                 lang={lang === 'he' ? 'he' : 'grc'}
                                                 data-frase={phrases?.get(w.r)}
-                                                style={{ fontSize: tamanoOriginal(lang, escala) }}
-                                                className={cn('leading-snug text-foreground', lang === 'he' && 'font-hebrew', phrases?.has(w.r) && SUBRAYADO_FRASE[phrases.get(w.r)!])}
+                                                style={estiloOriginal(lang, escala)}
+                                                className={cn('text-foreground', lang === 'he' && 'font-hebrew', phrases?.has(w.r) && SUBRAYADO_FRASE[phrases.get(w.r)!])}
                                             >
                                                 {enlazada && links?.renderText ? links.renderText(i) : w.t}
                                             </span>
@@ -311,6 +311,7 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
     const frases = React.useMemo(() => (showPhrases ? frasePorRef(structure.phrases) : undefined), [showPhrases, structure.phrases]);
     const [vista, cambiarVista] = useVistaEstructura();
     const [escala, nivel, cambiarNivel] = useEscalaEstructura();
+    const tope = (d: -1 | 1) => (d < 0 ? nivel === 0 : nivel === ESCALAS_ESTRUCTURA.length - 1);
     // La repetición en espejo (Stg 2:18): palabra → su letra (A, B, B′, A′) y el texto del aviso.
     const m = structure.mirror;
     const espejo = React.useMemo(() => {
@@ -324,44 +325,45 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
             <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t('title')}</h3>
                 <span className="flex flex-wrap items-center gap-2">
-                {/* El tamaño del texto original, en las dos vistas (como el A−/A+ del versículo). */}
-                <span role="group" aria-label={t('textSize')} className="inline-flex items-center rounded-md border border-border/60 bg-background print:hidden">
-                    {([['smaller', -1, 'A−'], ['bigger', 1, 'A+']] as const).map(([k, d, rotulo], j) => (
-                        <button
-                            key={k}
-                            type="button"
-                            onClick={() => cambiarNivel(nivel + d)}
-                            disabled={d < 0 ? nivel === 0 : nivel === ESCALAS_ESTRUCTURA.length - 1}
-                            aria-label={t(`text.${k}`)}
-                            title={t(`text.${k}`)}
-                            data-testid={`estructura-texto-${k}`}
-                            className={cn(
-                                'min-h-[32px] min-w-[32px] px-2 py-1 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40',
-                                j > 0 && 'border-l border-border/60',
-                            )}
-                        >
-                            {rotulo}
-                        </button>
-                    ))}
-                </span>
-                {/* U11c: la misma estructura en tarjetas (con roles y lecturas) o en diagrama (como el profesor). */}
-                <span role="group" aria-label={t('viewLabel')} className="inline-flex items-center rounded-md border border-border/60 bg-background print:hidden">
-                    {(['cards', 'diagram'] as const).map((v, i) => (
-                        <button
-                            key={v}
-                            type="button"
-                            onClick={() => cambiarVista(v)}
-                            aria-pressed={vista === v}
-                            className={cn(
-                                'min-h-[32px] px-2.5 py-1 text-xs transition-colors',
-                                i > 0 && 'border-l border-border/60',
-                                vista === v ? 'bg-muted/60 font-medium text-foreground' : 'text-muted-foreground hover:text-foreground',
-                            )}
-                        >
-                            {t(`view.${v}`)}
-                        </button>
-                    ))}
-                </span>
+                    {/* El tamaño del texto original, en las dos vistas; anuncia el tamaño actual. */}
+                    <span role="group" aria-label={t('textSizeNow', { pct: Math.round(escala * 100) })} className="inline-flex items-center rounded-md border border-border/60 bg-background print:hidden">
+                        {([['smaller', -1, 'A−'], ['bigger', 1, 'A+']] as const).map(([k, d, rotulo], j) => (
+                            <button
+                                key={k}
+                                type="button"
+                                // aria-disabled (no disabled): en el tope el foco del teclado no se pierde.
+                                onClick={() => { if (!tope(d)) cambiarNivel(nivel + d); }}
+                                aria-disabled={tope(d)}
+                                aria-label={t(`text.${k}`)}
+                                title={t(`text.${k}`)}
+                                data-testid={`estructura-texto-${k}`}
+                                className={cn(
+                                    'min-h-[32px] min-w-[32px] px-2 py-1 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary aria-disabled:cursor-not-allowed aria-disabled:opacity-40',
+                                    j > 0 && 'border-l border-border/60',
+                                )}
+                            >
+                                {rotulo}
+                            </button>
+                        ))}
+                    </span>
+                    {/* U11c: la misma estructura en tarjetas (con roles y lecturas) o en diagrama (como el profesor). */}
+                    <span role="group" aria-label={t('viewLabel')} className="inline-flex items-center rounded-md border border-border/60 bg-background print:hidden">
+                        {(['cards', 'diagram'] as const).map((v, i) => (
+                            <button
+                                key={v}
+                                type="button"
+                                onClick={() => cambiarVista(v)}
+                                aria-pressed={vista === v}
+                                className={cn(
+                                    'min-h-[32px] px-2.5 py-1 text-xs transition-colors',
+                                    i > 0 && 'border-l border-border/60',
+                                    vista === v ? 'bg-muted/60 font-medium text-foreground' : 'text-muted-foreground hover:text-foreground',
+                                )}
+                            >
+                                {t(`view.${v}`)}
+                            </button>
+                        ))}
+                    </span>
                 </span>
             </div>
             <p className="mb-3 text-[12.5px] text-muted-foreground">{t('intro')}</p>

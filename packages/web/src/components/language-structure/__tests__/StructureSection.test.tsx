@@ -305,6 +305,9 @@ describe('StructureSection', () => {
         await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
         // Tarjetas: el tamaño de antes (griego 1.125rem) y crece con A+.
         expect(tamanos('[data-testid="structure-row"] span[lang="grc"]')).toEqual(new Set(['1.125rem']));
+        // El interlineado de antes (1.75rem, el de text-lg) en el escalón inicial, y crece con la letra.
+        expect(new Set([...document.querySelectorAll<HTMLElement>('[data-testid="structure-row"] span[lang="grc"]')].map(e => e.style.lineHeight))).toEqual(new Set(['1.75rem']));
+        expect(screen.getByRole('group', { name: 'textSizeNow' })).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
         expect(tamanos('[data-testid="structure-row"] span[lang="grc"]')).toEqual(new Set(['1.35rem']));
         expect(localStorage.getItem('estructura.tamano')).toBe('2');
@@ -320,10 +323,15 @@ describe('StructureSection', () => {
         expect(tamanos('[data-testid="diagram-line"] > span[lang="grc"]')).toEqual(new Set(['1.35rem']));
         // Topes: A+ hasta el último escalón se apaga; A− hasta el primero, también.
         for (let k = 0; k < 6; k++) fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
-        expect(screen.getByTestId('estructura-texto-bigger')).toBeDisabled();
+        expect(screen.getByTestId('estructura-texto-bigger').getAttribute('aria-disabled')).toBe('true');
+        // En el tope, otro clic no hace nada y el botón sigue enfocable (no `disabled`).
+        fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+        expect(localStorage.getItem('estructura.tamano')).toBe('5');
+        expect(screen.getByTestId('estructura-texto-bigger')).not.toBeDisabled();
         expect(tamanos('[data-testid="diagram-line"] > span[lang="grc"]')).toEqual(new Set(['2.3625rem']));
         for (let k = 0; k < 8; k++) fireEvent.click(screen.getByTestId('estructura-texto-smaller'));
-        expect(screen.getByTestId('estructura-texto-smaller')).toBeDisabled();
+        expect(screen.getByTestId('estructura-texto-smaller').getAttribute('aria-disabled')).toBe('true');
+        expect(screen.getByTestId('estructura-texto-bigger').getAttribute('aria-disabled')).toBe('false');
         expect(localStorage.getItem('estructura.tamano')).toBe('0');
     });
 
@@ -334,6 +342,11 @@ describe('StructureSection', () => {
         expect(tamanos()).toEqual(new Set(['1.25rem']));
         fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
         expect(tamanos()).toEqual(new Set(['1.5rem']));
+        // Y el diagrama hebreo, con el mismo tamaño y el interlineado proporcional.
+        fireEvent.click(screen.getByText('view.diagram'));
+        const lineas = [...document.querySelectorAll<HTMLElement>('[data-testid="diagram-line"] > span[lang="he"]')];
+        expect(lineas.length).toBeGreaterThan(0);
+        expect(new Set(lineas.map(e => `${e.style.fontSize} ${e.style.lineHeight}`))).toEqual(new Set(['1.5rem 2.1rem']));
     });
 
     it('un tamaño guardado roto (texto, fuera de rango) vuelve al de siempre', async () => {
@@ -342,6 +355,12 @@ describe('StructureSection', () => {
             const { unmount } = render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);
             await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
             expect(new Set([...document.querySelectorAll<HTMLElement>('[data-testid="structure-row"] span[lang="grc"]')].map(e => e.style.fontSize))).toEqual(new Set(['1.125rem']));
+            // Vuelve al escalón inicial de verdad: los dos botones habilitados y A+ sube UN escalón.
+            expect(screen.getByTestId('estructura-texto-smaller').getAttribute('aria-disabled')).toBe('false');
+            expect(screen.getByTestId('estructura-texto-bigger').getAttribute('aria-disabled')).toBe('false');
+            fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+            expect(new Set([...document.querySelectorAll<HTMLElement>('[data-testid="structure-row"] span[lang="grc"]')].map(e => e.style.fontSize))).toEqual(new Set(['1.35rem']));
+            expect(localStorage.getItem('estructura.tamano')).toBe('2');
             unmount();
         }
         localStorage.removeItem('estructura.tamano');

@@ -13,7 +13,7 @@ import {
 } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
-import { MAX_SANGRIA_FILAS, SUBRAYADO_FRASE, tamanoOriginal } from './frases';
+import { MAX_SANGRIA_FILAS, SUBRAYADO_FRASE, estiloOriginal } from './frases';
 import type { StructureWordLinks } from './StructureSection';
 
 /** La de las tarjetas, más la línea «└» de la frase. */
@@ -140,7 +140,7 @@ export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underl
                 <span
                     lang={he ? 'he' : 'grc'}
                     dir={he ? 'rtl' : 'ltr'}
-                    style={{ fontSize: tamanoOriginal(lang, escala) }}
+                    style={estiloOriginal(lang, escala)}
                     className={cn('flex flex-wrap items-baseline gap-x-1 text-foreground', he && 'font-hebrew')}
                 >
                     {/* La línea de frase lleva su marca: no es una cláusula aunque quede a la misma sangría. */}
