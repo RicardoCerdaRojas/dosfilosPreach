@@ -185,7 +185,8 @@ describe('leer los comentarios del PDF', () => {
         const dialogo = abrirDevolucion();
         await elegirPdf(dialogo);
         fireEvent.keyDown(dialogo, { key: 'Escape' });
-        expect(screen.getByRole('alertdialog')).toHaveTextContent('discardChanges.title');
+        // El aviso se abre un instante después: esperarlo (en CI, con carga, `getByRole` llegaba antes; main tras #831).
+        expect(await screen.findByRole('alertdialog')).toHaveTextContent('discardChanges.title');
     });
 
     it('«Guardar» con comentarios leídos sin agregar pregunta: agregarlos y guardar, guardar sin ellos o volver', async () => {
@@ -194,7 +195,7 @@ describe('leer los comentarios del PDF', () => {
         fireEvent.change(within(dialogo).getByPlaceholderText('feedbackDialog.textPlaceholder'), { target: { value: 'Muy buen trabajo.' } });
         await elegirPdf(dialogo);
         fireEvent.click(within(dialogo).getByText('feedbackDialog.save'));
-        const alerta = screen.getByRole('alertdialog');
+        const alerta = await screen.findByRole('alertdialog');
         // La marca sin texto está incompleta: «Agregarlos y guardar» agrega las otras dos y lo dice.
         expect(alerta).toHaveTextContent('feedbackDialog.pdfPending.title:3');
         expect(alerta).toHaveTextContent('feedbackDialog.pdfPending.incomplete:1');
@@ -250,7 +251,7 @@ describe('leer los comentarios del PDF', () => {
         await elegirPdf(dialogo);
         // Solo los comentarios: guardar sin ellos dejaría la devolución vacía.
         fireEvent.click(within(dialogo).getByText('feedbackDialog.save'));
-        expect(within(screen.getByRole('alertdialog')).queryByText('feedbackDialog.pdfPending.saveWithout')).toBeNull();
+        expect(within(await screen.findByRole('alertdialog')).queryByText('feedbackDialog.pdfPending.saveWithout')).toBeNull();
         fireEvent.click(within(screen.getByRole('alertdialog')).getByText('feedbackDialog.pdfPending.back'));
         await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
         fireEvent.change(within(dialogo).getByPlaceholderText('feedbackDialog.textPlaceholder'), { target: { value: 'Muy buen trabajo.' } });
@@ -339,7 +340,7 @@ describe('una observación a mano', () => {
         expect(screen.getByText('feedbackDialog.save')).toBeInTheDocument();
     });
 
-    it('«Quitar la devolución» cuenta correcciones y fortalezas por separado', () => {
+    it('«Quitar la devolución» cuenta correcciones y fortalezas por separado', async () => {
         const project = curso({
             feedbackPatterns: [{ id: 'apo', name: 'Apóstrofe', decision: 'pending' }, { id: 'tc', name: 'Crítica textual', kind: 'strength', decision: 'pending' }],
             courseSchedule: [entrada('e1', {
@@ -351,7 +352,7 @@ describe('una observación a mano', () => {
         fireEvent.click(screen.getByText('works.editFeedback'));
         fireEvent.click(screen.getByText('feedbackSummary.edit'));
         fireEvent.click(within(screen.getByRole('dialog')).getByText('feedbackDialog.clear'));
-        expect(screen.getByRole('alertdialog')).toHaveTextContent('feedbackDialog.clearHint:feedbackDialog.clearCount.corrections:1feedbackDialog.clearAndfeedbackDialog.clearCount.strengths:2');
+        expect(await screen.findByRole('alertdialog')).toHaveTextContent('feedbackDialog.clearHint:feedbackDialog.clearCount.corrections:1feedbackDialog.clearAndfeedbackDialog.clearCount.strengths:2');
     });
 
     it('al editar, una observación guardada conserva su ancla', async () => {
