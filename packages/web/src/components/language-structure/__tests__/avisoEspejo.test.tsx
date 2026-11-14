@@ -32,5 +32,8 @@ describe('aviso de la repetición en espejo', () => {
         await waitFor(() => expect(screen.getByTestId('mirror-notice')).toBeInTheDocument());
         const sinAcentos = (t: string) => t.normalize('NFD').replace(/[\u0591-\u05AF\u05BD]/g, '').normalize('NFC');
         expect(sinAcentos(screen.getByTestId('mirror-notice').textContent ?? '')).toBe(sinAcentos('mirrorNotice|שֹׁפֵךְ·דַּם|דָּמוֹ·יִשָּׁפֵךְ'));
+        // Las cuatro palabras en su escritura (los acentos necesitan font-hebrew) y aisladas de la dirección.
+        const hebreas = screen.getByTestId('mirror-notice').querySelectorAll('bdi.font-hebrew[dir="rtl"]');
+        expect(hebreas).toHaveLength(4);
     });
 });

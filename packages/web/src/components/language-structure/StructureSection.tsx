@@ -18,6 +18,7 @@ import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VerseStructureState } from './useVerseStructure';
 import { ESCALA_INICIAL, ESCALAS_ESTRUCTURA, frasePorRef, MAX_SANGRIA_FILAS, SUBRAYADO_FRASE, estiloOriginal } from './frases';
 import { StructureDiagram } from './StructureDiagram';
+import { fraseConPalabras } from './RepeticionEspejo';
 import type { MirrorPosition, PhraseKind } from '@dosfilos/domain';
 
 /** Las relaciones que llevan una nota de la regla (`notes.*` en el locale). */
@@ -395,7 +396,7 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
                     {m && (
                         // Dato, no rótulo: si es un quiasmo lo decide quien lee (revisión del profesor, Stg 2:18).
                         <p className="mb-3 rounded-lg border border-dashed border-border px-3 py-2 text-[12.5px] text-muted-foreground" data-testid="mirror-notice">
-                            {t('mirrorNotice', { a: limpia(words[m.a]?.t), b: limpia(words[m.b]?.t), b2: limpia(words[m.b2]?.t), a2: limpia(words[m.a2]?.t) })}
+                            {fraseConPalabras(t, 'mirrorNotice', { a: limpia(words[m.a]?.t), b: limpia(words[m.b]?.t), b2: limpia(words[m.b2]?.t), a2: limpia(words[m.a2]?.t) }, lang)}
                         </p>
                     )}
                     {vista === 'diagram' ? (

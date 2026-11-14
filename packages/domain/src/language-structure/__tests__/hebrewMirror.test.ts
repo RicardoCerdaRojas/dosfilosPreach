@@ -21,6 +21,18 @@ const espejo = (rel: string, v: number) => {
 };
 
 describe('repetición en espejo en hebreo: la lista curada', () => {
+    it('2 R 5:18 es el único que pasa de 15 palabras: el marco «לַדָּבָר … יִסְלַח | יִסְלַח … בַּדָּבָר» lo eligió la revisión, a propósito', () => {
+        const m = mirrorRepetition(cargar('he/2Kgs/5.json'), 18)!;
+        expect(m.a2 - m.a).toBeGreaterThan(15);
+        const largos = Object.keys(MIRROR_LIST_HE).filter(ref => {
+            const [l, cv] = ref.split(' ');
+            const [c, v] = cv!.split(':').map(Number);
+            const x = mirrorRepetition(cargar(`he/${l}/${c}.json`), v!)!;
+            return x.a2 - x.a > 15;
+        });
+        expect(largos).toEqual(['2Kgs 5:18']);
+    });
+
     it('Gn 9:6, el ejemplo de manual: שֹׁפֵךְ דַּם | דָּמוֹ יִשָּׁפֵךְ', () => {
         expect(espejo('he/Gen/9.json', 6)).toEqual(['שֹׁפֵךְ', 'דַּם', 'דָּמוֹ', 'יִשָּׁפֵךְ']);
     });
@@ -54,10 +66,20 @@ describe('repetición en espejo en hebreo: la lista curada', () => {
         expect(mirrorRepetition(cargar('gr/JAS/2.json'), 18)).toBeDefined();
     });
 
-    it('toda fuente hebrea es de un versículo de la lista', () => {
-        const hebreas = Object.keys(MIRROR_LIST_SOURCES).filter(r => /^[A-Z][a-z]/.test(r));
-        expect(hebreas.filter(r => !(r in MIRROR_LIST_HE))).toEqual([]);
-        expect(hebreas).toHaveLength(4);
+    it('fuentes: 4 versículos con Bullinger; el resto lleva el juicio de los revisores, no la nota griega sola', () => {
+        expect(Object.keys(MIRROR_LIST_SOURCES).filter(r => r in MIRROR_LIST_HE).sort()).toEqual(['Exod 9:31', 'Isa 50:1', 'Isa 5:20', 'Isa 6:10']);
+        const nota = mirrorRepetition(cargar('he/Gen/9.json'), 6)!.sources!.map(s => s.note).join(' ');
+        expect(nota).toMatch(/llevado al hebreo.*revisores/);
+    });
+
+    it('las 77 posiciones fijas (A, B, B′, A′): un cambio en cómo se comparan las palabras no las mueve en silencio (Ez 34:8, Jue 5:30)', () => {
+        const pos = Object.fromEntries(Object.keys(MIRROR_LIST_HE).map(ref => {
+            const [l, cv] = ref.split(' ');
+            const [c, v] = cv!.split(':').map(Number);
+            const m = mirrorRepetition(cargar(`he/${l}/${c}.json`), v!)!;
+            return [ref, [m.a, m.b, m.b2, m.a2]];
+        }));
+        expect(pos).toMatchSnapshot();
     });
 });
 

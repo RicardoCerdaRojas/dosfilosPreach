@@ -11,6 +11,8 @@ Esta es la lista que se muestra en el analizador hebreo (`packages/domain/src/la
 
 **Fuente:** la página impresa, cotejada con `scripts/language-rules/cotejar-citas.py`. Lund casi no trata el AT: ninguno de estos versículos aparece en él. «—» quiere decir que ninguna de las dos obras trata el versículo como inversión, y que el juicio es de los revisores. La versificación es la hebrea; Bullinger usa la inglesa.
 
+**2 R 5:18** abarca 24 palabras; es el único que pasa de 15. El marco «לַדָּבָר … יִסְלַח | יִסְלַח … בַּדָּבָר» lo eligió la revisión, a propósito.
+
 **Lo que no cubre:** el paralelismo poético con sinónimos (lo más común en Salmos y Proverbios: el espejo es de sentido, no de la misma palabra) y el quiasmo que cruza de un versículo a otro.
 
 **Total: 77 versículos.** Con fuente: 4.

@@ -39,8 +39,9 @@ def cita_en_pagina(seccion,pagina):
     libro,c,v=m.group(1),int(m.group(2)),int(m.group(3))
     for a in LIBRO_EN.get(libro,[]):
         base=a.replace(' ',r'\s*')+r'\.?\s*'
-        # El OCR de Bullinger lee a veces la «l» romana como «1» («Isa. 1. 1» por «Isa. l. 1», Is 50:1).
-        rom=''.join({'l':'[l1I]','i':'[i1lI]'}.get(x,x) for x in romano(c))
+        # El OCR de Bullinger lee a veces la «l» romana como «1» («Isa. 1. 1» por «Isa. l. 1», Is 50:1). Sólo esa
+        # letra: tolerar también la «i» confundía «ii» con «li» (revisión adversarial).
+        rom=''.join({'l':'[l1]'}.get(x,x) for x in romano(c))
         for cap in (str(c)+r'\s*:\s*',rom+r'\s*\.\s*'):
             for hit in re.finditer(base+cap+r'(\d+(?:\s*[-–,]\s*\d+)*)',pagina,re.I):
                 nums=hit.group(1)

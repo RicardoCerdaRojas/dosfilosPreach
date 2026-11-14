@@ -627,6 +627,16 @@ Rama `feat/espejo-hebreo-maqaf`, desde `origin/main`, en paralelo a la etapa 3 (
   - El aviso de «Estructura» y las letras del Diagrama salen solos.
   - La ficha hebrea suma el bloque `he.espejo`. El bloque de la ficha es común a griego y hebreo (`RepeticionEspejo`), y sus textos pasaron a `languageStructure`.
 
+**Revisión adversarial (revisor independiente):** las 77 entradas resuelven, y A con A′ y B con B′ comparten el lema de OSHB en todas. Las 4 páginas de Bullinger se cotejaron con la capa del libro. Tres defectos, corregidos:
+1. El hebreo del aviso y de la ficha salía con la fuente de la interfaz, sin `font-hebrew`, que es la que pone bien los acentos. Ahora cada palabra va en su escritura y aislada de la dirección del texto (`fraseConPalabras`), con prueba.
+2. El enlace de la ficha (palabra del análisis → letra) no tenía prueba. Ahora la tiene, con Gn 9:6. Si un análisis viejo junta con maqaf dos de las cuatro palabras, queda la primera letra; con los prompts actuales no pasa (punto 8).
+3. La prueba de las claves de fuentes saltaba las hebreas que empiezan con número («2Kgs …»). Ahora una sola prueba cubre las dos listas.
+- Además:
+  - las 77 posiciones quedan fijadas en una instantánea;
+  - el OCR sólo tolera «1» por la «l» romana, no la «i», que confundía «ii» con «li»;
+  - en el hebreo, la fuente base dice «Stg 2:18, llevado al hebreo; cada versículo, juicio de cuatro revisores», en vez de la nota griega sola;
+  - 2 R 5:18 abarca 24 palabras y es el único sobre 15: el marco lo eligió la revisión, a propósito, con prueba.
+
 **Queda para diseñar (con el fundador):**
 - El quiasmo que cruza de un versículo a otro: la vista de hoy es por versículo.
 - El paralelismo poético por sinónimos (Salmos): no es repetición de la misma palabra.

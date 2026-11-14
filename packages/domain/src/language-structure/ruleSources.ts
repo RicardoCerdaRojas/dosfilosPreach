@@ -456,6 +456,11 @@ export const SAME_LEMMA_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 3
 
 /** La repetición en espejo (A B | B′ A′), dato del texto; el profesor marcó Stg 2:18. */
 export const MIRROR_SOURCES: readonly RuleSource[] = [P('2026-10-14 · Stg 2:18 πίστιν … ἔργων | ἔργων … πίστιν')];
+/**
+ * En el hebreo el profesor no marcó versículos: el dato se llevó desde Stg 2:18, y cada versículo de la lista lo
+ * juzgaron revisores independientes (revisión adversarial: con la nota griega sola parecía su fuente).
+ */
+export const MIRROR_SOURCES_HE: readonly RuleSource[] = [P('2026-10-14 · Stg 2:18, llevado al hebreo; cada versículo, juicio de cuatro revisores (lista curada, 2026-11-13)')];
 
 /**
  * Las fuentes de cada versículo de la lista curada (`greekMirrorList.ts`, `hebrewMirrorList.ts`): Lund trata el pasaje como

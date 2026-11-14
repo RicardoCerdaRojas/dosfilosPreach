@@ -2,7 +2,7 @@ import { verseWords, type ChapterStructure, type StructureWord } from './chapter
 import { verseStructure } from './verseStructure.js';
 import { MIRROR_LIST } from './greekMirrorList.js';
 import { MIRROR_LIST_HE } from './hebrewMirrorList.js';
-import { MIRROR_LIST_SOURCES, MIRROR_SOURCES, type RuleSource } from './ruleSources.js';
+import { MIRROR_LIST_SOURCES, MIRROR_SOURCES, MIRROR_SOURCES_HE, type RuleSource } from './ruleSources.js';
 
 /**
  * Revisión del profesor (2026-11, p. 15, Stg 2:18): él marca «πίστιν (A) … ἔργων (B) | ἔργων (B′) …
@@ -77,7 +77,7 @@ export function mirrorRepetition(ch: ChapterStructure, verse: number): MirrorFac
         if (i < 0) return undefined;
         pos.push(i);
     }
-    return { a: pos[0]!, b: pos[1]!, b2: pos[2]!, a2: pos[3]!, sources: [...(MIRROR_LIST_SOURCES[ref] ?? []), ...MIRROR_SOURCES] };
+    return { a: pos[0]!, b: pos[1]!, b2: pos[2]!, a2: pos[3]!, sources: [...(MIRROR_LIST_SOURCES[ref] ?? []), ...(ch.lang === 'gr' ? MIRROR_SOURCES : MIRROR_SOURCES_HE)] };
 }
 
 /** El detector: propone candidatos para revisar (no se muestra; ver la lista curada). */

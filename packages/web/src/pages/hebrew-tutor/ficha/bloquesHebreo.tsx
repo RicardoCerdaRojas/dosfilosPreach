@@ -213,7 +213,7 @@ export const BLOQUES_HEBREO: FichaRegistro<DatosHebreo> = [
     },
     {
         id: 'he.espejo', dato: 'Repetición en espejo de lemas (A B | B′ A′), dato del texto; puede ser un quiasmo', seccion: 'contexto', origen: 'datos', antes: [],
-        hay: (d) => !!d.mirror, Completo: ({ d }) => <RepeticionEspejo m={d.mirror!} />,
+        hay: (d) => !!d.mirror, Completo: ({ d }) => <RepeticionEspejo m={d.mirror!} lang="he" />,
     },
     { id: 'he.antepuesta', dato: 'Antepuesta al verbo', seccion: 'contexto', origen: 'datos', antes: ['tarjeta', 'tooltip'], hay: (d) => !!d.fronted, Completo: ({ d }) => <FrontedNote fronted={d.fronted} /> },
 
