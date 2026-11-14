@@ -46,3 +46,15 @@ export function useFrasesVisibles(clave: string): [boolean, () => void] {
  * la primera. El Diagrama suma uno para la línea «└» de la frase que cuelga del verbo.
  */
 export const MAX_SANGRIA_FILAS = 5;
+
+/**
+ * El tamaño del texto original en «Estructura» (tarjetas y diagrama), con su propio A−/A+: en el
+ * diagrama la letra hebrea y las letras del espejo quedaban chicas (pedido del fundador, Gn 9:6).
+ * El tamaño base de cada lengua es el de antes (hebreo 1.25rem, griego 1.125rem).
+ */
+export const ESCALAS_ESTRUCTURA = [0.85, 1, 1.2, 1.45, 1.75, 2.1] as const;
+export const ESCALA_INICIAL = 1;
+
+export function tamanoOriginal(lang: 'gr' | 'he', escala = 1): string {
+    return `${Number(((lang === 'he' ? 1.25 : 1.125) * escala).toFixed(4))}rem`;
+}

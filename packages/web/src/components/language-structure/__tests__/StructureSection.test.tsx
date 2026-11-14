@@ -251,6 +251,9 @@ describe('StructureSection', () => {
     const pedidos: string[] = [];
     beforeEach(() => {
         pedidos.length = 0;
+        // La vista y el tamaño se guardan en el navegador: cada prueba empieza de cero.
+        localStorage.removeItem('estructura.vista');
+        localStorage.removeItem('estructura.tamano');
         vi.stubGlobal('fetch', vi.fn(async (url: string) => {
             pedidos.push(url);
             const rel = url.replace('/language-data/v1/', '');
@@ -294,6 +297,54 @@ describe('StructureSection', () => {
         render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);
         await waitFor(() => expect(screen.getByTestId('structure-diagram')).toBeInTheDocument());
         localStorage.removeItem('estructura.vista');
+    });
+
+    it('A−/A+ de «Estructura»: agranda el texto original en tarjetas y diagrama (Stg 2:18, también las letras del espejo), se recuerda y se apaga en los topes', async () => {
+        const tamanos = (sel: string) => new Set([...document.querySelectorAll<HTMLElement>(sel)].map(e => e.style.fontSize));
+        const { unmount } = render(<Seccion lang="gr" book="JAS" chapter={2} verse={18} />);
+        await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
+        // Tarjetas: el tamaño de antes (griego 1.125rem) y crece con A+.
+        expect(tamanos('[data-testid="structure-row"] span[lang="grc"]')).toEqual(new Set(['1.125rem']));
+        fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+        expect(tamanos('[data-testid="structure-row"] span[lang="grc"]')).toEqual(new Set(['1.35rem']));
+        expect(localStorage.getItem('estructura.tamano')).toBe('2');
+        // Diagrama: el mismo tamaño, y la letra del espejo va en em (crece con la palabra).
+        fireEvent.click(screen.getByText('view.diagram'));
+        expect(tamanos('[data-testid="diagram-line"] > span[lang="grc"]')).toEqual(new Set(['1.35rem']));
+        expect(screen.getAllByTestId('mirror-letter')).toHaveLength(4);
+        expect(screen.getAllByTestId('mirror-letter')[0]!.className).toContain('0.5em');
+        // Al volver a la página, el tamaño elegido sigue.
+        unmount();
+        render(<Seccion lang="gr" book="JAS" chapter={2} verse={18} />);
+        await waitFor(() => expect(screen.getByTestId('structure-diagram')).toBeInTheDocument());
+        expect(tamanos('[data-testid="diagram-line"] > span[lang="grc"]')).toEqual(new Set(['1.35rem']));
+        // Topes: A+ hasta el último escalón se apaga; A− hasta el primero, también.
+        for (let k = 0; k < 6; k++) fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+        expect(screen.getByTestId('estructura-texto-bigger')).toBeDisabled();
+        expect(tamanos('[data-testid="diagram-line"] > span[lang="grc"]')).toEqual(new Set(['2.3625rem']));
+        for (let k = 0; k < 8; k++) fireEvent.click(screen.getByTestId('estructura-texto-smaller'));
+        expect(screen.getByTestId('estructura-texto-smaller')).toBeDisabled();
+        expect(localStorage.getItem('estructura.tamano')).toBe('0');
+    });
+
+    it('en hebreo (Gn 9:6) el tamaño base es el de antes (1.25rem) y crece igual', async () => {
+        const tamanos = () => new Set([...document.querySelectorAll<HTMLElement>('[data-testid="structure-row"] span[lang="he"]')].map(e => e.style.fontSize));
+        render(<Seccion lang="he" book="Gen" chapter={9} verse={6} />);
+        await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
+        expect(tamanos()).toEqual(new Set(['1.25rem']));
+        fireEvent.click(screen.getByTestId('estructura-texto-bigger'));
+        expect(tamanos()).toEqual(new Set(['1.5rem']));
+    });
+
+    it('un tamaño guardado roto (texto, fuera de rango) vuelve al de siempre', async () => {
+        for (const malo of ['x', '99', '-1', '1.5']) {
+            localStorage.setItem('estructura.tamano', malo);
+            const { unmount } = render(<Seccion lang="gr" book="JAS" chapter={2} verse={14} />);
+            await waitFor(() => expect(screen.getAllByTestId('structure-row').length).toBeGreaterThan(0));
+            expect(new Set([...document.querySelectorAll<HTMLElement>('[data-testid="structure-row"] span[lang="grc"]')].map(e => e.style.fontSize))).toEqual(new Set(['1.125rem']));
+            unmount();
+        }
+        localStorage.removeItem('estructura.tamano');
     });
 
     it('al cambiar de capítulo no muestra las filas del anterior mientras llega el nuevo', async () => {

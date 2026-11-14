@@ -13,7 +13,7 @@ import {
 } from '@dosfilos/domain';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
-import { MAX_SANGRIA_FILAS, SUBRAYADO_FRASE } from './frases';
+import { MAX_SANGRIA_FILAS, SUBRAYADO_FRASE, tamanoOriginal } from './frases';
 import type { StructureWordLinks } from './StructureSection';
 
 /** La de las tarjetas, más la línea «└» de la frase. */
@@ -31,6 +31,8 @@ interface Props {
     readings?: readonly ClauseReading[];
     /** Palabra → su letra en la repetición en espejo (A B | B′ A′), como la anotó el profesor en Stg 2:18. */
     mirror?: ReadonlyMap<string, MirrorPosition>;
+    /** El A−/A+ de «Estructura»: multiplica el tamaño del texto original. */
+    escala?: number;
 }
 
 /** Un tramo del diagrama: líneas sueltas, o las de una prótasis de varios miembros (con su corchete). */
@@ -59,7 +61,7 @@ function tramos(lineas: readonly DiagramLine[], filas: ReadonlyMap<number, Struc
  * preposicional que va con el verbo, en su propia línea; la prótasis de varios miembros, unida por un
  * corchete con su rótulo. Las palabras se enlazan con la página igual que en las tarjetas.
  */
-export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underline, ordinal, pageIndex, links, readings, mirror }) => {
+export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underline, ordinal, pageIndex, links, readings, mirror, escala = 1 }) => {
     const { t } = useTranslation('languageStructure');
     const filas = React.useMemo(() => new Map(nodes.map(n => [n.index, n])), [nodes]);
     const lineas = React.useMemo(() => diagramLines(nodes, phrases), [nodes, phrases]);
@@ -118,7 +120,7 @@ export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underl
         return letra ? (
             <span key={w.r} className="inline-flex items-baseline">
                 {nodo}
-                <sup className="ml-0.5 text-[10px] font-bold text-primary" data-testid="mirror-letter" dir="ltr">{t(`mirrorLetter.${letra}`)}</sup>
+                <sup className="ml-0.5 font-sans text-[max(10px,0.5em)] font-bold text-primary" data-testid="mirror-letter" dir="ltr">{t(`mirrorLetter.${letra}`)}</sup>
             </span>
         ) : nodo;
     };
@@ -138,7 +140,8 @@ export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underl
                 <span
                     lang={he ? 'he' : 'grc'}
                     dir={he ? 'rtl' : 'ltr'}
-                    className={cn('flex flex-wrap items-baseline gap-x-1 text-foreground', he ? 'font-hebrew text-xl' : 'text-lg')}
+                    style={{ fontSize: tamanoOriginal(lang, escala) }}
+                    className={cn('flex flex-wrap items-baseline gap-x-1 text-foreground', he && 'font-hebrew')}
                 >
                     {/* La línea de frase lleva su marca: no es una cláusula aunque quede a la misma sangría. */}
                     {frase && <span aria-hidden className="select-none text-muted-foreground">{he ? '┘' : '└'}</span>}

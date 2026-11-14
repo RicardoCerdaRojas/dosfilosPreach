@@ -5,6 +5,11 @@
     "cards": "Tarjetas",
     "diagram": "Diagrama"
   },
+  "textSize": "Tamaño del texto",
+  "text": {
+    "smaller": "Achicar el texto",
+    "bigger": "Agrandar el texto"
+  },
   "diagramToApodosis": "→ apódosis:",
   "diagramNote": "Una línea por cláusula, sangrada bajo la que la contiene; la frase preposicional que va con el verbo, en su propia línea (└); la prótasis de varios miembros, unida por la barra. Las lecturas del asistente y las notas de cada cláusula están en «Tarjetas».",
   "mirrorNotice": "Repetición en espejo: {{a}} · {{b}} | {{b2}} · {{a2}}. Puede ser un quiasmo; confírmalo con el sentido.",

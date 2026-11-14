@@ -16,7 +16,7 @@ import { SourceNote } from './SourceNote';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import type { VerseStructureState } from './useVerseStructure';
-import { frasePorRef, MAX_SANGRIA_FILAS, SUBRAYADO_FRASE } from './frases';
+import { ESCALA_INICIAL, ESCALAS_ESTRUCTURA, frasePorRef, MAX_SANGRIA_FILAS, SUBRAYADO_FRASE, tamanoOriginal } from './frases';
 import { StructureDiagram } from './StructureDiagram';
 import type { MirrorPosition, PhraseKind } from '@dosfilos/domain';
 
@@ -71,6 +71,8 @@ interface FlowProps {
     readings?: readonly ClauseReading[];
     /** U11b: palabra → clase de su frase preposicional, si el interruptor «Frases» está prendido. */
     phrases?: ReadonlyMap<string, PhraseKind>;
+    /** El A−/A+ de «Estructura»: multiplica el tamaño del texto original. */
+    escala?: number;
 }
 
 /** Marca lo que viene del asistente: lo demás de la fila sale del texto. */
@@ -92,7 +94,7 @@ const EtiquetaAsistente: React.FC = () => {
  * antepuesto al verbo resaltado y la relación a la vista. Las relaciones que
  * el texto no decide («propósito o resultado») se nombran como tales.
  */
-export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageIndex, links, readings, phrases }) => {
+export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageIndex, links, readings, phrases, escala = 1 }) => {
     const { t } = useTranslation('languageStructure');
     const base = Math.min(...nodes.map(n => n.depth));
     // El conector se resalta donde está la palabra, aunque su relación la lleve otra fila (la oración que une:
@@ -147,7 +149,8 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                                             <span
                                                 lang={lang === 'he' ? 'he' : 'grc'}
                                                 data-frase={phrases?.get(w.r)}
-                                                className={cn('leading-snug text-foreground', lang === 'he' ? 'font-hebrew text-xl' : 'text-lg', phrases?.has(w.r) && SUBRAYADO_FRASE[phrases.get(w.r)!])}
+                                                style={{ fontSize: tamanoOriginal(lang, escala) }}
+                                                className={cn('leading-snug text-foreground', lang === 'he' && 'font-hebrew', phrases?.has(w.r) && SUBRAYADO_FRASE[phrases.get(w.r)!])}
                                             >
                                                 {enlazada && links?.renderText ? links.renderText(i) : w.t}
                                             </span>
@@ -271,6 +274,23 @@ function useVistaEstructura(): ['cards' | 'diagram', (v: 'cards' | 'diagram') =>
     return [vista, cambiar];
 }
 
+/** El tamaño del texto original en «Estructura» (A−/A+), recordado en este navegador. */
+function useEscalaEstructura(): [number, number, (i: number) => void] {
+    const [i, setI] = React.useState<number>(() => {
+        try {
+            const v = localStorage.getItem('estructura.tamano');
+            const n = v === null ? NaN : Number(v);
+            return Number.isInteger(n) && n >= 0 && n < ESCALAS_ESTRUCTURA.length ? n : ESCALA_INICIAL;
+        } catch { return ESCALA_INICIAL; }
+    });
+    const cambiar = (n: number) => {
+        const k = Math.max(0, Math.min(ESCALAS_ESTRUCTURA.length - 1, n));
+        setI(k);
+        try { localStorage.setItem('estructura.tamano', String(k)); } catch { /* sin almacenamiento */ }
+    };
+    return [ESCALAS_ESTRUCTURA[i]!, i, cambiar];
+}
+
 interface SectionProps {
     lang: StructureLanguage;
     structure: VerseStructureState;
@@ -290,6 +310,7 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
     const pageIndex = React.useMemo(() => (mapear ? mapear(words) : undefined), [mapear, words]);
     const frases = React.useMemo(() => (showPhrases ? frasePorRef(structure.phrases) : undefined), [showPhrases, structure.phrases]);
     const [vista, cambiarVista] = useVistaEstructura();
+    const [escala, nivel, cambiarNivel] = useEscalaEstructura();
     // La repetición en espejo (Stg 2:18): palabra → su letra (A, B, B′, A′) y el texto del aviso.
     const m = structure.mirror;
     const espejo = React.useMemo(() => {
@@ -302,6 +323,27 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
         <section className="rounded-xl border border-border bg-card p-5 print:break-inside-avoid">
             <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t('title')}</h3>
+                <span className="flex flex-wrap items-center gap-2">
+                {/* El tamaño del texto original, en las dos vistas (como el A−/A+ del versículo). */}
+                <span role="group" aria-label={t('textSize')} className="inline-flex items-center rounded-md border border-border/60 bg-background print:hidden">
+                    {([['smaller', -1, 'A−'], ['bigger', 1, 'A+']] as const).map(([k, d, rotulo], j) => (
+                        <button
+                            key={k}
+                            type="button"
+                            onClick={() => cambiarNivel(nivel + d)}
+                            disabled={d < 0 ? nivel === 0 : nivel === ESCALAS_ESTRUCTURA.length - 1}
+                            aria-label={t(`text.${k}`)}
+                            title={t(`text.${k}`)}
+                            data-testid={`estructura-texto-${k}`}
+                            className={cn(
+                                'min-h-[32px] min-w-[32px] px-2 py-1 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40',
+                                j > 0 && 'border-l border-border/60',
+                            )}
+                        >
+                            {rotulo}
+                        </button>
+                    ))}
+                </span>
                 {/* U11c: la misma estructura en tarjetas (con roles y lecturas) o en diagrama (como el profesor). */}
                 <span role="group" aria-label={t('viewLabel')} className="inline-flex items-center rounded-md border border-border/60 bg-background print:hidden">
                     {(['cards', 'diagram'] as const).map((v, i) => (
@@ -319,6 +361,7 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
                             {t(`view.${v}`)}
                         </button>
                     ))}
+                </span>
                 </span>
             </div>
             <p className="mb-3 text-[12.5px] text-muted-foreground">{t('intro')}</p>
@@ -355,13 +398,13 @@ export const StructureSection: React.FC<SectionProps> = ({ lang, structure, link
                     )}
                     {vista === 'diagram' ? (
                         <>
-                            <StructureDiagram lang={lang} nodes={nodes} phrases={structure.phrases} underline={frases} mirror={espejo} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} />
+                            <StructureDiagram lang={lang} nodes={nodes} phrases={structure.phrases} underline={frases} mirror={espejo} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} escala={escala} />
                             {frases && <div className="mt-1.5"><LeyendaFrases /></div>}
                             <p className="mt-3 text-[11px] text-muted-foreground">{t('diagramNote')}</p>
                         </>
                     ) : (
                         <>
-                            <StructureFlow lang={lang} nodes={nodes} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} phrases={frases} />
+                            <StructureFlow lang={lang} nodes={nodes} ordinal={ordinal} pageIndex={pageIndex} links={links} readings={readings} phrases={frases} escala={escala} />
                             <Leyenda frases={!!frases} />
                         </>
                     )}
