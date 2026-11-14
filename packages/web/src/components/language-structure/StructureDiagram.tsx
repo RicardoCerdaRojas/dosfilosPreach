@@ -65,6 +65,8 @@ export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underl
     const lineas = React.useMemo(() => diagramLines(nodes, phrases), [nodes, phrases]);
     const fraseDe = React.useMemo(() => new Map(phrases.flatMap(f => f.rs.map(r => [r, f.kind] as const))), [phrases]);
     const base = Math.min(...nodes.map(n => n.depth));
+    /** El conector se resalta donde está la palabra, aunque su relación la lleve otra fila (Mc 3:24). */
+    const conectores = React.useMemo(() => new Set(nodes.map(n => n.connector).filter((r): r is string => !!r)), [nodes]);
     const he = lang === 'he';
     /** La apódosis de un grupo: la fila de apódosis más cercana a su condición (puede ir antes o después). */
     const apodosisDe = (grupo: number) => {
@@ -97,7 +99,7 @@ export const StructureDiagram: React.FC<Props> = ({ lang, nodes, phrases, underl
                 className={cn(
                     'rounded px-0.5 leading-snug',
                     Tag === 'button' && 'hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary',
-                    w.r === n.connector && 'font-semibold text-primary',
+                    conectores.has(w.r) && 'font-semibold text-primary',
                     n.fronted.some(f => f.rs.includes(w.r)) && 'bg-warning/15',
                     kind && SUBRAYADO_FRASE[kind],
                     enlazada && links?.selected === i && 'ring-2 ring-primary',

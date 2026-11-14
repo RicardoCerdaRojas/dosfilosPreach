@@ -521,9 +521,10 @@ Rama `fix/estructura-pendientes`. El PR #831 se fusionó y se desplegó el mismo
 - **Stg 2:18, como el profesor:** «κἀγώ σοι δείξω» va al margen, como adición. Las 13 filas con crasis de καί (κἀγώ, κἀκεῖ, κἀκεῖνος) que MACULA marca objeto son coordinadas, revisadas una por una. Lo dicho queda dentro de la cita, y tras καθώς es la principal del correlativo (Jn 10:15).
 
 **Medido:**
-- Filas de sólo conector: 2.612 → **29** (casi todas, «μέν … δέ» que abarcan dos cláusulas).
+- Filas de sólo conector: 2.612 → **15** (correlativos que abarcan dos cláusulas).
+- Un mismo conector rotula una sola fila (invariante en CI).
 - Conjunción repetida al comienzo («καὶ καὶ»): 13 → **0**.
-- Cambian 2.422 versículos griegos.
+- Cambian 2.659 versículos griegos.
 - **Muestras al azar con semilla, juzgadas por mí:**
   - primera muestra: los daños que salieron se corrigieron (1 Co 14:6, Mt 16:26, Hch 13:41, Ro 11:24, Mt 12:4, Heb 1:8, Hch 1:6);
   - muestra final, 16 versículos: 13 mejoran, 3 quedan iguales y 0 empeoran.
@@ -534,12 +535,27 @@ Rama `fix/estructura-pendientes`. El PR #831 se fusionó y se desplegó el mismo
 - **Lecturas ya generadas:** se enlazan por cláusula y primera palabra, y 2.048 filas cambiaban de primera palabra.
   - `readingFor` ahora sigue a la cláusula si la palabra ancla sigue en la fila;
   - descarta `resolved` o `fronting` si ya no calzan;
-  - quedan sin lectura 322 filas (228 versículos), casi todas filas que eran sólo un conector. Re-analizar las recupera.
+  - quedan sin lectura 313 filas (226 versículos), casi todas filas que eran sólo un conector. Re-analizar las recupera.
+  - El conector se resalta donde está la palabra, aunque su relación la lleve otra fila (1.473 filas).
 - **Sangría:** ninguna fila del NT ni del AT pasa de 5 niveles sobre la primera. Las tarjetas y el Diagrama comparten ahora el tope (`MAX_SANGRIA_FILAS`).
 - **Mutaciones:** 17, una por regla. Todas las caza una prueba, salvo «esperar envoltorios en el camino», que quedó redundante con la espera del pospositivo y se quitó (corpus idéntico).
 
+**Revisión adversarial (revisor independiente, sin ver mis muestras):**
+- Muestra a ciegas de 50 versículos con semilla: **43 mejores, 5 iguales, 2 peores**. Los 2 peores eran del defecto 1.
+- Hebreo: 0 diferencias en el JSON completo. No se pierden ni duplican palabras.
+- **Seis defectos verificados, todos corregidos con prueba y mutación:**
+  1. El mismo conector rotulaba dos filas (202 versículos, como Mc 16:16): `poner` devuelve la fila que recibió la relación.
+  2. El reparto de καί movía pospositivos lejos de su palabra (Lc 11:35 «σκόπει οὖν»).
+  3. La crasis le ganaba a un δέ real (Mt 16:18 «κἀγὼ δέ»): ahora se aplica después de fundir y sólo sin conector.
+  4. Una crasis en la apódosis sacaba de la sangría a su prótasis (2 Ti 2:12).
+  5. Un participio se llevaba la relación cuando su cabeza ya traía conector (Gá 2:17).
+  6. Conectores huérfanos donde `main` los fundía: Ro 4:23 (no contiguos, pero a la misma fila) y Hch 4:32 (fase 3: lo que espera un envoltorio que nunca se funde va igual a su palabra).
+- **Quedan como duda de diseño:**
+  - un participio hija directa toma la relación del conector (Mt 6:3), y una nieta se la da a su verbo;
+  - una lectura vieja con `value` escrito para «principal» junto a una fila que ahora dice «desarrollo».
+
 **Quedan:**
-- 29 filas de sólo conector, sobre todo correlativos «μέν … δέ» y «τε … τε» (Ro 14:8).
+- 15 filas de sólo conector, sobre todo correlativos «μέν … δέ» y «τε … τε» (Ro 14:8).
 - Algunas apódosis sin marcar que ya faltaban antes (Mt 24:43 «ἐγρηγόρησεν ἄν»).
 
 **Hallazgos de producción, anteriores a esta fase:**

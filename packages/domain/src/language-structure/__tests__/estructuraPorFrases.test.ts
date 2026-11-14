@@ -185,12 +185,35 @@ describe('pendientes de «Estructura»: el conector en su fila, en el orden del 
         expect(fila(filas('gr/JHN/10.json', 15), 'κἀγὼ').relation).toBe('main');
     });
 
-    it('INVARIANTE en el NT: sin conjunción repetida al comienzo; filas de sólo conector, a lo sumo 29 (los «μέν … δέ» que abarcan dos cláusulas y poco más); ninguna fila pasa de 5 niveles', () => {
+    it('revisión adversarial: un conector rotula UNA fila (Mc 16:16); el pospositivo del reparto se queda con su palabra (Lc 11:35); la crasis no le gana a un δέ (Mt 16:18)', () => {
+        const mc = filas('gr/MRK/16.json', 16);
+        expect(mc.filter(n => n.connector).map(n => n.relation)).toEqual(['addition', 'development']);
+        expect(fila(mc, 'σωθήσεται').relation).toBe('main');
+        expect(texto(filas('gr/LUK/11.json', 35)[0]!)).toBe('σκόπει οὖν');
+        expect(fila(filas('gr/MAT/16.json', 18), 'κἀγὼ δέ').relation).toBe('development');
+        // Si la madre se queda con otro conector, toma SU relación (1 Co 14:33 «οὐ γάρ … ἀλλὰ εἰρήνης»).
+        const co = fila(filas('gr/1CO/14.json', 33), 'οὐ γάρ');
+        const par = [co.words.find(w => w.r === co.connector)?.t, co.relation];
+        expect([['γάρ', 'ground'], ['ἀλλὰ', 'contrast']]).toContainEqual(par);
+    });
+
+    it('revisión adversarial: la prótasis conserva su sangría junto a una crasis (2 Ti 2:12); el participio no se lleva el «δέ» de una prótasis (Gá 2:17); nada queda huérfano (Ro 4:23, Hch 4:32)', () => {
+        const ti = filas('gr/2TI/2.json', 12);
+        const conds = ti.filter(n => n.relation === 'condition');
+        expect(new Set(conds.map(n => n.depth)).size).toBe(1);
+        expect(fila(ti, 'κἀκεῖνος').depth).toBe(conds[0]!.depth - 1);
+        expect(fila(filas('gr/GAL/2.json', 17), 'εἰ δὲ ζητοῦντες').relation).toBe('participial');
+        expect(texto(filas('gr/ROM/4.json', 23)[0]!)).toBe('Οὐκ ἐγράφη δὲ δι’ αὐτὸν μόνον');
+        expect(filas('gr/ACT/4.json', 32).some(n => texto(n) === 'δὲ')).toBe(false);
+    });
+
+    it('INVARIANTE en el NT: sin conjunción repetida al comienzo; filas de sólo conector, a lo sumo 15 (correlativos que abarcan dos cláusulas); un conector, una fila; ninguna fila pasa de 5 niveles', () => {
         const CON = new Set(['καί', 'δέ', 'ἀλλά', 'γάρ', 'οὖν', 'ἤ', 'τε', 'ἵνα', 'ὅτι', 'εἰ', 'ἐάν', 'ὅπως', 'ὥστε', 'ὡς', 'καθώς', 'ὅτε', 'ὅταν', 'οὐδέ', 'μηδέ', 'διό', 'πλήν', 'ἄρα', 'διότι', 'ἐπεί', 'μέν']);
         const raiz = fileURLToPath(new URL('../../../../web/public/language-data/v1/gr/', import.meta.url));
         let solas = 0;
         const repetidas: string[] = [];
         let hondo = 0;
+        const dobles: string[] = [];
         for (const libro of readdirSync(raiz)) for (const cap of readdirSync(`${raiz}${libro}`)) {
             const ch = cargar(`gr/${libro}/${cap}`);
             const lema = new Map(ch.words.map(w => [w.r, w.l]));
@@ -203,10 +226,14 @@ describe('pendientes de «Estructura»: el conector en su fila, en el orden del 
                     if (ls.length > 1 && !n.words[0]!.role && !n.words[1]!.role && CON.has(ls[0]!) && ls[0] === ls[1]) repetidas.push(`${libro} ${cap} ${v}`);
                     hondo = Math.max(hondo, n.depth - base);
                 }
+                const cs = ns.map(n => n.connector).filter(Boolean);
+                if (new Set(cs).size !== cs.length) dobles.push(`${libro} ${cap} ${v}`);
             }
         }
         expect(repetidas).toEqual([]);
-        expect(solas).toBeLessThanOrEqual(29);
+        // Un mismo conector no rotula dos filas (revisión adversarial: 202 versículos lo hacían).
+        expect(dobles).toEqual([]);
+        expect(solas).toBeLessThanOrEqual(15);
         expect(hondo).toBeLessThanOrEqual(5);
     }, 120_000);
 });

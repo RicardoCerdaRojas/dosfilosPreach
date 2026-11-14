@@ -41,6 +41,12 @@ describe('StructureFlow (G1 + G5)', () => {
         expect(filas[1]!.textContent).toContain('fronted');
     });
 
+    it('el conector se resalta donde está la palabra, aunque su relación la lleve la apódosis (Mc 3:24 «καὶ ἐὰν…»)', () => {
+        render(<StructureFlow lang="gr" nodes={verseStructure(cargar('gr/MRK/3.json'), 24)} />);
+        expect(screen.getByText('καὶ').parentElement!.className).toContain('outline-dashed');
+        expect(screen.getByText('ἐὰν').parentElement!.className).toContain('outline-dashed');
+    });
+
     it('U11 (Stg 2:14): el 2.º miembro de la prótasis lo dice; la condición y la apódosis, no', () => {
         render(<StructureFlow lang="gr" nodes={verseStructure(santiago2, 14)} />);
         const filas = screen.getAllByTestId('structure-row');

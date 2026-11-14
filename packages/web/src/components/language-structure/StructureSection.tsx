@@ -95,6 +95,9 @@ const EtiquetaAsistente: React.FC = () => {
 export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageIndex, links, readings, phrases }) => {
     const { t } = useTranslation('languageStructure');
     const base = Math.min(...nodes.map(n => n.depth));
+    // El conector se resalta donde está la palabra, aunque su relación la lleve otra fila (la oración que une:
+    // «καὶ ἐὰν … μερισθῇ, οὐ δύναται», Mc 3:24).
+    const conectores = new Set(nodes.map(n => n.connector).filter((r): r is string => !!r));
     const indiceDe = (r: string) => {
         const o = ordinal?.get(r);
         return o === undefined ? undefined : pageIndex ? pageIndex[o] : o;
@@ -136,7 +139,7 @@ export const StructureFlow: React.FC<FlowProps> = ({ lang, nodes, ordinal, pageI
                                             title={!links?.renderTooltip && w.role ? t(`roleNames.${w.role}`) : undefined}
                                             className={cn(
                                                 CHIP,
-                                                w.r === n.connector && CHIP_CONECTOR,
+                                                conectores.has(w.r) && CHIP_CONECTOR,
                                                 adelantados.has(w.r) && CHIP_ANTEPUESTO,
                                                 enlazada && links?.selected === i && 'ring-2 ring-primary',
                                             )}
