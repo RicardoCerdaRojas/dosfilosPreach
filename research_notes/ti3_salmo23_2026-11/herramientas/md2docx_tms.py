@@ -25,6 +25,7 @@ HEB = re.compile(r'([֐-׿][֐-׿־\s־]*[֐-׿])|([֐-׿])')
 def runs(text, size=None, base_italic=False):
     """Texto con *cursiva*, [^n] y hebreo -> runs XML."""
     xml = []
+    text = text.replace('\\*', '⁣AST⁣')  # «\*» = asterisco literal (p. ej., ℵ\*)
     parts = re.split(r'(\[\^\d+\]|\*\*[^*]+\*\*|\*[^*]+\*)', text)
     for p in parts:
         if not p:
@@ -55,6 +56,23 @@ def runs(text, size=None, base_italic=False):
                 xml.append(_run(chunk[pos:], ital, sc, size, False, bold))
     return ''.join(xml)
 
+def table(lines, size=20):
+    """Tabla Markdown (líneas que empiezan con '|') -> w:tbl con bordes simples, interlineado simple."""
+    rows = [l.strip().strip('|').split('|') for l in lines if not re.fullmatch(r'\|?[\s:|-]+\|?', l.strip())]
+    b = '<w:tblBorders>' + ''.join(f'<w:{s} w:val="single" w:sz="4" w:space="0" w:color="auto"/>' for s in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV')) + '</w:tblBorders>'
+    out = [f'<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>{b}</w:tblPr>']
+    for i, r in enumerate(rows):
+        out.append('<w:tr>')
+        for c in r:
+            txt = c.strip()
+            if i == 0:
+                txt = f'**{txt}**' if txt else txt
+            out.append('<w:tc><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:ind w:firstLine="0"/></w:pPr>'
+                       + runs(txt, size=size) + '</w:p></w:tc>')
+        out.append('</w:tr>')
+    out.append('</w:tbl><w:p/>')
+    return ''.join(out)
+
 ITEM = re.compile(r'^(?:- |\d+\. )')
 
 def items(lines):
@@ -83,6 +101,7 @@ def _run(t, ital, sc, size, rtl, bold=False):
     else:
         rpr += '<w:szCs w:val="24"/>'
     rpr += '<w:lang w:val="es-ES" w:bidi="he-IL"/>'
+    t = t.replace('⁣AST⁣', '*')
     return f'<w:r><w:rPr>{rpr}</w:rPr><w:t xml:space="preserve">{escape(t)}</w:t></w:r>'
 
 paras = []
@@ -91,10 +110,19 @@ for block in re.split(r'\n\s*\n', body.strip()):
     if not lines:
         continue
     if lines[0].startswith('# '):
-        paras.append('<w:p><w:pPr><w:pStyle w:val="Heading1"/><w:jc w:val="center"/></w:pPr>' + runs(lines[0][2:]) + '</w:p>')
+        brk = '<w:pageBreakBefore/>' if lines[0][2:].startswith(('APÉNDICE', 'BIBLIOGRAFÍA')) else ''
+        # Guía TMS: nivel uno centrado y en negrita
+        paras.append(f'<w:p><w:pPr><w:pStyle w:val="Heading1"/>{brk}<w:jc w:val="center"/></w:pPr>' + runs(lines[0][2:]).replace('<w:rPr>', '<w:rPr><w:b/><w:bCs/>') + '</w:p>')
     elif lines[0].startswith('## '):
         # Títulos en negrita: marca «Negrita» del profesor en el TI #2 y Guía TMS (nivel uno centrado y en negrita)
-        paras.append('<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr>' + runs(lines[0][3:]).replace('<w:rPr>', '<w:rPr><w:b/><w:bCs/>') + '</w:p>')
+        # Guía TMS (R17 del TI #3): nivel dos centrado, sin negrita. NIVEL2_NEGRITA=1 restaura la negrita (TI #3).
+        neg = os.environ.get('NIVEL2_NEGRITA') == '1'
+        r2 = runs(lines[0][3:])
+        if neg:
+            r2 = r2.replace('<w:rPr>', '<w:rPr><w:b/><w:bCs/>')
+        paras.append('<w:p><w:pPr><w:pStyle w:val="Heading2"/><w:jc w:val="center"/></w:pPr>' + r2 + '</w:p>')
+    elif lines[0].lstrip().startswith('|'):
+        paras.append(table(lines))
     elif lines[0].startswith('>'):
         for i, l in enumerate(lines):
             t = l.lstrip('>').strip()

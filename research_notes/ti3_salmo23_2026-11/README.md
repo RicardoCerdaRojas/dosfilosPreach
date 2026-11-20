@@ -69,6 +69,9 @@ poppler). Se corren con `python3 -I`.
 | `indice_respaldo.py <borrador.md> <carpeta 05_Respaldo_citas>` | Genera el índice nota → imagen de respaldo; detecta «Ibid.» que apuntan a otra obra |
 | `verificar_citas_biblicas.py <borrador.md> <parte1_aprobada.md> <rvr1960.json>` | Compara las citas del pasaje con la traducción aprobada y las de otros libros con la RV1960 |
 | `rvr.py <rvr1960.json> "jo 10:11" …` | Imprime versículos de la RV1960. Ids engañosos: «jn» = Jonás, «jo» = Juan, «hb» = Hebreos |
+| `armar_trabajo.py <plantilla> <trabajo.md> <salida.docx> <portada.json> [paginas.json]` | Generalización para cualquier trabajo: portada por JSON, CONTENIDO de dos niveles, apéndices y bibliografía. Con `TP=1`: modo TP, sin CONTENIDO y espacio simple + línea entre párrafos (NT785, TP #11 y TP #12) |
+| `indice_respaldo_tp.py <borrador.md> <carpeta 05_Respaldo_citas>` | Índice de respaldo para citas entre paréntesis («(Autor, N)», «(BDAG, s.v. …)»); sale con 1 si una cita no tiene respaldo (TP #12) |
+| `verificar_citas_tp.py <borrador.md> <morphgnt-carta.txt> <rvr1960.json> [--mutar]` | Cadenas griegas de la prosa contra MorphGNT y referencias a otros libros contra la RV1960; `--mutar` prueba la prueba (TP #12) |
 
 La RV1960 del repo está en `packages/infrastructure/src/bible/data/rvr1960.json`.
 
@@ -82,3 +85,13 @@ La RV1960 del repo está en `packages/infrastructure/src/bible/data/rvr1960.json
   del autor.
 - **Pendiente:** cuando llegue la devolución del profesor, clasificarla y
   contrastarla con lo que el procedimiento revisó y lo que no.
+
+## 6. Los trabajos que siguieron (2026-11-18/19)
+
+Con este mismo material se hicieron tres trabajos más. Sus bitácoras están en `docs/`:
+- **NT785, trabajo de investigación (Santiago 3:1–5a):** `BITACORA_TI_SANTIAGO3_2026-11.md`;
+- **TP #11 (Santiago 5:7–11):** `BITACORA_TP11_SANTIAGO5_7_2026-11.md`, la primera prueba de las pruebas por capas;
+- **TP #12 (Santiago 5:12–20):** `BITACORA_TP12_SANTIAGO5_12_2026-11.md`.
+
+La evaluación de todo el proceso frente a la plataforma está en `docs/EVALUACION_PROCESO_ACADEMICO_2026-11.md`. En Drive, cada trabajo tiene ahora una carpeta `06_Pruebas_e_informes/` con el criterio y los resultados de cada prueba. Los del TP #11 se perdieron: estaban en una carpeta temporal.
+
