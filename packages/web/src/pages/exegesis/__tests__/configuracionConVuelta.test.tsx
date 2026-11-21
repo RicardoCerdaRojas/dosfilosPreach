@@ -19,6 +19,7 @@ vi.mock('@/hooks/exegesis/useExegesisPaper', () => ({
 }));
 const vacio = () => null;
 vi.mock('@/components/exegesis/setup/RubricSubStep', () => ({ RubricSubStep: vacio }));
+vi.mock('@/components/exegesis/inputs/PaperInputsSubStep', () => ({ PaperInputsSubStep: vacio }));
 vi.mock('@/components/exegesis/setup/StyleManifestSubStep', () => ({ StyleManifestSubStep: vacio }));
 vi.mock('@/components/exegesis/setup/CorpusSubStep', () => ({ CorpusSubStep: vacio }));
 vi.mock('@/components/exegesis/setup/StructuralPlanSubStep', () => ({ StructuralPlanSubStep: vacio }));

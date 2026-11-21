@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, FileCheck2, FileStack, ListTree, BookOpen, Loader2, Lock, Sparkles } from 'lucide-react';
+import { ArrowLeft, FileCheck2, FileStack, ListChecks, ListTree, BookOpen, Loader2, Lock, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { RubricSubStep } from '@/components/exegesis/setup/RubricSubStep';
+import { PaperInputsSubStep } from '@/components/exegesis/inputs/PaperInputsSubStep';
 import { StyleManifestSubStep } from '@/components/exegesis/setup/StyleManifestSubStep';
 import { CorpusSubStep } from '@/components/exegesis/setup/CorpusSubStep';
 import { StructuralPlanSubStep } from '@/components/exegesis/setup/StructuralPlanSubStep';
@@ -44,9 +45,11 @@ import { safeInternalPath } from './paperBackLink';
  * "Generate" CTA at the bottom of step 4 redirects to the paper
  * detail page where the wizard runs.
  */
-type SubStepKey = 'rubric' | 'manifest' | 'corpus' | 'corpus-plan' | 'plan';
+type SubStepKey = 'inputs' | 'rubric' | 'manifest' | 'corpus' | 'corpus-plan' | 'plan';
 
 const SUB_STEPS: ReadonlyArray<{ key: SubStepKey; iconKey: string }> = [
+    // A5: las entradas van primero, con el plazo a la vista (procedimiento, etapa 0).
+    { key: 'inputs', iconKey: 'ListChecks' },
     { key: 'rubric', iconKey: 'FileCheck2' },
     { key: 'manifest', iconKey: 'BookOpen' },
     { key: 'corpus', iconKey: 'FileStack' },
@@ -57,7 +60,7 @@ const SUB_STEPS: ReadonlyArray<{ key: SubStepKey; iconKey: string }> = [
 const VALID_KEYS: ReadonlySet<SubStepKey> = new Set(SUB_STEPS.map(s => s.key));
 
 function parseTab(raw: string | null): SubStepKey {
-    return raw && VALID_KEYS.has(raw as SubStepKey) ? (raw as SubStepKey) : 'rubric';
+    return raw && VALID_KEYS.has(raw as SubStepKey) ? (raw as SubStepKey) : 'inputs';
 }
 
 export function ExegesisPaperSetupPage() {
@@ -79,7 +82,7 @@ export function ExegesisPaperSetupPage() {
     const setActiveKey = useCallback((next: SubStepKey) => {
         setSearchParams(prev => {
             const updated = new URLSearchParams(prev);
-            if (next === 'rubric') updated.delete('tab');
+            if (next === 'inputs') updated.delete('tab');
             else updated.set('tab', next);
             return updated;
         }, { replace: true });
@@ -165,7 +168,7 @@ export function ExegesisPaperSetupPage() {
             </header>
 
             <div className="max-w-7xl w-full mx-auto px-6 py-6">
-                <nav className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
+                <nav className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
                     {SUB_STEPS.map((s, idx) => (
                         <SubStepTab
                             key={s.key}
@@ -179,6 +182,7 @@ export function ExegesisPaperSetupPage() {
                 </nav>
 
                 <main className="rounded-2xl border border-border bg-card p-6 space-y-6">
+                    {activeKey === 'inputs' && <PaperInputsSubStep paper={paper} />}
                     {activeKey === 'rubric' && <RubricSubStep paper={paper} />}
                     {activeKey === 'manifest' && <StyleManifestSubStep paper={paper} />}
                     {activeKey === 'corpus' && <CorpusSubStep paper={paper} />}
@@ -239,6 +243,7 @@ function SubStepIcon({ iconKey, active }: { iconKey: string; active: boolean }) 
         active ? 'text-success-subtle-foreground' : 'text-muted-foreground',
     ].join(' ');
     switch (iconKey) {
+        case 'ListChecks': return <ListChecks className={className} />;
         case 'FileCheck2': return <FileCheck2 className={className} />;
         case 'BookOpen': return <BookOpen className={className} />;
         case 'FileStack': return <FileStack className={className} />;

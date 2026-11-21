@@ -1,3 +1,4 @@
+import { formatIgnoredCategories } from './ignoredCategoriesBlock';
 import { ANALYZER_WRITES_PREMISES } from './analyzerOutputShape';
 import {
     buildHebrewMorphologyBlock,
@@ -67,6 +68,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
     // es el de siempre.
     const workMethodBlock = formatMethodContract(input.method, input.sources, !!input.sectionQuestions?.length, lang);
     const studentReadingBlock = formatStudentReading(input.studentReading, lang);
+    const ignoredCategoriesBlock = formatIgnoredCategories(input.ignoredGrammarCategories, lang);
     const styleRulesBlock = buildStyleRulesBlock(input.styleRules, lang);
     // La morfología tabulada va JUNTO al texto base, no en la guía de campos:
     // es parte de lo que el analizador lee, no de lo que tiene que producir.
@@ -128,6 +130,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
             // Junto al método y no al final: el servidor corta la instrucción de sistema por el final.
             formatArgumentChecks(input.sectionQuestions, lang, !!input.bookConcordance?.length),
             workMethodBlock,
+            ignoredCategoriesBlock,
             corpusGapsBlock,
             ``,
             `## Style guide constraints`,
@@ -185,6 +188,7 @@ function buildSystemInstruction(input: AnalyzeVerseInput): string {
         methodBlock,
         formatArgumentChecks(input.sectionQuestions, lang, !!input.bookConcordance?.length),
         workMethodBlock,
+        ignoredCategoriesBlock,
         corpusGapsBlock,
         ``,
         `## Restricciones de la guía de estilo`,

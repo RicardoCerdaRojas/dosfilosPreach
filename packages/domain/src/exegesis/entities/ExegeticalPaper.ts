@@ -73,6 +73,19 @@ export interface ExegeticalPaper {
      */
     profileKind?: import('../services/paperProfile').PaperProfileKind | null;
 
+    /**
+     * Entradas del trabajo (A5): lo que el autor marcó de cada una («no
+     * aplica», «leída») y la nota de clase. El estado de cada entrada se
+     * deduce de lo que ya vive en la app (`paperInputStatuses`).
+     */
+    inputMarks?: import('../services/paperInputs').PaperInputMarks | null;
+    /** Requisitos (A5): dónde se cumple cada uno, si va en el cuerpo y si está cumplido. */
+    requirementMarks?: Readonly<Record<string, import('../services/paperRequirements').RequirementMark>> | null;
+    /** Requisitos que el autor agregó a mano. */
+    manualRequirements?: ReadonlyArray<import('../services/paperRequirements').ManualRequirement> | null;
+    /** Categorías que el curso no acepta como categoría final («IGNORA»). */
+    ignoredGrammarCategories?: ReadonlyArray<string> | null;
+
     /** Optional human title; defaults to the formatted passage. */
     title?: string;
 

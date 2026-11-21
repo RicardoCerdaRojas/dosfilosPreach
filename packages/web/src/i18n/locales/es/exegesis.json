@@ -636,6 +636,9 @@
       "backCta": "Volver al listado"
     },
     "subSteps": {
+      "inputs": {
+        "tab": "Entradas"
+      },
       "rubric": {
         "tab": "Rúbrica",
         "heading": "Rúbrica del trabajo",
@@ -3129,5 +3132,158 @@
     "savedToast": "Títulos guardados: el Word los usará.",
     "saveFailed": "No se pudieron guardar los títulos. Intenta de nuevo.",
     "proposeFailed": "No se pudieron proponer títulos. Intenta de nuevo."
+  },
+  "inputs": {
+    "title": "Entradas y requisitos",
+    "subtitle": "Lo que el curso dio para este trabajo, lo que pide y las reglas que rigen. Se reúne antes de todo, con el plazo a la vista.",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+    "optional": "opcional",
+    "statusLine": {
+      "ready": "Están todas las entradas que pide este tipo de trabajo.",
+      "missing_one": "Falta {{count}} entrada: {{list}}.",
+      "missing_other": "Faltan {{count}} entradas: {{list}}."
+    },
+    "kind": {
+      "plazo": "Plazo",
+      "enunciado": "Enunciado",
+      "rubrica": "Rúbrica",
+      "guia": "Guía de estilo",
+      "devolucion": "Devolución de la entrega anterior",
+      "trabajo-anterior": "Trabajo anterior entregado",
+      "lectura-asignada": "Lecturas del sílabo",
+      "gramatica-del-curso": "Gramática del curso",
+      "clase": "Clase"
+    },
+    "state": {
+      "listo": "Está",
+      "revisar": "Revisar",
+      "falta": "Falta",
+      "no-aplica": "No aplica"
+    },
+    "reason": {
+      "marked": "Marcaste que este curso no la da.",
+      "markedRead": "La revisaste.",
+      "plazo": {
+        "not-in-course": "Este trabajo no está en un curso con calendario: el plazo no se ve en ningún lado.",
+        "no-entry": "El trabajo no está en el calendario del curso. Vincúlalo desde el escritorio del curso.",
+        "no-date": "La entrega está en el calendario, sin fecha.",
+        "due": "Vence el {{detail}}."
+      },
+      "enunciado": {
+        "empty": "No hay encuadre.",
+        "template-unfilled": "Quedó la plantilla con huecos sin llenar (corchetes).",
+        "present": "Está el encuadre del profesor."
+      },
+      "rubrica": {
+        "none": "No hay rúbrica.",
+        "course": "La rúbrica es del curso.",
+        "course-gives-none": "El curso no da rúbrica: rige la del sistema.",
+        "system-default": "Rige la rúbrica del sistema. Si el curso da una, cárgala con el botón «Rúbrica»."
+      },
+      "guia": {
+        "none": "No hay guía de estilo.",
+        "newer-version": "La guía tiene una versión más nueva que la que usa este trabajo.",
+        "present": "Está la guía de estilo."
+      },
+      "devolucion": {
+        "not-in-course": "Fuera de un curso con calendario no se sabe cuál es la entrega anterior.",
+        "not-in-calendar": "El trabajo no está en el calendario del curso: no se sabe cuál es la entrega anterior. Vincúlalo desde el escritorio del curso.",
+        "first-delivery": "Es la primera entrega de este tipo.",
+        "none-given": "La entrega anterior quedó sin devolución.",
+        "awaiting": "La entrega anterior todavía no tiene la devolución del profesor.",
+        "not-delivered": "La entrega anterior no está marcada como entregada.",
+        "pending-patterns_one": "La devolución trae {{count}} corrección sin decidir: pásala a la guía o descártala en el curso.",
+        "pending-patterns_other": "La devolución trae {{count}} correcciones sin decidir: pásalas a la guía o descártalas en el curso.",
+        "recorded": "La devolución está registrada y sus correcciones, decididas."
+      },
+      "trabajo-anterior": {
+        "first-delivery": "Es la primera entrega de este tipo.",
+        "found": "Está el trabajo anterior: sus fuentes no se repiten si el curso lo prohíbe.",
+        "not-found": "No se encontró el trabajo anterior en la plataforma."
+      },
+      "lectura-asignada": {
+        "present_one": "El sílabo del curso trae {{count}} obra.",
+        "present_other": "El sílabo del curso trae {{count}} obras.",
+        "none": "No hay lecturas del sílabo cargadas."
+      },
+      "gramatica-del-curso": {
+        "no-grammar": "El corpus no tiene una gramática.",
+        "no-ignored-list": "Falta la lista de categorías que el curso no acepta como final (las marcadas «IGNORA»).",
+        "with-ignored_one": "{{count}} categoría vetada como final.",
+        "with-ignored_other": "{{count}} categorías vetadas como final."
+      },
+      "clase": {
+        "none": "Sin nota de clase.",
+        "note": "Está la nota de clase."
+      }
+    },
+    "action": {
+      "read": "Ya la revisé",
+      "notApplicable": "No aplica",
+      "undo": "Deshacer"
+    },
+    "classNote": {
+      "label": "Nota de clase",
+      "placeholder": "Lo que dijo el profesor en clase sobre este trabajo: qué espera, qué no acepta, qué fuentes nombró.",
+      "save": "Guardar nota"
+    },
+    "unit": {
+      "question": "Pregunta {{number}} · {{verses}}",
+      "verse": "Versículo {{verses}}",
+      "part": {
+        "sintesis": "Parte 1 · Síntesis",
+        "sermon": "Parte 2 · Sermón"
+      }
+    },
+    "requirements": {
+      "title": "Requisitos",
+      "subtitle": "Lo que pide el trabajo y dónde se cumple. Todo requisito se cumple en el cuerpo; un apéndice solo amplía.",
+      "where": "Se cumple en",
+      "wholePaper": "Todo el trabajo",
+      "appendixOnly": "Solo en un apéndice",
+      "remove": "Quitar requisito",
+      "add": "Agregar",
+      "addLabel": "Requisito nuevo",
+      "addPlaceholder": "Otro requisito del enunciado o de la clase",
+      "warning": {
+        "appendix-only": "Se cumple solo en un apéndice: el requisito tiene que estar en el cuerpo.",
+        "no-unit": "Esta pregunta no tiene sección que la conteste."
+      },
+      "origin": {
+        "rubrica": "rúbrica",
+        "enunciado": "enunciado",
+        "tipo": "tipo de trabajo",
+        "silabo": "sílabo",
+        "manual": "tuyo"
+      },
+      "text": {
+        "length": {
+          "pages": "Extensión: de {{min}} a {{max}} páginas",
+          "words": "Extensión: de {{min}} a {{max}} palabras"
+        },
+        "sources_one": "Al menos {{count}} fuente de tipo «{{sourceType}}»",
+        "sources_other": "Al menos {{count}} fuentes de tipo «{{sourceType}}»",
+        "reading": "Usar {{title}} (lectura exigida)",
+        "question": "Responder la pregunta {{number}}",
+        "profile": {
+          "noFraming": "Sin introducción ni conclusión: cada respuesta cierra en su sección",
+          "thesis": "La tesis, con las mismas palabras, en la introducción y la conclusión",
+          "inheritGlosses": "El sermón hereda las glosas y los tiempos de la síntesis"
+        }
+      }
+    },
+    "rules": {
+      "title": "Reglas del curso",
+      "subtitle": "Las que rigen este trabajo, además de la guía.",
+      "guideHeading_one": "{{count}} regla en la guía",
+      "guideHeading_other": "{{count}} reglas en la guía",
+      "guideEmpty": "La guía no tiene reglas propias del curso todavía.",
+      "toDesk": "Decidir las correcciones en el escritorio del curso",
+      "ignoredHeading": "Categorías que el curso no acepta como final",
+      "ignoredHint": "Una por línea, como las marca la gramática del curso («IGNORA»). El análisis puede nombrarlas como lectura rival, nunca como la decisión.",
+      "ignoredPlaceholder": "Genitivo de producción\nGenitivo de contenido",
+      "ignoredSave": "Guardar categorías",
+      "ignoredSaved": "Categorías guardadas: rigen en los próximos análisis."
+    }
   }
 }

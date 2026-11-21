@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, stepCorpusQuery, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod
+import { usesExtractedExcerpts, stepCorpusQuery, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod, cleanIgnoredGrammarCategories
 } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
@@ -189,6 +189,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // Etapa 2, capa 3: el método y «Mi lectura». Sin método, el
                 // prompt de siempre.
                 method: resolveExegeticalMethod(paper.exegeticalMethod),
+                // A5: lo que el curso no acepta como categoría final.
+                ignoredGrammarCategories: cleanIgnoredGrammarCategories(paper.ignoredGrammarCategories),
                 studentReading: paper.stepPlan.perStep[step.id]?.studentReading?.trim() || null,
                 verseMorphology,
                 // Las preguntas de este versículo como TAREA, con su tipo (C1).

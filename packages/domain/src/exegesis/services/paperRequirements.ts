@@ -1,0 +1,169 @@
+/**
+ * Los requisitos de un trabajo y dónde se cumple cada uno (diseño §2.2, A5).
+ *
+ * Regla del procedimiento (byblos, NT785 2026-11-18): todo requisito del
+ * enunciado se cumple en el CUERPO; los apéndices solo amplían. En el trabajo de
+ * Santiago 3 «todas las notas del aparato crítico, con su decisión razonada» se
+ * cumplió a fondo solo en el Apéndice B.
+ *
+ * Se arman sin el asistente, de lo que ya está escrito: la rúbrica (extensión,
+ * fuentes por tipo, criterios, lecturas exigidas), las preguntas del encuadre y
+ * el tipo de trabajo. El autor agrega los que falten, dice en qué sección se
+ * cumple cada uno y si va en el cuerpo. Ninguno se borra en silencio: uno que
+ * ya no sale de la rúbrica queda marcado, para que el autor lo vea.
+ */
+import type { PaperRubric } from '../entities/PaperRubric';
+import type { PaperProfileKind } from './paperProfile';
+import type { PaperUnit } from './paperUnits';
+
+export type RequirementOrigin = 'rubrica' | 'enunciado' | 'tipo' | 'silabo' | 'manual';
+
+export interface PaperRequirement {
+    /** Estable: `rubrica:extension`, `rubrica:fuente:lexicon-technical`, `enunciado:pregunta:2`, `manual:<id>`. */
+    id: string;
+    origin: RequirementOrigin;
+    /** El texto para la pantalla: una clave con sus datos, o el texto del autor. */
+    text: { key: string; values?: Record<string, string | number> } | { literal: string };
+    /** La unidad donde se cumple; `null` = el trabajo entero. */
+    unitId: string | null;
+    /** Se cumple en el cuerpo (no solo en un apéndice). */
+    inBody: boolean;
+    /** El autor lo dio por cumplido. */
+    done: boolean;
+}
+
+/** Lo que el autor decide de cada requisito, por id. */
+export interface RequirementMark {
+    unitId?: string | null;
+    inBody?: boolean;
+    done?: boolean;
+}
+
+export interface ManualRequirement {
+    id: string;
+    text: string;
+    unitId: string | null;
+    inBody: boolean;
+    done: boolean;
+}
+
+export const MANUAL_REQUIREMENTS_MAX = 40;
+export const MANUAL_REQUIREMENT_TEXT_MAX = 400;
+
+export interface RequirementsInput {
+    profileKind: PaperProfileKind;
+    rubric: Pick<PaperRubric, 'expectedLength' | 'sourceRequirements' | 'qualityCriteria' | 'courseBibliography'> | null | undefined;
+    units: ReadonlyArray<PaperUnit>;
+    marks?: Readonly<Record<string, RequirementMark>> | null;
+    manual?: ReadonlyArray<ManualRequirement> | null;
+}
+
+/** Lo que sale de lo ya escrito, antes de las marcas del autor. */
+function derived(input: RequirementsInput): Array<Omit<PaperRequirement, 'inBody' | 'done'>> {
+    const out: Array<Omit<PaperRequirement, 'inBody' | 'done'>> = [];
+    const r = input.rubric;
+    if (r?.expectedLength && (r.expectedLength.min !== null || r.expectedLength.max !== null)) {
+        const { unit, min, max } = r.expectedLength;
+        out.push({ id: 'rubrica:extension', origin: 'rubrica', unitId: null, text: { key: `length.${unit}`, values: { min: min ?? '—', max: max ?? '—' } } });
+    }
+    for (const s of r?.sourceRequirements ?? []) {
+        if (s.minimum <= 0) continue;
+        out.push({ id: `rubrica:fuente:${s.sourceType}`, origin: 'rubrica', unitId: null, text: { key: 'sources', values: { minimum: s.minimum, sourceType: s.sourceType } } });
+    }
+    for (const c of r?.qualityCriteria ?? []) {
+        out.push({ id: `rubrica:criterio:${c.id}`, origin: 'rubrica', unitId: null, text: { literal: c.name } });
+    }
+    for (const b of r?.courseBibliography ?? []) {
+        if (b.requirement !== 'required') continue;
+        out.push({ id: `silabo:${slug(b.title)}`, origin: 'silabo', unitId: null, text: { key: 'reading', values: { title: b.title } } });
+    }
+    for (const u of input.units) {
+        if (u.kind !== 'pregunta') continue;
+        out.push({ id: `enunciado:pregunta:${u.number}`, origin: 'enunciado', unitId: u.id, text: { key: 'question', values: { number: u.number } } });
+    }
+    // La forma que impone el tipo (procedimiento §4d).
+    if (input.profileKind === 'tp-por-pregunta') {
+        out.push({ id: 'tipo:sin-marco', origin: 'tipo', unitId: null, text: { key: 'profile.noFraming' } });
+    } else {
+        out.push({ id: 'tipo:tesis', origin: 'tipo', unitId: null, text: { key: 'profile.thesis' } });
+    }
+    if (input.profileKind === 'sintesis-sermon') {
+        out.push({ id: 'tipo:herencia', origin: 'tipo', unitId: 'parte-2', text: { key: 'profile.inheritGlosses' } });
+    }
+    return out;
+}
+
+/**
+ * Los requisitos con lo que el autor decidió. Una unidad marcada que ya no
+ * existe (cambió el encuadre) vuelve a «el trabajo entero»: un requisito no se
+ * queda colgado de una sección que no está.
+ */
+export function paperRequirements(input: RequirementsInput): PaperRequirement[] {
+    const unidades = new Set(input.units.map(u => u.id));
+    const valida = (id: string | null | undefined) => (id && unidades.has(id) ? id : null);
+    const marks = input.marks ?? {};
+    const deRubrica = derived(input).map(d => {
+        const m = marks[d.id] ?? {};
+        return {
+            ...d,
+            unitId: m.unitId === undefined ? valida(d.unitId) : valida(m.unitId),
+            inBody: m.inBody ?? true,
+            done: m.done ?? false,
+        };
+    });
+    const manuales = (input.manual ?? []).map(m => ({
+        id: `manual:${m.id}`, origin: 'manual' as const, text: { literal: m.text },
+        unitId: valida(m.unitId), inBody: m.inBody, done: m.done,
+    }));
+    return [...deRubrica, ...manuales];
+}
+
+export type RequirementWarning =
+    /** Se cumple solo en un apéndice: la regla del cuerpo. */
+    | { kind: 'appendix-only'; requirementId: string }
+    /** Una pregunta sin sección que la conteste (el encuadre cambió). */
+    | { kind: 'no-unit'; requirementId: string };
+
+export function requirementWarnings(reqs: ReadonlyArray<PaperRequirement>): RequirementWarning[] {
+    const out: RequirementWarning[] = [];
+    for (const r of reqs) {
+        if (!r.inBody) out.push({ kind: 'appendix-only', requirementId: r.id });
+        if (r.origin === 'enunciado' && r.unitId === null) out.push({ kind: 'no-unit', requirementId: r.id });
+    }
+    return out;
+}
+
+/** Las marcas listas para guardar: solo campos conocidos. */
+export function cleanRequirementMarks(value: unknown): Record<string, RequirementMark> {
+    if (!value || typeof value !== 'object') return {};
+    const out: Record<string, RequirementMark> = {};
+    for (const [id, raw] of Object.entries(value as Record<string, unknown>)) {
+        if (!id || !raw || typeof raw !== 'object') continue;
+        const m = raw as RequirementMark;
+        const limpio: RequirementMark = {};
+        if (m.unitId === null || typeof m.unitId === 'string') limpio.unitId = m.unitId;
+        if (typeof m.inBody === 'boolean') limpio.inBody = m.inBody;
+        if (typeof m.done === 'boolean') limpio.done = m.done;
+        if (Object.keys(limpio).length) out[id] = limpio;
+    }
+    return out;
+}
+
+export function cleanManualRequirements(value: unknown): ManualRequirement[] {
+    if (!Array.isArray(value)) return [];
+    const vistos = new Set<string>();
+    const out: ManualRequirement[] = [];
+    for (const raw of value) {
+        const m = raw as Partial<ManualRequirement>;
+        const text = typeof m?.text === 'string' ? m.text.trim().slice(0, MANUAL_REQUIREMENT_TEXT_MAX) : '';
+        if (!m?.id || !text || vistos.has(m.id)) continue;
+        vistos.add(m.id);
+        out.push({ id: m.id, text, unitId: typeof m.unitId === 'string' ? m.unitId : null, inBody: m.inBody !== false, done: m.done === true });
+        if (out.length >= MANUAL_REQUIREMENTS_MAX) break;
+    }
+    return out;
+}
+
+function slug(s: string): string {
+    return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+}

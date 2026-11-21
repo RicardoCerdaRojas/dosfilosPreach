@@ -636,6 +636,9 @@
       "backCta": "Back to list"
     },
     "subSteps": {
+      "inputs": {
+        "tab": "Inputs"
+      },
       "rubric": {
         "tab": "Rubric",
         "heading": "Paper rubric",
@@ -3129,5 +3132,158 @@
     "savedToast": "Headings saved: the Word file will use them.",
     "saveFailed": "The headings could not be saved. Try again.",
     "proposeFailed": "Headings could not be proposed. Try again."
+  },
+  "inputs": {
+    "title": "Inputs and requirements",
+    "subtitle": "What the course gave for this paper, what it asks and the rules in force. Gathered before anything else, with the deadline in view.",
+    "saveFailed": "Could not save. Try again.",
+    "optional": "optional",
+    "statusLine": {
+      "ready": "All the inputs this kind of paper needs are here.",
+      "missing_one": "{{count}} input missing: {{list}}.",
+      "missing_other": "{{count}} inputs missing: {{list}}."
+    },
+    "kind": {
+      "plazo": "Deadline",
+      "enunciado": "Assignment",
+      "rubrica": "Rubric",
+      "guia": "Style guide",
+      "devolucion": "Feedback on the previous delivery",
+      "trabajo-anterior": "Previous delivered paper",
+      "lectura-asignada": "Syllabus readings",
+      "gramatica-del-curso": "Course grammar",
+      "clase": "Class"
+    },
+    "state": {
+      "listo": "Here",
+      "revisar": "Review",
+      "falta": "Missing",
+      "no-aplica": "Not applicable"
+    },
+    "reason": {
+      "marked": "You marked that this course does not give it.",
+      "markedRead": "You reviewed it.",
+      "plazo": {
+        "not-in-course": "This paper is not in a course with a calendar: the deadline is nowhere.",
+        "no-entry": "The paper is not in the course calendar. Link it from the course desk.",
+        "no-date": "The delivery is in the calendar, without a date.",
+        "due": "Due {{detail}}."
+      },
+      "enunciado": {
+        "empty": "There is no brief.",
+        "template-unfilled": "The template still has unfilled gaps (brackets).",
+        "present": "The professor's brief is here."
+      },
+      "rubrica": {
+        "none": "There is no rubric.",
+        "course": "The rubric is the course's.",
+        "course-gives-none": "The course gives no rubric: the system one applies.",
+        "system-default": "The system rubric applies. If the course gives one, load it with the “Rubric” button."
+      },
+      "guia": {
+        "none": "There is no style guide.",
+        "newer-version": "The guide has a newer version than the one this paper uses.",
+        "present": "The style guide is here."
+      },
+      "devolucion": {
+        "not-in-course": "Outside a course with a calendar the previous delivery is unknown.",
+        "not-in-calendar": "The paper is not in the course calendar: the previous delivery is unknown. Link it from the course desk.",
+        "first-delivery": "This is the first delivery of this type.",
+        "none-given": "The previous delivery got no feedback.",
+        "awaiting": "The previous delivery has no feedback from the professor yet.",
+        "not-delivered": "The previous delivery is not marked as delivered.",
+        "pending-patterns_one": "The feedback has {{count}} undecided correction: move it to the guide or discard it in the course.",
+        "pending-patterns_other": "The feedback has {{count}} undecided corrections: move them to the guide or discard them in the course.",
+        "recorded": "The feedback is recorded and its corrections decided."
+      },
+      "trabajo-anterior": {
+        "first-delivery": "This is the first delivery of this type.",
+        "found": "The previous paper is here: its sources are not repeated if the course forbids it.",
+        "not-found": "The previous paper was not found on the platform."
+      },
+      "lectura-asignada": {
+        "present_one": "The course syllabus lists {{count}} work.",
+        "present_other": "The course syllabus lists {{count}} works.",
+        "none": "No syllabus readings loaded."
+      },
+      "gramatica-del-curso": {
+        "no-grammar": "The corpus has no grammar.",
+        "no-ignored-list": "The list of categories the course does not accept as final (marked “IGNORE”) is missing.",
+        "with-ignored_one": "{{count}} category ruled out as final.",
+        "with-ignored_other": "{{count}} categories ruled out as final."
+      },
+      "clase": {
+        "none": "No class note.",
+        "note": "The class note is here."
+      }
+    },
+    "action": {
+      "read": "I reviewed it",
+      "notApplicable": "Not applicable",
+      "undo": "Undo"
+    },
+    "classNote": {
+      "label": "Class note",
+      "placeholder": "What the professor said in class about this paper: what they expect, what they do not accept, which sources they named.",
+      "save": "Save note"
+    },
+    "unit": {
+      "question": "Question {{number}} · {{verses}}",
+      "verse": "Verse {{verses}}",
+      "part": {
+        "sintesis": "Part 1 · Synthesis",
+        "sermon": "Part 2 · Sermon"
+      }
+    },
+    "requirements": {
+      "title": "Requirements",
+      "subtitle": "What the paper asks and where it is met. Every requirement is met in the body; an appendix only expands.",
+      "where": "Met in",
+      "wholePaper": "The whole paper",
+      "appendixOnly": "Only in an appendix",
+      "remove": "Remove requirement",
+      "add": "Add",
+      "addLabel": "New requirement",
+      "addPlaceholder": "Another requirement from the assignment or the class",
+      "warning": {
+        "appendix-only": "Met only in an appendix: the requirement has to be in the body.",
+        "no-unit": "This question has no section answering it."
+      },
+      "origin": {
+        "rubrica": "rubric",
+        "enunciado": "assignment",
+        "tipo": "paper type",
+        "silabo": "syllabus",
+        "manual": "yours"
+      },
+      "text": {
+        "length": {
+          "pages": "Length: {{min}} to {{max}} pages",
+          "words": "Length: {{min}} to {{max}} words"
+        },
+        "sources_one": "At least {{count}} source of type “{{sourceType}}”",
+        "sources_other": "At least {{count}} sources of type “{{sourceType}}”",
+        "reading": "Use {{title}} (required reading)",
+        "question": "Answer question {{number}}",
+        "profile": {
+          "noFraming": "No introduction or conclusion: each answer closes in its section",
+          "thesis": "The thesis, in the same words, in the introduction and the conclusion",
+          "inheritGlosses": "The sermon inherits the glosses and tenses of the synthesis"
+        }
+      }
+    },
+    "rules": {
+      "title": "Course rules",
+      "subtitle": "The ones in force for this paper, besides the guide.",
+      "guideHeading_one": "{{count}} rule in the guide",
+      "guideHeading_other": "{{count}} rules in the guide",
+      "guideEmpty": "The guide has no course rules yet.",
+      "toDesk": "Decide the corrections on the course desk",
+      "ignoredHeading": "Categories the course does not accept as final",
+      "ignoredHint": "One per line, as the course grammar marks them (“IGNORE”). The analysis may name them as a rival reading, never as the decision.",
+      "ignoredPlaceholder": "Genitive of production\nGenitive of content",
+      "ignoredSave": "Save categories",
+      "ignoredSaved": "Categories saved: they apply to the next analyses."
+    }
   }
 }
