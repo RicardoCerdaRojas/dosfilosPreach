@@ -9,7 +9,7 @@ vi.mock('@/hooks/library/useLibrary', () => ({ useLibrary: () => ({ resources: [
 vi.mock('@/hooks/exegesis/useDocumentPageIndex', () => ({ useDocumentPdfUrl: () => ({ data: null }) }));
 
 const { IdentitySection, EditionSection, PaginationSection, CopySection } = await import('../ReviewSections');
-const { buildReviewInput, storedOffsetAt, citedEditionFor } = await import('@/hooks/library/usePdfReview');
+const { buildReviewInput, citedEditionFor } = await import('@/hooks/library/usePdfReview');
 
 const martin = {
     id: 'martin', title: 'James (Word Biblical Commentary 48)', author: 'Ralph P. Martin', mimeType: 'application/pdf',
@@ -33,7 +33,7 @@ describe('Bandeja de revisión del PDF (A7)', () => {
         // En el catálogo con otro tipo (expositivo) que el del registro (exegético): igual se encuentra.
         const mccartney = { ...martin, id: 'mcc', title: 'James — Baker Exegetical Commentary on the New Testament', author: 'McCartney, Dan G.', exegeticalType: 'commentary-critical' } as unknown as LibraryResource;
         expect(citedEditionFor(mccartney)).toMatchObject({ year: 2009, isbn: '9780801026768' });
-        expect(input.declared).toMatchObject({ books: ['JAS'], bibliographyYear: '2004', storedOffset: null });
+        expect(input.declared).toMatchObject({ books: ['JAS'], bibliographyYear: '2004', storedNumbering: null });
         const r = reviewPdf(input);
         expect(r.edition).toMatchObject({ year: 1988, vsCited: null, vsBibliography: 'distinta' });
     });
@@ -103,16 +103,52 @@ describe('Bandeja de revisión del PDF (A7)', () => {
         expect(sec.textContent).toContain('review.evidence {"line":"1 CORINTHIANS"}');
     });
 
-    it('la numeración guardada se lee en el tramo de la hoja del medio, solo si es arábiga y ascendente', () => {
-        const n = { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 20, offset: null }, { fromSheet: 21, toSheet: 600, offset: -24 }] } as never;
-        expect(storedOffsetAt(n, 300)).toBe(-24);
-        expect(storedOffsetAt(n, 10)).toBeNull();
-        expect(storedOffsetAt({ origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 600, offset: 303, step: -1 }] } as never, 300)).toBeNull();
-        expect(storedOffsetAt({ origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 600, offset: -2, style: 'roman' }] } as never, 300)).toBeNull();
-        expect(storedOffsetAt(null, 300)).toBeNull();
-        expect(storedOffsetAt(n, null)).toBeNull();
-        // Se compara en la hoja del medio de las muestras (340), no en la primera (215).
+    it('la numeración guardada se compara en cada hoja leída: un tramo que no coincide en una basta', () => {
+        // En la hoja 215 el primer tramo da 115, no 104: no coincide. Antes se miraba solo la hoja del medio.
         const dos = { ...martin, pageNumbering: { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 300, offset: -100 }, { fromSheet: 301, toSheet: 620, offset: -111 }] } } as unknown as LibraryResource;
-        expect(buildReviewInput(dos, leido).declared.storedOffset).toBe(-111);
+        expect(reviewPdf(buildReviewInput(dos, leido)).pagination).toMatchObject({ storedDisagrees: true, storedAgrees: false });
+        const bien = { ...martin, pageNumbering: { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 111, offset: null }, { fromSheet: 112, toSheet: 620, offset: -111 }] } } as unknown as LibraryResource;
+        expect(reviewPdf(buildReviewInput(bien, leido)).pagination).toMatchObject({ storedDisagrees: false, storedAgrees: true });
+    });
+
+    it('Mayor: reimpresión de 1978 de la edición de 1897; el año no se ofrece guardar, el ISBN sí', () => {
+        const onSave = vi.fn();
+        const mayor = { ...martin, id: 'mayor', title: 'The Epistle of James - the Greek text with introduction', author: 'Mayor', bibliography: {} } as unknown as LibraryResource;
+        const r = reviewPdf(buildReviewInput(mayor, { ...leido, front: [{ sheet: 6, lines: ['Reprinted 1978 from the 1897 edition', 'ISBN: 0-8010-6073-7'] }] }));
+        const cited = { title: 'The Epistle of St. James', year: 1910, publisher: 'Macmillan', isbn: null };
+        render(<EditionSection review={{ ...r, edition: { ...r.edition, vsCited: 'distinta' } }} resource={mayor} cited={cited} onSave={onSave} saving={false} />);
+        const sec = screen.getByTestId('revision-edicion');
+        expect(sec.textContent).toContain('review.edition.reprint {"year":"1978","original":1897}');
+        expect(sec.textContent).toContain('review.edition.vsCited.distintaReimpresion {"cited":"Macmillan, 1910","year":"1897"}');
+        expect(sec.textContent).toContain('review.edition.reprintNote');
+        fireEvent.click(screen.getByRole('button'));
+        expect(onSave).toHaveBeenCalledWith({ isbn: '9780801060731' });
+    });
+
+    it('Mayor: dos tramos; con dos hojas del cuerpo se guardan las dos numeraciones y se avisa del hueco', () => {
+        const a = { onSave: vi.fn(), onSaveNone: vi.fn(), onCalibrate: vi.fn(), onShowSheet: vi.fn() };
+        const mayor = { ...martin, id: 'mayor', title: 'The Epistle of James', author: 'Mayor' } as unknown as LibraryResource;
+        const muestras = [
+            { sheet: 137, lines: ['TO WHOM THE EPISTLE IS ADDRESSED exix'], folio: null },
+            { sheet: 272, lines: ['ecliv INTRODUCTION'], folio: null },
+            { sheet: 405, lines: [], folio: '127' },
+        ];
+        const corto = reviewPdf(buildReviewInput(mayor, { ...leido, numPages: 540, samples: muestras }));
+        render(<PaginationSection review={corto} ebook={false} storedConfirmed={false} canSave={!!corto.pagination.proposal} saving={false} {...a} />);
+        let sec = screen.getByTestId('revision-paginas');
+        expect(sec.dataset.tone).toBe('warn');
+        expect(sec.textContent).toContain('review.pagination.tramos {');
+        expect(sec.textContent).toContain('"romanFrom":19,"arabicFrom":279');
+        expect(sec.textContent).toContain('review.pagination.tramosShort');
+        expect(screen.queryByText('review.pagination.saveRuns')).toBeNull();
+        cleanup();
+        const r = reviewPdf(buildReviewInput(mayor, { ...leido, numPages: 540, samples: [...muestras, { sheet: 486, lines: [], folio: '208' }] }));
+        render(<PaginationSection review={r} ebook={false} storedConfirmed={false} canSave={!!r.pagination.proposal} saving={false} {...a} />);
+        sec = screen.getByTestId('revision-paginas');
+        expect(sec.dataset.tone).toBe('ok');
+        expect(sec.textContent).toContain('review.pagination.tramosGap {"from":273,"to":278}');
+        expect(sec.textContent).not.toContain('tramosShort');
+        fireEvent.click(screen.getByText('review.pagination.saveRuns'));
+        expect(a.onSave).toHaveBeenCalled();
     });
 });

@@ -40,18 +40,24 @@ export function EditionSection({ review, resource, cited, onSave, saving }: {
         ...(anio && ficha?.year?.trim() !== anio ? { year: anio } : {}),
         ...(edition.isbn && ficha?.isbn !== edition.isbn ? { isbn: edition.isbn } : {}),
     };
+    const reimpresion = edition.reprintOf !== null && anio !== null;
+    // Con una reimpresión, el año de la ficha es ambiguo (¿la edición o la reimpresión?): no se guarda desde aquí.
+    if (reimpresion) delete guardar.year;
     const tone = edition.vsCited === 'distinta' ? 'warn' : edition.year || edition.isbn ? 'ok' : 'info';
     const citada = cited ? [cited.publisher, cited.year].filter(Boolean).join(', ') : '';
+    const anioLinea = reimpresion ? t('review.edition.reprint', { year: anio, original: edition.reprintOf }) : anio && t('review.edition.year', { year: anio });
+    const frente = edition.vsCited && edition.vsCited !== 'sin-dato' && reimpresion ? `${edition.vsCited}Reimpresion` : edition.vsCited ?? 'sin-dato';
     return (
         <ReviewSection id="revision-edicion" title={t('review.edition.title')} tone={tone}>
             {edition.year || edition.isbn ? (
-                <p>{[anio && t('review.edition.year', { year: anio }), edition.isbn && t('review.edition.isbn', { isbn: edition.isbn })].filter(Boolean).join(' · ')}</p>
+                <p>{[anioLinea, edition.isbn && t('review.edition.isbn', { isbn: edition.isbn })].filter(Boolean).join(' · ')}</p>
             ) : <p>{t('review.edition.noCredits')}</p>}
             {edition.evidence && <Evidence>{t('review.evidence', { line: edition.evidence })}</Evidence>}
             {cited
-                ? <p>{t(`review.edition.vsCited.${edition.vsCited ?? 'sin-dato'}`, { cited: citada, year: anio ?? '—' })}</p>
+                ? <p>{t(`review.edition.vsCited.${frente}`, { cited: citada, year: (reimpresion ? String(edition.reprintOf) : anio) ?? '—' })}</p>
                 : <p className="text-muted-foreground">{t('review.edition.noCited')}</p>}
             {edition.vsBibliography === 'distinta' && <p>{t('review.edition.vsBibliography', { stored: ficha?.year })}</p>}
+            {reimpresion && <p className="text-xs text-muted-foreground">{t('review.edition.reprintNote', { original: edition.reprintOf, year: anio })}</p>}
             {Object.keys(guardar).length > 0 && (
                 <ReviewAction onClick={() => onSave(guardar)} disabled={saving}>
                     {t('review.edition.save', { fields: Object.values(guardar).join(' · ') })}
@@ -76,17 +82,22 @@ export function PaginationSection({ review, ebook, storedConfirmed, canSave, onS
 }) {
     const { t } = useTranslation('library');
     const p = review.pagination;
-    const leidas = p.points.filter(x => x.offset !== null);
+    const leidas = p.points.filter(x => x.style === 'arabic');
     const ejemplo = leidas[0];
     const regla = p.offset === null ? '' : t(p.offset <= 0 ? 'review.pagination.minus' : 'review.pagination.plus', { count: Math.abs(p.offset) });
     const verdict = ebook ? 'ebook' : p.verdict;
     const yaGuardada = storedConfirmed && p.storedAgrees;
-    const tone = verdict === 'una' && !p.storedDisagrees ? 'ok' : 'warn';
+    const [romanos, arabigos] = p.runs;
+    const hueco = p.proposal?.segments.find((g, i) => i > 0 && g.offset === null) ?? null;
+    const tone = (verdict === 'una' || (verdict === 'tramos' && canSave)) && !p.storedDisagrees ? 'ok' : 'warn';
     return (
         <ReviewSection id="revision-paginas" title={t('review.pagination.title')} tone={tone}>
             <p>{t(`review.pagination.${verdict}`, {
                 sheet: ejemplo?.sheet, printed: ejemplo?.folio, rule: regla, have: leidas.length, total: p.points.length,
+                romanFrom: romanos?.fromSheet, arabicFrom: arabigos?.fromSheet,
             })}</p>
+            {verdict === 'tramos' && !canSave && <p>{t('review.pagination.tramosShort')}</p>}
+            {verdict === 'tramos' && hueco && <p className="text-xs text-muted-foreground">{t('review.pagination.tramosGap', { from: hueco.fromSheet, to: hueco.toSheet })}</p>}
             {!ebook && p.points.length > 0 && (
                 <ul className="flex flex-wrap gap-2">
                     {p.points.map(x => (
@@ -107,7 +118,7 @@ export function PaginationSection({ review, ebook, storedConfirmed, canSave, onS
             <div className="flex flex-wrap gap-2">
                 {canSave && !yaGuardada && (
                     <ReviewAction primary onClick={onSave} disabled={saving}>
-                        {t(p.storedDisagrees ? 'review.pagination.replace' : 'review.pagination.save')}
+                        {t(p.storedDisagrees ? 'review.pagination.replace' : verdict === 'tramos' ? 'review.pagination.saveRuns' : 'review.pagination.save')}
                     </ReviewAction>
                 )}
                 {(verdict === 'sin-folios' || verdict === 'ebook') && (

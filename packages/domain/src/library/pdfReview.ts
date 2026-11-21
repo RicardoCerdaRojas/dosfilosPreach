@@ -14,12 +14,12 @@
  * asistente: lo que se informa es lo que está escrito en esas hojas, con la
  * línea que lo prueba, para que la persona lo compare con el ejemplar.
  */
-import type { BibleBookId } from '../bible/canon/BibleCanon';
+import { getBookById, type BibleBookId } from '../bible/canon/BibleCanon';
 import { foldForSearch } from '../bible/searchMatching';
 import { inferBibleBooksFromTitle } from './inferBibleBooksFromTitle';
 import { creditsRegionOf, frontMatterOf, proposeIsbn } from '../exegesis/services/bibliographyFromText';
 import { compareEdition, type EditionMatch } from '../exegesis/services/corpusNeeds';
-import { parseRomanNumeral, type NumberingSegment, type PageNumbering } from '../exegesis/outline/pageNumbering';
+import { parseRomanNumeral, printedLabelIn, type NumberingSegment, type PageNumbering } from '../exegesis/outline/pageNumbering';
 
 /** Una hoja leída del PDF: sus líneas, y el folio de la banda de arriba o de abajo si lo hay. */
 export interface ReviewSheet {
@@ -37,8 +37,8 @@ export interface PdfReviewInput {
         books: ReadonlyArray<BibleBookId>;
         bibliographyYear?: string | null;
         isbn?: string | null;
-        /** La numeración guardada, como desfase de un tramo, para compararla. */
-        storedOffset?: number | null;
+        /** La numeración guardada, para compararla hoja por hoja con lo que se leyó. */
+        storedNumbering?: PageNumbering | null;
         storedConfirmed?: boolean;
     };
     /** La edición que cita el catálogo para esta obra, si el catálogo la tiene. */
@@ -62,8 +62,14 @@ export interface PdfReviewIdentity {
 }
 
 export interface PdfReviewEdition {
-    /** El año del copyright (o, sin ©, el último año de la página de créditos). */
+    /** El año del copyright (o, sin ©, el último año de la página de créditos): cuándo se imprimió la copia. */
     year: number | null;
+    /**
+     * La copia es una reimpresión que reproduce una edición anterior: «Reprinted
+     * 1978 from the 1897 edition» (Mayor). Ese año es el de la edición cuyo texto
+     * y páginas se tienen, y es el que se compara con el catálogo.
+     */
+    reprintOf: number | null;
     yearsSeen: number[];
     isbn: string | null;
     /** La línea del copyright, tal cual. */
@@ -74,14 +80,31 @@ export interface PdfReviewEdition {
     vsBibliography: EditionMatch | null;
 }
 
-export type PaginationVerdict = 'una' | 'varias' | 'parcial' | 'sin-folios' | 'sin-texto';
+export type PaginationVerdict = 'una' | 'tramos' | 'varias' | 'parcial' | 'sin-folios' | 'sin-texto';
+
+/** Un tramo leído con su propia regla: la introducción en romanos, el cuerpo en arábigos. */
+export interface PaginationRun {
+    style: 'roman' | 'arabic';
+    /** Página impresa − hoja. */
+    offset: number;
+    /** La hoja de la primera página del tramo (p. i, p. 1), deducida de la regla. */
+    fromSheet: number;
+    /** La última hoja leída del tramo: más allá no se sabe dónde termina. */
+    lastReadSheet: number;
+    /** Cuántas hojas leídas lo sostienen. */
+    read: number;
+}
 
 export interface PdfReviewPagination {
     verdict: PaginationVerdict;
-    /** Lo que se leyó en cada muestra, y el desfase (página impresa − hoja). */
-    points: Array<{ sheet: number; folio: string | null; offset: number | null }>;
-    /** Con `una`: el desfase común. */
+    /** Lo que se leyó en cada muestra, con qué cifras, y el desfase (página impresa − hoja). */
+    points: Array<{ sheet: number; folio: string | null; style: 'roman' | 'arabic' | null; offset: number | null }>;
+    /** Con `una` o `parcial`: el desfase común. */
     offset: number | null;
+    /** Con `tramos`: romanos y después arábigos, cada uno con su regla. */
+    runs: PaginationRun[];
+    /** La numeración que se puede guardar con lo leído (`numberingFromReview`), o null. */
+    proposal: PageNumbering | null;
     /** La numeración guardada no coincide con lo que dicen las hojas. */
     storedDisagrees: boolean;
     /** La numeración guardada dice lo mismo que las hojas. */
@@ -125,7 +148,7 @@ export function reviewPdf(input: PdfReviewInput): PdfReview {
     const signals = unofficialSignals(input);
     const needsAttention = identity.verdict === 'otro-libro'
         || edition.vsCited === 'distinta'
-        || pagination.verdict !== 'una'
+        || !(pagination.verdict === 'una' || (pagination.verdict === 'tramos' && pagination.proposal))
         || pagination.storedDisagrees
         || signals.length > 0;
     return { identity, edition, pagination, signals, needsAttention };
@@ -142,7 +165,7 @@ function reviewIdentity(input: PdfReviewInput): PdfReviewIdentity {
         for (const linea of hoja.lines) {
             const l = linea.trim();
             if (!l || l.length > LARGO_DE_ENCABEZADO || delAutor(l)) continue;
-            for (const libro of inferBibleBooksFromTitle(l).books) if (!deLaHoja.has(libro)) deLaHoja.set(libro, l);
+            for (const libro of inferBibleBooksFromTitle(l).books) if (!deLaHoja.has(libro) && nombraElLibro(libro, l)) deLaHoja.set(libro, l);
         }
         // La página de la serie nombra veinte libros: no dice cuál es éste.
         if (deLaHoja.size >= LIBROS_DE_UNA_LISTA) continue;
@@ -155,11 +178,38 @@ function reviewIdentity(input: PdfReviewInput): PdfReviewIdentity {
     return { verdict: 'otro-libro', found, evidence: encontrados.get(found[0]!)! };
 }
 
+/**
+ * La línea nombra el libro con su nombre, no con una abreviatura que es
+ * también una palabra: en el encabezado de Mayor, «TO WHOM THE EPISTLE IS
+ * ADDRESSED», «IS» se leía como Isaías y la bandeja decía «otro libro».
+ * Basta el comienzo del nombre (cinco letras) al comienzo de una palabra:
+ * «PSALM 23» nombra los Salmos, «1 CORINTHIANS» a 1 Corintios.
+ */
+function nombraElLibro(libro: BibleBookId, linea: string): boolean {
+    const b = getBookById(libro);
+    if (!b) return false;
+    const plano = foldForSearch(linea);
+    return [b.nameEn, b.nameEs].some(nombre => {
+        const raiz = foldForSearch(nombre).replace(/^\d+\s*/, '').replace(/[^a-z]/g, '').slice(0, 5);
+        return raiz.length >= 3 && new RegExp(`(^|[^a-z])${raiz}`).test(plano);
+    });
+}
+
 const ANIO = /\b(1[5-9]\d\d|20\d\d)\b/g;
 /** Una línea del escaneo, no del libro. */
 const DIGITALIZACION = /digiti[sz]ed|internet archive|scanned by|digitalizado|google books/i;
 /** Una línea que habla de la edición o la impresión. */
 const EDICION = /edition|reprint|published|printing|edici[oó]n|reimpres|impreso|publicado/i;
+/**
+ * Una reimpresión que dice qué edición reproduce. Solo las fórmulas
+ * explícitas: «First published 1897» en un libro recompuesto no dice que las
+ * páginas sean las de 1897.
+ */
+const REIMPRESION_DE = [
+    /(?:reprint(?:ed)?|facsimile)\b.*?\b(?:from|of)\s+the\s+(1[5-9]\d\d|20\d\d)\s+edition/i,
+    /(?:reprint(?:ed)?|facsimile)\b.*?\b(?:from|of)\s+the\s+[a-z]+\s+edition,?\s+(?:published\s+)?(?:in\s+)?(1[5-9]\d\d|20\d\d)/i,
+    /(?:reimpresi[oó]n|reimpreso|facs[ií]mil)\b.*?\bde\s+la\s+(?:[a-zé]+\s+)?edici[oó]n\s+de\s+(1[5-9]\d\d|20\d\d)/i,
+];
 
 function reviewEdition(input: PdfReviewInput): PdfReviewEdition {
     const texto = input.front.map(h => h.lines.join('\n')).join('\n');
@@ -181,10 +231,30 @@ function reviewEdition(input: PdfReviewInput): PdfReviewEdition {
         : deEdicion.length ? Math.max(...deEdicion)
         : yearsSeen.at(-1) ?? null;
     const evidencia = [...lineasCopyright, ...lineasDeEdicion].find(l => anios(l).includes(year ?? -1))?.trim() ?? null;
+    const reprintOf = reimpresionDe(lineasDeEdicion, year);
+    // La edición del texto: con una reimpresión, la que reproduce (sus páginas son las de esa).
+    const delTexto = reprintOf ?? year;
+    const evidenciaFinal = reprintOf !== null ? lineasDeEdicion.find(l => anios(l).includes(reprintOf))?.trim() ?? evidencia : evidencia;
     const isbn = proposeIsbn(texto);
-    const vsCited = input.cited ? compareEditionOrIsbn(input.cited.year, year, input.cited.isbn, isbn) : null;
-    const vsBibliography = input.declared.bibliographyYear ? compareEdition(year, input.declared.bibliographyYear) : null;
-    return { year, yearsSeen, isbn, evidence: evidencia ? evidencia.slice(0, 200) : null, vsCited, vsBibliography };
+    const vsCited = input.cited ? compareEditionOrIsbn(input.cited.year, delTexto, input.cited.isbn, isbn) : null;
+    // La ficha puede tener cualquiera de los dos años: el de la reimpresión o el de la edición.
+    const ficha = input.declared.bibliographyYear;
+    const vsBibliography = !ficha ? null
+        : reprintOf !== null && compareEdition(reprintOf, ficha) === 'misma' ? 'misma'
+        : compareEdition(year, ficha);
+    return { year, reprintOf, yearsSeen, isbn, evidence: evidenciaFinal ? evidenciaFinal.slice(0, 200) : null, vsCited, vsBibliography };
+}
+
+/** El año de la edición que reproduce una reimpresión, si una línea lo dice y es anterior a la copia. */
+function reimpresionDe(lineas: ReadonlyArray<string>, anioDeLaCopia: number | null): number | null {
+    for (const linea of lineas) {
+        for (const re of REIMPRESION_DE) {
+            const m = re.exec(linea);
+            const original = m ? Number(m[1]) : null;
+            if (original && (anioDeLaCopia === null || original < anioDeLaCopia)) return original;
+        }
+    }
+    return null;
 }
 
 /** El ISBN dice más que el año: si los dos están y coinciden, es la misma edición aunque el año difiera. */
@@ -195,23 +265,62 @@ function compareEditionOrIsbn(citedYear: number | null, copyYear: number | null,
 
 function reviewPagination(input: PdfReviewInput): PdfReviewPagination {
     const points = input.samples.map(s => {
-        const folio = s.folio?.trim() || romanInRunningHead(s.lines);
-        const n = folio && /^\d+$/.test(folio) ? Number(folio) : null;
-        return { sheet: s.sheet, folio: folio || null, offset: n === null ? null : n - s.sheet };
+        const folio = (s.folio?.trim() || romanInRunningHead(s.lines) || '').toLowerCase() || null;
+        const arabigo = folio && /^\d+$/.test(folio) ? Number(folio) : null;
+        const romano = folio && arabigo === null ? parseRomanNumeral(folio) : null;
+        const style = arabigo !== null ? 'arabic' as const : romano !== null ? 'roman' as const : null;
+        const valor = arabigo ?? romano;
+        return { sheet: s.sheet, folio, style, offset: valor === null ? null : valor - s.sheet };
     });
     const leidos = points.filter(p => p.folio);
-    const conDesfase = points.filter(p => p.offset !== null);
-    const desfases = [...new Set(conDesfase.map(p => p.offset!))];
+    const arabigos = points.filter(p => p.style === 'arabic');
+    const desfases = [...new Set(arabigos.map(p => p.offset!))];
     let verdict: PaginationVerdict;
+    let runs: PaginationRun[] = [];
     if (!input.file.hasText) verdict = 'sin-texto';
     else if (leidos.length === 0) verdict = 'sin-folios';
-    // Romanos y arábigos (la introducción de Mayor), o dos desfases: más de una regla.
-    else if (desfases.length !== 1 || leidos.length > conDesfase.length) verdict = 'varias';
-    else verdict = conDesfase.length === points.length ? 'una' : 'parcial';
+    else if (desfases.length === 1 && leidos.length === arabigos.length) verdict = arabigos.length === points.length ? 'una' : 'parcial';
+    // La introducción en romanos y el cuerpo en arábigos, cada uno con su regla (Mayor).
+    else if ((runs = tramosRomanoArabigo(points)).length) verdict = 'tramos';
+    // Dos desfases arábigos (láminas), o folios que no siguen ninguna regla.
+    else verdict = 'varias';
     const offset = verdict === 'una' || verdict === 'parcial' ? desfases[0] ?? null : null;
-    const guardado = input.declared.storedOffset;
-    const comparable = guardado !== undefined && guardado !== null && offset !== null;
-    return { verdict, points, offset, storedDisagrees: comparable && guardado !== offset, storedAgrees: comparable && guardado === offset };
+    const sinPropuesta: PdfReviewPagination = { verdict, points, offset, runs, proposal: null, storedDisagrees: false, storedAgrees: false };
+    const proposal = input.file.numPages > 0 ? numberingFromReview(sinPropuesta, input.file.numPages) : null;
+    return { ...sinPropuesta, proposal, ...compararConLaGuardada(points, input.declared.storedNumbering) };
+}
+
+/**
+ * Romanos y después arábigos, cada tramo con un solo desfase, y el arábigo
+ * empezando (p. 1) después de la última hoja romana leída. Cualquier otra
+ * mezcla no se adivina: se calibra.
+ */
+function tramosRomanoArabigo(points: PdfReviewPagination['points']): PaginationRun[] {
+    const leidos = points.filter(p => p.folio);
+    if (leidos.some(p => p.style === null)) return [];
+    const romanos = leidos.filter(p => p.style === 'roman');
+    const arabigos = leidos.filter(p => p.style === 'arabic');
+    if (!romanos.length || !arabigos.length) return [];
+    const unico = (ps: typeof leidos) => (new Set(ps.map(p => p.offset)).size === 1 ? ps[0]!.offset! : null);
+    const dRom = unico(romanos);
+    const dAra = unico(arabigos);
+    if (dRom === null || dAra === null) return [];
+    const ultimoRomano = Math.max(...romanos.map(p => p.sheet));
+    const desdeRom = 1 - dRom;
+    const desdeAra = 1 - dAra;
+    if (desdeRom < 1 || desdeAra <= ultimoRomano) return [];
+    return [
+        { style: 'roman', offset: dRom, fromSheet: desdeRom, lastReadSheet: ultimoRomano, read: romanos.length },
+        { style: 'arabic', offset: dAra, fromSheet: desdeAra, lastReadSheet: Math.max(...arabigos.map(p => p.sheet)), read: arabigos.length },
+    ];
+}
+
+/** Lo guardado contra lo leído, en cada hoja con folio. Sin numeración guardada, o sin folios, no hay nada que comparar. */
+function compararConLaGuardada(points: PdfReviewPagination['points'], guardada: PageNumbering | null | undefined) {
+    const leidos = points.filter(p => p.folio);
+    if (!guardada?.segments?.length || leidos.length === 0) return { storedDisagrees: false, storedAgrees: false };
+    const coincide = leidos.every(p => printedLabelIn(guardada, p.sheet) === p.folio);
+    return { storedDisagrees: !coincide, storedAgrees: coincide };
 }
 
 /**
@@ -235,19 +344,32 @@ export function romanInRunningHead(lines: ReadonlyArray<string>): string | null 
 }
 
 /**
- * La numeración que se puede guardar desde la bandeja: un desfase leído en
- * al menos dos hojas. Las hojas de antes de la página 1 quedan SIN número
- * (se citan por hoja): la bandeja no leyó los preliminares, y extender el
- * desfase hacia atrás inventaría páginas que no existen.
+ * La numeración que se puede guardar desde la bandeja: cada regla leída en al
+ * menos dos hojas. Las hojas de antes de la primera página, y las que quedan
+ * entre el último romano leído y la p. 1, quedan SIN número (se citan por
+ * hoja): la bandeja no las leyó, y extender una regla a ellas inventaría
+ * páginas que no existen.
  */
 export function numberingFromReview(p: PdfReviewPagination, lastSheet: number): PageNumbering | null {
-    const leidas = p.points.filter(x => x.offset !== null).length;
+    if (p.verdict === 'tramos') return numeracionPorTramos(p.runs, lastSheet);
+    const leidas = p.points.filter(x => x.style === 'arabic').length;
     if ((p.verdict !== 'una' && p.verdict !== 'parcial') || p.offset === null || leidas < 2) return null;
     const desde = Math.max(1, 1 - p.offset);
     if (desde > lastSheet) return null;
     const segments: NumberingSegment[] = [];
     if (desde > 1) segments.push({ fromSheet: 1, toSheet: desde - 1, offset: null });
     segments.push({ fromSheet: desde, toSheet: lastSheet, offset: p.offset });
+    return { segments, origin: 'confirmed' };
+}
+
+function numeracionPorTramos(runs: ReadonlyArray<PaginationRun>, lastSheet: number): PageNumbering | null {
+    const [rom, ara] = runs;
+    if (!rom || !ara || rom.read < 2 || ara.read < 2 || ara.fromSheet > lastSheet) return null;
+    const segments: NumberingSegment[] = [];
+    if (rom.fromSheet > 1) segments.push({ fromSheet: 1, toSheet: rom.fromSheet - 1, offset: null });
+    segments.push({ fromSheet: rom.fromSheet, toSheet: rom.lastReadSheet, offset: rom.offset, style: 'roman' });
+    if (ara.fromSheet > rom.lastReadSheet + 1) segments.push({ fromSheet: rom.lastReadSheet + 1, toSheet: ara.fromSheet - 1, offset: null });
+    segments.push({ fromSheet: ara.fromSheet, toSheet: lastSheet, offset: ara.offset });
     return { segments, origin: 'confirmed' };
 }
 
@@ -262,10 +384,15 @@ function unofficialSignals(input: PdfReviewInput): UnofficialSignal[] {
     return out;
 }
 
-/** Qué hojas leer: las primeras (portada, créditos, índice) y tres del cuerpo, al 25, 50 y 75 %. */
+/**
+ * Qué hojas leer: las primeras (portada, créditos, índice) y cuatro del
+ * cuerpo, al 25, 50, 75 y 90 %. La cuarta existe por Mayor: la introducción
+ * en romanos llega a la mitad del libro, y con tres muestras el cuerpo
+ * arábigo se leía en una sola hoja, que no basta para guardar su regla.
+ */
 export function reviewSheets(numPages: number, frontCount = 14): { front: number[]; samples: number[] } {
     const front = Array.from({ length: Math.min(frontCount, numPages) }, (_, i) => i + 1);
-    const samples = [0.25, 0.5, 0.75]
+    const samples = [0.25, 0.5, 0.75, 0.9]
         .map(f => Math.max(1, Math.round(numPages * f)))
         .filter((s, i, a) => s > front.length && a.indexOf(s) === i);
     return { front, samples };

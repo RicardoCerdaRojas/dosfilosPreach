@@ -570,8 +570,8 @@
     "open": "Revisar el PDF",
     "title": "Revisar el PDF",
     "back": "Volver a la biblioteca",
-    "intro": "Antes de citar este libro: si es la obra que crees, de qué edición es y cómo se citan sus páginas. Se leen la portada, los créditos y tres hojas del cuerpo, aquí en tu navegador.",
-    "reading": "Leyendo la portada, los créditos y tres hojas…",
+    "intro": "Antes de citar este libro: si es la obra que crees, de qué edición es y cómo se citan sus páginas. Se leen la portada, los créditos y cuatro hojas del cuerpo, aquí en tu navegador.",
+    "reading": "Leyendo la portada, los créditos y cuatro hojas…",
     "loadFailed": "No se pudo abrir el PDF.",
     "notFound": "Este libro no está en tu biblioteca.",
     "allGood": "Todo cuadra: la obra, la edición y las páginas.",
@@ -596,18 +596,22 @@
       "vsCited": {
         "misma": "Es la edición que cita el catálogo ({{cited}}).",
         "distinta": "El catálogo cita la edición de {{cited}}; la tuya es de {{year}}. Las páginas pueden no coincidir con las de otros trabajos.",
-        "sin-dato": "No se puede comparar con la edición del catálogo ({{cited}}): falta el año."
+        "sin-dato": "No se puede comparar con la edición del catálogo ({{cited}}): falta el año.",
+        "distintaReimpresion": "El catálogo cita la edición de {{cited}}; tu copia reimprime la de {{year}}. Las páginas pueden no coincidir con las de otros trabajos.",
+        "mismaReimpresion": "Reimprime la edición que cita el catálogo ({{cited}}): las páginas son las mismas."
       },
       "noCited": "El catálogo no tiene esta obra para compararla.",
       "vsBibliography": "Tu ficha dice {{stored}}.",
       "save": "Guardar en la ficha: {{fields}}",
-      "saved": "Ficha actualizada."
+      "saved": "Ficha actualizada.",
+      "reprint": "Reimpresión de {{year}} de la edición de {{original}}",
+      "reprintNote": "Al citar, va la edición de {{original}} y la reimpresión de {{year}}. La ficha todavía no distingue las dos: el año no se guarda desde aquí."
     },
     "pagination": {
       "title": "Las páginas",
       "una": "Las hojas leídas tienen número impreso y siguen una misma regla: la hoja {{sheet}} es la página {{printed}} ({{rule}}).",
       "parcial": "{{have}} de {{total}} hojas muestran número y siguen una misma regla ({{rule}}); en las otras no se leyó. Mira esas hojas antes de guardar, o calibra hoja por hoja.",
-      "varias": "Las hojas no siguen una misma regla (romanos, láminas o tramos). Hay que calibrar hoja por hoja.",
+      "varias": "Las hojas no siguen una regla que se pueda deducir (láminas, varios desfases o folios extraños). Hay que calibrar hoja por hoja.",
       "sin-folios": "Ninguna hoja leída tiene número impreso. Si el libro no lo tiene (por ejemplo, un libro electrónico convertido), se cita por capítulo o sección.",
       "sin-texto": "El PDF es una imagen sin texto: el número no se puede leer solo. Calibra mirando las hojas.",
       "ebook": "Es un libro electrónico: no tiene páginas impresas. Se cita por capítulo o sección.",
@@ -623,7 +627,11 @@
       "replace": "Reemplazar la numeración guardada",
       "saveNone": "Guardar: no tiene páginas impresas",
       "calibrate": "Calibrar hoja por hoja",
-      "saved": "Numeración guardada."
+      "saved": "Numeración guardada.",
+      "tramos": "Hay dos tramos, cada uno con su regla: la introducción en romanos (la p. i es la hoja {{romanFrom}}) y el cuerpo en arábigos (la p. 1 es la hoja {{arabicFrom}}).",
+      "tramosGap": "Al guardar, las hojas {{from}}–{{to}} quedan sin número: no se leyeron y no se sabe dónde terminan los romanos.",
+      "tramosShort": "Del cuerpo se leyó una sola hoja: no basta para guardar la regla. Confírmala calibrando.",
+      "saveRuns": "Guardar las dos numeraciones"
     },
     "copy": {
       "title": "La copia",

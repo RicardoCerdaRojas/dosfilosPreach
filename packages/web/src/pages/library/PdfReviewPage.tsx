@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { numberingFromCalibrationPoints, numberingFromReview, type PageNumbering } from '@dosfilos/domain';
+import { numberingFromCalibrationPoints, type PageNumbering } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
 import { CopySection, EditionSection, IdentitySection, PaginationSection } from '@/components/library/review/ReviewSections';
@@ -57,7 +57,7 @@ export function PdfReviewPage() {
             toast.error(t('review.saveFailed'));
         }
     };
-    const propuesta = numberingFromReview(review.pagination, ultimaHoja);
+    const propuesta = review.pagination.proposal;
 
     return (
         <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">

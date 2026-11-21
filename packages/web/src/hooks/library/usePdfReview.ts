@@ -6,7 +6,6 @@ import {
     reviewPdf,
     SOURCE_TYPE_ORDER,
     type LibraryResource,
-    type PageNumbering,
     type PdfReview,
     type PdfReviewInput,
 } from '@dosfilos/domain';
@@ -16,14 +15,6 @@ import { tipoDelRecurso } from '@/components/exegesis/setup/faltaParaLaRubrica';
 import { readPdfForReview, type PdfReviewRead } from '@/lib/pdf/readPdfForReview';
 
 const isEbook = (r: Pick<LibraryResource, 'mimeType'>) => /epub|mobi/i.test(r.mimeType ?? '');
-
-/** El desfase de la numeración guardada en la hoja dada (árabe y ascendente), para compararlo con lo leído. */
-export function storedOffsetAt(numbering: PageNumbering | null | undefined, sheet: number | null): number | null {
-    if (!numbering?.segments?.length || sheet === null) return null;
-    const tramo = numbering.segments.find(s => sheet >= s.fromSheet && sheet <= s.toSheet);
-    if (!tramo || tramo.offset === null || (tramo.step ?? 1) !== 1 || (tramo.style ?? 'arabic') !== 'arabic') return null;
-    return tramo.offset;
-}
 
 /**
  * La edición que cita el catálogo para esta obra. Primero en su tipo y después
@@ -44,7 +35,6 @@ export function citedEditionFor(resource: LibraryResource): PdfReviewInput['cite
 }
 
 export function buildReviewInput(resource: LibraryResource, read: PdfReviewRead | null): PdfReviewInput {
-    const medio = read?.samples[Math.floor(read.samples.length / 2)]?.sheet ?? null;
     return {
         declared: {
             title: resource.title,
@@ -52,7 +42,7 @@ export function buildReviewInput(resource: LibraryResource, read: PdfReviewRead 
             books: resource.coversBibleBooks ?? [],
             bibliographyYear: resource.bibliography?.year ?? null,
             isbn: resource.bibliography?.isbn ?? null,
-            storedOffset: storedOffsetAt(resource.pageNumbering, medio),
+            storedNumbering: resource.pageNumbering ?? null,
             storedConfirmed: resource.pageNumbering?.origin === 'confirmed',
         },
         cited: citedEditionFor(resource),

@@ -570,8 +570,8 @@
     "open": "Review the PDF",
     "title": "Review the PDF",
     "back": "Back to the library",
-    "intro": "Before citing this book: whether it is the work you think, which edition it is, and how its pages are cited. The title page, the credits and three body sheets are read here in your browser.",
-    "reading": "Reading the title page, the credits and three sheets…",
+    "intro": "Before citing this book: whether it is the work you think, which edition it is, and how its pages are cited. The title page, the credits and four body pages are read, here in your browser.",
+    "reading": "Reading the title page, the credits and four pages…",
     "loadFailed": "The PDF could not be opened.",
     "notFound": "This book is not in your library.",
     "allGood": "Everything matches: the work, the edition and the pages.",
@@ -596,18 +596,22 @@
       "vsCited": {
         "misma": "It is the edition the catalog cites ({{cited}}).",
         "distinta": "The catalog cites the {{cited}} edition; yours is from {{year}}. Pages may not match other works.",
-        "sin-dato": "It cannot be compared with the catalog edition ({{cited}}): the year is missing."
+        "sin-dato": "It cannot be compared with the catalog edition ({{cited}}): the year is missing.",
+        "distintaReimpresion": "The catalog cites the {{cited}} edition; your copy reprints the {{year}} one. Pages may not match other works.",
+        "mismaReimpresion": "It reprints the edition the catalog cites ({{cited}}): the pages are the same."
       },
       "noCited": "The catalog does not have this work to compare.",
       "vsBibliography": "Your record says {{stored}}.",
       "save": "Save to the record: {{fields}}",
-      "saved": "Record updated."
+      "saved": "Record updated.",
+      "reprint": "{{year}} reprint of the {{original}} edition",
+      "reprintNote": "When citing, give the {{original}} edition and the {{year}} reprint. The record does not yet tell the two apart, so the year is not saved from here."
     },
     "pagination": {
       "title": "The pages",
       "una": "The sheets read carry printed numbers and follow one rule: sheet {{sheet}} is page {{printed}} ({{rule}}).",
       "parcial": "{{have}} of {{total}} sheets show a number and follow one rule ({{rule}}); the others could not be read. Look at those sheets before saving, or calibrate sheet by sheet.",
-      "varias": "The sheets do not follow one rule (roman numerals, plates or ranges). Calibrate sheet by sheet.",
+      "varias": "The pages do not follow a rule that can be inferred (plates, several offsets or unusual folios). Calibrate sheet by sheet.",
       "sin-folios": "None of the sheets read has a printed number. If the book has none (for example, a converted e-book), cite it by chapter or section.",
       "sin-texto": "The PDF is an image with no text: the number cannot be read automatically. Calibrate by looking at the sheets.",
       "ebook": "It is an e-book: it has no printed pages. Cite it by chapter or section.",
@@ -623,7 +627,11 @@
       "replace": "Replace the saved numbering",
       "saveNone": "Save: it has no printed pages",
       "calibrate": "Calibrate sheet by sheet",
-      "saved": "Numbering saved."
+      "saved": "Numbering saved.",
+      "tramos": "There are two runs, each with its own rule: the introduction in Roman numerals (p. i is sheet {{romanFrom}}) and the body in Arabic numerals (p. 1 is sheet {{arabicFrom}}).",
+      "tramosGap": "When saved, sheets {{from}}–{{to}} stay unnumbered: they were not read and where the Roman numerals end is unknown.",
+      "tramosShort": "Only one body page was read: not enough to save its rule. Confirm it by calibrating.",
+      "saveRuns": "Save both numberings"
     },
     "copy": {
       "title": "The copy",
