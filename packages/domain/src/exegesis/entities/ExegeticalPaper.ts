@@ -85,6 +85,8 @@ export interface ExegeticalPaper {
     manualRequirements?: ReadonlyArray<import('../services/paperRequirements').ManualRequirement> | null;
     /** Categorías que el curso no acepta como categoría final («IGNORA»). */
     ignoredGrammarCategories?: ReadonlyArray<string> | null;
+    /** Qué conseguir (A6): candidatas marcadas «por conseguir» o «descartada», por clave. */
+    acquisitionMarks?: Readonly<Record<string, import('../services/corpusNeeds').AcquisitionMark>> | null;
 
     /** Optional human title; defaults to the formatted passage. */
     title?: string;

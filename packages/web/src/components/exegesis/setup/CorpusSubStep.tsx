@@ -93,9 +93,8 @@ import { cn } from '@/lib/utils';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
 import { useAutoClassifyOtherSources } from '@/hooks/exegesis/useAutoClassifyOtherSources';
 import { SourceTypePicker } from './SourceTypePicker';
-import { RubricGapCard } from './RubricGapCard';
+import { CorpusNeedsCard } from './CorpusNeedsCard';
 import { CorpusQuestionReviewCard } from './CorpusQuestionReviewCard';
-import { CourseBibliographyCard } from './CourseBibliographyCard';
 import { RubricRigorIndicator } from '@/components/exegesis/rubric/RubricRigorIndicator';
 import { ExtractFromLibraryDialog } from './ExtractFromLibraryDialog';
 import { SourceSelectionModeBadge } from './SourceSelectionModeBadge';
@@ -226,35 +225,21 @@ export function CorpusSubStep({ paper }: CorpusSubStepProps) {
                         onAdd={() => openDialog(null)}
                         onExtract={() => setExtractDialogOpen(true)}
                     />
-                    <RubricGapCard paper={paper} onPickType={(type) => openDialog(type)} />
-                    <CourseBibliographyCard paper={paper} onAddResource={openDialogForResource} />
+                    {/* A6: qué conseguir, con la rúbrica y el sílabo juntos. */}
+                    <CorpusNeedsCard paper={paper} onPickType={(type) => openDialog(type)} onAddResource={openDialogForResource} />
                 </>
             ) : (
                 <>
                     {usesRoleCoverage(paper.exegeticalStrategy) && (
                         <RoleCoverageCard paper={paper} />
                     )}
-                    {/* Suppress the rubric-gap card for dialectical
-                        papers whose rubric has no per-type minimums
-                        (strategy-only preset). The RoleCoverageCard
-                        is the canonical compliance signal in that
-                        scenario; rendering RubricGapCard's "cumple la
-                        rúbrica" message on top would falsely declare
-                        success while the strategy still expects three
-                        roles covered. For free-mode papers OR
-                        rubrics that DO carry requirements, both cards
-                        coexist (rubric answers "which types matter",
-                        strategy answers "which roles are balanced"). */}
-                    {!(
-                        usesRoleCoverage(paper.exegeticalStrategy)
-                        && (paper.rubric?.sourceRequirements?.length ?? 0) === 0
-                    ) && (
-                        <RubricGapCard paper={paper} onPickType={(type) => openDialog(type)} />
-                    )}
+                    {/* A6: «Qué conseguir» reemplaza a la tarjeta de la rúbrica y a la
+                        del sílabo. Sin mínimos por tipo ni lecturas exigidas no
+                        muestra nada, y la cobertura de roles queda como señal. */}
+                    <CorpusNeedsCard paper={paper} onPickType={(type) => openDialog(type)} onAddResource={openDialogForResource} />
                     {/* Antes de generar: qué hojas de cada fuente tratan cada
                         pregunta, y lo que falta (TP #8, A4). */}
                     <CorpusQuestionReviewCard paper={paper} />
-                    <CourseBibliographyCard paper={paper} onAddResource={openDialogForResource} />
                     <CorpusSourcesList
                         paper={paper}
                         onAdd={() => openDialog(null)}

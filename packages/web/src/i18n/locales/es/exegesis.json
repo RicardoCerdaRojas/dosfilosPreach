@@ -1260,7 +1260,7 @@
         },
         "roleCoverage": {
           "eyebrow": "Tu corpus por rol dialéctico",
-          "balancedTitle": "Corpus balanceado: cumple estrategia y rúbrica",
+          "balancedTitle": "Roles balanceados: anclas, contrastes y técnicas",
           "missingTitle": "Incumplimiento: te faltan roles enteros",
           "missingBody": "La estrategia dialéctica necesita los tres roles para funcionar. Suma al menos una fuente en cada uno antes de pasar al plan estructural.",
           "partialTitle": "Cumplimiento parcial: ya tienes los tres roles, falta profundizar",
@@ -3308,5 +3308,47 @@
       "ignoredSave": "Guardar categorías",
       "ignoredSaved": "Categorías guardadas: rigen en los próximos análisis."
     }
+  },
+  "corpusNeeds": {
+    "title": "Qué conseguir",
+    "coverage": "{{covered}} de {{total}} necesidades cubiertas en el corpus.",
+    "coverageReach_one": "{{count}} más se cubre con lo que ya tienes en la biblioteca.",
+    "coverageReach_other": "{{count}} más se cubren con lo que ya tienes en la biblioteca.",
+    "reading": "Lectura del sílabo: {{title}}",
+    "count": "{{have}} de {{required}}",
+    "withinReach_one": "{{count}} en tu biblioteca",
+    "withinReach_other": "{{count}} en tu biblioteca",
+    "search": "Buscar",
+    "noCandidates": "Ni tu biblioteca ni el catálogo tienen una obra de este tipo para este libro.",
+    "showMore_one": "Ver {{count}} más",
+    "showMore_other": "Ver {{count}} más",
+    "showLess": "Ver menos",
+    "citedEdition": "Edición citada: {{edition}}",
+    "status": {
+      "en-corpus": "En el corpus",
+      "tengo": "La tienes",
+      "edicion-distinta": "La tienes, otra edición",
+      "por-conseguir": "Por conseguir",
+      "sugerida": "Sugerida",
+      "excluida": "No se repite",
+      "descartada": "Descartada"
+    },
+    "note": {
+      "edition": "Tu copia es de {{copy}}; la edición citada es de {{cited}}. La paginación puede no coincidir.",
+      "noFolios": "Sin páginas impresas: se cita por sección o lema.",
+      "excluded": "Usada en {{previous}}: el curso no deja repetirla.",
+      "discarded": "Descartada: {{reason}}"
+    },
+    "action": {
+      "add": "Agregar al corpus",
+      "toAcquire": "Por conseguir",
+      "discard": "Descartar",
+      "confirmDiscard": "Descartar",
+      "cancel": "Cancelar",
+      "undo": "Deshacer"
+    },
+    "reasonLabel": "Por qué la descartas",
+    "reasonPlaceholder": "Por qué la descartas (obligatorio)",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
   }
 }

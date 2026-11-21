@@ -42,7 +42,7 @@ import type {
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
 import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, isProsePath, stepPinsForQuestion, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy,
-    resolveExegeticalMethod, resolvePaperProfileKind, cleanPaperInputMarks, cleanRequirementMarks, cleanManualRequirements, cleanIgnoredGrammarCategories, stepAfterVersionMove, stepPlanWithoutSource, swapPreviousProse, trimStepVersions, versionsToKeepOnAppend, versionUnderReview, withoutOldestVersions, withRecomposedProse } from '@dosfilos/domain';
+    resolveExegeticalMethod, resolvePaperProfileKind, cleanPaperInputMarks, cleanRequirementMarks, cleanManualRequirements, cleanIgnoredGrammarCategories, cleanAcquisitionMarks, stepAfterVersionMove, stepPlanWithoutSource, swapPreviousProse, trimStepVersions, versionsToKeepOnAppend, versionUnderReview, withoutOldestVersions, withRecomposedProse } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -220,7 +220,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
     async updatePaper(
         ownerId: string,
         paperId: string,
-        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod' | 'profileKind' | 'inputMarks' | 'requirementMarks' | 'manualRequirements' | 'ignoredGrammarCategories' | 'thesis' | 'sectionTitles'>>
+        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod' | 'profileKind' | 'inputMarks' | 'requirementMarks' | 'manualRequirements' | 'ignoredGrammarCategories' | 'acquisitionMarks' | 'thesis' | 'sectionTitles'>>
     ): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
         // Strip undefined — Firestore rejects undefined values; null is fine.
@@ -1093,6 +1093,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
     if (paper.requirementMarks !== undefined) data.requirementMarks = paper.requirementMarks;
     if (paper.manualRequirements !== undefined) data.manualRequirements = paper.manualRequirements;
     if (paper.ignoredGrammarCategories !== undefined) data.ignoredGrammarCategories = paper.ignoredGrammarCategories;
+    if (paper.acquisitionMarks !== undefined) data.acquisitionMarks = paper.acquisitionMarks;
     if (paper.structuralExpectations !== undefined) {
         data.structuralExpectations = paper.structuralExpectations;
     }
@@ -1125,6 +1126,7 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         requirementMarks: cleanRequirementMarks(data.requirementMarks),
         manualRequirements: cleanManualRequirements(data.manualRequirements),
         ignoredGrammarCategories: cleanIgnoredGrammarCategories(data.ignoredGrammarCategories),
+        acquisitionMarks: cleanAcquisitionMarks(data.acquisitionMarks),
         title: data.title,
         assignmentBrief: data.assignmentBrief ?? null,
         thesis: deserializeThesis(data.thesis),

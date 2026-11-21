@@ -1260,7 +1260,7 @@
         },
         "roleCoverage": {
           "eyebrow": "Your corpus by dialectical role",
-          "balancedTitle": "Balanced corpus: meets strategy and rubric",
+          "balancedTitle": "Roles balanced: anchors, contrasts and technical sources",
           "missingTitle": "Non-compliant: entire roles are missing",
           "missingBody": "The dialectical strategy needs all three roles to function. Add at least one source per role before moving to the structural plan.",
           "partialTitle": "Partial compliance: all three roles present, depth still pending",
@@ -3308,5 +3308,47 @@
       "ignoredSave": "Save categories",
       "ignoredSaved": "Categories saved: they apply to the next analyses."
     }
+  },
+  "corpusNeeds": {
+    "title": "What to get",
+    "coverage": "{{covered}} of {{total}} needs covered in the corpus.",
+    "coverageReach_one": "{{count}} more is covered with what you already have in the library.",
+    "coverageReach_other": "{{count}} more are covered with what you already have in the library.",
+    "reading": "Syllabus reading: {{title}}",
+    "count": "{{have}} of {{required}}",
+    "withinReach_one": "{{count}} in your library",
+    "withinReach_other": "{{count}} in your library",
+    "search": "Search",
+    "noCandidates": "Neither your library nor the catalog has a work of this type for this book.",
+    "showMore_one": "Show {{count}} more",
+    "showMore_other": "Show {{count}} more",
+    "showLess": "Show less",
+    "citedEdition": "Cited edition: {{edition}}",
+    "status": {
+      "en-corpus": "In the corpus",
+      "tengo": "You have it",
+      "edicion-distinta": "You have it, another edition",
+      "por-conseguir": "To get",
+      "sugerida": "Suggested",
+      "excluida": "Not repeated",
+      "descartada": "Discarded"
+    },
+    "note": {
+      "edition": "Your copy is from {{copy}}; the cited edition is from {{cited}}. Pagination may not match.",
+      "noFolios": "No printed pages: cited by section or entry.",
+      "excluded": "Used in {{previous}}: the course does not allow repeating it.",
+      "discarded": "Discarded: {{reason}}"
+    },
+    "action": {
+      "add": "Add to corpus",
+      "toAcquire": "To get",
+      "discard": "Discard",
+      "confirmDiscard": "Discard",
+      "cancel": "Cancel",
+      "undo": "Undo"
+    },
+    "reasonLabel": "Why you discard it",
+    "reasonPlaceholder": "Why you discard it (required)",
+    "saveFailed": "Could not save. Try again."
   }
 }

@@ -1,5 +1,7 @@
 import {
+    cleanAcquisitionMarks,
     cleanIgnoredGrammarCategories,
+    type AcquisitionMark,
     cleanManualRequirements,
     cleanPaperInputMarks,
     cleanRequirementMarks,
@@ -18,6 +20,8 @@ export interface UpdatePaperInputsInput {
     requirementMarks?: Record<string, RequirementMark>;
     manualRequirements?: ManualRequirement[];
     ignoredGrammarCategories?: string[];
+    /** Qué conseguir (A6). */
+    acquisitionMarks?: Record<string, AcquisitionMark>;
 }
 
 /**
@@ -31,11 +35,12 @@ export class UpdatePaperInputsUseCase {
 
     async execute(input: UpdatePaperInputsInput): Promise<ExegeticalPaper> {
         if (!input.ownerId || !input.paperId) throw new Error('UpdatePaperInputsUseCase: ownerId y paperId requeridos');
-        const patch: Partial<Pick<ExegeticalPaper, 'inputMarks' | 'requirementMarks' | 'manualRequirements' | 'ignoredGrammarCategories'>> = {};
+        const patch: Partial<Pick<ExegeticalPaper, 'inputMarks' | 'requirementMarks' | 'manualRequirements' | 'ignoredGrammarCategories' | 'acquisitionMarks'>> = {};
         if (input.inputMarks !== undefined) patch.inputMarks = cleanPaperInputMarks(input.inputMarks);
         if (input.requirementMarks !== undefined) patch.requirementMarks = cleanRequirementMarks(input.requirementMarks);
         if (input.manualRequirements !== undefined) patch.manualRequirements = cleanManualRequirements(input.manualRequirements);
         if (input.ignoredGrammarCategories !== undefined) patch.ignoredGrammarCategories = cleanIgnoredGrammarCategories(input.ignoredGrammarCategories);
+        if (input.acquisitionMarks !== undefined) patch.acquisitionMarks = cleanAcquisitionMarks(input.acquisitionMarks);
         if (Object.keys(patch).length === 0) throw new Error('UpdatePaperInputsUseCase: nada que guardar');
         return this.paperRepository.updatePaper(input.ownerId, input.paperId, patch);
     }

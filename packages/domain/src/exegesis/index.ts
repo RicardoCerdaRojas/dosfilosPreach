@@ -147,6 +147,7 @@ export * from './services/paperUnits';
 export * from './services/paperInputs';
 export * from './services/paperRequirements';
 export * from './services/courseGrammarRules';
+export * from './services/corpusNeeds';
 export * from './services/bibliographyFromText';
 export * from './services/corpusHeredado';
 export * from './services/serializeAnalysis';
