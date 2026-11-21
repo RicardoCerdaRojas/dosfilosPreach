@@ -1,0 +1,293 @@
+{
+  "id": "tp12-stg5-12",
+  "nombre": "TP #12",
+  "conjunto": "desarrollo",
+  "idioma": "griego",
+  "pasaje": {
+    "bookId": "JAS",
+    "chapterStart": 5,
+    "chapterEnd": 5,
+    "verseStart": 12,
+    "verseEnd": 20
+  },
+  "consigna": "Preguntas:\n1. ¿Cómo deben entenderse las cláusulas en Santiago 5:13–14a?\n2. ¿Cómo funciona el participio τὸν κάμνοντα (Stg. 5:15)? ¿Qué es lo que denota σώσει?\n3. ¿Cómo funciona el participio ἐνεργουμένη (Stg. 5:16)?\n4. ¿Qué significa la frase καλύψει πλῆθος ἁμαρτιῶν (Stg. 5:20)? ¿A quién se refiere?",
+  "fuentes": [
+    {
+      "libro": "NA28",
+      "resourceId": "82145fde-fd16-4d78-9285-c20560db3597",
+      "sourceType": "critical-apparatus",
+      "titulo": "Novum Testamentum Graece -  Nestle-Aland (NA28)"
+    },
+    {
+      "libro": "McCartney",
+      "resourceId": "7dcb976b-7bd8-49f2-acd1-4942c9a0c9fb",
+      "sourceType": "commentary-critical",
+      "titulo": "James — Baker Exegetical Commentary on the New Testament"
+    },
+    {
+      "libro": "Wallace",
+      "resourceId": "432d8c6b-6dd2-459e-8f62-dbc11ac0c2a8",
+      "sourceType": "grammar-syntax",
+      "titulo": "Greek Grammar Beyond the Basics: An Exegetical Syntax of the New Testament"
+    },
+    {
+      "libro": "Kittel",
+      "resourceId": "41667465-05d9-4884-9a1c-ee09d3048440",
+      "sourceType": "theological-dictionary",
+      "titulo": "Diccionario Teologico del NT"
+    },
+    {
+      "libro": "Metzger",
+      "resourceId": "1cf7c879-6b48-489f-ac30-18f4ce643a10",
+      "sourceType": "textual-commentary",
+      "titulo": "A Textual Commentary on the Greek New Testament (UBS4)"
+    }
+  ],
+  "citas": [
+    {
+      "libro": "NA28",
+      "etiqueta": "695",
+      "hoja": 806,
+      "pregunta": 1
+    },
+    {
+      "libro": "NA28",
+      "etiqueta": "695",
+      "hoja": 806,
+      "pregunta": 4
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "251",
+      "hoja": 271,
+      "pregunta": 1
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "252",
+      "hoja": 272,
+      "pregunta": 2
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "265",
+      "hoja": 285,
+      "pregunta": 2
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "256",
+      "hoja": 276,
+      "pregunta": 2
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "258",
+      "hoja": 278,
+      "pregunta": 3
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "265",
+      "hoja": 285,
+      "pregunta": 4
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "263",
+      "hoja": 283,
+      "pregunta": 4
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "264",
+      "hoja": 284,
+      "pregunta": 4
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "486",
+      "hoja": 522,
+      "pregunta": 1
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "619",
+      "hoja": 655,
+      "pregunta": 2
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "571",
+      "hoja": 607,
+      "pregunta": 2
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "416",
+      "hoja": 452,
+      "pregunta": 3
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "617",
+      "hoja": 653,
+      "pregunta": 3
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "618",
+      "hoja": 654,
+      "pregunta": 3
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "628",
+      "hoja": 664,
+      "pregunta": 3
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "629",
+      "hoja": 665,
+      "pregunta": 3
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "92",
+      "hoja": 128,
+      "pregunta": 4
+    },
+    {
+      "libro": "Kittel",
+      "etiqueta": "1115",
+      "hoja": 887,
+      "pregunta": 2
+    },
+    {
+      "libro": "Metzger",
+      "etiqueta": "686",
+      "hoja": 726,
+      "pregunta": 4
+    }
+  ],
+  "citasSinHoja": [],
+  "fueraDeLaBiblioteca": [
+    {
+      "libro": "Martin",
+      "etiqueta": "200",
+      "pregunta": 1
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "209",
+      "pregunta": 2
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "201",
+      "pregunta": 2
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "210",
+      "pregunta": 2
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "212",
+      "pregunta": 3
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "219",
+      "pregunta": 4
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "220",
+      "pregunta": 4
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "220",
+      "pregunta": 4
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "432",
+      "pregunta": 1
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "433",
+      "pregunta": 1
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "435",
+      "pregunta": 1
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "441",
+      "pregunta": 2
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "442",
+      "pregunta": 2
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "460",
+      "pregunta": 4
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "457",
+      "pregunta": 4
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "459",
+      "pregunta": 4
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "s.v. «κάμνω», 2",
+      "pregunta": 2
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "s.v. «σῴζω», 1.c",
+      "pregunta": 2
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "s.v. «ἰσχύω», 2.a",
+      "pregunta": 3
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "s.v. «ἐνεργέω», 1.b",
+      "pregunta": 3
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "s.v. «καλύπτω», 2.a",
+      "pregunta": 4
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "s.v. «σῴζω», 2.a.β",
+      "pregunta": 4
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "270",
+      "pregunta": 2
+    }
+  ],
+  "origen": "Congelado el 2026-11-20 desde los respaldos de Drive (medición 0a). Solo referencias: ningún texto de libros."
+}

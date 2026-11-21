@@ -1,0 +1,267 @@
+{
+  "id": "tp9-stg4-11",
+  "nombre": "TP #9",
+  "conjunto": "prueba",
+  "idioma": "griego",
+  "pasaje": {
+    "bookId": "JAS",
+    "chapterStart": 4,
+    "chapterEnd": 4,
+    "verseStart": 11,
+    "verseEnd": 17
+  },
+  "consigna": "Preguntas:\n1. ¿Cómo está funcionando el participio δυνάμενος (Stg. 4:12)?\n2. ¿Cómo se debe traducir la frase τὸ τῆς αὔριον ποία ἡ ζωὴ ὑμῶν (Stg. 4:14)?\n3. ¿Qué significa ἀντὶ τοῦ λέγειν ὑμᾶς (Stg. 4:15)? ¿Cómo está funcionando el infinitivo específicamente?\n4. ¿Qué función tiene Santiago 4:17 en el contexto?",
+  "fuentes": [
+    {
+      "libro": "Tuggy",
+      "resourceId": "b7825e6e-5dfc-4b20-b22b-f9ef32ad1c98",
+      "sourceType": "lexicon-technical",
+      "titulo": "Léxico Griego-Español"
+    },
+    {
+      "libro": "McCartney",
+      "resourceId": "7dcb976b-7bd8-49f2-acd1-4942c9a0c9fb",
+      "sourceType": "commentary-critical",
+      "titulo": "James — Baker Exegetical Commentary on the New Testament"
+    },
+    {
+      "libro": "NA28",
+      "resourceId": "82145fde-fd16-4d78-9285-c20560db3597",
+      "sourceType": "critical-apparatus",
+      "titulo": "Novum Testamentum Graece -  Nestle-Aland (NA28)"
+    },
+    {
+      "libro": "Ropes",
+      "resourceId": "5f503219-f038-4799-888f-35ce1f52c36f",
+      "sourceType": "commentary-critical",
+      "titulo": "A Critical and Exegetical Commentary on the Epistle of St"
+    },
+    {
+      "libro": "Wallace",
+      "resourceId": "432d8c6b-6dd2-459e-8f62-dbc11ac0c2a8",
+      "sourceType": "grammar-syntax",
+      "titulo": "Greek Grammar Beyond the Basics: An Exegetical Syntax of the New Testament"
+    },
+    {
+      "libro": "Robertson",
+      "resourceId": "248929f8-4f30-47ff-97b2-ebc98e78c0f3",
+      "sourceType": "grammar-syntax",
+      "titulo": "Grammar of the Greek New Testament in the Light of"
+    },
+    {
+      "libro": "Varner",
+      "resourceId": "19b6ab4c-ab61-4952-a101-9b4cefd0e994",
+      "sourceType": "theological-monograph",
+      "titulo": "The Book of James—A New Perspective"
+    },
+    {
+      "libro": "Motyer",
+      "resourceId": "46d4aea7-fc1c-4802-a1ce-30a1c16312ad",
+      "sourceType": "commentary-expository",
+      "titulo": "The Message of James"
+    }
+  ],
+  "citas": [
+    {
+      "libro": "Tuggy",
+      "etiqueta": "257",
+      "hoja": 257,
+      "pregunta": 1
+    },
+    {
+      "libro": "Tuggy",
+      "etiqueta": "540",
+      "hoja": 540,
+      "pregunta": 1
+    },
+    {
+      "libro": "Tuggy",
+      "etiqueta": "413",
+      "hoja": 413,
+      "pregunta": 2
+    },
+    {
+      "libro": "Tuggy",
+      "etiqueta": "90",
+      "hoja": 90,
+      "pregunta": 3
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "222",
+      "hoja": 242,
+      "pregunta": 1
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "226",
+      "hoja": 246,
+      "pregunta": 2
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "230",
+      "hoja": 250,
+      "pregunta": 2
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "227",
+      "hoja": 247,
+      "pregunta": 3
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "230",
+      "hoja": 250,
+      "pregunta": 4
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "229",
+      "hoja": 249,
+      "pregunta": 4
+    },
+    {
+      "libro": "NA28",
+      "etiqueta": "692",
+      "hoja": 803,
+      "pregunta": 1
+    },
+    {
+      "libro": "NA28",
+      "etiqueta": "693",
+      "hoja": 804,
+      "pregunta": 2
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "275",
+      "hoja": 291,
+      "pregunta": 1
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "282",
+      "hoja": 298,
+      "pregunta": 4
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "223",
+      "hoja": 259,
+      "pregunta": 1
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "232",
+      "hoja": 268,
+      "pregunta": 2
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "236",
+      "hoja": 272,
+      "pregunta": 2
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "663",
+      "hoja": 699,
+      "pregunta": 2
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "778",
+      "hoja": 856,
+      "pregunta": 1
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "767",
+      "hoja": 845,
+      "pregunta": 2
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "735",
+      "hoja": 813,
+      "pregunta": 2
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "961",
+      "hoja": 1039,
+      "pregunta": 2
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "1060",
+      "hoja": 1138,
+      "pregunta": 3
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "1069",
+      "hoja": 1147,
+      "pregunta": 3
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "1070",
+      "hoja": 1148,
+      "pregunta": 3
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "574",
+      "hoja": 653,
+      "pregunta": 3
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "764",
+      "hoja": 842,
+      "pregunta": 4
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "160",
+      "hoja": 164,
+      "pregunta": 1
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "162",
+      "hoja": 166,
+      "pregunta": 2
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "165",
+      "hoja": 169,
+      "pregunta": 3
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "166",
+      "hoja": 170,
+      "pregunta": 4
+    },
+    {
+      "libro": "Motyer",
+      "etiqueta": "161",
+      "hoja": 161,
+      "pregunta": 3
+    },
+    {
+      "libro": "Motyer",
+      "etiqueta": "160",
+      "hoja": 160,
+      "pregunta": 4
+    }
+  ],
+  "citasSinHoja": [],
+  "fueraDeLaBiblioteca": [],
+  "origen": "Congelado el 2026-11-20 desde el Word entregado en Drive («Trabajo Practico 9 - Santiago 4_11-17.docx») y las fuentes de exegeticalPapers/9aacADPo7monLfUug0Bh. Solo referencias: ningún texto de libros."
+}

@@ -1,0 +1,201 @@
+{
+  "id": "tp10-stg5-1",
+  "nombre": "TP #10",
+  "conjunto": "prueba",
+  "idioma": "griego",
+  "pasaje": {
+    "bookId": "JAS",
+    "chapterStart": 5,
+    "chapterEnd": 5,
+    "verseStart": 1,
+    "verseEnd": 6
+  },
+  "consigna": "Preguntas:\n1. ¿Cómo está funcionando el participio ὀλολύζοντες (Stg. 5:1)?\n2. ¿Qué denotan los verbos σέσηπεν y γέγονεν (Stg. 5:2)?\n3. ¿Qué modifica la frase ὡς πῦρ (Stg. 5:3)?\n4. ¿Qué significa τὸν δίκαιον (Stg. 5:6)?",
+  "fuentes": [
+    {
+      "libro": "Wallace",
+      "resourceId": "432d8c6b-6dd2-459e-8f62-dbc11ac0c2a8",
+      "sourceType": "grammar-syntax",
+      "titulo": "Greek Grammar Beyond the Basics: An Exegetical Syntax of the New Testament"
+    },
+    {
+      "libro": "Mayor",
+      "resourceId": "bb47ca8b-fded-4247-b8b7-599f16dbc6f5",
+      "sourceType": "commentary-critical",
+      "titulo": "The Epistle of James - the Greek text with introduction"
+    },
+    {
+      "libro": "Adamson",
+      "resourceId": "a0bd49c6-4e48-465f-9ac5-507e988760b9",
+      "sourceType": "commentary-expository",
+      "titulo": "The Epistle of James - New International Commentary on the New Testament"
+    },
+    {
+      "libro": "Robertson",
+      "resourceId": "248929f8-4f30-47ff-97b2-ebc98e78c0f3",
+      "sourceType": "grammar-syntax",
+      "titulo": "Grammar of the Greek New Testament in the Light of"
+    },
+    {
+      "libro": "Kittel",
+      "resourceId": "41667465-05d9-4884-9a1c-ee09d3048440",
+      "sourceType": "theological-dictionary",
+      "titulo": "Diccionario Teologico del NT"
+    },
+    {
+      "libro": "NA28",
+      "resourceId": "82145fde-fd16-4d78-9285-c20560db3597",
+      "sourceType": "critical-apparatus",
+      "titulo": "Novum Testamentum Graece -  Nestle-Aland (NA28)"
+    },
+    {
+      "libro": "Tuggy",
+      "resourceId": "b7825e6e-5dfc-4b20-b22b-f9ef32ad1c98",
+      "sourceType": "lexicon-technical",
+      "titulo": "Léxico Griego-Español"
+    }
+  ],
+  "citas": [
+    {
+      "libro": "Wallace",
+      "etiqueta": "627",
+      "hoja": 663,
+      "pregunta": 1
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "642",
+      "hoja": 678,
+      "pregunta": 1
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "400",
+      "hoja": 436,
+      "pregunta": 2
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "581",
+      "hoja": 617,
+      "pregunta": 2
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "233",
+      "hoja": 269,
+      "pregunta": 4
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "148",
+      "hoja": 426,
+      "pregunta": 1
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "148",
+      "hoja": 426,
+      "pregunta": 2
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "151",
+      "hoja": 429,
+      "pregunta": 3
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "155",
+      "hoja": 433,
+      "pregunta": 4
+    },
+    {
+      "libro": "Adamson",
+      "etiqueta": "182",
+      "hoja": 186,
+      "pregunta": 1
+    },
+    {
+      "libro": "Adamson",
+      "etiqueta": "185",
+      "hoja": 189,
+      "pregunta": 2
+    },
+    {
+      "libro": "Adamson",
+      "etiqueta": "185",
+      "hoja": 189,
+      "pregunta": 3
+    },
+    {
+      "libro": "Adamson",
+      "etiqueta": "189",
+      "hoja": 193,
+      "pregunta": 4
+    },
+    {
+      "libro": "Adamson",
+      "etiqueta": "188",
+      "hoja": 192,
+      "pregunta": 4
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "801",
+      "hoja": 879,
+      "pregunta": 2
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "898",
+      "hoja": 976,
+      "pregunta": 2
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "757",
+      "hoja": 835,
+      "pregunta": 4
+    },
+    {
+      "libro": "Kittel",
+      "etiqueta": "776",
+      "hoja": 612,
+      "pregunta": 2
+    },
+    {
+      "libro": "Kittel",
+      "etiqueta": "208",
+      "hoja": 167,
+      "pregunta": 3
+    },
+    {
+      "libro": "Kittel",
+      "etiqueta": "139",
+      "hoja": 113,
+      "pregunta": 4
+    },
+    {
+      "libro": "NA28",
+      "etiqueta": "694",
+      "hoja": 805,
+      "pregunta": 3
+    },
+    {
+      "libro": "Tuggy",
+      "etiqueta": "243",
+      "hoja": 243,
+      "pregunta": 4
+    },
+    {
+      "libro": "Tuggy",
+      "etiqueta": "244",
+      "hoja": 244,
+      "pregunta": 4
+    }
+  ],
+  "citasSinHoja": [],
+  "fueraDeLaBiblioteca": [],
+  "origen": "Congelado el 2026-11-20 desde el Word entregado en Drive («Trabajo Practico 10 - Santiago 5_1-6.docx») y las fuentes de exegeticalPapers/40pjrOE2gOAl0symSHm5. Solo referencias: ningún texto de libros."
+}

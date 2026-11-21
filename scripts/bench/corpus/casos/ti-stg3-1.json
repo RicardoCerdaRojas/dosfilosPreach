@@ -1,0 +1,846 @@
+{
+  "id": "ti-stg3-1",
+  "nombre": "TI Stg 3:1–5a",
+  "conjunto": "desarrollo",
+  "idioma": "griego",
+  "pasaje": {
+    "bookId": "JAS",
+    "chapterStart": 3,
+    "chapterEnd": 3,
+    "verseStart": 1,
+    "verseEnd": 5
+  },
+  "consigna": null,
+  "fuentes": [
+    {
+      "libro": "Adamson",
+      "resourceId": "a0bd49c6-4e48-465f-9ac5-507e988760b9",
+      "sourceType": "commentary-expository",
+      "titulo": "The Epistle of James - New International Commentary on the New Testament"
+    },
+    {
+      "libro": "Kittel",
+      "resourceId": "41667465-05d9-4884-9a1c-ee09d3048440",
+      "sourceType": "theological-dictionary",
+      "titulo": "Diccionario Teologico del NT"
+    },
+    {
+      "libro": "Mayor",
+      "resourceId": "bb47ca8b-fded-4247-b8b7-599f16dbc6f5",
+      "sourceType": "commentary-critical",
+      "titulo": "The Epistle of James - the Greek text with introduction"
+    },
+    {
+      "libro": "McCartney",
+      "resourceId": "7dcb976b-7bd8-49f2-acd1-4942c9a0c9fb",
+      "sourceType": "commentary-critical",
+      "titulo": "James — Baker Exegetical Commentary on the New Testament"
+    },
+    {
+      "libro": "Metzger",
+      "resourceId": "1cf7c879-6b48-489f-ac30-18f4ce643a10",
+      "sourceType": "textual-commentary",
+      "titulo": "A Textual Commentary on the Greek New Testament (UBS4)"
+    },
+    {
+      "libro": "Motyer",
+      "resourceId": "46d4aea7-fc1c-4802-a1ce-30a1c16312ad",
+      "sourceType": "commentary-expository",
+      "titulo": "The Message of James"
+    },
+    {
+      "libro": "NA28",
+      "resourceId": "82145fde-fd16-4d78-9285-c20560db3597",
+      "sourceType": "critical-apparatus",
+      "titulo": "Novum Testamentum Graece -  Nestle-Aland (NA28)"
+    },
+    {
+      "libro": "Porter",
+      "resourceId": "7240e8c8-535b-4894-b186-6a44be237e48",
+      "sourceType": "grammar-syntax",
+      "titulo": "Idioms of the Greek New Testament (2nd ed)"
+    },
+    {
+      "libro": "Robertson",
+      "resourceId": "248929f8-4f30-47ff-97b2-ebc98e78c0f3",
+      "sourceType": "grammar-syntax",
+      "titulo": "Grammar of the Greek New Testament in the Light of"
+    },
+    {
+      "libro": "Ropes",
+      "resourceId": "5f503219-f038-4799-888f-35ce1f52c36f",
+      "sourceType": "commentary-critical",
+      "titulo": "A Critical and Exegetical Commentary on the Epistle of St"
+    },
+    {
+      "libro": "Runge",
+      "resourceId": "22546805-c256-4473-8b18-18d2df26f5f9",
+      "sourceType": "grammar-syntax",
+      "titulo": "Discourse Grammar of the Greek New Testament"
+    },
+    {
+      "libro": "Tuggy",
+      "resourceId": "b7825e6e-5dfc-4b20-b22b-f9ef32ad1c98",
+      "sourceType": "lexicon-technical",
+      "titulo": "Léxico Griego-Español"
+    },
+    {
+      "libro": "Varner",
+      "resourceId": "19b6ab4c-ab61-4952-a101-9b4cefd0e994",
+      "sourceType": "commentary-critical",
+      "titulo": "The Book of James—A New Perspective"
+    },
+    {
+      "libro": "Wallace",
+      "resourceId": "432d8c6b-6dd2-459e-8f62-dbc11ac0c2a8",
+      "sourceType": "grammar-syntax",
+      "titulo": "Greek Grammar Beyond the Basics: An Exegetical Syntax of the New Testament"
+    },
+    {
+      "libro": "Wallace-ES",
+      "resourceId": "c7ac8c56-4862-452a-a51a-9ad76af0abd1",
+      "sourceType": "grammar-syntax",
+      "titulo": "Gramática Griega"
+    }
+  ],
+  "citas": [
+    {
+      "libro": "Adamson",
+      "etiqueta": "139",
+      "hoja": 143
+    },
+    {
+      "libro": "Adamson",
+      "etiqueta": "140",
+      "hoja": 144
+    },
+    {
+      "libro": "Adamson",
+      "etiqueta": "141",
+      "hoja": 145
+    },
+    {
+      "libro": "Adamson",
+      "etiqueta": "142",
+      "hoja": 146
+    },
+    {
+      "libro": "Adamson",
+      "etiqueta": "143",
+      "hoja": 147
+    },
+    {
+      "libro": "Kittel",
+      "etiqueta": "712",
+      "hoja": 560
+    },
+    {
+      "libro": "Kittel",
+      "etiqueta": "946",
+      "hoja": 749
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "103",
+      "hoja": 381
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "104",
+      "hoja": 382
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "105",
+      "hoja": 383
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "106",
+      "hoja": 384
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "107",
+      "hoja": 385
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "108",
+      "hoja": 386
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "41",
+      "hoja": 319
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "73",
+      "hoja": 351
+    },
+    {
+      "libro": "Mayor",
+      "etiqueta": "cciv",
+      "hoja": 222
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "179",
+      "hoja": 199
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "180",
+      "hoja": 200
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "181",
+      "hoja": 201
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "182",
+      "hoja": 202
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "183",
+      "hoja": 203
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "184",
+      "hoja": 204
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "193",
+      "hoja": 213
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "194",
+      "hoja": 214
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "195",
+      "hoja": 215
+    },
+    {
+      "libro": "Metzger",
+      "etiqueta": "681",
+      "hoja": 721
+    },
+    {
+      "libro": "Metzger",
+      "etiqueta": "682",
+      "hoja": 722
+    },
+    {
+      "libro": "Motyer",
+      "etiqueta": "119",
+      "hoja": 119
+    },
+    {
+      "libro": "Motyer",
+      "etiqueta": "120",
+      "hoja": 120
+    },
+    {
+      "libro": "Motyer",
+      "etiqueta": "121",
+      "hoja": 121
+    },
+    {
+      "libro": "NA28",
+      "etiqueta": "690",
+      "hoja": 801
+    },
+    {
+      "libro": "Porter",
+      "etiqueta": "32",
+      "hoja": 32
+    },
+    {
+      "libro": "Porter",
+      "etiqueta": "33",
+      "hoja": 33
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "h.1431",
+      "hoja": 1431
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "1076",
+      "hoja": 1154
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "1129",
+      "hoja": 1207
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "1172",
+      "hoja": 1250
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "418",
+      "hoja": 497
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "423",
+      "hoja": 502
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "488",
+      "hoja": 567
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "698",
+      "hoja": 776
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "709",
+      "hoja": 787
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "226",
+      "hoja": 242
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "227",
+      "hoja": 243
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "228",
+      "hoja": 244
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "229",
+      "hoja": 245
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "230",
+      "hoja": 246
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "231",
+      "hoja": 247
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "232",
+      "hoja": 248
+    },
+    {
+      "libro": "Runge",
+      "etiqueta": "h.44",
+      "hoja": 44
+    },
+    {
+      "libro": "Tuggy",
+      "etiqueta": "h.538",
+      "hoja": 538
+    },
+    {
+      "libro": "Tuggy",
+      "etiqueta": "h.707",
+      "hoja": 707
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "119",
+      "hoja": 123
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "120",
+      "hoja": 124
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "121",
+      "hoja": 125
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "122",
+      "hoja": 126
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "171",
+      "hoja": 207
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "172",
+      "hoja": 208
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "173",
+      "hoja": 209
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "192",
+      "hoja": 228
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "193",
+      "hoja": 229
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "194",
+      "hoja": 230
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "195",
+      "hoja": 231
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "196",
+      "hoja": 232
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "197",
+      "hoja": 233
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "230",
+      "hoja": 266
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "303",
+      "hoja": 339
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "330",
+      "hoja": 366
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "398",
+      "hoja": 434
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "48",
+      "hoja": 84
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "580",
+      "hoja": 616
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "592",
+      "hoja": 628
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "631",
+      "hoja": 667
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "632",
+      "hoja": 668
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "706",
+      "hoja": 742
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "724",
+      "hoja": 760
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "725",
+      "hoja": 761
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "83",
+      "hoja": 119
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "94",
+      "hoja": 130
+    },
+    {
+      "libro": "Wallace-ES",
+      "etiqueta": "h.131",
+      "hoja": 131
+    },
+    {
+      "libro": "Wallace-ES",
+      "etiqueta": "h.132",
+      "hoja": 132
+    },
+    {
+      "libro": "Wallace-ES",
+      "etiqueta": "h.114",
+      "hoja": 114
+    },
+    {
+      "libro": "Wallace-ES",
+      "etiqueta": "h.115",
+      "hoja": 115
+    },
+    {
+      "libro": "Wallace-ES",
+      "etiqueta": "h.116",
+      "hoja": 116
+    },
+    {
+      "libro": "Wallace-ES",
+      "etiqueta": "h.486",
+      "hoja": 486
+    },
+    {
+      "libro": "Wallace-ES",
+      "etiqueta": "h.487",
+      "hoja": 487
+    }
+  ],
+  "citasSinHoja": [],
+  "fueraDeLaBiblioteca": [
+    {
+      "libro": "Allison",
+      "etiqueta": "516"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "517"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "518"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "520"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "521"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "522"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "524"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "525"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "526"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "528"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "529"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "530"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "531"
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "532"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_aucheo_pdf-0226"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_chalinagogeo_chalinos_pdf-1049"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_hopou_1b-alfa_pdf-0727"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_horme_pdf-0733"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_krima_4b_pdf-0593"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_lambano_10b_pdf-0609"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_ou_2a-delta_pdf-0741"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_pedalion_pdf-0811"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_peitho_3b_pdf-0794"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_ptaio_1_pdf-0884"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "BDAG_teleios_4a_pdf-0976"
+    },
+    {
+      "libro": "Brandell",
+      "etiqueta": "236"
+    },
+    {
+      "libro": "Brandell",
+      "etiqueta": "237"
+    },
+    {
+      "libro": "Davids",
+      "etiqueta": "Davids_3-1"
+    },
+    {
+      "libro": "Davids",
+      "etiqueta": "Davids_3-2"
+    },
+    {
+      "libro": "Davids",
+      "etiqueta": "Davids_3-3"
+    },
+    {
+      "libro": "Davids",
+      "etiqueta": "Davids_3-4"
+    },
+    {
+      "libro": "Davids",
+      "etiqueta": "Davids_3-5"
+    },
+    {
+      "libro": "Davids",
+      "etiqueta": "Davids_intro_3-1-12"
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "324"
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "431"
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "54"
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "555"
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "556"
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "706"
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "746"
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "752"
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "774"
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "103"
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "104"
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "105"
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "107"
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "108"
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "109"
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "110"
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "111"
+    },
+    {
+      "libro": "Martin",
+      "etiqueta": "112"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "264"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "268"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "271"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "274"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "275"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "276"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "277"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "278"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "279"
+    },
+    {
+      "libro": "McKnight",
+      "etiqueta": "280"
+    },
+    {
+      "libro": "Moo",
+      "etiqueta": "Moo_3-1"
+    },
+    {
+      "libro": "Moo",
+      "etiqueta": "Moo_3-2"
+    },
+    {
+      "libro": "Moo",
+      "etiqueta": "Moo_3-3"
+    },
+    {
+      "libro": "Moo",
+      "etiqueta": "Moo_3-4"
+    },
+    {
+      "libro": "Moo",
+      "etiqueta": "Moo_3-5"
+    },
+    {
+      "libro": "Moo",
+      "etiqueta": "Moo_intro_3-1-12"
+    },
+    {
+      "libro": "Varner_MSJ",
+      "etiqueta": "117"
+    },
+    {
+      "libro": "Varner_MSJ",
+      "etiqueta": "124"
+    },
+    {
+      "libro": "Varner_MSJ",
+      "etiqueta": "125"
+    },
+    {
+      "libro": "Vlachos",
+      "etiqueta": "Vlachos_3-1"
+    },
+    {
+      "libro": "Vlachos",
+      "etiqueta": "Vlachos_3-2"
+    },
+    {
+      "libro": "Vlachos",
+      "etiqueta": "Vlachos_3-3"
+    },
+    {
+      "libro": "Vlachos",
+      "etiqueta": "Vlachos_3-4"
+    },
+    {
+      "libro": "Vlachos",
+      "etiqueta": "Vlachos_3-5"
+    },
+    {
+      "libro": "Vlachos",
+      "etiqueta": "Vlachos_estructura_3-1-12"
+    }
+  ],
+  "origen": "Congelado el 2026-11-20 desde los respaldos de Drive (medición 0a). Solo referencias: ningún texto de libros."
+}

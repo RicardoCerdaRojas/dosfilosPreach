@@ -1,0 +1,291 @@
+{
+  "id": "tp11-stg5-7",
+  "nombre": "TP #11",
+  "conjunto": "desarrollo",
+  "idioma": "griego",
+  "pasaje": {
+    "bookId": "JAS",
+    "chapterStart": 5,
+    "chapterEnd": 5,
+    "verseStart": 7,
+    "verseEnd": 11
+  },
+  "consigna": "Preguntas:\n1. ¿Qué significa τῆς παρουσίας τοῦ κυρίου (Stg. 5:7)?\n2. ¿Cuál es el sujeto del verbo λάβῃ (Stg. 5:7)?\n3. ¿Cómo se relacionan ὑπόδειγμα y προφήτας (Stg. 5:10)? ¿A qué «profetas» se refiere Jacobo?\n4. ¿Cómo funciona el genitivo κυρίου (Stg. 5:11)?",
+  "fuentes": [
+    {
+      "libro": "Kittel",
+      "resourceId": "41667465-05d9-4884-9a1c-ee09d3048440",
+      "sourceType": "theological-dictionary",
+      "titulo": "Diccionario Teologico del NT"
+    },
+    {
+      "libro": "Wallace",
+      "resourceId": "432d8c6b-6dd2-459e-8f62-dbc11ac0c2a8",
+      "sourceType": "grammar-syntax",
+      "titulo": "Greek Grammar Beyond the Basics: An Exegetical Syntax of the New Testament"
+    },
+    {
+      "libro": "Ropes",
+      "resourceId": "5f503219-f038-4799-888f-35ce1f52c36f",
+      "sourceType": "commentary-critical",
+      "titulo": "A Critical and Exegetical Commentary on the Epistle of St"
+    },
+    {
+      "libro": "NA28",
+      "resourceId": "82145fde-fd16-4d78-9285-c20560db3597",
+      "sourceType": "critical-apparatus",
+      "titulo": "Novum Testamentum Graece -  Nestle-Aland (NA28)"
+    },
+    {
+      "libro": "Metzger",
+      "resourceId": "1cf7c879-6b48-489f-ac30-18f4ce643a10",
+      "sourceType": "textual-commentary",
+      "titulo": "A Textual Commentary on the Greek New Testament (UBS4)"
+    },
+    {
+      "libro": "Porter",
+      "resourceId": "7240e8c8-535b-4894-b186-6a44be237e48",
+      "sourceType": "grammar-syntax",
+      "titulo": "Idioms of the Greek New Testament (2nd ed)"
+    },
+    {
+      "libro": "Varner",
+      "resourceId": "19b6ab4c-ab61-4952-a101-9b4cefd0e994",
+      "sourceType": "commentary-critical",
+      "titulo": "The Book of James—A New Perspective"
+    }
+  ],
+  "citas": [
+    {
+      "libro": "Kittel",
+      "etiqueta": "770",
+      "hoja": 607,
+      "pregunta": 1
+    },
+    {
+      "libro": "Kittel",
+      "etiqueta": "772",
+      "hoja": 608,
+      "pregunta": 1
+    },
+    {
+      "libro": "Kittel",
+      "etiqueta": "1143",
+      "hoja": 909,
+      "pregunta": 4
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "113",
+      "hoja": 149,
+      "pregunta": 1
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "187",
+      "hoja": 223,
+      "pregunta": 3
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "184",
+      "hoja": 220,
+      "pregunta": 3
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "104",
+      "hoja": 140,
+      "pregunta": 4
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "113",
+      "hoja": 149,
+      "pregunta": 4
+    },
+    {
+      "libro": "Wallace",
+      "etiqueta": "105",
+      "hoja": 141,
+      "pregunta": 4
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "293",
+      "hoja": 309,
+      "pregunta": 1
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "294",
+      "hoja": 310,
+      "pregunta": 1
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "294",
+      "hoja": 310,
+      "pregunta": 2
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "295",
+      "hoja": 311,
+      "pregunta": 2
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "298",
+      "hoja": 314,
+      "pregunta": 3
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "299",
+      "hoja": 315,
+      "pregunta": 4
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "293",
+      "hoja": 309,
+      "pregunta": 4
+    },
+    {
+      "libro": "NA28",
+      "etiqueta": "694",
+      "hoja": 805,
+      "pregunta": 2
+    },
+    {
+      "libro": "NA28",
+      "etiqueta": "694",
+      "hoja": 805,
+      "pregunta": 3
+    },
+    {
+      "libro": "NA28",
+      "etiqueta": "694",
+      "hoja": 805,
+      "pregunta": 4
+    },
+    {
+      "libro": "Metzger",
+      "etiqueta": "685",
+      "hoja": 725,
+      "pregunta": 2
+    },
+    {
+      "libro": "Porter",
+      "etiqueta": "89",
+      "hoja": 89,
+      "pregunta": 3
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "183",
+      "hoja": 187,
+      "pregunta": 3
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "184",
+      "hoja": 188,
+      "pregunta": 4
+    }
+  ],
+  "citasSinHoja": [],
+  "fueraDeLaBiblioteca": [
+    {
+      "libro": "Allison",
+      "etiqueta": "699",
+      "pregunta": 1
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "702",
+      "pregunta": 2
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "703",
+      "pregunta": 2
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "702",
+      "pregunta": 2
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "703",
+      "pregunta": 2
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "711",
+      "pregunta": 3
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "711",
+      "pregunta": 3
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "711",
+      "pregunta": 3
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "712",
+      "pregunta": 3
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "717",
+      "pregunta": 4
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "717",
+      "pregunta": 4
+    },
+    {
+      "libro": "Allison",
+      "etiqueta": "699",
+      "pregunta": 4
+    },
+    {
+      "libro": "LouwNida",
+      "etiqueta": "169",
+      "pregunta": 2
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "παρουσία"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "παρουσία"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "κύριος"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "τέλος"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "τέλος"
+    },
+    {
+      "libro": "BDAG",
+      "etiqueta": "τέλος"
+    }
+  ],
+  "origen": "Congelado el 2026-11-20 desde los respaldos de Drive (medición 0a). Solo referencias: ningún texto de libros."
+}

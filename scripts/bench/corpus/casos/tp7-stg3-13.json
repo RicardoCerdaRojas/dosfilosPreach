@@ -1,0 +1,147 @@
+{
+  "id": "tp7-stg3-13",
+  "nombre": "TP #7",
+  "conjunto": "prueba",
+  "idioma": "griego",
+  "pasaje": {
+    "bookId": "JAS",
+    "chapterStart": 3,
+    "chapterEnd": 3,
+    "verseStart": 13,
+    "verseEnd": 18
+  },
+  "consigna": "Preguntas:\n1. ¿Qué modifica la frase preposicional ἐν πραΰτητι σοφίας (Stg. 3:13)?\n2. ¿Cómo está funcionando el genitivo σοφίας (Stg. 3:13)?\n3. ¿Cuál es el sujeto del versículo 15 (Stg. 3:15)?\n4. ¿Qué denota el participio (en dativo) τοῖς ποιοῦσιν (Stg. 3:18)?",
+  "fuentes": [
+    {
+      "libro": "Ropes",
+      "resourceId": "5f503219-f038-4799-888f-35ce1f52c36f",
+      "sourceType": "commentary-critical",
+      "titulo": "A Critical and Exegetical Commentary on the Epistle of St"
+    },
+    {
+      "libro": "McCartney",
+      "resourceId": "7dcb976b-7bd8-49f2-acd1-4942c9a0c9fb",
+      "sourceType": "commentary-critical",
+      "titulo": "James — Baker Exegetical Commentary on the New Testament"
+    },
+    {
+      "libro": "Varner",
+      "resourceId": "19b6ab4c-ab61-4952-a101-9b4cefd0e994",
+      "sourceType": "commentary-critical",
+      "titulo": "The Book of James—A New Perspective"
+    },
+    {
+      "libro": "Robertson",
+      "resourceId": "248929f8-4f30-47ff-97b2-ebc98e78c0f3",
+      "sourceType": "grammar-syntax",
+      "titulo": "Grammar of the Greek New Testament in the Light of"
+    },
+    {
+      "libro": "Motyer",
+      "resourceId": "46d4aea7-fc1c-4802-a1ce-30a1c16312ad",
+      "sourceType": "commentary-expository",
+      "titulo": "The Message of James"
+    }
+  ],
+  "citas": [
+    {
+      "libro": "Ropes",
+      "etiqueta": "244",
+      "hoja": 260,
+      "pregunta": 1
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "244",
+      "hoja": 260,
+      "pregunta": 2
+    },
+    {
+      "libro": "Ropes",
+      "etiqueta": "251",
+      "hoja": 267,
+      "pregunta": 4
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "198",
+      "hoja": 218,
+      "pregunta": 1
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "198",
+      "hoja": 218,
+      "pregunta": 2
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "204",
+      "hoja": 224,
+      "pregunta": 4
+    },
+    {
+      "libro": "McCartney",
+      "etiqueta": "203",
+      "hoja": 223,
+      "pregunta": 4
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "138",
+      "hoja": 142,
+      "pregunta": 2
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "137",
+      "hoja": 141,
+      "pregunta": 3
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "133",
+      "hoja": 137,
+      "pregunta": 3
+    },
+    {
+      "libro": "Varner",
+      "etiqueta": "140",
+      "hoja": 144,
+      "pregunta": 4
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "496",
+      "hoja": 575,
+      "pregunta": 2
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "497",
+      "hoja": 576,
+      "pregunta": 2
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "881",
+      "hoja": 959,
+      "pregunta": 3
+    },
+    {
+      "libro": "Robertson",
+      "etiqueta": "534",
+      "hoja": 613,
+      "pregunta": 4
+    },
+    {
+      "libro": "Motyer",
+      "etiqueta": "138",
+      "hoja": 138,
+      "pregunta": 4
+    }
+  ],
+  "citasSinHoja": [],
+  "fueraDeLaBiblioteca": [],
+  "origen": "Congelado el 2026-11-20 desde el Word entregado en Drive («Trabajo Practico 7 - Santiago 3_13-18.docx») y las fuentes de exegeticalPapers/qTwuqEMK4qm9vLh0reuk. Solo referencias: ningún texto de libros."
+}

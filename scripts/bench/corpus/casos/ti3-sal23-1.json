@@ -1,0 +1,324 @@
+{
+  "id": "ti3-sal23-1",
+  "nombre": "TI #3 Sal 23:1–6",
+  "conjunto": "prueba",
+  "idioma": "hebreo",
+  "pasaje": {
+    "bookId": "PSA",
+    "chapterStart": 23,
+    "chapterEnd": 23,
+    "verseStart": 1,
+    "verseEnd": 6
+  },
+  "consigna": null,
+  "fuentes": [
+    {
+      "libro": "BHS",
+      "resourceId": "95886841-1dab-43cf-990f-8c690b500073",
+      "sourceType": "biblical-text-edition",
+      "titulo": "Biblia Hebraica Stuttgartensia - Salmo 23"
+    },
+    {
+      "libro": "IBHS",
+      "resourceId": "1089aaab-b2e6-4610-8b77-bc3ab183e0a8",
+      "sourceType": "grammar-syntax",
+      "titulo": "An introduction to biblical Hebrew syntax"
+    },
+    {
+      "libro": "ArnoldChoi",
+      "resourceId": "85935449-a732-417f-aeea-f9ca1c167831",
+      "sourceType": "grammar-syntax",
+      "titulo": "A Guide to Biblical Hebrew Syntax - 7th"
+    },
+    {
+      "libro": "Andersen",
+      "resourceId": "aa35e339-e0e8-48ba-bf3d-f0bb02695007",
+      "sourceType": "grammar-syntax",
+      "titulo": "The Hebrew Verbless Clause In The Pentateuch"
+    },
+    {
+      "libro": "Ross",
+      "resourceId": "7f21d374-6f89-4466-8eb8-ecad89430ba4",
+      "sourceType": "commentary-critical",
+      "titulo": "A Commentary on the Psalms 1-41 (Kregel Exegetical Library)"
+    },
+    {
+      "libro": "Ortiz",
+      "resourceId": "3dd79f68-598f-4c78-a9cf-4eb197b1c1ed",
+      "sourceType": "lexicon-technical",
+      "titulo": "Lexicón Hebreo-Arameo-Español"
+    },
+    {
+      "libro": "Craigie",
+      "resourceId": "47f03eed-3775-4a10-bdc5-97a50644ce39",
+      "sourceType": "commentary-critical",
+      "titulo": "Word Biblical Commentary Vol_ 19, Psalms 1-50"
+    }
+  ],
+  "citas": [
+    {
+      "libro": "BHS",
+      "etiqueta": "1105",
+      "hoja": 1
+    },
+    {
+      "libro": "BHS",
+      "etiqueta": "1106",
+      "hoja": 2
+    },
+    {
+      "libro": "IBHS",
+      "etiqueta": "506",
+      "hoja": 524
+    },
+    {
+      "libro": "IBHS",
+      "etiqueta": "490",
+      "hoja": 508
+    },
+    {
+      "libro": "IBHS",
+      "etiqueta": "527",
+      "hoja": 545
+    },
+    {
+      "libro": "IBHS",
+      "etiqueta": "513",
+      "hoja": 531
+    },
+    {
+      "libro": "IBHS",
+      "etiqueta": "436",
+      "hoja": 454
+    },
+    {
+      "libro": "IBHS",
+      "etiqueta": "638",
+      "hoja": 656
+    },
+    {
+      "libro": "IBHS",
+      "etiqueta": "636",
+      "hoja": 654
+    },
+    {
+      "libro": "IBHS",
+      "etiqueta": "485",
+      "hoja": 503
+    },
+    {
+      "libro": "ArnoldChoi",
+      "etiqueta": "59",
+      "hoja": 73
+    },
+    {
+      "libro": "Andersen",
+      "etiqueta": "46",
+      "hoja": 50
+    },
+    {
+      "libro": "Ross",
+      "etiqueta": "560",
+      "hoja": 564
+    },
+    {
+      "libro": "Ross",
+      "etiqueta": "564",
+      "hoja": 568
+    },
+    {
+      "libro": "Ross",
+      "etiqueta": "565",
+      "hoja": 569
+    },
+    {
+      "libro": "Ross",
+      "etiqueta": "566",
+      "hoja": 570
+    },
+    {
+      "libro": "Ross",
+      "etiqueta": "567",
+      "hoja": 571
+    },
+    {
+      "libro": "Ross",
+      "etiqueta": "554",
+      "hoja": 558
+    },
+    {
+      "libro": "Ortiz",
+      "etiqueta": "455",
+      "hoja": 457
+    },
+    {
+      "libro": "Craigie",
+      "etiqueta": "207",
+      "hoja": 209
+    }
+  ],
+  "citasSinHoja": [],
+  "fueraDeLaBiblioteca": [
+    {
+      "libro": "NICOT",
+      "etiqueta": "238"
+    },
+    {
+      "libro": "NICOT",
+      "etiqueta": "239"
+    },
+    {
+      "libro": "NICOT",
+      "etiqueta": "246"
+    },
+    {
+      "libro": "NICOT",
+      "etiqueta": "240"
+    },
+    {
+      "libro": "NICOT",
+      "etiqueta": "244"
+    },
+    {
+      "libro": "NICOT",
+      "etiqueta": "notas finales Sal 23"
+    },
+    {
+      "libro": "NICOT",
+      "etiqueta": "241"
+    },
+    {
+      "libro": "NICOT",
+      "etiqueta": "243"
+    },
+    {
+      "libro": "Vos",
+      "etiqueta": "634"
+    },
+    {
+      "libro": "Vos",
+      "etiqueta": "640"
+    },
+    {
+      "libro": "Vos",
+      "etiqueta": "641"
+    },
+    {
+      "libro": "Vos",
+      "etiqueta": "638"
+    },
+    {
+      "libro": "Botha",
+      "etiqueta": "296"
+    },
+    {
+      "libro": "Botha",
+      "etiqueta": "285"
+    },
+    {
+      "libro": "Botha",
+      "etiqueta": "286"
+    },
+    {
+      "libro": "Botha",
+      "etiqueta": "287"
+    },
+    {
+      "libro": "Botha",
+      "etiqueta": "284"
+    },
+    {
+      "libro": "Botha",
+      "etiqueta": "288"
+    },
+    {
+      "libro": "Barrick",
+      "etiqueta": "13"
+    },
+    {
+      "libro": "Barrick",
+      "etiqueta": "20"
+    },
+    {
+      "libro": "Barrick",
+      "etiqueta": "12"
+    },
+    {
+      "libro": "Barrick",
+      "etiqueta": "17"
+    },
+    {
+      "libro": "Barrick",
+      "etiqueta": "18"
+    },
+    {
+      "libro": "Barrick",
+      "etiqueta": "19"
+    },
+    {
+      "libro": "Barrick",
+      "etiqueta": "8"
+    },
+    {
+      "libro": "Barrick",
+      "etiqueta": "9"
+    },
+    {
+      "libro": "BDB",
+      "etiqueta": "853"
+    },
+    {
+      "libro": "BDB",
+      "etiqueta": "636"
+    },
+    {
+      "libro": "BDB",
+      "etiqueta": "637"
+    },
+    {
+      "libro": "BDB",
+      "etiqueta": "789"
+    },
+    {
+      "libro": "BDB",
+      "etiqueta": "206"
+    },
+    {
+      "libro": "BDB",
+      "etiqueta": "924"
+    },
+    {
+      "libro": "BDB",
+      "etiqueta": "36"
+    },
+    {
+      "libro": "BDB",
+      "etiqueta": "339"
+    },
+    {
+      "libro": "BDB",
+      "etiqueta": "73"
+    },
+    {
+      "libro": "Tov",
+      "etiqueta": "125"
+    },
+    {
+      "libro": "Tov",
+      "etiqueta": "126"
+    },
+    {
+      "libro": "Tov",
+      "etiqueta": "275"
+    },
+    {
+      "libro": "Tov",
+      "etiqueta": "279"
+    },
+    {
+      "libro": "Tov",
+      "etiqueta": "280"
+    }
+  ],
+  "origen": "Congelado el 2026-11-20 desde 05_Respaldo_citas/00_INDICE.md y 00_INDICE_Parte2.md (síntesis y sermón), cotejado con las notas del Word entregado. Solo referencias: ningún texto de libros."
+}
