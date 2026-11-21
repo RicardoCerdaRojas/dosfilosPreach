@@ -3316,6 +3316,8 @@
     "coverageReach_other": "{{count}} more are covered with what you already have in the library.",
     "reading": "Syllabus reading: {{title}}",
     "count": "{{have}} of {{required}}",
+    "countOver": "{{have}} · {{required}} required",
+    "essential": "Essential",
     "withinReach_one": "{{count}} in your library",
     "withinReach_other": "{{count}} in your library",
     "search": "Search",

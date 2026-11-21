@@ -68,6 +68,8 @@ export interface NeedCandidate {
     /** Con `descartada`: por qué. */
     reason: string | null;
     tier?: SourceRecommendation['tier'];
+    /** Qué aporta la obra, del catálogo curado (una línea). */
+    rationale?: string;
 }
 
 export interface CorpusNeed {
@@ -127,6 +129,15 @@ const ORDEN: Record<CandidateStatus, number> = {
     'en-corpus': 0, tengo: 1, 'edicion-distinta': 2, 'por-conseguir': 3, sugerida: 4, excluida: 5, descartada: 6,
 };
 
+/**
+ * Dentro de un mismo estado, lo esencial primero: nueve sugeridas iguales no
+ * dicen cuál conseguir (prueba del fundador, TP #10, 2026-11-21). Lo que el
+ * catálogo no clasifica (un libro de la biblioteca) va después. El orden del
+ * catálogo (idioma del trabajo primero) desempata: el `sort` es estable.
+ */
+const PRIORIDAD: Record<SourceRecommendation['tier'], number> = { essential: 0, recommended: 1, standard: 2 };
+const prioridadDe = (c: NeedCandidate) => (c.tier ? PRIORIDAD[c.tier] : 3);
+
 export function corpusNeeds(input: CorpusNeedsInput): CorpusNeed[] {
     const marks = input.marks ?? {};
     const needs: CorpusNeed[] = [];
@@ -173,6 +184,7 @@ function candidatesForType(type: SourceType, input: CorpusNeedsInput, marks: Rea
             key: `rec:${getRecommendationId(rec)}`, origin: 'catalogo', title: rec.title, author: rec.author,
             edition: { year: rec.year || null, publisher: rec.publisher || null, isbn: rec.isbn, series: rec.series },
             libro: libro ? delTipo.find(b => b.id === libro.id)! : null, marks, excludedBy: excluido, tier: rec.tier,
+            rationale: rec.rationale,
         }));
     }
     // Lo demás de la biblioteca del tipo, que el catálogo no nombra.
@@ -180,13 +192,13 @@ function candidatesForType(type: SourceType, input: CorpusNeedsInput, marks: Rea
         if (usados.has(b.id)) continue;
         out.push(buildCandidate({ key: `lib:${b.id}`, origin: 'biblioteca', title: b.title, author: b.author ?? null, edition: null, libro: b, marks, excludedBy: b.excludedBy ?? null }));
     }
-    return out.sort((a, b) => ORDEN[a.status] - ORDEN[b.status]);
+    return out.sort((a, b) => ORDEN[a.status] - ORDEN[b.status] || prioridadDe(a) - prioridadDe(b));
 }
 
 function buildCandidate(c: {
     key: string; origin: NeedCandidate['origin']; title: string; author: string | null;
     edition: NeedCandidate['edition']; libro: NeedLibraryBook | null; marks: Readonly<Record<string, AcquisitionMark>>;
-    excludedBy: string | null; tier?: SourceRecommendation['tier'];
+    excludedBy: string | null; tier?: SourceRecommendation['tier']; rationale?: string;
 }): NeedCandidate {
     const mark = c.marks[c.key];
     const libro = c.libro;
@@ -204,6 +216,7 @@ function buildCandidate(c: {
         status, noFolios: !!libro?.noFolios, excludedBy: c.excludedBy,
         reason: status === 'descartada' ? mark?.reason ?? null : null,
         ...(c.tier ? { tier: c.tier } : {}),
+        ...(c.rationale?.trim() ? { rationale: c.rationale.trim() } : {}),
     };
 }
 

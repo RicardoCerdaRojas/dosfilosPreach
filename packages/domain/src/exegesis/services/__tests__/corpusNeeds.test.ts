@@ -59,6 +59,24 @@ describe('corpusNeeds', () => {
         expect(criticos!.candidates[2]).toMatchObject({ key: 'lib:mccartney', origin: 'biblioteca', editionMatch: null });
     });
 
+    it('entre las sugeridas, lo esencial primero aunque el catálogo ponga antes la edición en español; trae su porqué', () => {
+        const conDavids = {
+            ...catalogo,
+            'commentary-critical': [
+                rec({ author: 'Peter H. Davids', title: 'Epístola de Santiago', publisher: 'Kregel', year: 2019, tier: 'recommended', languages: ['es'], rationale: ' Traducción del NIGTC. ' }),
+                rec({ author: 'Luke Timothy Johnson', title: 'The Letter of James', publisher: 'Doubleday', year: 1995, tier: 'essential' }),
+                rec({ author: 'Dale C. Allison', title: 'James', publisher: 'T&T Clark', year: 2013, tier: 'standard' }),
+                rec({ author: 'Martin Dibelius', title: 'James', publisher: 'Fortress', year: 1976, tier: 'essential' }),
+            ],
+        };
+        const [criticos] = corpusNeeds(input({ recommendationsFor: (t: string) => conDavids[t as keyof typeof conDavids] ?? [] }));
+        const sugeridas = criticos!.candidates.filter(c => c.status === 'sugerida');
+        // Johnson y Dibelius (esenciales) en el orden del catálogo; luego Davids; luego Allison.
+        expect(sugeridas.map(c => c.author)).toEqual(['Luke Timothy Johnson', 'Martin Dibelius', 'Peter H. Davids', 'Dale C. Allison']);
+        expect(sugeridas[2]!.rationale).toBe('Traducción del NIGTC.');
+        expect(sugeridas[0]!.rationale).toBeUndefined();
+    });
+
     it('otra edición se avisa (BDAG 2000 contra la copia de 1979) y una copia sin páginas impresas se marca', () => {
         const lexico = corpusNeeds(input()).find(n => n.id === 'tipo:lexicon-technical')!;
         expect(lexico.candidates[0]).toMatchObject({ resourceId: 'bdag-copia', status: 'edicion-distinta', editionMatch: 'distinta', copyYear: '1979', noFolios: true, edition: { year: 2000 } });

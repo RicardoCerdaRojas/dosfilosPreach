@@ -3316,6 +3316,8 @@
     "coverageReach_other": "{{count}} más se cubren con lo que ya tienes en la biblioteca.",
     "reading": "Lectura del sílabo: {{title}}",
     "count": "{{have}} de {{required}}",
+    "countOver": "{{have}} · pide {{required}}",
+    "essential": "Esencial",
     "withinReach_one": "{{count}} en tu biblioteca",
     "withinReach_other": "{{count}} en tu biblioteca",
     "search": "Buscar",

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { corpusNeeds, type NeedLibraryBook, type SourceRecommendation } from '@dosfilos/domain';
 
 vi.mock('@/i18n', () => ({
@@ -17,7 +17,7 @@ const [need] = corpusNeeds({
     rubric: { sourceRequirements: [{ sourceType: 'commentary-critical', minimum: 2, maximum: null, justification: '' }], courseBibliography: [] },
     corpusTypes: ['commentary-critical'],
     library,
-    recommendationsFor: () => [rec({}), rec({ author: 'Ralph P. Martin', title: 'James', series: 'Word Biblical Commentary 48', publisher: 'Word', year: 1988 }), rec({ author: 'Martin Dibelius', title: 'James', series: 'Hermeneia', publisher: 'Fortress', year: 1976 })],
+    recommendationsFor: () => [rec({}), rec({ author: 'Ralph P. Martin', title: 'James', series: 'Word Biblical Commentary 48', publisher: 'Word', year: 1988 }), rec({ author: 'Martin Dibelius', title: 'James', series: 'Hermeneia', publisher: 'Fortress', year: 1976, rationale: 'Clásico de la crítica de formas.' }), rec({ author: 'Sophie Laws', title: 'The Epistle of James', publisher: 'Harper', year: 1980, tier: 'recommended' })],
 });
 
 beforeEach(() => cleanup());
@@ -49,12 +49,31 @@ describe('Qué conseguir (A6)', () => {
         const dibelius = screen.getByTestId('candidata-rec:martindibelius__james');
         fireEvent.click(dibelius.querySelector('button')!);
         expect(a.onMark).toHaveBeenCalledWith('rec:martindibelius__james', { status: 'por-conseguir' });
-        fireEvent.click(screen.getByText('corpusNeeds.action.discard'));
+        fireEvent.click(within(dibelius).getByText('corpusNeeds.action.discard'));
         const confirmar = screen.getByText('corpusNeeds.action.confirmDiscard');
         expect(confirmar).toBeDisabled();
         fireEvent.change(screen.getByLabelText('corpusNeeds.reasonLabel'), { target: { value: 'Muy técnico para el TP' } });
         fireEvent.click(confirmar);
         expect(a.onMark).toHaveBeenLastCalledWith('rec:martindibelius__james', { status: 'descartada', reason: 'Muy técnico para el TP' });
+    });
+
+    it('lo esencial lleva su etiqueta y el porqué del catálogo; lo recomendado, no', () => {
+        render(<ul><CorpusNeedRow need={need!} actions={acciones()} /></ul>);
+        const dibelius = screen.getByTestId('candidata-rec:martindibelius__james');
+        expect(dibelius.textContent).toContain('corpusNeeds.essential');
+        expect(dibelius.textContent).toContain('Clásico de la crítica de formas.');
+        expect(screen.getByTestId('candidata-rec:sophielaws__theepistleofjames').textContent).not.toContain('corpusNeeds.essential');
+    });
+
+    it('con más de lo pedido no dice «2 de 1»', () => {
+        render(<ul><CorpusNeedRow need={{ ...need!, have: 2, required: 1, covered: true }} actions={acciones()} /></ul>);
+        const fila = screen.getByTestId('necesidad-tipo:commentary-critical');
+        expect(fila.textContent).toContain('corpusNeeds.countOver {"have":2,"required":1}');
+        expect(fila.textContent).not.toContain('corpusNeeds.count {');
+        cleanup();
+        // Justo lo pedido sí se lee «1 de 1».
+        render(<ul><CorpusNeedRow need={{ ...need!, have: 1, required: 1, covered: true }} actions={acciones()} /></ul>);
+        expect(screen.getByTestId('necesidad-tipo:commentary-critical').textContent).toContain('corpusNeeds.count {"have":1,"required":1}');
     });
 
     it('«Buscar» abre la biblioteca filtrada al tipo', () => {

@@ -47,7 +47,9 @@ export function CorpusNeedRow({ need, actions }: { need: CorpusNeed; actions: Ne
                 >
                     <span className="text-sm font-medium text-foreground">{titulo}</span>
                     <span className={cn('ml-2 text-xs', need.covered ? 'text-success' : 'text-warning-subtle-foreground')}>
-                        {t('corpusNeeds.count', { have: need.have, required: need.required })}
+                        {need.have > need.required
+                            ? t('corpusNeeds.countOver', { have: need.have, required: need.required })
+                            : t('corpusNeeds.count', { have: need.have, required: need.required })}
                     </span>
                     {!need.covered && need.withinReach > 0 && (
                         <span className="ml-2 text-xs text-muted-foreground">{t('corpusNeeds.withinReach', { count: need.withinReach })}</span>
@@ -72,7 +74,7 @@ export function CorpusNeedRow({ need, actions }: { need: CorpusNeed; actions: Ne
                         {visibles.map(c => <CandidateItem key={c.key} candidate={c} actions={actions} />)}
                     </ul>
                     {need.candidates.length > VISIBLES && (
-                        <button type="button" onClick={() => setTodas(v => !v)} className="text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <button type="button" onClick={() => setTodas(v => !v)} className="text-xs font-medium text-primary-text underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                             {todas ? t('corpusNeeds.showLess') : t('corpusNeeds.showMore', { count: need.candidates.length - VISIBLES })}
                         </button>
                     )}
@@ -87,37 +89,46 @@ function CandidateItem({ candidate: c, actions }: { candidate: NeedCandidate; ac
     const [razon, setRazon] = useState<string | null>(null);
     const edicion = c.edition ? [c.edition.series, c.edition.publisher, c.edition.year].filter(Boolean).join(', ') : '';
     const apagada = c.status === 'excluida' || c.status === 'descartada';
+    const acciones = (
+        <>
+            {(c.status === 'tengo' || c.status === 'edicion-distinta') && c.resourceId && (
+                <Accion onClick={() => actions.onAddResource(c.resourceId!)} disabled={actions.busy}>{t('corpusNeeds.action.add')}</Accion>
+            )}
+            {c.status === 'sugerida' && razon === null && (
+                <>
+                    <Accion onClick={() => actions.onMark(c.key, { status: 'por-conseguir' })} disabled={actions.busy}>{t('corpusNeeds.action.toAcquire')}</Accion>
+                    <Accion onClick={() => setRazon('')} disabled={actions.busy}>{t('corpusNeeds.action.discard')}</Accion>
+                </>
+            )}
+            {(c.status === 'por-conseguir' || c.status === 'descartada') && (
+                <Accion onClick={() => actions.onMark(c.key, null)} disabled={actions.busy}>{t('corpusNeeds.action.undo')}</Accion>
+            )}
+        </>
+    );
     return (
         <li className={cn('rounded-md border border-border px-3 py-2', apagada && 'opacity-75')} data-testid={`candidata-${c.key}`}>
-            <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
                 <div className="min-w-0 flex-1">
                     <p className="text-sm text-foreground">
+                        {c.tier === 'essential' && (
+                            <span className="mr-1.5 inline-block rounded bg-primary/15 px-1.5 py-px align-[1px] text-[11px] font-semibold text-primary-text">{t('corpusNeeds.essential')}</span>
+                        )}
                         <span className="italic">{c.title}</span>
                         {c.author && <span className="text-muted-foreground"> · {c.author}</span>}
                     </p>
                     {edicion && <p className="text-xs text-muted-foreground">{t('corpusNeeds.citedEdition', { edition: edicion })}</p>}
+                    {c.rationale && <p className="text-xs text-muted-foreground">{c.rationale}</p>}
+                    {c.status === 'edicion-distinta' && (
+                        <p className="mt-1 text-xs text-warning-subtle-foreground">{t('corpusNeeds.note.edition', { copy: c.copyYear ?? '—', cited: c.edition?.year ?? '—' })}</p>
+                    )}
+                    {c.noFolios && c.resourceId && <p className="mt-1 text-xs text-muted-foreground">{t('corpusNeeds.note.noFolios')}</p>}
+                    {c.status === 'excluida' && <p className="mt-1 text-xs text-muted-foreground">{t('corpusNeeds.note.excluded', { previous: c.excludedBy })}</p>}
+                    {c.status === 'descartada' && <p className="mt-1 text-xs text-muted-foreground">{t('corpusNeeds.note.discarded', { reason: c.reason })}</p>}
                 </div>
-                <span className={cn('text-xs font-medium', TONO[c.status])}>{t(`corpusNeeds.status.${c.status}`)}</span>
-            </div>
-            {c.status === 'edicion-distinta' && (
-                <p className="mt-1 text-xs text-warning-subtle-foreground">{t('corpusNeeds.note.edition', { copy: c.copyYear ?? '—', cited: c.edition?.year ?? '—' })}</p>
-            )}
-            {c.noFolios && c.resourceId && <p className="mt-1 text-xs text-muted-foreground">{t('corpusNeeds.note.noFolios')}</p>}
-            {c.status === 'excluida' && <p className="mt-1 text-xs text-muted-foreground">{t('corpusNeeds.note.excluded', { previous: c.excludedBy })}</p>}
-            {c.status === 'descartada' && <p className="mt-1 text-xs text-muted-foreground">{t('corpusNeeds.note.discarded', { reason: c.reason })}</p>}
-            <div className="mt-1.5 flex flex-wrap gap-2">
-                {(c.status === 'tengo' || c.status === 'edicion-distinta') && c.resourceId && (
-                    <Accion onClick={() => actions.onAddResource(c.resourceId!)} disabled={actions.busy}>{t('corpusNeeds.action.add')}</Accion>
-                )}
-                {c.status === 'sugerida' && razon === null && (
-                    <>
-                        <Accion onClick={() => actions.onMark(c.key, { status: 'por-conseguir' })} disabled={actions.busy}>{t('corpusNeeds.action.toAcquire')}</Accion>
-                        <Accion onClick={() => setRazon('')} disabled={actions.busy}>{t('corpusNeeds.action.discard')}</Accion>
-                    </>
-                )}
-                {(c.status === 'por-conseguir' || c.status === 'descartada') && (
-                    <Accion onClick={() => actions.onMark(c.key, null)} disabled={actions.busy}>{t('corpusNeeds.action.undo')}</Accion>
-                )}
+                <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+                    <span className={cn('text-xs font-medium', TONO[c.status])}>{t(`corpusNeeds.status.${c.status}`)}</span>
+                    {acciones}
+                </div>
             </div>
             {razon !== null && (
                 <form
