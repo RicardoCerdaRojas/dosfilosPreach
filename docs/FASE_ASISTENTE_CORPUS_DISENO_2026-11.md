@@ -334,13 +334,13 @@ Migración: 33 trabajos; `r1-importada` al abrir; los entregados no se tocan.
 |---|---|---|---|
 | A1 | Banco del corpus: 8 casos (3 desarrollo, 5 prueba) y línea base | `scripts/bench/corpus` | ✅ 11fc3811 |
 | A2a | Rutas de hojas: Kittel por firma, léxicos por la pregunta, regiones de gramática por la ruta de secciones, contorno del comentario, extracto corto; banco con propuesta y navegación | banco (`fase-a.json`) | ✅ |
-| A2b | De las opciones de la decisión a la subsección exacta de la gramática (paso 2 de la meta de gramáticas), medido sobre TP #7–#10 | banco | — |
+| A2b | De las categorías del análisis (opciones, puntos discutibles, función sintáctica) a la subsección exacta de la gramática (paso 2), medido sobre TP #7–#10: 64,9 % → 73,0 % | banco (`fase-b-gramatica.json`) | ✅ |
 | A3 | Hojas por unidad: reemplaza «¿Qué responde cada pregunta?», funciona sin preguntas; copy sin «modelo» | navegador, TP real | — |
 | A4 | Perfil tipado y unidades (`profileKind`, `UnitStudyMap`) | crear un trabajo de cada tipo | — |
 | A5 | Entradas, requisitos y reglas del curso (incl. devolución → reglas) | pantalla de entradas | — |
 | A6 | Necesidades del corpus, candidatas con edición fijada, `libraryMatch` por año, sílabo como origen | pantalla «Conseguir» | — |
 | A7 | Bandeja de revisión de PDF (identidad, edición, paginación, desfase, copia no oficial) | subir Martin WBC 48 | — |
-| A8 | Biblioteca compartida en la búsqueda (solo referencias salvo dominio público); correcciones de datos (Kittel, vínculos del sílabo) | banco + búsqueda | — |
+| A8 | Biblioteca compartida en la búsqueda (solo referencias salvo dominio público); correcciones de datos (Kittel, vínculos del sílabo, ruta de secciones de Robertson) | banco + búsqueda | — |
 | A9 | Capa de herramientas del corpus y MCP de lectura con OAuth 2.1 | Claude Desktop | — |
 
 ## 12. Decisiones del fundador

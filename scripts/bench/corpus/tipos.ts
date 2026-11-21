@@ -42,6 +42,8 @@ export interface CasoBanco {
   idioma: 'griego' | 'hebreo';
   pasaje: PasajeCaso;
   consigna: string | null;
+  /** El trabajo en la plataforma (`exegeticalPapers`), cuando se hizo ahí: de él se leen sus análisis. */
+  trabajoId?: string;
   fuentes: FuenteCaso[];
   citas: CitaCaso[];
   citasSinHoja: Array<{ libro: string; etiqueta: string }>;

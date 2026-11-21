@@ -1,0 +1,327 @@
+{
+  "rutas": [
+    "inicialFaseA",
+    "pregunta",
+    "lemaPregunta",
+    "opciones"
+  ],
+  "navegacion": [
+    "region",
+    "lema",
+    "seccion"
+  ],
+  "porConjunto": {
+    "prueba": {
+      "citadas": 115,
+      "acertadas": 102,
+      "cubiertas": 102,
+      "propuestas": 421,
+      "navegacion": 1021,
+      "recall": 0.8869565217391304,
+      "cobertura": 0.8869565217391304,
+      "precisionMinima": 0.24228028503562946,
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 63,
+          "acertadas": 61,
+          "cubiertas": 61,
+          "propuestas": 235,
+          "recall": 0.9682539682539683,
+          "cobertura": 0.9682539682539683
+        },
+        "gramatica": {
+          "citadas": 37,
+          "acertadas": 27,
+          "cubiertas": 27,
+          "propuestas": 87,
+          "recall": 0.7297297297297297,
+          "cobertura": 0.7297297297297297
+        },
+        "lexico": {
+          "citadas": 15,
+          "acertadas": 14,
+          "cubiertas": 14,
+          "propuestas": 99,
+          "recall": 0.9333333333333333,
+          "cobertura": 0.9333333333333333
+        }
+      },
+      "enLaMismaPregunta": {
+        "acertadas": 58,
+        "citadas": 95
+      }
+    }
+  },
+  "total": {
+    "citadas": 115,
+    "acertadas": 102,
+    "cubiertas": 102,
+    "propuestas": 421,
+    "navegacion": 1021,
+    "recall": 0.8869565217391304,
+    "cobertura": 0.8869565217391304,
+    "precisionMinima": 0.24228028503562946,
+    "porGrupo": {
+      "comentario-y-texto": {
+        "citadas": 63,
+        "acertadas": 61,
+        "cubiertas": 61,
+        "propuestas": 235,
+        "recall": 0.9682539682539683,
+        "cobertura": 0.9682539682539683
+      },
+      "gramatica": {
+        "citadas": 37,
+        "acertadas": 27,
+        "cubiertas": 27,
+        "propuestas": 87,
+        "recall": 0.7297297297297297,
+        "cobertura": 0.7297297297297297
+      },
+      "lexico": {
+        "citadas": 15,
+        "acertadas": 14,
+        "cubiertas": 14,
+        "propuestas": 99,
+        "recall": 0.9333333333333333,
+        "cobertura": 0.9333333333333333
+      }
+    },
+    "enLaMismaPregunta": {
+      "acertadas": 58,
+      "citadas": 95
+    }
+  },
+  "casos": [
+    {
+      "id": "ti3-sal23-1",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicialFaseA",
+        "pregunta",
+        "lemaPregunta",
+        "opciones"
+      ],
+      "rutasNavegacion": [
+        "region",
+        "lema",
+        "seccion"
+      ],
+      "citadas": 20,
+      "acertadas": 11,
+      "cubiertas": 11,
+      "propuestas": 34,
+      "navegacion": 0,
+      "enLaMismaPregunta": {
+        "acertadas": 0,
+        "citadas": 0
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 9,
+          "acertadas": 8,
+          "cubiertas": 8,
+          "propuestas": 30
+        },
+        "gramatica": {
+          "citadas": 10,
+          "acertadas": 3,
+          "cubiertas": 3,
+          "propuestas": 4
+        },
+        "lexico": {
+          "citadas": 1,
+          "acertadas": 0,
+          "cubiertas": 0,
+          "propuestas": 0
+        }
+      },
+      "fueraDeLaBiblioteca": 40,
+      "perdidas": 9
+    },
+    {
+      "id": "tp10-stg5-1",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicialFaseA",
+        "pregunta",
+        "lemaPregunta",
+        "opciones"
+      ],
+      "rutasNavegacion": [
+        "region",
+        "lema",
+        "seccion"
+      ],
+      "citadas": 23,
+      "acertadas": 23,
+      "cubiertas": 23,
+      "propuestas": 112,
+      "navegacion": 168,
+      "enLaMismaPregunta": {
+        "acertadas": 19,
+        "citadas": 23
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 10,
+          "acertadas": 10,
+          "cubiertas": 10,
+          "propuestas": 32
+        },
+        "gramatica": {
+          "citadas": 8,
+          "acertadas": 8,
+          "cubiertas": 8,
+          "propuestas": 36
+        },
+        "lexico": {
+          "citadas": 5,
+          "acertadas": 5,
+          "cubiertas": 5,
+          "propuestas": 44
+        }
+      },
+      "fueraDeLaBiblioteca": 0,
+      "perdidas": 0
+    },
+    {
+      "id": "tp7-stg3-13",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicialFaseA",
+        "pregunta",
+        "lemaPregunta",
+        "opciones"
+      ],
+      "rutasNavegacion": [
+        "region",
+        "lema",
+        "seccion"
+      ],
+      "citadas": 16,
+      "acertadas": 12,
+      "cubiertas": 12,
+      "propuestas": 64,
+      "navegacion": 113,
+      "enLaMismaPregunta": {
+        "acertadas": 5,
+        "citadas": 16
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 12,
+          "acertadas": 11,
+          "cubiertas": 11,
+          "propuestas": 61
+        },
+        "gramatica": {
+          "citadas": 4,
+          "acertadas": 1,
+          "cubiertas": 1,
+          "propuestas": 3
+        },
+        "lexico": {
+          "citadas": 0,
+          "acertadas": 0,
+          "cubiertas": 0,
+          "propuestas": 0
+        }
+      },
+      "fueraDeLaBiblioteca": 0,
+      "perdidas": 4
+    },
+    {
+      "id": "tp8-stg4-1",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicialFaseA",
+        "pregunta",
+        "lemaPregunta",
+        "opciones"
+      ],
+      "rutasNavegacion": [
+        "region",
+        "lema",
+        "seccion"
+      ],
+      "citadas": 23,
+      "acertadas": 23,
+      "cubiertas": 23,
+      "propuestas": 85,
+      "navegacion": 448,
+      "enLaMismaPregunta": {
+        "acertadas": 16,
+        "citadas": 23
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 16,
+          "acertadas": 16,
+          "cubiertas": 16,
+          "propuestas": 45
+        },
+        "gramatica": {
+          "citadas": 2,
+          "acertadas": 2,
+          "cubiertas": 2,
+          "propuestas": 3
+        },
+        "lexico": {
+          "citadas": 5,
+          "acertadas": 5,
+          "cubiertas": 5,
+          "propuestas": 37
+        }
+      },
+      "fueraDeLaBiblioteca": 0,
+      "perdidas": 0
+    },
+    {
+      "id": "tp9-stg4-11",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicialFaseA",
+        "pregunta",
+        "lemaPregunta",
+        "opciones"
+      ],
+      "rutasNavegacion": [
+        "region",
+        "lema",
+        "seccion"
+      ],
+      "citadas": 33,
+      "acertadas": 33,
+      "cubiertas": 33,
+      "propuestas": 126,
+      "navegacion": 292,
+      "enLaMismaPregunta": {
+        "acertadas": 18,
+        "citadas": 33
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 16,
+          "acertadas": 16,
+          "cubiertas": 16,
+          "propuestas": 67
+        },
+        "gramatica": {
+          "citadas": 13,
+          "acertadas": 13,
+          "cubiertas": 13,
+          "propuestas": 41
+        },
+        "lexico": {
+          "citadas": 4,
+          "acertadas": 4,
+          "cubiertas": 4,
+          "propuestas": 18
+        }
+      },
+      "fueraDeLaBiblioteca": 0,
+      "perdidas": 0
+    }
+  ]
+}

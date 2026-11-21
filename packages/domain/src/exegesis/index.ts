@@ -96,6 +96,7 @@ export * from './services/inlineCitations';
 export * from './services/passagePages';
 export * from './services/grammarSearchKeys';
 export * from './services/grammarCategoryRegions';
+export * from './services/grammarSheetsForCategoryLabels';
 export * from './services/assignmentBriefWindows';
 export * from './services/assignmentBriefSlots';
 export * from './services/originalLanguageEvidence';

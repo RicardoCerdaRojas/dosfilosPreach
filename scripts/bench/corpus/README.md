@@ -87,6 +87,20 @@ Qué cambió y cuánto aportó (medido):
 - **Contorno del comentario** (`withCommentaryContour`, ±1 hoja): comentarios de desarrollo 89 % → 94 %.
 - **Extracto corto** (`shortResourceSheets`): la BHS de 2 hojas del TI #3 se propone entera.
 
+### Segundo paso de las gramáticas (`fase-b-gramatica.json`, solo prueba)
+
+```bash
+npx tsx scripts/bench/corpus/correr.ts --conjunto prueba --rutas inicialFaseA,pregunta,lemaPregunta,opciones \
+  --navegacion region,lema,seccion --comparar scripts/bench/corpus/fase-b-gramatica.json
+```
+
+La ruta `opciones` lee el análisis guardado de cada TP hecho en la plataforma (`trabajoId`, solo lectura): las opciones
+de cada pregunta, la caracterización de cada punto discutible y la función sintáctica de cada construcción, y las lleva
+a la subsección exacta de la gramática (`grammarSheetsForCategoryLabels`). Gramáticas de prueba: hoja exacta 64,9 % →
+73,0 % (+42 hojas); las tres citas de Wallace que faltaban (627 y 642 en TP #10 P1, 581 en P2) ahora se proponen. Lo
+que falta: Robertson en TP #7, cuya ruta de secciones está rota (los títulos son el encabezado corrido «A GRAMMAR OF
+THE GREEK NEW TESTAMENT»; se corrige en A8), e IBHS en el TI #3, que no se hizo en la plataforma y no tiene análisis.
+
 Precisión: la meta de 50 % no se cumple y el banco explica por qué. Un comentario se propone por su sección (≈3 hojas
 por hoja citada) y eso es lo que el estudiante tiene que leer; la precisión mínima cuenta como error toda hoja útil que
 no terminó citada. Pendiente para A3: la tarjeta por pregunta (misma pregunta 12/44 en desarrollo).

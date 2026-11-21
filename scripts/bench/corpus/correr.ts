@@ -20,6 +20,7 @@ import { medirCaso, regresiones, resumir, type Resumen } from './metricas';
 import { morfologiaDelPasaje } from './morfologia';
 import { propuestaActual, RUTAS_ACTUALES } from './propuestaActual';
 import { agregarRegiones } from './regiones';
+import { agregarOpciones, etiquetasPorPregunta } from './opciones';
 import type { ResultadoCaso } from './tipos';
 
 function argumento(nombre: string): string | undefined {
@@ -64,6 +65,7 @@ async function main(): Promise<void> {
     const { versos, aviso } = morfologiaDelPasaje(caso, raiz);
     const propuestas = propuestaActual(caso, libros, versos);
     agregarRegiones(caso, propuestas, libros, versos);
+    if (rutas.includes('opciones') || navegacion.includes('opciones')) agregarOpciones(propuestas, libros, await etiquetasPorPregunta(db, caso));
     const r = medirCaso(caso, propuestas, rutas, navegacion);
     resultados.push(r);
     console.log(`\n· ${caso.nombre} [${caso.conjunto}]${aviso ? ` — ${aviso}` : ''}`);
