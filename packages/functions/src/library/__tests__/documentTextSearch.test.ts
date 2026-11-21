@@ -308,6 +308,55 @@ describe('lemmaEntriesIn · dónde empieza y termina la entrada de un lema', () 
         expect(lemmaEntriesIn(kittel, [griegoPlegado('θησαυρίζω')])).toEqual({});
     });
 
+    // Fase «Asistente del corpus», A2 (banco del corpus, 2026-11-21): el artículo siguiente empieza en el mismo
+    // renglón que la firma del anterior, así que la línea de familia no lo ve.
+    it('tras la firma «[Autor, tomo, páginas]» empieza el artículo de la familia que sigue', () => {
+        const kittel = [
+            { chunkIndex: 1, sheet: 774, text: 'cerrando el artículo anterior. [W. Foerster, VII, 1–94] σανδάλιον → ὅπλον σαπρός [podrido, descompuesto], σήπω [podrirse] 1. Relacionado con el proceso…' },
+            { chunkIndex: 2, sheet: 776, text: '3. En Santiago 5:2 σήπω tiene el sentido amplio «descomponerse». [O. Bauernfeind, VII, 94–97] σάρξ [carne]' },
+        ];
+        const r = lemmaEntriesIn(kittel, ['σήπω', 'σαπρός', 'σάρξ'].map(griegoPlegado));
+        expect(r[griegoPlegado('σήπω')]).toEqual({ startSheet: 774, endSheet: 776 });
+        expect(r[griegoPlegado('σαπρός')]).toEqual({ startSheet: 774, endSheet: 776 });
+        expect(r[griegoPlegado('σάρξ')]).toEqual({ startSheet: 776, endSheet: 776 });
+    });
+
+    it('una glosa en el cuerpo del artículo, después de «1.», no abre otro artículo', () => {
+        const kittel = [{ chunkIndex: 1, sheet: 775, text: '[W. Foerster, VII, 1–94] σαπρός [podrido] 1. En la LXX λόγος [palabra] aparece…' }];
+        expect(lemmaEntriesIn(kittel, [griegoPlegado('λόγος')])).toEqual({});
+        expect(lemmaEntriesIn(kittel, [griegoPlegado('σαπρός')])[griegoPlegado('σαπρός')]).toEqual({ startSheet: 775, endSheet: 775 });
+    });
+
+    it('una referencia cruzada tras la firma («ἐξηγέομαι → ἡγέομαι») no abre artículo', () => {
+        const kittel = [{ chunkIndex: 1, sheet: 191, text: '[W. Foerster, II, 560–575] ἐξηγέομαι → ἡγέομαι; ἐξουσία → ἔξεστι 1. otro' }];
+        expect(lemmaEntriesIn(kittel, [griegoPlegado('ἐξηγέομαι')])).toEqual({});
+    });
+
+    const conFirmas = (articulos: Array<{ sheet: number; texto: string }>) => {
+        // Un diccionario «firma» trae decenas de firmas; con menos, no se parte por densidad.
+        const relleno = Array.from({ length: 20 }, (_, i) => ({ chunkIndex: 100 + i, sheet: 900 + i, text: `relleno. [A. Autor, I, ${i}–${i + 1}]` }));
+        return [...articulos.map((a, i) => ({ chunkIndex: i, sheet: a.sheet, text: a.texto })), ...relleno];
+    };
+
+    it('sin cabeza reconocible, elige el artículo entre firmas donde más aparece el lema', () => {
+        const kittel = conFirmas([
+            { sheet: 560, texto: 'ὁρμή aparece de pasada. [B. Uno, V, 1–2]' },
+            { sheet: 748, texto: '1. Esta palabra significa «ser primero». [C. Dos, VI, 3–4] 1. πταίω, de etimología incierta; πταίω «tropezar».' },
+            { sheet: 749, texto: 'En Santiago 3:2 πταίω es moral. [D. Tres, VI, 5–6]' },
+        ]);
+        expect(lemmaEntriesIn(kittel, [griegoPlegado('πταίω')])[griegoPlegado('πταίω')]).toEqual({ startSheet: 748, endSheet: 749 });
+        // Una sola aparición no alcanza para elegir artículo.
+        expect(lemmaEntriesIn(kittel, [griegoPlegado('ὁρμή')])).toEqual({});
+    });
+
+    it('con pocas firmas no parte el libro por densidad', () => {
+        const pocas = [
+            { chunkIndex: 1, sheet: 10, text: 'πταίω πταίω πταίω [B. Uno, V, 1–2]' },
+            { chunkIndex: 2, sheet: 11, text: 'nada' },
+        ];
+        expect(lemmaEntriesIn(pocas, [griegoPlegado('πταίω')])).toEqual({});
+    });
+
     it('el aparato «ποία] Bℵ*» no es una glosa', () => {
         const ropes = [{ chunkIndex: 1, sheet: 294, text: 'ποία] Bℵ* 1518 syrʰᵉˡ bohᵃˡᵉˣ.' }];
         expect(lemmaEntriesIn(ropes, [griegoPlegado('ποία')])).toEqual({});

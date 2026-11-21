@@ -56,10 +56,22 @@ describe('proposeSheetRanges · edición del texto (B26)', () => {
     });
 
     it('sin encabezados del libro no propone nada: ni parecido de contenido ni referencias cruzadas', async () => {
-        const sinSantiago = na28.filter(h => h.sheet === 382);
+        // Un NA28 entero sin las hojas de Santiago (con una sola hoja sería un extracto, y un extracto
+        // corto se propone entero: `shortResourceSheets`, banco del corpus A2).
+        const sinSantiago = [
+            hoja(380, '10,38–42 | ΚΑΤΑ ΛΟΥΚΑΝ'), hoja(381, 'ΚΑΤΑ ΛΟΥΚΑΝ | 10,42–11,1'),
+            ...na28.filter(h => h.sheet === 382), hoja(383, '11,9–20 | ΚΑΤΑ ΛΟΥΚΑΝ'),
+        ];
         const p = await proposeSheetRanges({ ...base, pageIndex: sinSantiago as never, sourceType: 'critical-apparatus' });
         expect(p).toEqual({ kind: 'none', ranges: [] });
         expect(llamadas).not.toContain('retrieveChunks');
+        expect(referencia).not.toHaveBeenCalled();
+    });
+
+    it('un extracto corto (la BHS de un salmo en dos hojas) se propone entero', async () => {
+        const extracto = [hoja(1, 'Psalmi 23'), hoja(2, '23,4–6')];
+        const p = await proposeSheetRanges({ ...base, pageIndex: extracto as never, sourceType: 'biblical-text-edition' });
+        expect(p).toEqual({ kind: 'structural', ranges: [{ start: 1, end: 2 }] });
         expect(referencia).not.toHaveBeenCalled();
     });
 

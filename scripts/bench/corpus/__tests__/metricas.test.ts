@@ -55,10 +55,31 @@ describe('medirCaso', () => {
 
   it('agrupa por tipo de fuente y cuenta las obras fuera de la biblioteca sin repetir', () => {
     const r = medirCaso(c, props, ['inicial', 'seccion', 'lema']);
-    expect(r.porGrupo.gramatica).toEqual({ citadas: 2, acertadas: 2, propuestas: 3 });
-    expect(r.porGrupo.lexico).toEqual({ citadas: 1, acertadas: 1, propuestas: 1 });
-    expect(r.porGrupo['comentario-y-texto']).toEqual({ citadas: 1, acertadas: 0, propuestas: 1 });
+    expect(r.porGrupo.gramatica).toEqual({ citadas: 2, acertadas: 2, cubiertas: 2, propuestas: 3 });
+    expect(r.porGrupo.lexico).toEqual({ citadas: 1, acertadas: 1, cubiertas: 1, propuestas: 1 });
+    expect(r.porGrupo['comentario-y-texto']).toEqual({ citadas: 1, acertadas: 0, cubiertas: 0, propuestas: 1 });
     expect(r.fueraDeLaBiblioteca).toBe(1);
+  });
+});
+
+describe('navegación', () => {
+  const c = caso([{ libro: 'Wallace', etiqueta: '113', hoja: 149, pregunta: 4 }, { libro: 'Wallace', etiqueta: '627', hoja: 663 }]);
+  const p = [propuesta('Wallace', 'grammar-syntax', { inicial: [663], region: [140, 141, 149, 150, 663] })];
+
+  it('cubre sin contar como propuesta ni bajar la precisión', () => {
+    const r = medirCaso(c, p, ['inicial'], ['region']);
+    expect(r.acertadas).toBe(1);
+    expect(r.cubiertas).toBe(2);
+    expect(r.propuestas).toBe(1);
+    expect(r.navegacion).toBe(4);
+    expect(resumir([r]).cobertura).toBe(1);
+    expect(resumir([r]).precisionMinima).toBe(1);
+  });
+
+  it('una caída de cobertura es regresión', () => {
+    const antes = resumir([medirCaso(c, p, ['inicial'], ['region'])]);
+    const ahora = resumir([medirCaso(c, p, ['inicial'], [])]);
+    expect(regresiones(antes, ahora).map(x => x.medida)).toContain('cobertura');
   });
 });
 

@@ -66,7 +66,10 @@ export type GrupoFuente = 'comentario-y-texto' | 'gramatica' | 'lexico';
 
 export interface MetricaGrupo {
   citadas: number;
+  /** En una hoja PROPUESTA. */
   acertadas: number;
+  /** En una hoja propuesta o en una región de navegación (gramáticas antes del análisis). */
+  cubiertas: number;
   propuestas: number;
 }
 
@@ -75,9 +78,14 @@ export interface ResultadoCaso {
   conjunto: CasoBanco['conjunto'];
   /** Rutas que cuentan como «lo que el sistema propone» en este resultado. */
   rutasMedidas: string[];
+  /** Rutas que solo se ofrecen para navegar: cuentan para la cobertura, no para la precisión. */
+  rutasNavegacion: string[];
   citadas: number;
   acertadas: number;
+  cubiertas: number;
   propuestas: number;
+  /** Hojas de navegación que no están también propuestas. */
+  navegacion: number;
   /** Aciertos dentro de la misma pregunta en que se citó la hoja. */
   enLaMismaPregunta: { acertadas: number; citadas: number };
   porGrupo: Record<GrupoFuente, MetricaGrupo>;

@@ -47,13 +47,46 @@ Pruebas de las métricas: `npx vitest run --root scripts/bench/corpus`.
 - **Misma pregunta**: la hoja aparece en la tarjeta de la pregunta en que se citó.
 - **Por tipo**: comentarios y texto, gramáticas, léxicos y diccionarios.
 
-## Línea base (2026-11-20, rutas de «Del corpus al texto», #826–#829)
+## Línea base (rutas de «Del corpus al texto», #826–#829)
+
+`linea-base.json`, con las cuatro rutas actuales como propuesta (`inicial`, `pregunta`, `seccion`, `lema`).
 
 | Conjunto | Recall | Precisión mínima | Misma pregunta | Gramáticas | Léxicos |
 |---|---|---|---|---|---|
 | Desarrollo | 70,8 % (92/130) | 12,9 % | 11/44 | 50,0 % | 75,0 % |
-| Prueba | 79,1 % (91/115) | 11,4 % | 49/95 | 64,9 % | 53,3 % |
+| Prueba | 84,3 % (97/115) | 12,1 % | 55/95 | 64,9 % | 93,3 % |
 
-Con solo la propuesta inicial y la tarjeta por pregunta, el desarrollo da 63,8 % de recall y 29,0 % de
-precisión mínima (la cifra de la etapa 0a). Meta de la fase A: ≥ 85 % de recall con ≥ 50 % de precisión
-mínima en los dos conjuntos [supuesto: se revisa al medir].
+Corrección del 2026-11-21: en TP #8 y TP #10, hechos en la plataforma, «Kittel y Friedrich, N» es la **hoja** N (la
+numeración de Kittel declaraba desfase 0 y el sistema citaba la hoja). Con eso el conjunto de prueba pasó de 79,1 % a
+84,3 %.
+
+## Fase A (`fase-a.json`)
+
+```bash
+npx tsx scripts/bench/corpus/correr.ts --rutas inicialFaseA,pregunta,lemaPregunta \
+  --navegacion region,lema,seccion --comparar scripts/bench/corpus/fase-a.json
+```
+
+Las **propuestas** cuentan para la precisión; la **navegación** (regiones de gramática, entradas de todos los lemas del
+pasaje, secciones sugeridas) solo para la cobertura. Es la meta de gramáticas en dos pasos que decidió el fundador
+(2026-11-21): antes del análisis, la pregunta lleva a la región; la hoja exacta la da la opción de la decisión (fase B).
+
+| Conjunto | Recall de propuestas | Cobertura | Precisión mínima | Comentarios | Gramáticas (cobertura) | Léxicos (cobertura) |
+|---|---|---|---|---|---|---|
+| Desarrollo | 65,4 % | 86,2 % | 33,7 % (252 hojas) | 93,8 % | 75,9 % | 100 % |
+| Prueba | 86,1 % | 87,8 % | 26,1 % (379 hojas) | 96,8 % | 70,3 % | 93,3 % |
+
+Qué cambió y cuánto aportó (medido):
+- **Kittel por firma** (`lemmaEntriesIn`): el artículo nuevo empieza tras la firma «[Autor, tomo, páginas]» del
+  anterior, en el mismo renglón; sin cabeza, el artículo entre firmas donde más aparece el lema. Léxicos de desarrollo
+  75 % → 100 %.
+- **Léxicos proponen por la pregunta**: las entradas de los lemas de cada pregunta son propuesta; las de todos los
+  lemas del pasaje, navegación. Precisión total 12 % → 31 %.
+- **Regiones de gramática** (`grammarCategoryRegions`): la categoría se lee en la ruta completa de secciones. Cobertura
+  de gramáticas de desarrollo 50 % → 76 %.
+- **Contorno del comentario** (`withCommentaryContour`, ±1 hoja): comentarios de desarrollo 89 % → 94 %.
+- **Extracto corto** (`shortResourceSheets`): la BHS de 2 hojas del TI #3 se propone entera.
+
+Precisión: la meta de 50 % no se cumple y el banco explica por qué. Un comentario se propone por su sección (≈3 hojas
+por hoja citada) y eso es lo que el estudiante tiene que leer; la precisión mínima cuenta como error toda hoja útil que
+no terminó citada. Pendiente para A3: la tarjeta por pregunta (misma pregunta 12/44 en desarrollo).

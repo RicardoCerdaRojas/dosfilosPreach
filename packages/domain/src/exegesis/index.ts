@@ -95,6 +95,7 @@ export * from './services/editedProsePageLabels';
 export * from './services/inlineCitations';
 export * from './services/passagePages';
 export * from './services/grammarSearchKeys';
+export * from './services/grammarCategoryRegions';
 export * from './services/assignmentBriefWindows';
 export * from './services/assignmentBriefSlots';
 export * from './services/originalLanguageEvidence';
@@ -167,6 +168,7 @@ export * from './outline/documentOutline';
 // Índice de hojas del documento: qué hay en cada hoja física del PDF, y la
 // traducción de «las hojas 68 a 71» a los fragmentos que van al prompt.
 export * from './outline/documentPageIndex';
+export * from './outline/sheetProposalRefinements';
 // Hojas de una edición del texto (NA28) por su encabezado corrido (TP #9, B26).
 export * from './outline/textEditionPages';
 // Desfase entre la hoja física y el número que el libro imprime.

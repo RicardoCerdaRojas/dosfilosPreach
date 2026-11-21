@@ -11,7 +11,9 @@ import {
     resolveOutlineReferences,
     selectChunksForPassage,
     sheetsForChunkRanges,
+    shortResourceSheets,
     textEditionSheetsForPassage,
+    withCommentaryContour,
     type DocumentOutlineEntry,
     type ExcerptSelectionMode,
     type PageIndexEntry,
@@ -124,6 +126,10 @@ const HOJAS_ANTES_POR_TIPO: Partial<Record<SourceType, number>> = {
 export async function proposeSheetRanges(
     input: ProposeSheetRangesInput,
 ): Promise<SheetRangeProposal> {
+    // Un extracto de pocas hojas (la BHS de un salmo) se propone entero.
+    const corto = shortResourceSheets(input.pageIndex);
+    if (corto.length > 0) return { ranges: corto, kind: 'structural' };
+
     if (isTextEditionSourceType(input.sourceType)) return proposeTextEdition(input);
 
     const porPaginas = input.sourceType ? isPickedByPages({ sourceType: input.sourceType }) : false;
@@ -180,7 +186,11 @@ async function proposePassage(input: ProposeSheetRangesInput): Promise<SheetRang
         );
         const antes = (input.sourceType && HOJAS_ANTES_POR_TIPO[input.sourceType]) ?? 0;
         const existentes = new Set(input.pageIndex.map(e => e.sheet));
-        const ranges = normalizeSheetRanges(elegidas.map(r => ({ start: Math.max(1, r.start - antes), end: r.end })))
+        const ranges = withCommentaryContour(
+            normalizeSheetRanges(elegidas.map(r => ({ start: Math.max(1, r.start - antes), end: r.end }))),
+            input.pageIndex,
+            input.sourceType,
+        )
             .map(r => ({ start: primeraExistente(r.start, r.end, existentes), end: r.end }))
             .filter(r => r.start <= r.end);
         return ranges.length > 0 ? { ranges, kind: 'passage' } : { ranges: [], kind: 'none' };
@@ -238,7 +248,8 @@ async function proposeStructural(input: ProposeSheetRangesInput): Promise<SheetR
         if (selection.chunkCount === 0) return { ranges: [], kind: 'none' };
 
         return {
-            ranges: sheetsForChunkRanges(input.pageIndex, selection.ranges),
+            // Con una hoja más a cada lado en un comentario (banco del corpus, A2).
+            ranges: withCommentaryContour(sheetsForChunkRanges(input.pageIndex, selection.ranges), input.pageIndex, input.sourceType),
             kind: 'structural',
         };
     } catch (err) {

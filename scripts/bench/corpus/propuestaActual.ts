@@ -18,6 +18,7 @@ import {
   mergeGrammarKeys, sectionsForKeys, proposePassageSheets, rankPassageSheets,
   textEditionSheetsForPassage, resolveOutlineReferences, outlineStructureQuality, selectChunksForPassage, sheetsForChunkRanges,
   reviewCorpusByQuestion, normalizeSheetRanges, isPickedByPages, isTextEditionSourceType, LEMMA_ENTRY_SOURCE_TYPES,
+  shortResourceSheets, withCommentaryContour,
 } from '../../../packages/domain/src/index';
 import type { LibroCargado } from './cargarLibro';
 import type { CasoBanco, PropuestaFuente } from './tipos';
@@ -32,6 +33,33 @@ const hojasDe = (rangos: ReadonlyArray<Rango>): Set<number> => {
 };
 
 export const RUTAS_ACTUALES = ['inicial', 'pregunta', 'seccion', 'lema'] as const;
+/**
+ * Otras vistas de lo mismo, para medir combinaciones:
+ *   inicialSinLexico = `inicial` sin léxicos ni diccionarios (su propuesta inicial son hojas que nombran el
+ *                      pasaje, que en un léxico casi nunca es la entrada).
+ *   inicialPorPregunta = como `inicialSinLexico`, pero en un comentario de un trabajo por pregunta, la estructura
+ *                      de los versículos que tocan las preguntas.
+ *   lemaPregunta     = entrada de los lemas que nombra cada pregunta (léxicos y diccionarios).
+ *   inicialFaseA     = la propuesta inicial de la fase A (ver `inicialFaseA`).
+ */
+export const RUTAS_DERIVADAS = ['inicialSinLexico', 'inicialPorPregunta', 'lemaPregunta', 'inicialFaseA'] as const;
+
+/** Propuestas de la fase A: inicial con contorno y libro corto, tarjeta por pregunta y entradas de los lemas de cada pregunta. */
+export const RUTAS_FASE_A = ['inicialFaseA', 'pregunta', 'lemaPregunta'] as const;
+/** Navegación de la fase A: regiones de gramática, entradas de todos los lemas del pasaje y secciones sugeridas. */
+export const NAVEGACION_FASE_A = ['region', 'lema', 'seccion'] as const;
+
+/**
+ * La propuesta inicial de la fase A, con las MISMAS funciones del dominio que usa `proposeSheetRanges` en la app:
+ * un extracto corto entero; un comentario con su contorno; un léxico no propone por pasaje (sus hojas salen de
+ * las entradas de los lemas de cada pregunta, ruta `lemaPregunta`).
+ */
+function inicialFaseA(L: LibroCargado, type: string, esLex: boolean, inicial: Rango[], rutaInicial: string): Rango[] {
+  const corto = shortResourceSheets(L.indice);
+  if (corto.length) return corto;
+  if (esLex) return [];
+  return rutaInicial === 'estructura' || rutaInicial === 'pasaje' ? withCommentaryContour(inicial, L.indice, type as never) : inicial;
+}
 
 /**
  * Propuestas de todas las fuentes de un caso. `libros` trae el libro cargado de cada fuente.
@@ -83,14 +111,21 @@ export function propuestaActual(
       const antes = (type === 'lexicon-technical' || type === 'theological-dictionary') ? 1 : 0;
       return normalizeSheetRanges(eleg.map((r: Rango) => ({ start: Math.max(1, r.start - antes), end: r.end })));
     };
-    const estructura = (): Rango[] => {
+    const estructura = (tramo: typeof passage = passage): Rango[] => {
       const ent: Array<{ chunkIndex: number; page: number; section: string | null; sectionPath: string[] }> = [];
       for (const t of L.esquema) for (let i = t.startChunk; i <= t.endChunk; i++) ent.push({ chunkIndex: i, page: t.page, section: t.section, sectionPath: t.sectionPath });
       if (!ent.length) return [];
       const resolved = resolveOutlineReferences(ent as never, caso.pasaje.bookId);
       if (!outlineStructureQuality(resolved).usable) return [];
-      const sel = selectChunksForPassage(resolved, passage as never, { contextChunks: 1, maxChunks: 60 });
+      const sel = selectChunksForPassage(resolved, tramo as never, { contextChunks: 1, maxChunks: 60 });
       return sel.chunkCount === 0 ? [] : sheetsForChunkRanges(L.indice as never, sel.ranges);
+    };
+    // Comentario en un trabajo por pregunta: la estructura de los versículos que tocan las preguntas, no del pasaje entero.
+    const porPregunta = (): Rango[] | null => {
+      if (!qVerses.length || !/^commentary-/.test(type)) return null;
+      const out: Rango[] = [];
+      for (const v of qVerses) out.push(...estructura({ ...passage, verseStart: v, verseEnd: v } as typeof passage));
+      return out.length ? normalizeSheetRanges(out) : null;
     };
 
     let inicial: Rango[] = []; let rutaInicial = 'ninguna';
@@ -110,6 +145,8 @@ export function propuestaActual(
     const entradasP = esLex ? lemmaEntriesIn(L.fragmentos as never, pLemmas.map(l => lemmaKey(l.lemma))) : {};
     const lema = new Set<number>();
     for (const e of Object.values(entradasP) as Array<{ startSheet: number; endSheet: number }>) for (let x = e.startSheet; x <= e.endSheet; x++) lema.add(x);
+    const lemaPregunta = new Set<number>();
+    for (const e of Object.values(entradasQ) as Array<{ startSheet: number; endSheet: number }>) for (let x = e.startSheet; x <= e.endSheet; x++) lemaPregunta.add(x);
     const seccion = new Set<number>((type === 'grammar-syntax' ? sectionsForKeys(L.secciones, claves) : []).map((x: { sheet: number }) => x.sheet));
 
     fuentesRevision.push({
@@ -125,7 +162,9 @@ export function propuestaActual(
     });
     parciales.push({
       libro: f.libro, sourceType: type, rutaInicial,
-      rutas: { inicial: hojasDe(inicial), pregunta: new Set<number>(), seccion, lema },
+      rutas: { inicial: hojasDe(inicial), inicialSinLexico: esLex ? new Set<number>() : hojasDe(inicial),
+        inicialPorPregunta: esLex ? new Set<number>() : hojasDe(porPregunta() ?? inicial),
+        inicialFaseA: hojasDe(inicialFaseA(L, type, esLex, inicial, rutaInicial)), pregunta: new Set<number>(), seccion, lema, lemaPregunta },
       porPregunta: new Map(),
     });
   }

@@ -161,19 +161,19 @@
     {
       "libro": "Kittel",
       "etiqueta": "776",
-      "hoja": 612,
+      "hoja": 776,
       "pregunta": 2
     },
     {
       "libro": "Kittel",
       "etiqueta": "208",
-      "hoja": 167,
+      "hoja": 208,
       "pregunta": 3
     },
     {
       "libro": "Kittel",
       "etiqueta": "139",
-      "hoja": 113,
+      "hoja": 139,
       "pregunta": 4
     },
     {
@@ -197,5 +197,5 @@
   ],
   "citasSinHoja": [],
   "fueraDeLaBiblioteca": [],
-  "origen": "Congelado el 2026-11-20 desde el Word entregado en Drive («Trabajo Practico 10 - Santiago 5_1-6.docx») y las fuentes de exegeticalPapers/40pjrOE2gOAl0symSHm5. Solo referencias: ningún texto de libros."
+  "origen": "Congelado el 2026-11-20 desde el Word entregado en Drive («Trabajo Practico 10 - Santiago 5_1-6.docx») y las fuentes de exegeticalPapers/40pjrOE2gOAl0symSHm5. Solo referencias: ningún texto de libros. Corrección 2026-11-21: en los TP hechos en la plataforma, «Kittel y Friedrich, N» es la HOJA N (la numeración de Kittel declaraba desfase 0 y el sistema citaba la hoja); la hoja N trata el versículo de la pregunta."
 }

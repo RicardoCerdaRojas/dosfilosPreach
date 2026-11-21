@@ -27,7 +27,7 @@ export function hojasPropuestas(p: PropuestaFuente, rutas: readonly string[]): S
   return out;
 }
 
-const grupoVacio = (): MetricaGrupo => ({ citadas: 0, acertadas: 0, propuestas: 0 });
+const grupoVacio = (): MetricaGrupo => ({ citadas: 0, acertadas: 0, cubiertas: 0, propuestas: 0 });
 
 /**
  * Cruza la verdad de un caso con lo que el sistema propone.
@@ -38,12 +38,13 @@ export function medirCaso(
   caso: CasoBanco,
   propuestas: readonly PropuestaFuente[],
   rutas: readonly string[],
+  rutasNavegacion: readonly string[] = [],
 ): ResultadoCaso {
   const porLibro = new Map(propuestas.map(p => [p.libro, p]));
   const porGrupo: Record<GrupoFuente, MetricaGrupo> = {
     'comentario-y-texto': grupoVacio(), gramatica: grupoVacio(), lexico: grupoVacio(),
   };
-  let citadas = 0; let acertadas = 0;
+  let citadas = 0; let acertadas = 0; let cubiertas = 0;
   const mismaPregunta = { acertadas: 0, citadas: 0 };
   const perdidas: ResultadoCaso['perdidas'] = [];
   const vistas = new Set<string>();
@@ -57,7 +58,9 @@ export function medirCaso(
     const g = porGrupo[grupoDe(p.sourceType)];
     const hojas = hojasPropuestas(p, rutas);
     const acierto = hojas.has(c.hoja);
+    const cubierta = acierto || hojasPropuestas(p, rutasNavegacion).has(c.hoja);
     citadas++; g.citadas++;
+    if (cubierta) { cubiertas++; g.cubiertas++; }
     if (acierto) { acertadas++; g.acertadas++; } else perdidas.push({ libro: c.libro, etiqueta: c.etiqueta, hoja: c.hoja, pregunta: c.pregunta });
     if (c.pregunta !== undefined) {
       mismaPregunta.citadas++;
@@ -65,20 +68,24 @@ export function medirCaso(
     }
   }
 
-  let propuestasTotal = 0;
+  let propuestasTotal = 0; let navegacion = 0;
   for (const p of propuestas) {
-    const n = hojasPropuestas(p, rutas).size;
-    propuestasTotal += n;
-    porGrupo[grupoDe(p.sourceType)].propuestas += n;
+    const prop = hojasPropuestas(p, rutas);
+    propuestasTotal += prop.size;
+    porGrupo[grupoDe(p.sourceType)].propuestas += prop.size;
+    for (const h of hojasPropuestas(p, rutasNavegacion)) if (!prop.has(h)) navegacion++;
   }
 
   return {
     id: caso.id,
     conjunto: caso.conjunto,
     rutasMedidas: [...rutas],
+    rutasNavegacion: [...rutasNavegacion],
     citadas,
     acertadas,
+    cubiertas,
     propuestas: propuestasTotal,
+    navegacion,
     enLaMismaPregunta: mismaPregunta,
     porGrupo,
     fueraDeLaBiblioteca: new Set(caso.fueraDeLaBiblioteca.map(f => `${f.libro}|${f.etiqueta}`)).size,
@@ -89,10 +96,14 @@ export function medirCaso(
 export interface Resumen {
   citadas: number;
   acertadas: number;
+  cubiertas: number;
   propuestas: number;
+  navegacion: number;
   recall: number;
+  /** Citadas en hoja propuesta o región de navegación. */
+  cobertura: number;
   precisionMinima: number;
-  porGrupo: Record<GrupoFuente, MetricaGrupo & { recall: number }>;
+  porGrupo: Record<GrupoFuente, MetricaGrupo & { recall: number; cobertura: number }>;
   enLaMismaPregunta: { acertadas: number; citadas: number };
 }
 
@@ -102,23 +113,25 @@ export function resumir(resultados: readonly ResultadoCaso[]): Resumen {
   const porGrupo = {
     'comentario-y-texto': grupoVacio(), gramatica: grupoVacio(), lexico: grupoVacio(),
   } as Record<GrupoFuente, MetricaGrupo>;
-  let citadas = 0; let acertadas = 0; let propuestas = 0;
+  let citadas = 0; let acertadas = 0; let cubiertas = 0; let propuestas = 0; let navegacion = 0;
   const misma = { acertadas: 0, citadas: 0 };
   for (const r of resultados) {
-    citadas += r.citadas; acertadas += r.acertadas; propuestas += r.propuestas;
+    citadas += r.citadas; acertadas += r.acertadas; cubiertas += r.cubiertas; propuestas += r.propuestas; navegacion += r.navegacion;
     misma.acertadas += r.enLaMismaPregunta.acertadas; misma.citadas += r.enLaMismaPregunta.citadas;
     for (const k of Object.keys(porGrupo) as GrupoFuente[]) {
       porGrupo[k].citadas += r.porGrupo[k].citadas;
       porGrupo[k].acertadas += r.porGrupo[k].acertadas;
+      porGrupo[k].cubiertas += r.porGrupo[k].cubiertas;
       porGrupo[k].propuestas += r.porGrupo[k].propuestas;
     }
   }
   const conRecall = Object.fromEntries(
-    (Object.keys(porGrupo) as GrupoFuente[]).map(k => [k, { ...porGrupo[k], recall: proporcion(porGrupo[k].acertadas, porGrupo[k].citadas) }]),
+    (Object.keys(porGrupo) as GrupoFuente[]).map(k => [k, { ...porGrupo[k], recall: proporcion(porGrupo[k].acertadas, porGrupo[k].citadas), cobertura: proporcion(porGrupo[k].cubiertas, porGrupo[k].citadas) }]),
   ) as Resumen['porGrupo'];
   return {
-    citadas, acertadas, propuestas,
+    citadas, acertadas, cubiertas, propuestas, navegacion,
     recall: proporcion(acertadas, citadas),
+    cobertura: proporcion(cubiertas, citadas),
     precisionMinima: proporcion(acertadas, propuestas),
     porGrupo: conRecall,
     enLaMismaPregunta: misma,
@@ -140,6 +153,7 @@ export function regresiones(antes: Resumen, ahora: Resumen, toleranciaPrecision 
   const out: Regresion[] = [];
   const eps = 1e-9;
   if (ahora.recall + eps < antes.recall) out.push({ medida: 'recall', antes: antes.recall, ahora: ahora.recall });
+  if (ahora.cobertura + eps < (antes.cobertura ?? antes.recall)) out.push({ medida: 'cobertura', antes: antes.cobertura ?? antes.recall, ahora: ahora.cobertura });
   for (const k of Object.keys(antes.porGrupo) as GrupoFuente[]) {
     if (ahora.porGrupo[k].recall + eps < antes.porGrupo[k].recall) {
       out.push({ medida: `recall ${k}`, antes: antes.porGrupo[k].recall, ahora: ahora.porGrupo[k].recall });

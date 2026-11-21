@@ -39,10 +39,10 @@
     },
     "prueba": {
       "citadas": 115,
-      "acertadas": 91,
+      "acertadas": 97,
       "propuestas": 799,
-      "recall": 0.7913043478260869,
-      "precisionMinima": 0.11389236545682102,
+      "recall": 0.8434782608695652,
+      "precisionMinima": 0.1214017521902378,
       "porGrupo": {
         "comentario-y-texto": {
           "citadas": 63,
@@ -58,23 +58,23 @@
         },
         "lexico": {
           "citadas": 15,
-          "acertadas": 8,
+          "acertadas": 14,
           "propuestas": 379,
-          "recall": 0.5333333333333333
+          "recall": 0.9333333333333333
         }
       },
       "enLaMismaPregunta": {
-        "acertadas": 49,
+        "acertadas": 55,
         "citadas": 95
       }
     }
   },
   "total": {
     "citadas": 245,
-    "acertadas": 183,
+    "acertadas": 189,
     "propuestas": 1512,
-    "recall": 0.746938775510204,
-    "precisionMinima": 0.12103174603174603,
+    "recall": 0.7714285714285715,
+    "precisionMinima": 0.125,
     "porGrupo": {
       "comentario-y-texto": {
         "citadas": 127,
@@ -90,13 +90,13 @@
       },
       "lexico": {
         "citadas": 23,
-        "acertadas": 14,
+        "acertadas": 20,
         "propuestas": 653,
-        "recall": 0.6086956521739131
+        "recall": 0.8695652173913043
       }
     },
     "enLaMismaPregunta": {
-      "acertadas": 60,
+      "acertadas": 66,
       "citadas": 139
     }
   },
@@ -183,10 +183,10 @@
         "lema"
       ],
       "citadas": 23,
-      "acertadas": 17,
+      "acertadas": 20,
       "propuestas": 185,
       "enLaMismaPregunta": {
-        "acertadas": 13,
+        "acertadas": 16,
         "citadas": 23
       },
       "porGrupo": {
@@ -202,12 +202,12 @@
         },
         "lexico": {
           "citadas": 5,
-          "acertadas": 2,
+          "acertadas": 5,
           "propuestas": 109
         }
       },
       "fueraDeLaBiblioteca": 0,
-      "perdidas": 6
+      "perdidas": 3
     },
     {
       "id": "tp11-stg5-7",
@@ -327,10 +327,10 @@
         "lema"
       ],
       "citadas": 23,
-      "acertadas": 20,
+      "acertadas": 23,
       "propuestas": 289,
       "enLaMismaPregunta": {
-        "acertadas": 13,
+        "acertadas": 16,
         "citadas": 23
       },
       "porGrupo": {
@@ -346,12 +346,12 @@
         },
         "lexico": {
           "citadas": 5,
-          "acertadas": 2,
+          "acertadas": 5,
           "propuestas": 185
         }
       },
       "fueraDeLaBiblioteca": 0,
-      "perdidas": 3
+      "perdidas": 0
     },
     {
       "id": "tp9-stg4-11",
