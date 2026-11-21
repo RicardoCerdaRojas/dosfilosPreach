@@ -64,7 +64,7 @@ numeración de Kittel declaraba desfase 0 y el sistema citaba la hoja). Con eso 
 
 ```bash
 npx tsx scripts/bench/corpus/correr.ts --rutas inicialFaseA,pregunta,lemaPregunta \
-  --navegacion region,lema,seccion --comparar scripts/bench/corpus/fase-a.json
+  --navegacion region,lema,seccion --tarjeta-fase-a --comparar scripts/bench/corpus/fase-a.json
 ```
 
 Las **propuestas** cuentan para la precisión; la **navegación** (regiones de gramática, entradas de todos los lemas del
@@ -73,8 +73,8 @@ pasaje, secciones sugeridas) solo para la cobertura. Es la meta de gramáticas e
 
 | Conjunto | Recall de propuestas | Cobertura | Precisión mínima | Comentarios | Gramáticas (cobertura) | Léxicos (cobertura) |
 |---|---|---|---|---|---|---|
-| Desarrollo | 65,4 % | 86,2 % | 33,7 % (252 hojas) | 93,8 % | 75,9 % | 100 % |
-| Prueba | 86,1 % | 87,8 % | 26,1 % (379 hojas) | 96,8 % | 70,3 % | 93,3 % |
+| Desarrollo | 65,4 % | 86,2 % | 33,1 % (257 hojas) | 93,8 % | 75,9 % | 100 % |
+| Prueba | 86,1 % | 87,8 % | 25,3 % (391 hojas) | 96,8 % | 70,3 % | 93,3 % |
 
 Qué cambió y cuánto aportó (medido):
 - **Kittel por firma** (`lemmaEntriesIn`): el artículo nuevo empieza tras la firma «[Autor, tomo, páginas]» del
@@ -103,4 +103,18 @@ THE GREEK NEW TESTAMENT»; se corrige en A8), e IBHS en el TI #3, que no se hizo
 
 Precisión: la meta de 50 % no se cumple y el banco explica por qué. Un comentario se propone por su sección (≈3 hojas
 por hoja citada) y eso es lo que el estudiante tiene que leer; la precisión mínima cuenta como error toda hoja útil que
-no terminó citada. Pendiente para A3: la tarjeta por pregunta (misma pregunta 12/44 en desarrollo).
+no terminó citada.
+
+### Tarjeta por pregunta (A3, `--tarjeta-fase-a`)
+
+La tarjeta «¿Qué responde cada pregunta?» suma, por cada pregunta, la **sección del comentario** que trata su
+versículo (`commentarySectionsByVerse`, con el contorno de ±1 hoja) y, en ediciones, aparatos y comentarios textuales
+de hasta 4 hojas elegidas, **el pasaje en el texto**. Lo ya mostrado por referencia o por lema no se repite.
+
+| Conjunto | Misma pregunta antes | Misma pregunta con A3 |
+|---|---|---|
+| Desarrollo | 12/44 | 25/44 |
+| Prueba | 55/95 | 79/95 |
+
+Costo: 5 hojas más en desarrollo y 12 en prueba; la precisión mínima baja 0,6 y 0,8 puntos. Recall y cobertura no
+cambian: las hojas ya se proponían, ahora aparecen en la pregunta correcta.

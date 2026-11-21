@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import {
     LEMMA_ENTRY_SOURCE_TYPES,
+    commentarySectionsByVerse,
     declaresNoFolios,
     hasResolvedNumbering,
     normalizeSheetRanges,
@@ -21,6 +22,13 @@ import { useLibrary } from '@/hooks/library';
 import { passagePagesQuery } from './usePassagePages';
 import { lemmaPagesQuery } from './useLemmaPages';
 import { usePassageLemmas } from './usePassageLemmas';
+import { documentOutlineQuery, documentPageIndexQuery } from './useDocumentPageIndex';
+
+/** Texto base, aparato y comentario textual: sus pocas hojas del pasaje sirven a toda pregunta (A3). */
+const DEL_PASAJE: ReadonlySet<string> = new Set(['biblical-text-edition', 'critical-apparatus', 'textual-commentary']);
+/** Más hojas que esto no son «la porción del pasaje»: el corpus tomó otra cosa. */
+const MAX_HOJAS_DEL_PASAJE = 4;
+const esComentario = (t: string) => t === 'commentary-critical' || t === 'commentary-expository';
 
 /** Una fuente del corpus que la revisión puede leer: tiene libro en la biblioteca. */
 export interface ReviewedSource {
@@ -100,6 +108,14 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
             return { ...options, enabled: conPreguntas && options.enabled };
         }),
     });
+    // Comentarios: el esquema y el índice de hojas, para la sección de cada versículo (A3).
+    const comentarios = lista.filter(f => esComentario(f.source.sourceType));
+    const porEsquema = useQueries({
+        queries: comentarios.map(f => ({ ...documentOutlineQuery(f.resourceId), enabled: conPreguntas })),
+    });
+    const porIndice = useQueries({
+        queries: comentarios.map(f => ({ ...documentPageIndexQuery(f.resourceId), enabled: conPreguntas })),
+    });
     const porLema = useQueries({
         queries: lexicas.map(f => {
             const options = lemmaPagesQuery(f.resourceId, lemas);
@@ -111,6 +127,11 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
     // su estado, como en `useCorpusFootprint`.
     const clavePasaje = porPasaje.map(q => `${q.status}${q.dataUpdatedAt}`).join(',');
     const claveLema = porLema.map(q => `${q.status}${q.dataUpdatedAt}`).join(',');
+    const claveSecciones = [...porEsquema, ...porIndice].map(q => `${q.status}${q.dataUpdatedAt}`).join(',');
+    const versiculosConPregunta = useMemo(
+        () => [...new Set(questions.flatMap(q => q.verses.filter(v => v.chapter === passage?.chapterStart).map(v => v.verse)))],
+        [questions, passage?.chapterStart],
+    );
 
     return useMemo(() => {
         if (!conPreguntas || !passage) {
@@ -147,10 +168,28 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
                     lemmaEntries = null;
                 }
             }
+            const c = comentarios.indexOf(f);
+            const esquema = c >= 0 ? porEsquema[c] : undefined;
+            const indice = c >= 0 ? porIndice[c] : undefined;
+            const sectionsByVerse = esquema?.isSuccess && indice?.isSuccess
+                ? commentarySectionsByVerse({
+                    entries: esquema.data,
+                    pageIndex: indice.data.pages,
+                    passage,
+                    verses: versiculosConPregunta,
+                    sourceType: f.source.sourceType,
+                })
+                : undefined;
+            const hojasDelPasaje = f.selected?.reduce((n, r) => n + r.end - r.start + 1, 0) ?? Infinity;
+            const passageSheets = DEL_PASAJE.has(f.source.sourceType) && f.selected && hojasDelPasaje <= MAX_HOJAS_DEL_PASAJE
+                ? f.selected
+                : undefined;
             return {
                 sourceId: f.source.id,
                 sourceType: f.source.sourceType,
                 selected: f.selected,
+                ...(sectionsByVerse ? { sectionsByVerse } : {}),
+                ...(passageSheets ? { passageSheets } : {}),
                 pinned: f.source.excerptRecipe?.pinnedRanges ?? [],
                 pinnedByQuestion: fijadoPorPregunta(paper, questions, f.source.id),
                 verseHits: pasaje.isSuccess && indexado
@@ -173,7 +212,7 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
             isLoading: review.pending.length > fallidas.length + sinIndiceUnicas.length,
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [conPreguntas, passage, fuentes, questions, lemas, morfologia.isLoading, clavePasaje, claveLema]);
+    }, [conPreguntas, passage, fuentes, questions, lemas, morfologia.isLoading, clavePasaje, claveLema, claveSecciones, versiculosConPregunta]);
 }
 
 /**

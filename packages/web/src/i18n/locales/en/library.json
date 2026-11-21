@@ -174,7 +174,7 @@
     "pdfparse": "Basic",
     "pdfparseHint": "Processed with the basic extractor — reduced quality; consider reprocessing",
     "textLayer": "Text layer",
-    "textLayerHint": "Read from the text the PDF already carries, line by line. Exact and model-free; only works when the PDF is not a scan."
+    "textLayerHint": "Read from the text the PDF already carries, line by line. Exact, with no assistant involved; only works when the PDF is not a scan."
   },
   "stores": {
     "exegesis": "Exegesis",

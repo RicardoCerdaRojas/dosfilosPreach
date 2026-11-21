@@ -1009,6 +1009,10 @@
             "unindexed": "sin índice: no se pudo revisar",
             "failed": "no se pudo revisar",
             "pending": "revisando…"
+          },
+          "via": {
+            "section": "sección del comentario",
+            "passage": "el pasaje en el texto"
           }
         },
         "gap": {
@@ -1627,7 +1631,7 @@
         "includeStepHint": "Toca uno para incluirlo; después vuelve a proponer el plan para repartirle fuentes.",
         "tab": "Plan de uso",
         "heading": "Plan de uso del corpus",
-        "description": "Asigna fuentes específicas a cada verso o sección. Te proponemos una distribución basada en el pasaje y el corpus; tú revisas y ajustas. Las fuentes asignadas tienen prioridad en la generación, pero el modelo puede usar las demás cuando sea pertinente.",
+        "description": "Asigna fuentes específicas a cada verso o sección. Te proponemos una distribución basada en el pasaje y el corpus; tú revisas y ajustas. Las fuentes asignadas tienen prioridad al generar, pero el asistente puede usar las demás cuando sea pertinente.",
         "emptyCorpus": "Aún no hay fuentes en el corpus. Agrega fuentes en la pestaña anterior antes de planificar el uso.",
         "noSteps": "Aún no hay pasos generables. Configura el pasaje y vuelve aquí.",
         "seedingSteps": "Preparando lista de pasos a partir del pasaje…",
@@ -1910,7 +1914,7 @@
     "status": {
       "planned-and-cited": "Planificada y citada en {{citedCount}} paso(s).",
       "planned-not-cited": "Planificada en {{plannedCount}} paso(s) pero no citada — considera regenerar.",
-      "cited-not-planned": "Citada en {{citedCount}} paso(s) sin estar en el plan (adaptación del modelo).",
+      "cited-not-planned": "Citada en {{citedCount}} paso(s) sin estar en el plan (la usó el asistente por su cuenta).",
       "never-cited": "Nunca citada — considera removerla del corpus si no aporta."
     }
   },

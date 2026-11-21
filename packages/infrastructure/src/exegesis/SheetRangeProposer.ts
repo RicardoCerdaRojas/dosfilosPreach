@@ -14,14 +14,13 @@ import {
     shortResourceSheets,
     textEditionSheetsForPassage,
     withCommentaryContour,
-    type DocumentOutlineEntry,
     type ExcerptSelectionMode,
     type PageIndexEntry,
     type PassageReference,
     type SheetRange,
     type SourceType,
 } from '@dosfilos/domain';
-import { searchDocumentByReference } from './DocumentPageIndexClient';
+import { fetchDocumentOutline, searchDocumentByReference } from './DocumentPageIndexClient';
 
 /**
  * Con qué hojas arranca el carrito del selector.
@@ -61,14 +60,6 @@ export function selectionModeOf(kind: ProposalKind): ExcerptSelectionMode {
 export interface SheetRangeProposal {
     ranges: SheetRange[];
     kind: ProposalKind;
-}
-
-interface OutlineSection {
-    startChunk: number;
-    endChunk: number;
-    page: number;
-    section: string | null;
-    sectionPath: string[];
 }
 
 interface RetrievedChunk {
@@ -219,23 +210,7 @@ function primeraExistente(start: number, end: number, existentes: ReadonlySet<nu
  */
 async function proposeStructural(input: ProposeSheetRangesInput): Promise<SheetRangeProposal> {
     try {
-        const callable = httpsCallable<
-            { resourceId: string },
-            { sections: OutlineSection[] }
-        >(getFunctions(), 'getDocumentOutline', { timeout: TIMEOUT_MS });
-        const response = await callable({ resourceId: input.resourceId });
-
-        const entries: DocumentOutlineEntry[] = [];
-        for (const section of response.data?.sections ?? []) {
-            for (let i = section.startChunk; i <= section.endChunk; i++) {
-                entries.push({
-                    chunkIndex: i,
-                    page: section.page,
-                    section: section.section,
-                    sectionPath: section.sectionPath,
-                });
-            }
-        }
+        const entries = await fetchDocumentOutline(input.resourceId);
         if (entries.length === 0) return { ranges: [], kind: 'none' };
 
         const resolved = resolveOutlineReferences(entries, input.passage.bookId);

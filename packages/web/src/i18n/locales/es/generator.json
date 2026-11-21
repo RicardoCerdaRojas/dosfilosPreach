@@ -172,7 +172,7 @@
       "generateError": "Error al generar exégesis",
       "refineError": "Error al refinar la sección",
       "updateError": "Error al actualizar la sección",
-      "parseError": "Error al parsear la respuesta del modelo",
+      "parseError": "No se pudo leer la respuesta del asistente",
       "invalidArray": "El modelo no devolvió un array válido"
     },
     "success": {

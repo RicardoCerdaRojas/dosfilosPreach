@@ -18,7 +18,7 @@ import {
   mergeGrammarKeys, sectionsForKeys, proposePassageSheets, rankPassageSheets,
   textEditionSheetsForPassage, resolveOutlineReferences, outlineStructureQuality, selectChunksForPassage, sheetsForChunkRanges,
   reviewCorpusByQuestion, normalizeSheetRanges, isPickedByPages, isTextEditionSourceType, LEMMA_ENTRY_SOURCE_TYPES,
-  shortResourceSheets, withCommentaryContour,
+  shortResourceSheets, withCommentaryContour, commentarySectionsByVerse,
 } from '../../../packages/domain/src/index';
 import type { LibroCargado } from './cargarLibro';
 import type { CasoBanco, PropuestaFuente } from './tipos';
@@ -69,6 +69,8 @@ export function propuestaActual(
   caso: CasoBanco,
   libros: ReadonlyMap<string, LibroCargado>,
   versos: readonly VersoMorfologia[],
+  /** Tarjeta por pregunta de la fase A (sección del comentario y porción del pasaje). Por omisión, la de hoy. */
+  conTarjetaFaseA = false,
 ): PropuestaFuente[] {
   const passage = { ...caso.pasaje } as never as Parameters<typeof textEditionSheetsForPassage>[1];
   const brief = caso.consigna;
@@ -149,8 +151,16 @@ export function propuestaActual(
     for (const e of Object.values(entradasQ) as Array<{ startSheet: number; endSheet: number }>) for (let x = e.startSheet; x <= e.endSheet; x++) lemaPregunta.add(x);
     const seccion = new Set<number>((type === 'grammar-syntax' ? sectionsForKeys(L.secciones, claves) : []).map((x: { sheet: number }) => x.sheet));
 
+    // Tarjeta por pregunta, fase A (A3): la sección del comentario por versículo y la porción del pasaje del texto.
+    const esComentario = /^commentary-/.test(type);
+    const outline: Array<{ chunkIndex: number; page: number; section: string | null; sectionPath: string[] }> = [];
+    if (esComentario) for (const t of L.esquema) for (let i = t.startChunk; i <= t.endChunk; i++) outline.push({ chunkIndex: i, page: t.page, section: t.section, sectionPath: t.sectionPath });
+    const sectionsByVerse = commentarySectionsByVerse({ entries: outline, pageIndex: L.indice as never, passage, verses: qVerses, sourceType: type as never });
+    const delPasaje = ['biblical-text-edition', 'critical-apparatus', 'textual-commentary'].includes(type);
+    const passageSheets = delPasaje && hojasDe(inicial).size <= 4 ? inicial : [];
     fuentesRevision.push({
       sourceId: f.libro, sourceType: type, selected: inicial, pinned: [],
+      ...(conTarjetaFaseA ? { sectionsByVerse, passageSheets } : {}),
       verseHits: ranked.map(h => ({ sheet: h.sheet, count: h.count, verses: h.verses })),
       ...(esLex ? {
         lemmaEntries: qLemmas.map(l => {

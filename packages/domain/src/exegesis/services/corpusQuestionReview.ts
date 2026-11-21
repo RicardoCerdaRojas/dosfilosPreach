@@ -44,6 +44,19 @@ export interface QuestionReviewSource {
      */
     lemmaEntries?: ReadonlyArray<QuestionLemmaEntry> | null;
     /**
+     * Comentarios: la sección (con su contorno) que trata cada versículo, por
+     * número de versículo. Lo que se lee para responder, aunque la hoja no
+     * escriba «Stg 5:7» (fase «Asistente del corpus», A3: medido en el banco del
+     * corpus, la tarjeta acertaba 8 de 18 citas de McCartney en su pregunta).
+     */
+    sectionsByVerse?: Readonly<Record<number, ReadonlyArray<SheetRange>>>;
+    /**
+     * Texto base, aparato y comentario textual: las pocas hojas del pasaje, que
+     * sirven a toda pregunta. NA28 y Metzger no escriben «Stg 5:7» y la tarjeta
+     * no los veía (0 de 12 en el banco).
+     */
+    passageSheets?: ReadonlyArray<SheetRange>;
+    /**
      * Si las hojas del libro tienen página impresa: `'resolved'`, `'none'` (el
      * libro declara no tener folios; se cita por sección) o `'unresolved'`
      * (falta calibrar: sus citas no se podrán comprobar).
@@ -80,8 +93,12 @@ export interface QuestionSheet {
 /** Lo que una fuente aporta a una pregunta. */
 export interface QuestionSourceCoverage {
     sourceId: string;
-    /** Por qué la toca: nombra el versículo, o es la entrada de un lema. */
-    via: 'verse' | 'lemma';
+    /**
+     * Por qué la toca: nombra el versículo, es la entrada de un lema, es la
+     * sección del comentario que trata sus versículos, o es la porción del
+     * pasaje en el texto y su aparato.
+     */
+    via: 'verse' | 'lemma' | 'section' | 'passage';
     /** Con `via: 'lemma'`, la palabra de la consigna. */
     term?: string;
     sheets: QuestionSheet[];
@@ -274,6 +291,25 @@ export function reviewCorpusByQuestion(input: {
                 }
             }
 
+            // La sección del comentario que trata los versículos de la pregunta,
+            // sin repetir las hojas que ya salieron por nombrar el versículo.
+            const yaMostradas = new Set(row.sources.filter(c => c.sourceId === source.sourceId).flatMap(c => c.sheets.map(h => h.sheet)));
+            const deLaSeccion = normalizeSheetRanges(row.verses.flatMap(v => source.sectionsByVerse?.[v] ?? []))
+                .flatMap(sheetsOf).filter(sheet => !yaMostradas.has(sheet));
+            if (deLaSeccion.length > 0) {
+                tocaAlguna = true;
+                const hojas = deLaSeccion.map(sheet => ({ sheet, state: estado(sheet), ...soloDelPaso(sheet) }));
+                if (hojas.some(h => h.state !== 'outside')) cubierta.add(row.number);
+                row.sources.push({ sourceId: source.sourceId, via: 'section', sheets: hojas });
+            }
+            const delPasaje = (source.passageSheets ?? []).flatMap(sheetsOf).filter(sheet => !yaMostradas.has(sheet));
+            if (delPasaje.length > 0) {
+                tocaAlguna = true;
+                const hojas = delPasaje.map(sheet => ({ sheet, state: estado(sheet), ...soloDelPaso(sheet) }));
+                if (hojas.some(h => h.state !== 'outside')) cubierta.add(row.number);
+                row.sources.push({ sourceId: source.sourceId, via: 'passage', sheets: hojas });
+            }
+
             const lemasDeLaPregunta = (esLexica ? source.lemmaEntries ?? [] : []).filter(l => l.question === row.number);
             if (lemasDeLaPregunta.some(l => l.entry || l.appears)) tocaAlguna = true;
             for (const lema of lemasDeLaPregunta.filter(l => l.entry)) {
@@ -371,7 +407,7 @@ export function uncoveredSourcesOfRow(
 export interface QuestionSourceEvidence {
     question: number;
     sourceId: string;
-    via: 'verse' | 'lemma';
+    via: QuestionSourceCoverage['via'];
     /** Con `via: 'lemma'`, la palabra de la consigna. */
     term?: string;
     /** Las hojas del corpus, en el orden de la revisión (más menciones primero). */

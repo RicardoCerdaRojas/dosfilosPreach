@@ -1009,6 +1009,10 @@
             "unindexed": "not indexed: could not be checked",
             "failed": "could not be checked",
             "pending": "checking…"
+          },
+          "via": {
+            "section": "commentary section",
+            "passage": "the passage in the text"
           }
         },
         "gap": {
@@ -1627,7 +1631,7 @@
         "includeStepHint": "Tap one to include it; then propose the plan again to give it sources.",
         "tab": "Usage plan",
         "heading": "Corpus usage plan",
-        "description": "Assign specific sources to each verse or section. We propose a distribution based on the passage and your corpus; you review and adjust. Pinned sources get priority during generation, but the model can still reach for the others when relevant.",
+        "description": "Assign specific sources to each verse or section. We propose a distribution based on the passage and your corpus; you review and adjust. Assigned sources get priority during generation, but the assistant can still use the others when relevant.",
         "emptyCorpus": "No sources in the corpus yet. Add sources in the previous tab before planning usage.",
         "noSteps": "No generation steps yet. Configure the passage and come back here.",
         "seedingSteps": "Preparing the step list from the passage…",
@@ -1910,7 +1914,7 @@
     "status": {
       "planned-and-cited": "Planned and cited in {{citedCount}} step(s).",
       "planned-not-cited": "Planned in {{plannedCount}} step(s) but not cited — consider regenerating.",
-      "cited-not-planned": "Cited in {{citedCount}} step(s) without being planned (model adaptation).",
+      "cited-not-planned": "Cited in {{citedCount}} step(s) without being planned (the assistant used it on its own).",
       "never-cited": "Never cited — consider removing from the corpus if it adds nothing."
     }
   },

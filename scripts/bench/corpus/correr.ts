@@ -5,6 +5,7 @@
  * Uso:
  *   npx tsx scripts/bench/corpus/correr.ts [--conjunto desarrollo|prueba|todos] [--rutas inicial,pregunta]
  *                                         [--json salida.json] [--comparar scripts/bench/corpus/linea-base.json]
+ *                                         [--tarjeta-fase-a]   (la tarjeta por pregunta con sección y pasaje, A3)
  *
  * Sale con código 1 si `--comparar` encuentra una regresión (ver `regresiones` en metricas.ts).
  * Credenciales: las de aplicación por defecto de gcloud (lectura de producción).
@@ -63,7 +64,7 @@ async function main(): Promise<void> {
     const libros = new Map<string, LibroCargado>();
     for (const f of caso.fuentes) libros.set(f.libro, await cargarLibro(db, f.resourceId));
     const { versos, aviso } = morfologiaDelPasaje(caso, raiz);
-    const propuestas = propuestaActual(caso, libros, versos);
+    const propuestas = propuestaActual(caso, libros, versos, process.argv.includes('--tarjeta-fase-a'));
     agregarRegiones(caso, propuestas, libros, versos);
     if (rutas.includes('opciones') || navegacion.includes('opciones')) agregarOpciones(propuestas, libros, await etiquetasPorPregunta(db, caso));
     const r = medirCaso(caso, propuestas, rutas, navegacion);

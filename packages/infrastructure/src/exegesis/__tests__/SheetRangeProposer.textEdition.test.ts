@@ -16,7 +16,11 @@ vi.mock('firebase/functions', () => ({
         return { data: {} };
     },
 }));
-vi.mock('../DocumentPageIndexClient', () => ({ searchDocumentByReference: (...a: unknown[]) => referencia(...a) }));
+vi.mock('../DocumentPageIndexClient', () => ({
+    searchDocumentByReference: (...a: unknown[]) => referencia(...a),
+    // El esquema ahora se pide por el cliente cacheado: se registra con el nombre de la callable.
+    fetchDocumentOutline: async () => { llamadas.push('getDocumentOutline'); return []; },
+}));
 const { proposeSheetRanges } = await import('../SheetRangeProposer');
 
 const hoja = (sheet: number, firstLine: string) => ({ sheet, chunkIndices: [sheet], section: '2', firstLine, charCount: 1000 });

@@ -1,6 +1,7 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
     detectPrintedPageOffset,
+    type DocumentOutlineEntry,
     type PageIndexEntry,
 } from '@dosfilos/domain';
 
@@ -253,6 +254,47 @@ export function invalidateDocumentCaches(resourceId: string): void {
     indexCache.delete(resourceId);
     pdfCache.delete(resourceId);
     textCache.delete(resourceId);
+    outlineCache.delete(resourceId);
+}
+
+interface OutlineSectionResponse {
+    startChunk: number;
+    endChunk: number;
+    page: number;
+    section: string | null;
+    sectionPath: string[];
+}
+
+const OUTLINE_TIMEOUT_MS = 30_000;
+const outlineCache = new Map<string, Promise<DocumentOutlineEntry[]>>();
+
+/**
+ * El esquema de un documento (callable `getDocumentOutline`), un renglón por
+ * fragmento. Cacheado por recurso durante la sesión, como el índice: la
+ * propuesta inicial y la tarjeta por pregunta lo piden para el mismo libro.
+ * Un fallo no se cachea.
+ */
+export function fetchDocumentOutline(resourceId: string): Promise<DocumentOutlineEntry[]> {
+    const cached = outlineCache.get(resourceId);
+    if (cached) return cached;
+    const pending = (async () => {
+        const callable = httpsCallable<{ resourceId: string }, { sections: OutlineSectionResponse[] }>(
+            getFunctions(),
+            'getDocumentOutline',
+            { timeout: OUTLINE_TIMEOUT_MS },
+        );
+        const response = await callable({ resourceId });
+        const entries: DocumentOutlineEntry[] = [];
+        for (const section of response.data?.sections ?? []) {
+            for (let i = section.startChunk; i <= section.endChunk; i++) {
+                entries.push({ chunkIndex: i, page: section.page, section: section.section, sectionPath: section.sectionPath });
+            }
+        }
+        return entries;
+    })();
+    outlineCache.set(resourceId, pending);
+    pending.catch(() => outlineCache.delete(resourceId));
+    return pending;
 }
 
 const textCache = new Map<string, Promise<string>>();

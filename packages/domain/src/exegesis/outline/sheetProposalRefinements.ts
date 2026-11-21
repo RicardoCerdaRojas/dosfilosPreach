@@ -4,7 +4,11 @@
  */
 import type { SourceType } from '../entities/SourceType';
 import type { SheetRange } from '../entities/ProjectSource';
-import { normalizeSheetRanges, type PageIndexEntry } from './documentPageIndex';
+import type { PassageReference } from '../../bible/canon/passage-reference';
+import { normalizeSheetRanges, sheetsForChunkRanges, type PageIndexEntry } from './documentPageIndex';
+import {
+    outlineStructureQuality, resolveOutlineReferences, selectChunksForPassage, type DocumentOutlineEntry,
+} from './documentOutline';
 
 /** Hasta este tamaño, un documento se propone entero: es un extracto, no un libro. */
 export const SHORT_RESOURCE_MAX_SHEETS = 3;
@@ -55,4 +59,33 @@ export function withCommentaryContour(
 
 function isCommentary(t: SourceType): boolean {
     return t === 'commentary-critical' || t === 'commentary-expository';
+}
+
+/**
+ * La sección de un comentario que trata CADA versículo, con su contorno: lo que
+ * se lee para responder una pregunta sobre ese versículo, aunque la hoja no
+ * escriba «Stg 5:7» (tarjeta por pregunta, fase «Asistente del corpus», A3).
+ *
+ * Usa el índice del propio comentario, como la propuesta inicial
+ * (`proposeSheetRanges`), pero versículo por versículo. Sin índice utilizable,
+ * o si no es un comentario, devuelve vacío.
+ */
+export function commentarySectionsByVerse(input: {
+    entries: ReadonlyArray<DocumentOutlineEntry>;
+    pageIndex: ReadonlyArray<PageIndexEntry>;
+    passage: PassageReference;
+    verses: ReadonlyArray<number>;
+    sourceType: SourceType | undefined;
+}): Record<number, SheetRange[]> {
+    if (!input.sourceType || !isCommentary(input.sourceType) || input.entries.length === 0) return {};
+    const resolved = resolveOutlineReferences(input.entries, input.passage.bookId);
+    if (!outlineStructureQuality(resolved).usable) return {};
+    const out: Record<number, SheetRange[]> = {};
+    for (const verse of new Set(input.verses)) {
+        const sel = selectChunksForPassage(resolved, { ...input.passage, verseStart: verse, verseEnd: verse }, { contextChunks: 1, maxChunks: 60 });
+        if (sel.chunkCount === 0) continue;
+        const hojas = withCommentaryContour(sheetsForChunkRanges(input.pageIndex, sel.ranges), input.pageIndex, input.sourceType);
+        if (hojas.length > 0) out[verse] = hojas;
+    }
+    return out;
 }

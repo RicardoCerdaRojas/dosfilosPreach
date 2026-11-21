@@ -14,17 +14,17 @@
       "citadas": 130,
       "acertadas": 85,
       "cubiertas": 112,
-      "propuestas": 252,
+      "propuestas": 257,
       "navegacion": 1037,
       "recall": 0.6538461538461539,
       "cobertura": 0.8615384615384616,
-      "precisionMinima": 0.3373015873015873,
+      "precisionMinima": 0.33073929961089493,
       "porGrupo": {
         "comentario-y-texto": {
           "citadas": 64,
           "acertadas": 60,
           "cubiertas": 60,
-          "propuestas": 153,
+          "propuestas": 158,
           "recall": 0.9375,
           "cobertura": 0.9375
         },
@@ -46,7 +46,7 @@
         }
       },
       "enLaMismaPregunta": {
-        "acertadas": 12,
+        "acertadas": 25,
         "citadas": 44
       }
     },
@@ -54,17 +54,17 @@
       "citadas": 115,
       "acertadas": 99,
       "cubiertas": 101,
-      "propuestas": 379,
+      "propuestas": 391,
       "navegacion": 1052,
       "recall": 0.8608695652173913,
       "cobertura": 0.8782608695652174,
-      "precisionMinima": 0.2612137203166227,
+      "precisionMinima": 0.2531969309462916,
       "porGrupo": {
         "comentario-y-texto": {
           "citadas": 63,
           "acertadas": 61,
           "cubiertas": 61,
-          "propuestas": 235,
+          "propuestas": 247,
           "recall": 0.9682539682539683,
           "cobertura": 0.9682539682539683
         },
@@ -86,7 +86,7 @@
         }
       },
       "enLaMismaPregunta": {
-        "acertadas": 55,
+        "acertadas": 79,
         "citadas": 95
       }
     }
@@ -95,17 +95,17 @@
     "citadas": 245,
     "acertadas": 184,
     "cubiertas": 213,
-    "propuestas": 631,
+    "propuestas": 648,
     "navegacion": 2089,
     "recall": 0.7510204081632653,
     "cobertura": 0.8693877551020408,
-    "precisionMinima": 0.29160063391442154,
+    "precisionMinima": 0.2839506172839506,
     "porGrupo": {
       "comentario-y-texto": {
         "citadas": 127,
         "acertadas": 121,
         "cubiertas": 121,
-        "propuestas": 388,
+        "propuestas": 405,
         "recall": 0.952755905511811,
         "cobertura": 0.952755905511811
       },
@@ -127,7 +127,7 @@
       }
     },
     "enLaMismaPregunta": {
-      "acertadas": 67,
+      "acertadas": 104,
       "citadas": 139
     }
   },
@@ -238,10 +238,10 @@
       "citadas": 23,
       "acertadas": 20,
       "cubiertas": 22,
-      "propuestas": 92,
+      "propuestas": 93,
       "navegacion": 178,
       "enLaMismaPregunta": {
-        "acertadas": 16,
+        "acertadas": 20,
         "citadas": 23
       },
       "porGrupo": {
@@ -249,7 +249,7 @@
           "citadas": 10,
           "acertadas": 10,
           "cubiertas": 10,
-          "propuestas": 32
+          "propuestas": 33
         },
         "gramatica": {
           "citadas": 8,
@@ -283,10 +283,10 @@
       "citadas": 23,
       "acertadas": 17,
       "cubiertas": 22,
-      "propuestas": 66,
+      "propuestas": 67,
       "navegacion": 331,
       "enLaMismaPregunta": {
-        "acertadas": 8,
+        "acertadas": 15,
         "citadas": 23
       },
       "porGrupo": {
@@ -294,7 +294,7 @@
           "citadas": 13,
           "acertadas": 13,
           "cubiertas": 13,
-          "propuestas": 34
+          "propuestas": 35
         },
         "gramatica": {
           "citadas": 7,
@@ -328,10 +328,10 @@
       "citadas": 21,
       "acertadas": 13,
       "cubiertas": 19,
-      "propuestas": 66,
+      "propuestas": 70,
       "navegacion": 262,
       "enLaMismaPregunta": {
-        "acertadas": 4,
+        "acertadas": 10,
         "citadas": 21
       },
       "porGrupo": {
@@ -339,7 +339,7 @@
           "citadas": 11,
           "acertadas": 11,
           "cubiertas": 11,
-          "propuestas": 34
+          "propuestas": 38
         },
         "gramatica": {
           "citadas": 9,
@@ -373,10 +373,10 @@
       "citadas": 16,
       "acertadas": 12,
       "cubiertas": 12,
-      "propuestas": 64,
+      "propuestas": 69,
       "navegacion": 113,
       "enLaMismaPregunta": {
-        "acertadas": 5,
+        "acertadas": 11,
         "citadas": 16
       },
       "porGrupo": {
@@ -384,7 +384,7 @@
           "citadas": 12,
           "acertadas": 11,
           "cubiertas": 11,
-          "propuestas": 61
+          "propuestas": 66
         },
         "gramatica": {
           "citadas": 4,
@@ -421,7 +421,7 @@
       "propuestas": 85,
       "navegacion": 448,
       "enLaMismaPregunta": {
-        "acertadas": 16,
+        "acertadas": 21,
         "citadas": 23
       },
       "porGrupo": {
@@ -463,10 +463,10 @@
       "citadas": 33,
       "acertadas": 33,
       "cubiertas": 33,
-      "propuestas": 104,
+      "propuestas": 110,
       "navegacion": 313,
       "enLaMismaPregunta": {
-        "acertadas": 18,
+        "acertadas": 27,
         "citadas": 33
       },
       "porGrupo": {
@@ -474,7 +474,7 @@
           "citadas": 16,
           "acertadas": 16,
           "cubiertas": 16,
-          "propuestas": 67
+          "propuestas": 73
         },
         "gramatica": {
           "citadas": 13,
