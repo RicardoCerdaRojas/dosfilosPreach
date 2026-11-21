@@ -54,6 +54,33 @@
       "hint": "The literature from the start, to understand and cite the positions while arguing."
     }
   },
+  "profileKind": {
+    "label": "Assignment type",
+    "labelShort": "Type",
+    "confirm": "Confirm",
+    "saveFailed": "Could not save the assignment type.",
+    "tp-por-pregunta": {
+      "label": "Question-by-question paper",
+      "hint": "One section per question in the brief, no introduction or conclusion; parenthetical citations. You choose each debatable decision."
+    },
+    "investigacion-tematica": {
+      "label": "Thematic research paper",
+      "hint": "Sections by theme, with introduction, thesis and conclusion; footnotes and appendices. You approve the outline and the thesis."
+    },
+    "sintesis-sermon": {
+      "label": "Synthesis + sermon",
+      "hint": "Part 1, the exegetical synthesis; Part 2, the sermon. You approve the order, the proposition and each part."
+    },
+    "inferred": {
+      "questions": "Inferred: the brief has numbered questions. Confirm it or pick another.",
+      "sermon": "Inferred: the brief asks for a synthesis and a sermon. Confirm it or pick another.",
+      "brief-tp": "Inferred: the brief says it is a weekly paper. Confirm it or pick another.",
+      "brief-research": "Inferred: the brief says it is a research paper. Confirm it or pick another.",
+      "method-research": "Inferred from the “Research” method. Confirm it or pick another.",
+      "method-mixed": "Inferred from the “Mixed (weekly paper)” method. Confirm it or pick another.",
+      "default": "No clues in the brief: the full research form is proposed. Confirm it or pick another."
+    }
+  },
   "studentReading": {
     "title": "My reading (optional)",
     "hint": "Your own reading of the verse before generating: what you see in the grammar, the lexis or the syntax. The analysis will say which commentators confirm it and which dispute it.",
@@ -978,20 +1005,30 @@
             "missingEntry": "The entry for {{term}} in {{source}} (question {{question}}) is incomplete in the corpus (missing {{pages}}).",
             "missingEntryWhole": "The entry for {{term}} in {{source}} (question {{question}}, {{pages}}) is not in the corpus.",
             "questionUncovered": "No page in the corpus names {{verses}} (question {{question}}).",
-            "failed": "{{source}} could not be reviewed. Reopen this tab to try again."
+            "failed": "{{source}} could not be reviewed. Reopen this tab to try again.",
+            "unindexed_verse": "{{source}} has no indexed text: its pages per verse cannot be reviewed.",
+            "unrelated_verse": "{{source}} does not name any verse of the passage.",
+            "missingSheets_verse_one": "{{source}} discusses {{verses}} on {{pages}}, outside the corpus.",
+            "missingSheets_verse_other": "{{source}} discusses {{verses}} on {{pages}}, outside the corpus.",
+            "questionUncovered_verse": "No page in the corpus names {{verses}}."
           },
           "action": {
             "removeConfirm": "Remove? Click again",
             "remove": "Remove from corpus",
             "calibrate": "Resolve numbering",
             "pinForQuestion_one": "Pin for the question",
-            "pinForQuestion_other": "Pin for the questions"
+            "pinForQuestion_other": "Pin for the questions",
+            "pinForQuestion_verse_one": "Pin for the verse",
+            "pinForQuestion_verse_other": "Pin for the verses"
           },
           "chip": {
             "pinned": "{{page}}: pinned for the whole paper, goes into every step",
             "inCorpus": "{{page}}: in the corpus. Click to pin it for this question",
             "outside": "{{page}}: outside the corpus. Click to pin it for this question",
-            "stepPinned": "{{page}}: pinned for this question. Click to release it"
+            "stepPinned": "{{page}}: pinned for this question. Click to release it",
+            "inCorpus_verse": "{{page}}: in the corpus. Click to pin it for this verse",
+            "outside_verse": "{{page}}: outside the corpus. Click to pin it for this verse",
+            "stepPinned_verse": "{{page}}: pinned for this verse. Click to release it"
           },
           "toast": {
             "addFailed": "The page could not be pinned. Try again.",
@@ -1000,7 +1037,13 @@
             "releasedForQuestion_one": "Released {{pages}} from {{source}} from question {{questions}}.",
             "releasedForQuestion_other": "Released {{pages}} from {{source}} from questions {{questions}}.",
             "noStep_one": "Question {{questions}} does not fall on any step's verse: there is nowhere to pin the page.",
-            "noStep_other": "Questions {{questions}} do not fall on any step's verse: there is nowhere to pin the page."
+            "noStep_other": "Questions {{questions}} do not fall on any step's verse: there is nowhere to pin the page.",
+            "pinnedForQuestion_verse_one": "Pinned {{pages}} from {{source}} for {{verses}}.",
+            "pinnedForQuestion_verse_other": "Pinned {{pages}} from {{source}} for {{verses}}.",
+            "releasedForQuestion_verse_one": "Released {{pages}} from {{source}} from {{verses}}.",
+            "releasedForQuestion_verse_other": "Released {{pages}} from {{source}} from {{verses}}.",
+            "noStep_verse_one": "{{verses}} has no step in the paper: there is nowhere to pin the page.",
+            "noStep_verse_other": "{{verses}} have no step in the paper: there is nowhere to pin the page."
           },
           "uncovered": {
             "label": "Sources with nothing for this question",
@@ -1008,12 +1051,17 @@
             "lemmaMentioned": "checked: names the word, but no entry of its own found",
             "unindexed": "not indexed: could not be checked",
             "failed": "could not be checked",
-            "pending": "checking…"
+            "pending": "checking…",
+            "label_verse": "Sources with nothing for this verse"
           },
           "via": {
             "section": "commentary section",
             "passage": "the passage in the text"
-          }
+          },
+          "title_verse": "What does each verse cover?",
+          "allGood_verse": "Every verse has material in the corpus.",
+          "byQuestion_verse": "See by verse",
+          "questionHeading_verse": "Verse {{verses}}"
         },
         "gap": {
           "onlyExcluded": "{{have}} of {{required}}: no source in your library allowed in this paper covers this type; the ones of this type are excluded ({{sources}}). You can submit with {{have}} of {{required}} or upload another book.",

@@ -65,6 +65,13 @@ export interface ExegeticalPaper {
     exegeticalStrategy?: ExegeticalStrategy;
     /** El método (capa 3). Ausente: el análisis de siempre. */
     exegeticalMethod?: ExegeticalMethod | null;
+    /**
+     * El tipo de trabajo: TP por pregunta, investigación temática, síntesis +
+     * sermón (procedimiento §4d). Decide las unidades y los puntos de
+     * aprobación. Ausente o `null`: se deduce (`readPaperProfileKind`) y el
+     * autor lo confirma una vez.
+     */
+    profileKind?: import('../services/paperProfile').PaperProfileKind | null;
 
     /** Optional human title; defaults to the formatted passage. */
     title?: string;

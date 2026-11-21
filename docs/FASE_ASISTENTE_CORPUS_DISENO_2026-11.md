@@ -335,8 +335,8 @@ Migración: 33 trabajos; `r1-importada` al abrir; los entregados no se tocan.
 | A1 | Banco del corpus: 8 casos (3 desarrollo, 5 prueba) y línea base | `scripts/bench/corpus` | ✅ 11fc3811 |
 | A2a | Rutas de hojas: Kittel por firma, léxicos por la pregunta, regiones de gramática por la ruta de secciones, contorno del comentario, extracto corto; banco con propuesta y navegación | banco (`fase-a.json`) | ✅ |
 | A2b | De las categorías del análisis (opciones, puntos discutibles, función sintáctica) a la subsección exacta de la gramática (paso 2), medido sobre TP #7–#10: 64,9 % → 73,0 % | banco (`fase-b-gramatica.json`) | ✅ |
-| A3 | Hojas por unidad: reemplaza «¿Qué responde cada pregunta?», funciona sin preguntas; copy sin «modelo» | navegador, TP real | — |
-| A4 | Perfil tipado y unidades (`profileKind`, `UnitStudyMap`) | crear un trabajo de cada tipo | — |
+| A3 | Hojas por pregunta: sección del comentario y pasaje en el texto en la tarjeta «¿Qué responde cada pregunta?» (misma pregunta 12/44 → 25/44 en desarrollo, 55/95 → 79/95 en prueba); copy sin «modelo». «Funciona sin preguntas» pasa a A4, que trae las unidades | navegador, TP #10 | ✅ 5da0c46e |
+| A4 | Tipo de trabajo (`profileKind`: TP por pregunta, investigación temática, síntesis + sermón) en el trabajo, el tipo del proyecto y el perfil; deducido y confirmado una vez en los trabajos viejos; unidades (`derivePaperUnits`) y `UnitStudyMap` (unidad → versículos → respuestas y puntos discutibles, con conflicto si dos versículos deciden distinto); la tarjeta por pregunta funciona sin preguntas (por versículo). El esquema de temas y la migración a `Decision` van en B | creación y cabecera (TP #10, Santiago 1:1-5) | ✅ |
 | A5 | Entradas, requisitos y reglas del curso (incl. devolución → reglas) | pantalla de entradas | — |
 | A6 | Necesidades del corpus, candidatas con edición fijada, `libraryMatch` por año, sílabo como origen | pantalla «Conseguir» | — |
 | A7 | Bandeja de revisión de PDF (identidad, edición, paginación, desfase, copia no oficial) | subir Martin WBC 48 | — |

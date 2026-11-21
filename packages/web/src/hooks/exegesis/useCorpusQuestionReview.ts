@@ -6,7 +6,7 @@ import {
     declaresNoFolios,
     hasResolvedNumbering,
     normalizeSheetRanges,
-    parseBriefQuestions,
+    corpusReviewQuestions,
     questionLemmas,
     questionsOfStep,
     stepPinnedSheets,
@@ -46,8 +46,10 @@ export interface ReviewedSource {
 }
 
 export interface CorpusQuestionReviewState {
-    /** `null` cuando no hay nada que revisar: sin preguntas o pasaje de varios capítulos. */
+    /** `null` cuando no hay nada que revisar: sin preguntas ni versículos, o pasaje de varios capítulos. */
     review: CorpusQuestionReview | null;
+    /** Cómo se llaman las filas: preguntas del encuadre o versículos del trabajo. */
+    unitKind: 'pregunta' | 'tema';
     sources: ReadonlyMap<string, ReviewedSource>;
     /** Fuentes cuya búsqueda falló: no se juzgan, y la tarjeta lo dice. */
     failed: string[];
@@ -68,8 +70,10 @@ export interface CorpusQuestionReviewState {
 export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefined): CorpusQuestionReviewState {
     const { resources } = useLibrary();
 
-    const questions = useMemo(
-        () => (paper ? parseBriefQuestions(paper.assignmentBrief, paper.passage) : []),
+    // Por pregunta si el encuadre las trae; si no, por versículo (A4: la tarjeta
+    // funciona sin preguntas, en una investigación o una síntesis + sermón).
+    const { unitKind, questions } = useMemo(
+        () => (paper ? corpusReviewQuestions(paper) : { unitKind: 'pregunta' as const, questions: [] }),
         [paper],
     );
     const passage = paper?.passage ?? null;
@@ -135,7 +139,7 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
 
     return useMemo(() => {
         if (!conPreguntas || !passage) {
-            return { review: null, sources: fuentes, failed: [], unindexed: [], isLoading: false };
+            return { review: null, unitKind, sources: fuentes, failed: [], unindexed: [], isLoading: false };
         }
         const failed: string[] = [];
         // Un libro sin fragmentos indexados (sin extraer, fallido, en
@@ -206,13 +210,14 @@ export function useCorpusQuestionReview(paper: ExegeticalPaper | null | undefine
         const sinIndiceUnicas = [...new Set(sinIndice)].filter(id => !fallidas.includes(id));
         return {
             review,
+            unitKind,
             sources: fuentes,
             failed: fallidas,
             unindexed: sinIndiceUnicas,
             isLoading: review.pending.length > fallidas.length + sinIndiceUnicas.length,
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [conPreguntas, passage, fuentes, questions, lemas, morfologia.isLoading, clavePasaje, claveLema, claveSecciones, versiculosConPregunta]);
+    }, [conPreguntas, passage, fuentes, unitKind, questions, lemas, morfologia.isLoading, clavePasaje, claveLema, claveSecciones, versiculosConPregunta]);
 }
 
 /**
@@ -235,7 +240,7 @@ function printedPagesOf(f: ReviewedSource): QuestionReviewSource['printedPages']
 /** Lo fijado solo en un paso, por pregunta de ese paso (PR 2). */
 function fijadoPorPregunta(
     paper: ExegeticalPaper | null | undefined,
-    questions: ReturnType<typeof parseBriefQuestions>,
+    questions: ReturnType<typeof corpusReviewQuestions>['questions'],
     sourceId: string,
 ): Record<number, SheetRange[]> {
     const out: Record<number, SheetRange[]> = {};

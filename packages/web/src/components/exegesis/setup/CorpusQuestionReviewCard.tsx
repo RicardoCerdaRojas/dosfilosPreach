@@ -9,6 +9,7 @@ import {
     type QuestionReviewRow,
 } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
+import { ReviewUnitProvider, useReviewTranslation } from './reviewUnitTranslation';
 import { cn } from '@/lib/utils';
 import { rutaCalibracion } from '@/lib/rutaCalibracion';
 import { useExegesisPapers } from '@/hooks/exegesis/useExegesisPapers';
@@ -26,14 +27,13 @@ import { QuestionItem, pageLabel } from './CorpusQuestionReviewRow';
  * de la entrada de μέλος en Tuggy faltaban, y se supo recién cuando el
  * verificador no encontraba las citas.
  *
- * Va en el Corpus y en el Plan de uso. No renderiza nada sin preguntas con
- * versículos del pasaje (un encuadre para predicar, o un pasaje de varios
- * capítulos): no hay contra qué revisar.
+ * Va en el Corpus y en el Plan de uso. Sin preguntas, revisa por versículo
+ * (A4); con un pasaje de varios capítulos no renderiza nada.
  */
 export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) {
-    const { t } = useTranslation('exegesis');
     const navigate = useNavigate();
-    const { review, sources, failed, unindexed, isLoading } = useCorpusQuestionReview(paper);
+    const { review, unitKind, sources, failed, unindexed, isLoading } = useCorpusQuestionReview(paper);
+    const { t } = useReviewTranslation(unitKind);
     const { removeSource } = useExegesisPapers();
     const fijarParaPregunta = usePinSheetsForQuestion(paper);
     const [abierta, setAbierta] = useState(false);
@@ -66,12 +66,13 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
                 source: nombre(sourceId),
                 count: questions.length,
                 questions: questions.join(', '),
+                verses: versiculos([...new Set(questions.flatMap(q => fila(q)?.verses ?? []))].sort((a, b) => a - b)),
             }));
         } catch (err) {
             console.error('[CorpusQuestionReviewCard] no se pudo fijar', err);
             toast.error(t(err instanceof SinPasoError
                 ? 'paperSetup.subSteps.corpus.questionReview.toast.noStep'
-                : 'paperSetup.subSteps.corpus.questionReview.toast.addFailed', { count: questions.length, questions: questions.join(', ') }));
+                : 'paperSetup.subSteps.corpus.questionReview.toast.addFailed', { count: questions.length, questions: questions.join(', '), verses: versiculos([...new Set(questions.flatMap(q => fila(q)?.verses ?? []))].sort((a, b) => a - b)) }));
         } finally {
             setOcupada(null);
         }
@@ -97,88 +98,90 @@ export function CorpusQuestionReviewCard({ paper }: { paper: ExegeticalPaper }) 
     const conAvisos = avisos.length > 0 || noRevisadas > 0;
 
     return (
-        <section
-            className="rounded-lg border border-border bg-card p-4 space-y-3"
-            aria-labelledby="revision-por-pregunta"
-            data-testid="revision-por-pregunta"
-        >
-            <header className="flex items-start gap-3">
-                {isLoading
-                    ? <Loader2 className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0 animate-spin" aria-hidden />
-                    : conAvisos
-                        ? <AlertTriangle className="h-5 w-5 text-warning mt-0.5 shrink-0" aria-hidden />
-                        : <CheckCircle2 className="h-5 w-5 text-success mt-0.5 shrink-0" aria-hidden />}
-                <div className="flex-1 min-w-0">
-                    <h3 id="revision-por-pregunta" className="text-sm font-semibold text-foreground">
-                        {t('paperSetup.subSteps.corpus.questionReview.title')}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                        {isLoading
-                            ? t('paperSetup.subSteps.corpus.questionReview.loading', { count: review.pending.length - noRevisadas })
-                            : conAvisos
-                                ? t('paperSetup.subSteps.corpus.questionReview.withWarnings', { count: avisos.length + noRevisadas })
-                                : t('paperSetup.subSteps.corpus.questionReview.allGood')}
-                    </p>
-                </div>
-            </header>
-
-            {conAvisos && (
-                <ul className="space-y-1.5">
-                    {avisos.map((w, i) => (
-                        <WarningItem
-                            key={`${w.kind}-${i}`}
-                            warning={w}
-                            texto={textoDelAviso(t, w, { nombre, paginas, versiculos, fila })}
-                            ocupada={ocupada}
-                            confirmingRemove={'sourceId' in w && porQuitar === w.sourceId}
-                            onPin={fijar}
-                            onRemove={quitar}
-                            onCalibrate={sourceId => {
-                                const f = sources.get(sourceId);
-                                if (f) navigate(rutaCalibracion(f.resourceId));
-                            }}
-                        />
-                    ))}
-                    {failed.map(sourceId => (
-                        <li key={`fallo-${sourceId}`} className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-[11.5px] text-muted-foreground">
-                            {t('paperSetup.subSteps.corpus.questionReview.warning.failed', { source: nombre(sourceId) })}
-                        </li>
-                    ))}
-                    {unindexed.map(sourceId => (
-                        <li key={`sin-indice-${sourceId}`} className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-[11.5px] text-muted-foreground">
-                            {t('paperSetup.subSteps.corpus.questionReview.warning.unindexed', { source: nombre(sourceId) })}
-                        </li>
-                    ))}
-                </ul>
-            )}
-
-            <button
-                type="button"
-                onClick={() => setAbierta(v => !v)}
-                aria-expanded={abierta}
-                className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-[11.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        <ReviewUnitProvider value={unitKind}>
+            <section
+                className="rounded-lg border border-border bg-card p-4 space-y-3"
+                aria-labelledby="revision-por-pregunta"
+                data-testid="revision-por-pregunta"
             >
-                {abierta ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
-                {t('paperSetup.subSteps.corpus.questionReview.byQuestion')}
-            </button>
+                <header className="flex items-start gap-3">
+                    {isLoading
+                        ? <Loader2 className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0 animate-spin" aria-hidden />
+                        : conAvisos
+                            ? <AlertTriangle className="h-5 w-5 text-warning mt-0.5 shrink-0" aria-hidden />
+                            : <CheckCircle2 className="h-5 w-5 text-success mt-0.5 shrink-0" aria-hidden />}
+                    <div className="flex-1 min-w-0">
+                        <h3 id="revision-por-pregunta" className="text-sm font-semibold text-foreground">
+                            {t('paperSetup.subSteps.corpus.questionReview.title')}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            {isLoading
+                                ? t('paperSetup.subSteps.corpus.questionReview.loading', { count: review.pending.length - noRevisadas })
+                                : conAvisos
+                                    ? t('paperSetup.subSteps.corpus.questionReview.withWarnings', { count: avisos.length + noRevisadas })
+                                    : t('paperSetup.subSteps.corpus.questionReview.allGood')}
+                        </p>
+                    </div>
+                </header>
 
-            {abierta && (
-                <ol className="space-y-3">
-                    {review.rows.map(row => (
-                        <QuestionItem
-                            key={row.number}
-                            row={row}
-                            versiculos={versiculos(row.verses)}
-                            sinAporte={uncoveredSourcesOfRow(row, review, { unindexed, failed })}
-                            nombre={nombre}
-                            sources={sources}
-                            ocupada={ocupada}
-                            onPin={fijar}
-                        />
-                    ))}
-                </ol>
-            )}
-        </section>
+                {conAvisos && (
+                    <ul className="space-y-1.5">
+                        {avisos.map((w, i) => (
+                            <WarningItem
+                                key={`${w.kind}-${i}`}
+                                warning={w}
+                                texto={textoDelAviso(t, w, { nombre, paginas, versiculos, fila })}
+                                ocupada={ocupada}
+                                confirmingRemove={'sourceId' in w && porQuitar === w.sourceId}
+                                onPin={fijar}
+                                onRemove={quitar}
+                                onCalibrate={sourceId => {
+                                    const f = sources.get(sourceId);
+                                    if (f) navigate(rutaCalibracion(f.resourceId));
+                                }}
+                            />
+                        ))}
+                        {failed.map(sourceId => (
+                            <li key={`fallo-${sourceId}`} className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-[11.5px] text-muted-foreground">
+                                {t('paperSetup.subSteps.corpus.questionReview.warning.failed', { source: nombre(sourceId) })}
+                            </li>
+                        ))}
+                        {unindexed.map(sourceId => (
+                            <li key={`sin-indice-${sourceId}`} className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-[11.5px] text-muted-foreground">
+                                {t('paperSetup.subSteps.corpus.questionReview.warning.unindexed', { source: nombre(sourceId) })}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+                <button
+                    type="button"
+                    onClick={() => setAbierta(v => !v)}
+                    aria-expanded={abierta}
+                    className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-[11.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    {abierta ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
+                    {t('paperSetup.subSteps.corpus.questionReview.byQuestion')}
+                </button>
+
+                {abierta && (
+                    <ol className="space-y-3">
+                        {review.rows.map(row => (
+                            <QuestionItem
+                                key={row.number}
+                                row={row}
+                                versiculos={versiculos(row.verses)}
+                                sinAporte={uncoveredSourcesOfRow(row, review, { unindexed, failed })}
+                                nombre={nombre}
+                                sources={sources}
+                                ocupada={ocupada}
+                                onPin={fijar}
+                            />
+                        ))}
+                    </ol>
+                )}
+            </section>
+        </ReviewUnitProvider>
     );
 }
 
@@ -240,7 +243,7 @@ function WarningItem({
     onRemove: (sourceId: string) => void;
     onCalibrate: (sourceId: string) => void;
 }) {
-    const { t } = useTranslation('exegesis');
+    const { t } = useReviewTranslation();
     const base = 'paperSetup.subSteps.corpus.questionReview.action';
     const informativo = warning.kind === 'question-uncovered';
 

@@ -42,7 +42,7 @@ import type {
     CanonicalVerseAnalysis,
 } from '@dosfilos/domain';
 import { DEFAULT_STRATEGY_FOR_NEW_PAPER, inclusionAtBirth, isProsePath, stepPinsForQuestion, parseBriefQuestions, renameKeyInStep, renameKeyInText, resolveExegeticalStrategy,
-    resolveExegeticalMethod, stepAfterVersionMove, stepPlanWithoutSource, swapPreviousProse, trimStepVersions, versionsToKeepOnAppend, versionUnderReview, withoutOldestVersions, withRecomposedProse } from '@dosfilos/domain';
+    resolveExegeticalMethod, resolvePaperProfileKind, stepAfterVersionMove, stepPlanWithoutSource, swapPreviousProse, trimStepVersions, versionsToKeepOnAppend, versionUnderReview, withoutOldestVersions, withRecomposedProse } from '@dosfilos/domain';
 import {
     EMPTY_STEP_SOURCE_PLAN,
     EMPTY_VERIFICATION_SUMMARY,
@@ -188,6 +188,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
             // this path will inherit the field naturally.
             exegeticalStrategy: draft.exegeticalStrategy ?? DEFAULT_STRATEGY_FOR_NEW_PAPER,
             exegeticalMethod: draft.exegeticalMethod ?? null,
+            profileKind: resolvePaperProfileKind(draft.profileKind),
             title: draft.title,
             assignmentBrief: draft.assignmentBrief ?? null,
             styleGuideId: draft.styleGuideId,
@@ -219,7 +220,7 @@ export class FirestoreExegeticalPaperRepository implements IExegeticalPaperRepos
     async updatePaper(
         ownerId: string,
         paperId: string,
-        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod' | 'thesis' | 'sectionTitles'>>
+        patch: Partial<Pick<ExegeticalPaper, 'title' | 'displayLanguage' | 'styleGuideId' | 'currentStepId' | 'assembledMarkdown' | 'assignmentBrief' | 'cover' | 'excludedSources' | 'exegeticalMethod' | 'profileKind' | 'thesis' | 'sectionTitles'>>
     ): Promise<ExegeticalPaper> {
         await this.requireOwned(ownerId, paperId);
         // Strip undefined — Firestore rejects undefined values; null is fine.
@@ -1087,6 +1088,7 @@ function serialize(paper: ExegeticalPaper): DocumentData {
     if (paper.title !== undefined) data.title = paper.title;
     if (paper.exegeticalStrategy !== undefined) data.exegeticalStrategy = paper.exegeticalStrategy;
     if (paper.exegeticalMethod !== undefined) data.exegeticalMethod = paper.exegeticalMethod;
+    if (paper.profileKind !== undefined) data.profileKind = paper.profileKind;
     if (paper.structuralExpectations !== undefined) {
         data.structuralExpectations = paper.structuralExpectations;
     }
@@ -1114,6 +1116,7 @@ function deserialize(id: string, data: DocumentData): ExegeticalPaper {
         // New papers always carry an explicit value.
         exegeticalStrategy: resolveExegeticalStrategy(data.exegeticalStrategy),
         exegeticalMethod: resolveExegeticalMethod(data.exegeticalMethod),
+        profileKind: resolvePaperProfileKind(data.profileKind),
         title: data.title,
         assignmentBrief: data.assignmentBrief ?? null,
         thesis: deserializeThesis(data.thesis),

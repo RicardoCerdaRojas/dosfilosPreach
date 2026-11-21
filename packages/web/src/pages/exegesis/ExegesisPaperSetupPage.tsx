@@ -13,6 +13,7 @@ import { PaperCoverButton } from '@/components/exegesis/setup/PaperCoverButton';
 import { PaperRubricButton } from '@/components/exegesis/setup/PaperRubricButton';
 import { SaveWorkProfileButton } from '@/components/exegesis/setup/SaveWorkProfileButton';
 import { PaperMethodSelect } from '@/components/exegesis/setup/PaperMethodSelect';
+import { PaperProfileKindSelect } from '@/components/exegesis/setup/PaperProfileKindSelect';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
 import { safeInternalPath } from './paperBackLink';
@@ -116,7 +117,7 @@ export function ExegesisPaperSetupPage() {
     return (
         <div className="flex flex-col h-full bg-background font-sans overflow-y-auto">
             <header className="border-b border-border bg-card px-6 py-4">
-                <div className="max-w-7xl mx-auto flex items-center gap-3">
+                <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-3">
                     <Link
                         to={paperPath}
                         className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -124,7 +125,9 @@ export function ExegesisPaperSetupPage() {
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Link>
-                    <div className="flex-1 min-w-0">
+                    {/* Con el tipo de trabajo (A4) los controles no caben en una fila: el
+                        título conserva su ancho y los controles bajan a la siguiente. */}
+                    <div className="flex-1 min-w-[12rem]">
                         {/* Same fallback as the directory list and the
                             paper detail page: explicit title wins,
                             otherwise show the formatted passage. The
@@ -150,11 +153,14 @@ export function ExegesisPaperSetupPage() {
                         un modal amplio y dejan la página entera a la
                         configuración. La key descarta un borrador a medio
                         escribir si la ruta cambia a otro trabajo. */}
-                    <PaperBriefButton key={`brief-${paper.id}`} paper={paper} />
-                    <PaperRubricButton key={`rubric-${paper.id}`} paper={paper} />
-                    <PaperCoverButton key={`cover-${paper.id}`} paper={paper} />
-                    <PaperMethodSelect key={`method-${paper.id}`} paper={paper} />
-                    <SaveWorkProfileButton key={`profile-${paper.id}`} paper={paper} />
+                    <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+                        <PaperBriefButton key={`brief-${paper.id}`} paper={paper} />
+                        <PaperRubricButton key={`rubric-${paper.id}`} paper={paper} />
+                        <PaperCoverButton key={`cover-${paper.id}`} paper={paper} />
+                        <PaperProfileKindSelect key={`kind-${paper.id}`} paper={paper} />
+                        <PaperMethodSelect key={`method-${paper.id}`} paper={paper} />
+                        <SaveWorkProfileButton key={`profile-${paper.id}`} paper={paper} />
+                    </div>
                 </div>
             </header>
 

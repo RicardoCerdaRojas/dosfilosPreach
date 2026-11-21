@@ -54,6 +54,33 @@
       "hint": "La literatura desde el principio, para entender y citar las posturas mientras se argumenta."
     }
   },
+  "profileKind": {
+    "label": "Tipo de trabajo",
+    "labelShort": "Tipo",
+    "confirm": "Confirmar",
+    "saveFailed": "No se pudo guardar el tipo de trabajo.",
+    "tp-por-pregunta": {
+      "label": "TP por pregunta",
+      "hint": "Una sección por pregunta del encuadre, sin introducción ni conclusión; citas entre paréntesis. Las decisiones discutibles las eliges tú."
+    },
+    "investigacion-tematica": {
+      "label": "Investigación temática",
+      "hint": "Secciones por tema, con introducción, tesis y conclusión; notas al pie y apéndices. Apruebas el esquema y la tesis."
+    },
+    "sintesis-sermon": {
+      "label": "Síntesis + sermón",
+      "hint": "Parte 1, la síntesis exegética; Parte 2, el sermón. Apruebas el orden, la proposición y cada parte."
+    },
+    "inferred": {
+      "questions": "Deducido: el encuadre trae preguntas numeradas. Confírmalo o elige otro.",
+      "sermon": "Deducido: el encuadre pide una síntesis y un sermón. Confírmalo o elige otro.",
+      "brief-tp": "Deducido: el encuadre dice que es un trabajo práctico. Confírmalo o elige otro.",
+      "brief-research": "Deducido: el encuadre dice que es un trabajo de investigación. Confírmalo o elige otro.",
+      "method-research": "Deducido del método «Investigación». Confírmalo o elige otro.",
+      "method-mixed": "Deducido del método «Mixto (TP)». Confírmalo o elige otro.",
+      "default": "Sin pistas en el encuadre: se propone la investigación, la forma completa. Confírmalo o elige otro."
+    }
+  },
   "studentReading": {
     "title": "Mi lectura (opcional)",
     "hint": "Tu propia lectura del versículo antes de generar: qué ves en la gramática, el léxico o la sintaxis. El análisis dirá qué comentaristas la confirman y cuáles la discuten.",
@@ -978,20 +1005,30 @@
             "missingEntry": "La entrada de {{term}} en {{source}} (pregunta {{question}}) está incompleta en el corpus (sin {{pages}}).",
             "missingEntryWhole": "La entrada de {{term}} en {{source}} (pregunta {{question}}, {{pages}}) no está en el corpus.",
             "questionUncovered": "Ninguna página del corpus nombra {{verses}} (pregunta {{question}}).",
-            "failed": "No se pudo revisar {{source}}. Vuelve a abrir esta pestaña para intentarlo de nuevo."
+            "failed": "No se pudo revisar {{source}}. Vuelve a abrir esta pestaña para intentarlo de nuevo.",
+            "unindexed_verse": "{{source}} no tiene su texto indexado: no se puede revisar qué páginas tratan cada versículo.",
+            "unrelated_verse": "{{source}} no nombra ningún versículo del pasaje.",
+            "missingSheets_verse_one": "{{source}} trata {{verses}} en {{pages}}, fuera del corpus.",
+            "missingSheets_verse_other": "{{source}} trata {{verses}} en {{pages}}, fuera del corpus.",
+            "questionUncovered_verse": "Ninguna página del corpus nombra {{verses}}."
           },
           "action": {
             "removeConfirm": "¿Quitar? Pulsa de nuevo",
             "remove": "Quitar del corpus",
             "calibrate": "Resolver numeración",
             "pinForQuestion_one": "Fijar para la pregunta",
-            "pinForQuestion_other": "Fijar para las preguntas"
+            "pinForQuestion_other": "Fijar para las preguntas",
+            "pinForQuestion_verse_one": "Fijar para el versículo",
+            "pinForQuestion_verse_other": "Fijar para los versículos"
           },
           "chip": {
             "pinned": "{{page}}: fijada para todo el trabajo, entra a todos los pasos",
             "inCorpus": "{{page}}: en el corpus. Pulsa para fijarla para esta pregunta",
             "outside": "{{page}}: fuera del corpus. Pulsa para fijarla para esta pregunta",
-            "stepPinned": "{{page}}: fijada para esta pregunta. Pulsa para soltarla"
+            "stepPinned": "{{page}}: fijada para esta pregunta. Pulsa para soltarla",
+            "inCorpus_verse": "{{page}}: en el corpus. Pulsa para fijarla para este versículo",
+            "outside_verse": "{{page}}: fuera del corpus. Pulsa para fijarla para este versículo",
+            "stepPinned_verse": "{{page}}: fijada para este versículo. Pulsa para soltarla"
           },
           "toast": {
             "addFailed": "No se pudo fijar la página. Inténtalo de nuevo.",
@@ -1000,7 +1037,13 @@
             "releasedForQuestion_one": "Se soltó {{pages}} de {{source}} de la pregunta {{questions}}.",
             "releasedForQuestion_other": "Se soltó {{pages}} de {{source}} de las preguntas {{questions}}.",
             "noStep_one": "La pregunta {{questions}} no cae en el versículo de ningún paso: no hay dónde fijar la página.",
-            "noStep_other": "Las preguntas {{questions}} no caen en el versículo de ningún paso: no hay dónde fijar la página."
+            "noStep_other": "Las preguntas {{questions}} no caen en el versículo de ningún paso: no hay dónde fijar la página.",
+            "pinnedForQuestion_verse_one": "Se fijó {{pages}} de {{source}} para {{verses}}.",
+            "pinnedForQuestion_verse_other": "Se fijó {{pages}} de {{source}} para {{verses}}.",
+            "releasedForQuestion_verse_one": "Se soltó {{pages}} de {{source}} de {{verses}}.",
+            "releasedForQuestion_verse_other": "Se soltó {{pages}} de {{source}} de {{verses}}.",
+            "noStep_verse_one": "{{verses}} no tiene paso en el trabajo: no hay dónde fijar la página.",
+            "noStep_verse_other": "{{verses}} no tienen paso en el trabajo: no hay dónde fijar la página."
           },
           "uncovered": {
             "label": "Fuentes sin aporte para esta pregunta",
@@ -1008,12 +1051,17 @@
             "lemmaMentioned": "revisada: nombra la palabra, pero sin entrada propia detectada",
             "unindexed": "sin índice: no se pudo revisar",
             "failed": "no se pudo revisar",
-            "pending": "revisando…"
+            "pending": "revisando…",
+            "label_verse": "Fuentes sin aporte para este versículo"
           },
           "via": {
             "section": "sección del comentario",
             "passage": "el pasaje en el texto"
-          }
+          },
+          "title_verse": "¿Qué trata cada versículo?",
+          "allGood_verse": "Cada versículo tiene material en el corpus.",
+          "byQuestion_verse": "Ver por versículo",
+          "questionHeading_verse": "Versículo {{verses}}"
         },
         "gap": {
           "onlyExcluded": "{{have}} de {{required}}: ninguna fuente de tu biblioteca permitida en este trabajo cubre este tipo; las de este tipo están excluidas ({{sources}}). Puedes entregar con {{have}} de {{required}} o subir otro libro.",

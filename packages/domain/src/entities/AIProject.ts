@@ -3,6 +3,7 @@ import type { BibliographySearchLogEntry, ProjectBibliographyCriteria, ProjectBi
 import type { ProjectFraming } from '../exegesis/services/projectFraming';
 import type { CourseScheduleEntry, CourseScheduleMode, FeedbackPattern } from '../exegesis/services/courseSchedule';
 import { SOURCE_TYPE_CATALOG, type SourceType } from '../exegesis/entities/SourceType';
+import { resolvePaperProfileKind, type PaperProfileKind } from '../exegesis/services/paperProfile';
 
 export type ProjectColor = 'amber' | 'emerald' | 'sky' | 'rose' | 'violet' | 'slate' | 'orange' | 'teal';
 
@@ -118,6 +119,8 @@ export interface ProjectCharge {
     exegeticalStrategy?: 'free' | 'dialectical';
     /** El método del trabajo (capa 3). */
     exegeticalMethod?: import('../exegesis/entities/ExegeticalPaper').ExegeticalMethod | null;
+    /** El tipo de trabajo (procedimiento §4d). Obligatorio al crear un tipo nuevo desde la fase A4. */
+    profileKind?: PaperProfileKind | null;
     cover?: PaperCover | null;
 }
 
@@ -177,10 +180,13 @@ export function cleanProjectWorkTypes(types: ReadonlyArray<ProjectWorkType>): Pr
         if (!t.id || !label || vistos.has(t.id)) continue;
         vistos.add(t.id);
         // `rubricConfirmed` solo como `true`: un `false` o basura no dice nada.
-        const { rubricConfirmed, noRepeatSourceTypes, ...resto } = t;
+        const { rubricConfirmed, noRepeatSourceTypes, profileKind, ...resto } = t;
         const noRepetir = cleanNoRepeatSourceTypes(noRepeatSourceTypes);
+        // Un tipo desconocido no se guarda: «sin elegir» no se convierte en otro tipo.
+        const tipo = resolvePaperProfileKind(profileKind);
         out.push({
             ...limpio(resto), id: t.id, label,
+            ...(tipo ? { profileKind: tipo } : {}),
             ...(rubricConfirmed === true ? { rubricConfirmed: true } : {}),
             ...(noRepetir ? { noRepeatSourceTypes: noRepetir } : {}),
         });
@@ -267,6 +273,7 @@ export function workTypeFromProfile(profile: {
     id: string; displayName: string; rubricTemplateId: string | null; briefTemplateId: string | null;
     styleGuideId: string | null; exegeticalStrategy: 'free' | 'dialectical'; cover?: PaperCover | null;
     exegeticalMethod?: import('../exegesis/entities/ExegeticalPaper').ExegeticalMethod | null;
+    profileKind?: PaperProfileKind | null;
 }, id: string): ProjectWorkType {
     return {
         id,
@@ -279,6 +286,7 @@ export function workTypeFromProfile(profile: {
         styleGuideId: profile.styleGuideId,
         exegeticalStrategy: profile.exegeticalStrategy,
         ...(profile.exegeticalMethod ? { exegeticalMethod: profile.exegeticalMethod } : {}),
+        ...(resolvePaperProfileKind(profile.profileKind) ? { profileKind: resolvePaperProfileKind(profile.profileKind) } : {}),
         cover: profile.cover ?? null,
     };
 }

@@ -13,6 +13,8 @@ import { AssignmentBriefPicker } from '@/components/exegesis/setup/AssignmentBri
 import { ProjectOriginPicker } from '@/components/exegesis/ProjectOriginPicker';
 import { ProjectBibliographyOffer } from '@/components/exegesis/ProjectBibliographyOffer';
 import { MethodPicker } from '@/components/exegesis/MethodPicker';
+import { ProfileKindPicker } from '@/components/exegesis/ProfileKindPicker';
+import { useProfileKindChoice } from '@/hooks/exegesis/useProfileKindChoice';
 import { WorkProfileSelect } from '@/components/exegesis/create/WorkProfileSelect';
 import { LanguageOption, Step, StrategyOption } from '@/components/exegesis/create/CreateStepParts';
 import { BriefSlotNotices } from '@/components/exegesis/create/BriefSlotNotices';
@@ -156,6 +158,8 @@ export function ExegesisCreatePage() {
     // El método (capa 3): cuándo entran los comentarios. Sin elegir, el
     // análisis de siempre. Lo traen el perfil y el tipo de trabajo.
     const [exegeticalMethod, setExegeticalMethod] = useState<ExegeticalMethod | null>(null);
+    const tipoDeTrabajo = useProfileKindChoice({ assignmentBrief, exegeticalMethod, passage });
+    const { fromSource: tipoDesde } = tipoDeTrabajo;
 
     // Perfil de trabajo: cómo quedó configurado un trabajo anterior del
     // mismo curso. Rellena los campos y NO decide: el estudiante ve los
@@ -188,7 +192,9 @@ export function ExegesisCreatePage() {
         setBriefDelPerfilId(profile.briefTemplateId);
         setExegeticalStrategy(profile.exegeticalStrategy);
         setExegeticalMethod(profile.exegeticalMethod ?? null);
+        tipoDesde(profile.profileKind);
         setCoverFromProfile(profile.cover ?? null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- `tipoDesde` solo llama a un setState
     }, []);
 
     /** La portada del perfil, que se escribe en el trabajo recién creado. */
@@ -216,6 +222,7 @@ export function ExegesisCreatePage() {
                 setCoverFromProfile(null);
                 setExegeticalStrategy('dialectical');
                 setExegeticalMethod(null);
+                tipoDesde(null);
                 if (defaultProfile) aplicarPerfil(defaultProfile);
             }
             return;
@@ -231,6 +238,7 @@ export function ExegesisCreatePage() {
         setBriefDelPerfilId(c.briefTemplateId ?? null);
         setExegeticalStrategy(c.exegeticalStrategy ?? 'dialectical');
         setExegeticalMethod(c.exegeticalMethod ?? null);
+        tipoDesde(c.profileKind);
         setCoverFromProfile(c.cover ?? null);
         setStyleGuideDelProyecto(c.styleGuideId ?? null);
     }, [defaultProfile, aplicarPerfil]);
@@ -361,6 +369,7 @@ export function ExegesisCreatePage() {
                 displayLanguage,
                 exegeticalStrategy,
                 ...(exegeticalMethod ? { exegeticalMethod } : {}),
+                profileKind: tipoDeTrabajo.value,
                 styleGuideId: styleGuideDelProyecto ?? perfilElegido?.styleGuideId ?? null,
                 assignmentBrief: assignmentBrief.trim() || null,
                 rubricTemplateId,
@@ -473,6 +482,9 @@ export function ExegesisCreatePage() {
                     <p className="text-[11px] text-muted-foreground italic mt-2">
                         {t('create.strategy.hint')}
                     </p>
+                    <div className="mt-4 border-t border-border pt-3">
+                        <ProfileKindPicker value={tipoDeTrabajo.value} inferredReason={tipoDeTrabajo.inferredReason} onChange={tipoDeTrabajo.choose} />
+                    </div>
                     <div className="mt-4 border-t border-border pt-3">
                         <MethodPicker value={exegeticalMethod} onChange={setExegeticalMethod} />
                         {metodoAlTipo.offer && exegeticalMethod && (

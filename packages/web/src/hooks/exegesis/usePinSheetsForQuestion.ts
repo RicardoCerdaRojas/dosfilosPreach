@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { exegesisService } from '@dosfilos/application';
-import { parseBriefQuestions, questionsOfStep, type ExegeticalPaper } from '@dosfilos/domain';
+import { corpusReviewQuestions, questionsOfStep, type ExegeticalPaper } from '@dosfilos/domain';
 import { useFirebase } from '@/context/firebase-context';
 
 /**
@@ -24,7 +24,8 @@ export function usePinSheetsForQuestion(paper: ExegeticalPaper | null | undefine
     const mutation = useMutation({
         mutationFn: async (input: { sourceId: string; questions: ReadonlyArray<number>; sheets: ReadonlyArray<number>; pin: boolean }) => {
             if (!user || !paper) throw new Error('Sin trabajo o sin usuario');
-            const preguntas = parseBriefQuestions(paper.assignmentBrief, paper.passage);
+            // Las mismas filas que muestra la tarjeta: preguntas, o versículos sin preguntas.
+            const { questions: preguntas } = corpusReviewQuestions(paper);
             const pasos = paper.steps
                 .filter(s => s.kind === 'verse' && questionsOfStep(s, preguntas).some(q => input.questions.includes(q.number)))
                 .map(s => s.id);

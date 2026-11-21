@@ -44,6 +44,9 @@ export interface WorkProfile {
     /** El método del trabajo (capa 3). Ausente: el análisis de siempre. */
     exegeticalMethod?: import('./ExegeticalPaper').ExegeticalMethod | null;
 
+    /** El tipo de trabajo (TP, investigación, síntesis + sermón). Ausente: se deduce al crear. */
+    profileKind?: import('../services/paperProfile').PaperProfileKind | null;
+
     /**
      * Portada: seminario, autor, lugar. Se guarda por valor porque no
      * tiene plantilla propia y no cambia entre trabajos del mismo curso.

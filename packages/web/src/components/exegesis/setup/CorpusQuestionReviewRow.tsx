@@ -7,6 +7,7 @@ import {
     type QuestionSourceCoverage,
 } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
+import { useReviewTranslation } from './reviewUnitTranslation';
 import { cn } from '@/lib/utils';
 import type { ReviewedSource } from '@/hooks/exegesis/useCorpusQuestionReview';
 import { QuestionUncoveredSources } from './QuestionUncoveredSources';
@@ -50,7 +51,7 @@ export function QuestionItem({
     ocupada: string | null;
     onPin: (sourceId: string, sheets: ReadonlyArray<number>, questions: ReadonlyArray<number>, pin?: boolean) => void;
 }) {
-    const { t } = useTranslation('exegesis');
+    const { t } = useReviewTranslation();
     return (
         <li className="space-y-1.5">
             <p className="text-[12px] font-medium text-foreground">
@@ -109,7 +110,7 @@ function SheetChip({
     disabled: boolean;
     onToggle: () => void;
 }) {
-    const { t } = useTranslation('exegesis');
+    const { t } = useReviewTranslation();
     const base = 'paperSetup.subSteps.corpus.questionReview.chip';
     const clave = sheet.stepPinned ? 'stepPinned' : sheet.state === 'in-corpus' ? 'inCorpus' : sheet.state;
     const estado = t(`${base}.${clave}`, { page: label });

@@ -196,8 +196,25 @@ describe('«¿Qué responde cada pregunta?»', () => {
         }
     });
 
-    it('sin preguntas con versículos del pasaje no se muestra', () => {
-        const { container } = montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }])], 'Predicar sobre la humildad.'));
+    it('sin preguntas revisa por versículo (A4): dice «versículo» y fija para el paso de ese versículo', async () => {
+        montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 410 }])], 'Predicar sobre la humildad.'));
+        const aviso = await screen.findByText(/warning\.missingSheets/);
+        expect(aviso.textContent).toContain('"context":"verse"');
+        expect(aviso.textContent).toContain('"verses":"4:3"');
+        expect(screen.getByText(/questionReview\.title/).textContent).toContain('"context":"verse"');
+        fireEvent.click(screen.getByText(/action\.pinForQuestion .*"context":"verse"/));
+        await waitFor(() => expect(setStepPinnedSheets).toHaveBeenCalledWith({ ownerId: 'yo', paperId: 'tp8', stepId: 'v3', sourceId: 'mayor', sheets: [411], pin: true }));
+    });
+
+    it('con preguntas, los textos de siempre (sin contexto)', async () => {
+        montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 410 }])]));
+        const aviso = await screen.findByText(/warning\.missingSheets/);
+        expect(aviso.textContent).not.toContain('"context"');
+    });
+
+    it('un pasaje de varios capítulos no se revisa', () => {
+        const paper = trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 411 }])], 'Predicar sobre la humildad.');
+        const { container } = montar({ ...paper, passage: { ...paper.passage, chapterEnd: 5 }, steps: [] } as ExegeticalPaper);
         expect(container).toBeEmptyDOMElement();
         expect(searchDocumentByReference).not.toHaveBeenCalled();
     });

@@ -14,6 +14,7 @@ import {
 import { db } from '../config/firebase';
 import {
     resolveExegeticalMethod,
+    resolvePaperProfileKind,
     type IWorkProfileRepository,
     type WorkProfile,
     type WorkProfileDraft,
@@ -131,6 +132,7 @@ function serialize(profile: WorkProfile): DocumentData {
         ...rest,
         // Firestore rechaza `undefined`: un perfil sin método guarda `null`.
         exegeticalMethod: profile.exegeticalMethod ?? null,
+        profileKind: resolvePaperProfileKind(profile.profileKind),
         ...(profile.course ? { course: profile.course } : {}),
         ...(profile.cover ? { cover: profile.cover } : {}),
     };
@@ -147,6 +149,7 @@ function deserialize(id: string, data: DocumentData): WorkProfile {
         styleGuideId: data.styleGuideId ?? null,
         exegeticalStrategy: data.exegeticalStrategy === 'free' ? 'free' : 'dialectical',
         exegeticalMethod: resolveExegeticalMethod(data.exegeticalMethod),
+        profileKind: resolvePaperProfileKind(data.profileKind),
         cover: data.cover ?? null,
         isDefault: !!data.isDefault,
         createdAt: toDate(data.createdAt),

@@ -27,6 +27,7 @@ vi.mock('@/components/exegesis/setup/PaperCoverButton', () => ({ PaperCoverButto
 vi.mock('@/components/exegesis/setup/PaperRubricButton', () => ({ PaperRubricButton: vacio }));
 vi.mock('@/components/exegesis/setup/SaveWorkProfileButton', () => ({ SaveWorkProfileButton: vacio }));
 vi.mock('@/components/exegesis/setup/PaperMethodSelect', () => ({ PaperMethodSelect: vacio }));
+vi.mock('@/components/exegesis/setup/PaperProfileKindSelect', () => ({ PaperProfileKindSelect: vacio }));
 vi.mock('@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep', () => ({ CorpusUsagePlanSubStep: vacio }));
 const { ExegesisPaperSetupPage } = await import('../ExegesisPaperSetupPage');
 

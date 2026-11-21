@@ -142,6 +142,8 @@ export * from './services/corpusFootprint';
 export * from './services/curatedScope';
 export * from './services/trimStepVersions';
 export * from './services/briefQuestions';
+export * from './services/paperProfile';
+export * from './services/paperUnits';
 export * from './services/bibliographyFromText';
 export * from './services/corpusHeredado';
 export * from './services/serializeAnalysis';

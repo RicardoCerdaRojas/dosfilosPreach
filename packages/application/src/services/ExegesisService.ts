@@ -73,6 +73,7 @@ import {
     UpdatePaperCoverUseCase,
     UpdatePaperExcludedSourcesUseCase,
     UpdatePaperMethodUseCase,
+    UpdatePaperProfileKindUseCase,
     UpdateStepStudentReadingUseCase,
     SetStepPinnedSheetsUseCase,
     SetPaperThesisUseCase,
@@ -176,6 +177,7 @@ class ExegesisService {
     public updatePaperCover: UpdatePaperCoverUseCase;
     public updatePaperExcludedSources: UpdatePaperExcludedSourcesUseCase;
     public updatePaperMethod: UpdatePaperMethodUseCase;
+    public updatePaperProfileKind: UpdatePaperProfileKindUseCase;
     public updateStepStudentReading: UpdateStepStudentReadingUseCase;
     public setStepPinnedSheets: SetStepPinnedSheetsUseCase;
     public setPaperThesis: SetPaperThesisUseCase;
@@ -403,6 +405,7 @@ class ExegesisService {
         this.updatePaperCover = new UpdatePaperCoverUseCase(paperRepository);
         this.updatePaperExcludedSources = new UpdatePaperExcludedSourcesUseCase(paperRepository);
         this.updatePaperMethod = new UpdatePaperMethodUseCase(paperRepository);
+        this.updatePaperProfileKind = new UpdatePaperProfileKindUseCase(paperRepository);
         this.updateStepStudentReading = new UpdateStepStudentReadingUseCase(paperRepository);
         this.setStepPinnedSheets = new SetStepPinnedSheetsUseCase(paperRepository);
         this.setPaperThesis = new SetPaperThesisUseCase(paperRepository);
