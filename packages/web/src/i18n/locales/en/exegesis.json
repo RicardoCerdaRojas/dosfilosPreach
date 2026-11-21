@@ -3347,7 +3347,8 @@
       "discard": "Discard",
       "confirmDiscard": "Discard",
       "cancel": "Cancel",
-      "undo": "Undo"
+      "undo": "Undo",
+      "review": "Review the PDF"
     },
     "reasonLabel": "Why you discard it",
     "reasonPlaceholder": "Why you discard it (required)",

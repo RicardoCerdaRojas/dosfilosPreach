@@ -7,3 +7,8 @@
 export function rutaCalibracion(resourceId: string): string {
     return `/dashboard/library/${resourceId}/numeracion`;
 }
+
+/** La bandeja de revisión de un libro (A7): obra, edición, páginas y copia. */
+export function rutaRevisionPdf(resourceId: string): string {
+    return `/dashboard/library/${resourceId}/revision`;
+}

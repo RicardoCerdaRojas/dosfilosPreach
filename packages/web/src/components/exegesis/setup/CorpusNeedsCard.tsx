@@ -1,9 +1,11 @@
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import type { AcquisitionMark, ExegeticalPaper, SourceType } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { useCorpusNeeds } from '@/hooks/exegesis/useCorpusNeeds';
 import { useUpdatePaperInputs } from '@/hooks/exegesis/usePaperInputs';
 import { CorpusNeedRow } from './CorpusNeedRow';
+import { rutaRevisionPdf } from '@/lib/rutaCalibracion';
 
 /**
  * «Qué conseguir» (fase «Asistente del corpus», A6): lo que la rúbrica y el
@@ -22,6 +24,7 @@ export function CorpusNeedsCard({ paper, onPickType, onAddResource }: {
     const { t } = useTranslation('exegesis');
     const { needs, coverage } = useCorpusNeeds(paper);
     const guardar = useUpdatePaperInputs(paper.id);
+    const navigate = useNavigate();
     if (needs.length === 0) {
         return paper.rubric ? null : (
             <p className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">{t('paperSetup.subSteps.corpus.gap.noRubric')}</p>
@@ -53,7 +56,7 @@ export function CorpusNeedsCard({ paper, onPickType, onAddResource }: {
                     <CorpusNeedRow
                         key={n.id}
                         need={n}
-                        actions={{ onAddResource, onPickType, onMark: (k, m) => void marcar(k, m), busy: guardar.isPending }}
+                        actions={{ onAddResource, onPickType, onMark: (k, m) => void marcar(k, m), onReview: id => navigate(rutaRevisionPdf(id)), busy: guardar.isPending }}
                     />
                 ))}
             </ul>

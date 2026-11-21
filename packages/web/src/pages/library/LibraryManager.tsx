@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { rutaCalibracion } from '@/lib/rutaCalibracion';
+import { rutaCalibracion, rutaRevisionPdf } from '@/lib/rutaCalibracion';
 import { useAbrirRecursoEnVisor } from './hooks/useAbrirRecursoEnVisor';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -169,6 +169,7 @@ export function LibraryManager() {
         userId,
         isAdmin,
         onConsentRequired: () => setConsentModalOpen(true),
+        onReview: id => navigate(rutaRevisionPdf(id)),
         onSuccess: () => {
             setShowUploadForm(false);
             // La ficha del libro nuevo (con el avance de la extracción) está en «Mis libros».
@@ -391,6 +392,9 @@ export function LibraryManager() {
                                 onCalibrateNumbering={resource.isSystemSource
                                     ? undefined
                                     : () => navigate(rutaCalibracion(resource.id))}
+                                onReviewPdf={resource.isSystemSource
+                                    ? undefined
+                                    : () => navigate(rutaRevisionPdf(resource.id))}
                             />
                             </div>
                         ))}

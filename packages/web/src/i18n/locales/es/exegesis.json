@@ -3347,7 +3347,8 @@
       "discard": "Descartar",
       "confirmDiscard": "Descartar",
       "cancel": "Cancelar",
-      "undo": "Deshacer"
+      "undo": "Deshacer",
+      "review": "Revisar el PDF"
     },
     "reasonLabel": "Por qué la descartas",
     "reasonPlaceholder": "Por qué la descartas (obligatorio)",

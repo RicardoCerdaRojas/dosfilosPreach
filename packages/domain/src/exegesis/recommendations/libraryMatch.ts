@@ -65,7 +65,10 @@ export function matchRecommendationToResource(
             const normalizedAcronym = normalizeForMatch(acronym);
             // Use word boundary so "WBC" matches "WBC 47A" / "Hebrews WBC"
             // but doesn't match "AWBC" or random substrings.
-            if (containsAsToken(normalizedTitle, normalizedAcronym)) {
+            // La sigla escrita («WBC 48») o desplegada («Word Biblical
+            // Commentary», «Baker Exegetical Commentary on the New
+            // Testament»): la bandeja de A7 no encontraba el McCartney BECNT.
+            if (containsAsToken(normalizedTitle, normalizedAcronym) || (esSigla && spellsOut(resource.title, acronym))) {
                 // La sigla es de la serie, no del volumen: el WBC de Lane no es
                 // el de Williamson. Con autor en el recurso, tiene que coincidir.
                 // Una palabra que no es sigla («Anchor», «Interpretation») solo
@@ -174,10 +177,22 @@ function containsAsToken(haystack: string, needle: string): boolean {
  * stopwords ("the", "of", "and", "el", "la", "de") and short
  * articles. Returned tokens are normalized.
  */
+/** Palabras que no dan inicial en una sigla: «Commentary on THE New Testament» es BECNT. */
+const SIN_INICIAL = new Set(['on', 'the', 'of', 'to', 'and', 'a', 'an', 'in', 'for', 'de', 'del', 'la', 'el', 'al', 'los', 'las', 'y', 'en']);
+
+/** La sigla desplegada en el título: las iniciales de palabras seguidas, sin las de enlace. */
+function spellsOut(title: string, acronym: string): boolean {
+    const iniciales = normalizeForMatch(title).split(' ').filter(w => w && !SIN_INICIAL.has(w) && !/^\d/.test(w)).map(w => w[0]).join('');
+    return acronym.length >= 3 && iniciales.includes(acronym.toLowerCase());
+}
+
 function significantTokens(s: string): string[] {
-    return normalizeForMatch(s)
+    // Sin repetir: «James: A Commentary on the Epistle of James» contaba
+    // «james» dos veces y llegaba al 70 % contra cualquier comentario a
+    // Santiago (bandeja de A7, 2026-11-21).
+    return [...new Set(normalizeForMatch(s)
         .split(' ')
-        .filter(t => t.length >= 4);
+        .filter(t => t.length >= 4))];
 }
 
 function countOverlap(a: ReadonlyArray<string>, b: ReadonlyArray<string>): number {
@@ -196,12 +211,32 @@ function countOverlap(a: ReadonlyArray<string>, b: ReadonlyArray<string>): numbe
  * recommendation has "Cockerill, Gareth Lee".
  */
 function sharesAuthorSurname(recAuthor: string, resAuthor: string): boolean {
-    const recSurnames = significantTokens(recAuthor);
-    const resSurnames = significantTokens(resAuthor);
-    if (recSurnames.length === 0 || resSurnames.length === 0) return false;
-    const setRes = new Set(resSurnames);
-    for (const surname of recSurnames) {
-        if (setRes.has(surname)) return true;
+    const recSurnames = surnamesOf(recAuthor);
+    const resSurnames = new Set(surnamesOf(resAuthor));
+    return recSurnames.some(s => resSurnames.has(s));
+}
+
+/** Lo que va después del apellido y no es apellido. */
+const NO_APELLIDO = new Set(['jr', 'sr', 'ii', 'iii', 'iv', 'ed', 'eds', 'trad', 'tr', 'comp']);
+
+/**
+ * Los APELLIDOS de un autor, no sus nombres de pila. «Dibelius, Martin» y
+ * «Ralph P. Martin» compartían «martin» y el WBC 48 de Martin pasaba por
+ * el Hermeneia de Dibelius (bandeja de A7, 2026-11-21).
+ *
+ * «Apellido, Nombre» → lo de antes de la coma; «Nombre Apellido» → la
+ * última palabra. Varios autores se separan con «;», «and», «y» o «&».
+ * Desde tres letras: «Moo» es un apellido.
+ */
+function surnamesOf(author: string): string[] {
+    const sinParentesis = author.replace(/\([^)]*\)/g, ' ');
+    const out: string[] = [];
+    for (const uno of sinParentesis.split(/;|&|\band\b|\by\b/i)) {
+        const parte = uno.includes(',') ? uno.slice(0, uno.indexOf(',')) : uno;
+        const palabras = normalizeForMatch(parte).split(' ').filter(t => t.length >= 3 && !NO_APELLIDO.has(t));
+        if (palabras.length === 0) continue;
+        if (uno.includes(',')) out.push(...palabras);
+        else out.push(palabras[palabras.length - 1]!);
     }
-    return false;
+    return out;
 }

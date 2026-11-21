@@ -64,6 +64,7 @@ const ExpositoryAssistantPage = lazy(() => import('@/pages/series/ExpositoryAssi
 
 const LibraryManager = lazy(() => import('@/pages/library/LibraryManager').then(m => ({ default: m.LibraryManager })));
 const PageNumberingPage = lazy(() => import('@/pages/library/PageNumberingPage').then(m => ({ default: m.PageNumberingPage })));
+const PdfReviewPage = lazy(() => import('@/pages/library/PdfReviewPage').then(m => ({ default: m.PdfReviewPage })));
 const PlannerWizard = lazy(() => import('@/pages/planner/PlannerWizard').then(m => ({ default: m.PlannerWizard })));
 const GeneratorSettings = lazy(() => import('@/pages/settings/GeneratorSettings').then(m => ({ default: m.GeneratorSettings })));
 const ConfessionSettings = lazy(() => import('@/pages/settings/ConfessionSettings').then(m => ({ default: m.ConfessionSettings })));
@@ -315,6 +316,7 @@ function App() {
             <Route path="planner" element={<PlannerWizard />} />
             <Route path="library" element={<LibraryManager />} />
             <Route path="library/:resourceId/numeracion" element={<PageNumberingPage />} />
+            <Route path="library/:resourceId/revision" element={<PdfReviewPage />} />
             {/* Legacy subscription route — folded into Settings tabs. Kept as a
                 redirect so Stripe success/cancel callbacks and external links keep working. */}
             <Route path="subscription" element={<Navigate to="/dashboard/settings?tab=subscription" replace />} />

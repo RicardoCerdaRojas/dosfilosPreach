@@ -305,6 +305,10 @@ describe('invariantes del tramo que se manda al modelo', () => {
 });
 
 describe('isbnsIn, casos del mundo real', () => {
+    it('la línea siguiente no se pega al ISBN aunque empiece con número', () => {
+        expect(isbnsIn('ISBN 0-8499-0247-9\n1 Corinthians — Gordon Fee')).toEqual(['9780849902475']);
+        expect(isbnsIn('978-0-8499-0247-5\n2 Peter')).toEqual(['9780849902475']);
+    });
     it('lee el ISBN escondido en la URL del catálogo de la editorial', () => {
         // Medido en el ejemplar de Arnold: el único ISBN del libro está en
         // «www.cambridge.org/9780521826099», sin la palabra ISBN al lado.

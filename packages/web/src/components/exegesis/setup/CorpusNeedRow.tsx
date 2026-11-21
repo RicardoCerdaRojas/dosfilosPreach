@@ -21,6 +21,8 @@ export interface NeedActions {
     onAddResource: (resourceId: string) => void;
     onPickType: (type: NonNullable<CorpusNeed['sourceType']>) => void;
     onMark: (key: string, mark: { status: 'por-conseguir' | 'descartada'; reason?: string } | null) => void;
+    /** Abre la bandeja de revisión del PDF (A7): obra, edición, páginas y copia. */
+    onReview?: (resourceId: string) => void;
     busy: boolean;
 }
 
@@ -93,6 +95,9 @@ function CandidateItem({ candidate: c, actions }: { candidate: NeedCandidate; ac
         <>
             {(c.status === 'tengo' || c.status === 'edicion-distinta') && c.resourceId && (
                 <Accion onClick={() => actions.onAddResource(c.resourceId!)} disabled={actions.busy}>{t('corpusNeeds.action.add')}</Accion>
+            )}
+            {actions.onReview && c.resourceId && (c.status === 'tengo' || c.status === 'edicion-distinta' || c.status === 'en-corpus') && (
+                <Accion onClick={() => actions.onReview!(c.resourceId!)} disabled={false}>{t('corpusNeeds.action.review')}</Accion>
             )}
             {c.status === 'sugerida' && razon === null && (
                 <>

@@ -3,3 +3,4 @@ export * from './resourceMatchesTestament';
 export * from './sanitizeExtractedText';
 export * from './diagnosePdfSource';
 export * from './recommendExtractionMode';
+export * from './pdfReview';

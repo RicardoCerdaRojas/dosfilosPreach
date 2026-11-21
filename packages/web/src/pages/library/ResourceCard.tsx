@@ -22,6 +22,7 @@ import {
     FileWarning,
     Landmark,
     Languages,
+    FileSearch,
     Library,
     Loader2,
     Map,
@@ -101,6 +102,8 @@ interface ResourceCardProps {
      * pero incompleto para un trabajo académico.
      */
     onCalibrateNumbering?: () => void;
+    /** Abre la bandeja de revisión: obra, edición, páginas y copia (A7). */
+    onReviewPdf?: () => void;
 }
 
 // Icon mapping for category icons. Keep keys identical to the icon
@@ -186,6 +189,7 @@ export function ResourceCard({
     onSetPhases,
     onConfigureCoreStores,
     onCalibrateNumbering,
+    onReviewPdf,
 }: ResourceCardProps) {
     const { t } = useTranslation('library');
     const category = categories.find(c => c.id === resource.type);
@@ -361,13 +365,19 @@ export function ResourceCard({
                         {t('card.actions.reextractFromImages')}
                     </DropdownMenuItem>
                 )}
+                {onReviewPdf && (
+                    <DropdownMenuItem onClick={onReviewPdf} className="cursor-pointer">
+                        <FileSearch className="h-4 w-4 mr-2" />
+                        {t('review.open')}
+                    </DropdownMenuItem>
+                )}
                 {onCalibrateNumbering && (
                     <DropdownMenuItem onClick={onCalibrateNumbering} className="cursor-pointer">
                         <BookMarked className="h-4 w-4 mr-2" />
                         {t('numbering.calibrate')}
                     </DropdownMenuItem>
                 )}
-                {(hasPhasesAction || hasCoreStoresAction || onCalibrateNumbering) && !resource.isSystemSource && <DropdownMenuSeparator />}
+                {(hasPhasesAction || hasCoreStoresAction || onCalibrateNumbering || onReviewPdf) && !resource.isSystemSource && <DropdownMenuSeparator />}
                 {!resource.isSystemSource && (
                     <DropdownMenuItem
                         onClick={onDelete}

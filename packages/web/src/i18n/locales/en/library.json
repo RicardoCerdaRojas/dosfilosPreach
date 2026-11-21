@@ -565,5 +565,71 @@
   "notices": {
     "pill_one": "{{count}} notice",
     "pill_other": "{{count}} notices"
+  },
+  "review": {
+    "open": "Review the PDF",
+    "title": "Review the PDF",
+    "back": "Back to the library",
+    "intro": "Before citing this book: whether it is the work you think, which edition it is, and how its pages are cited. The title page, the credits and three body sheets are read here in your browser.",
+    "reading": "Reading the title page, the credits and three sheets…",
+    "loadFailed": "The PDF could not be opened.",
+    "notFound": "This book is not in your library.",
+    "allGood": "Everything matches: the work, the edition and the pages.",
+    "attention": "Something needs a look before citing this book.",
+    "saveFailed": "Could not save. Try again.",
+    "evidence": "It reads: “{{line}}”",
+    "viewerTitle": "Sheet {{sheet}} of the file",
+    "viewerHint": "Compare the printed number on the sheet with what was read.",
+    "identity": {
+      "title": "The work",
+      "coincide": "The title page or running heads name {{book}}, as the record says.",
+      "otro-libro": "The record says {{declared}}, but the title page or running heads name {{found}}. It may be another book.",
+      "sin-dato": "The sheets read do not name a biblical book. Compare it with your copy.",
+      "no-aplica": "It does not comment on one biblical book: there is no book to compare.",
+      "fix": "If it is another book, fix the title and covered books from the library."
+    },
+    "edition": {
+      "title": "The edition",
+      "year": "Year of the copy: {{year}}",
+      "isbn": "ISBN {{isbn}}",
+      "noCredits": "No credits page was found in the first sheets.",
+      "vsCited": {
+        "misma": "It is the edition the catalog cites ({{cited}}).",
+        "distinta": "The catalog cites the {{cited}} edition; yours is from {{year}}. Pages may not match other works.",
+        "sin-dato": "It cannot be compared with the catalog edition ({{cited}}): the year is missing."
+      },
+      "noCited": "The catalog does not have this work to compare.",
+      "vsBibliography": "Your record says {{stored}}.",
+      "save": "Save to the record: {{fields}}",
+      "saved": "Record updated."
+    },
+    "pagination": {
+      "title": "The pages",
+      "una": "The sheets read carry printed numbers and follow one rule: sheet {{sheet}} is page {{printed}} ({{rule}}).",
+      "parcial": "{{have}} of {{total}} sheets show a number and follow one rule ({{rule}}); the others could not be read. Look at those sheets before saving, or calibrate sheet by sheet.",
+      "varias": "The sheets do not follow one rule (roman numerals, plates or ranges). Calibrate sheet by sheet.",
+      "sin-folios": "None of the sheets read has a printed number. If the book has none (for example, a converted e-book), cite it by chapter or section.",
+      "sin-texto": "The PDF is an image with no text: the number cannot be read automatically. Calibrate by looking at the sheets.",
+      "ebook": "It is an e-book: it has no printed pages. Cite it by chapter or section.",
+      "minus_one": "subtract {{count}} from each sheet",
+      "minus_other": "subtract {{count}} from each sheet",
+      "plus_one": "add {{count}} to each sheet",
+      "plus_other": "add {{count}} to each sheet",
+      "point": "Sheet {{sheet}}: p. {{folio}}",
+      "pointNone": "Sheet {{sheet}}: no number",
+      "storedAgrees": "The saved numbering says the same.",
+      "storedDisagrees": "The saved numbering says otherwise: citations of this book may point to the wrong page.",
+      "save": "Save this numbering",
+      "replace": "Replace the saved numbering",
+      "saveNone": "Save: it has no printed pages",
+      "calibrate": "Calibrate sheet by sheet",
+      "saved": "Numbering saved."
+    },
+    "copy": {
+      "title": "The copy",
+      "none": "No signs of an unofficial copy in the file or in the sheets read.",
+      "marca-de-agua": "The file or the sheets carry “{{detail}}”, the mark of an unofficial library. For academic work, cite the published edition.",
+      "conversion": "The file was made from an e-book ({{detail}}): it does not have the printed pages."
+    }
   }
 }
