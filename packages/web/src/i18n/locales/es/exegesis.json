@@ -3237,7 +3237,30 @@
     },
     "requirements": {
       "title": "Requisitos",
-      "subtitle": "Lo que pide el trabajo y dónde se cumple. Todo requisito se cumple en el cuerpo; un apéndice solo amplía.",
+      "subtitle": "Lo que pide el trabajo. Lo que el sistema puede medir aparece medido; marca tú solo lo que dice «Lo reviso yo».",
+      "bodyRule": "Todo requisito se cumple en el cuerpo; un apéndice solo amplía.",
+      "selfCheck": "Lo reviso yo: márcalo cuando lo hayas comprobado.",
+      "check": {
+        "length": {
+          "none": "Todavía no hay documento armado para medir.",
+          "ok": "Hoy mide {{pages}} páginas.",
+          "short": "Hoy mide {{pages}} páginas: le falta.",
+          "long": "Hoy mide {{pages}} páginas: se pasa."
+        },
+        "sources": "En el corpus: {{have}} de {{required}}.",
+        "question": {
+          "answered": "La sección tiene texto en el documento.",
+          "pending": "La sección todavía no tiene texto en el documento."
+        },
+        "framing": {
+          "none": "La introducción y la conclusión quedan fuera del documento.",
+          "included": "La introducción o la conclusión entran al documento: un TP no las lleva."
+        },
+        "reading": {
+          "inCorpus": "Está en el corpus.",
+          "missing": "No está en el corpus."
+        }
+      },
       "where": "Se cumple en",
       "wholePaper": "Todo el trabajo",
       "appendixOnly": "Solo en un apéndice",

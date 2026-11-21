@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { cleanManualRequirements, cleanRequirementMarks, paperRequirements, requirementWarnings } from '../paperRequirements';
+import { cleanManualRequirements, cleanRequirementMarks, paperRequirements, requirementPlacementControls, requirementWarnings, syllabusRequirementId } from '../paperRequirements';
 import { cleanIgnoredGrammarCategories, ignoredCategoriesIn, parseIgnoredGrammarCategories } from '../courseGrammarRules';
-import { derivePaperUnits } from '../paperUnits';
+import { answeredUnitIds, derivePaperUnits, framingInDocument } from '../paperUnits';
 
 const pasaje = { chapterStart: 5, chapterEnd: 5, verseStart: 1, verseEnd: 6 };
 const units = derivePaperUnits({ kind: 'tp-por-pregunta', passage: pasaje, assignmentBrief: '1. ¿Qué es ὀλολύζοντες (Stg. 5:1)?\n2. ¿Qué denota σέσηπεν (Stg. 5:2)?' });
@@ -46,6 +46,58 @@ describe('paperRequirements', () => {
             { kind: 'appendix-only', requirementId: 'rubrica:criterio:q1' },
             { kind: 'no-unit', requirementId: 'enunciado:pregunta:2' },
         ]);
+    });
+
+    it('lo medible se mide y una marca a mano no lo cambia; lo demás lo juzga el autor', () => {
+        const r = paperRequirements({
+            profileKind: 'tp-por-pregunta', rubric, units,
+            marks: { 'rubrica:extension': { done: true }, 'rubrica:criterio:q1': { done: true } },
+            measures: {
+                length: { verdict: 'short', estimatedPages: 1.66, words: 700 },
+                sources: [{ sourceType: 'lexicon-technical', have: 1, required: 1 }],
+                answeredUnits: new Set(['pregunta-1']),
+                framingInDocument: true,
+                readingsInCorpus: new Map([[syllabusRequirementId('Wallace, Gramática'), true]]),
+            },
+        });
+        const de = (id: string) => r.find(x => x.id === id)!;
+        // Marcada a mano como hecha, pero mide 1,7 páginas: no está hecha.
+        expect(de('rubrica:extension')).toMatchObject({ done: false, check: { mode: 'measured', value: { key: 'length.short', values: { pages: 1.7 } } } });
+        expect(de('rubrica:fuente:lexicon-technical')).toMatchObject({ done: true, check: { value: { key: 'sources', values: { have: 1, required: 1 } } } });
+        expect(de('enunciado:pregunta:1')).toMatchObject({ done: true, check: { value: { key: 'question.answered' } } });
+        expect(de('enunciado:pregunta:2')).toMatchObject({ done: false, check: { value: { key: 'question.pending' } } });
+        expect(de('tipo:sin-marco')).toMatchObject({ done: false, check: { value: { key: 'framing.included' } } });
+        expect(de('silabo:wallace-gramatica')).toMatchObject({ done: true, check: { value: { key: 'reading.inCorpus' } } });
+        expect(de('rubrica:criterio:q1')).toMatchObject({ done: true, check: { mode: 'self' } });
+    });
+
+    it('sin documento la extensión se mide como «sin documento»; una lectura sin enlazar la juzga el autor', () => {
+        const r = paperRequirements({ profileKind: 'tp-por-pregunta', rubric, units, measures: { length: null, readingsInCorpus: new Map() } });
+        expect(r.find(x => x.id === 'rubrica:extension')).toMatchObject({ done: false, check: { value: { key: 'length.none' } } });
+        // Con documento, pero sin poder juzgarlo (la rúbrica no da rango útil): tampoco se da por cumplido.
+        const sinJuicio = paperRequirements({ profileKind: 'tp-por-pregunta', rubric, units, measures: { length: { verdict: 'unknown', estimatedPages: 2.5, words: 900 } } });
+        expect(sinJuicio.find(x => x.id === 'rubrica:extension')).toMatchObject({ done: false, check: { value: { key: 'length.none' } } });
+        expect(r.find(x => x.id === 'silabo:wallace-gramatica')!.check.mode).toBe('self');
+        // Sin medidas, todo lo juzga el autor (como antes).
+        expect(paperRequirements({ profileKind: 'tp-por-pregunta', rubric, units }).every(x => x.check.mode === 'self')).toBe(true);
+    });
+
+    it('los controles de ubicación: ninguno en un TP; los dos en una investigación; solo la sección en síntesis + sermón', () => {
+        expect(requirementPlacementControls('tp-por-pregunta')).toEqual({ unit: false, appendix: false });
+        expect(requirementPlacementControls('investigacion-tematica')).toEqual({ unit: true, appendix: true });
+        expect(requirementPlacementControls('sintesis-sermon')).toEqual({ unit: true, appendix: false });
+    });
+
+    it('qué unidades tienen texto y si el marco entra al documento', () => {
+        const paso = (id: string, verse: number, markdown: string, includeInDocument?: boolean) => ({
+            id, kind: 'verse' as const, order: verse, includeInDocument,
+            verseRef: { bookId: 'JAS' as const, chapterStart: 5, chapterEnd: 5, verseStart: verse, verseEnd: verse },
+            accepted: null, current: { markdown } as never,
+        });
+        expect([...answeredUnitIds(units, [paso('a', 1, 'Texto'), paso('b', 2, '  ')])]).toEqual(['pregunta-1']);
+        expect([...answeredUnitIds(units, [paso('a', 1, 'Texto', false)])]).toEqual([]);
+        expect(framingInDocument([{ kind: 'introduction', includeInDocument: false }, { kind: 'conclusion', includeInDocument: false }])).toBe(false);
+        expect(framingInDocument([{ kind: 'introduction' }])).toBe(true);
     });
 
     it('limpia lo que se guarda', () => {

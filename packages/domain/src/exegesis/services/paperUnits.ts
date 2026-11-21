@@ -207,3 +207,31 @@ export function buildUnitStudyMap(
 function normalizar(s: string): string {
     return s.toLowerCase().replace(/\s+/g, ' ').replace(/[.;:,]+$/, '').trim();
 }
+
+// ── Medidas para los requisitos (A5) ─────────────────────────────────────
+
+type StepWithText = Pick<ExegeticalStep, 'id' | 'kind' | 'verseRef' | 'order' | 'accepted' | 'current' | 'includeInDocument'>;
+
+/**
+ * Las unidades que ya tienen texto en el documento: el paso de su versículo
+ * dueño entra al documento y tiene texto. Las partes de una síntesis + sermón
+ * no se miden así (no son un versículo).
+ */
+export function answeredUnitIds(units: ReadonlyArray<PaperUnit>, steps: ReadonlyArray<StepWithText>): Set<string> {
+    const out = new Set<string>();
+    for (const u of units) {
+        if (u.kind === 'parte') continue;
+        const duena = u.verses[0];
+        if (!duena) continue;
+        const paso = steps.find(s => s.kind === 'verse' && s.verseRef?.chapterStart === duena.chapter
+            && (s.verseRef.verseStart ?? 1) <= duena.verse && (s.verseRef.verseEnd ?? s.verseRef.verseStart ?? 1) >= duena.verse);
+        const texto = paso ? (paso.accepted ?? paso.current)?.markdown?.trim() : '';
+        if (paso && paso.includeInDocument !== false && texto) out.add(u.id);
+    }
+    return out;
+}
+
+/** Si la introducción o la conclusión entran al documento (un TP no las lleva). */
+export function framingInDocument(steps: ReadonlyArray<Pick<ExegeticalStep, 'kind' | 'includeInDocument'>>): boolean {
+    return steps.some(s => (s.kind === 'introduction' || s.kind === 'conclusion') && s.includeInDocument !== false);
+}

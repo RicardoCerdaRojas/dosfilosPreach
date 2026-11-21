@@ -40,6 +40,7 @@ export function PaperInputsSubStep({ paper }: { paper: ExegeticalPaper }) {
                     units={datos.units}
                     marks={paper.requirementMarks ?? {}}
                     manual={paper.manualRequirements ?? []}
+                    placement={datos.placement}
                     saving={guardar.isPending}
                     onSave={patch => guardar.mutateAsync({
                         ...(patch.requirementMarks ? { requirementMarks: patch.requirementMarks } : {}),

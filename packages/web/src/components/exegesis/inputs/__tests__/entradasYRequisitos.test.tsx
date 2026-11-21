@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { derivePaperUnits, paperInputStatuses, paperRequirements, requirementWarnings } from '@dosfilos/domain';
+import { derivePaperUnits, paperInputStatuses, paperRequirements, requirementPlacementControls, requirementWarnings, type RequirementMark } from '@dosfilos/domain';
 
 vi.mock('@/i18n', () => ({
     useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k} ${JSON.stringify(o)}` : k), i18n: { language: 'es' } }),
@@ -64,27 +64,51 @@ describe('Entradas (A5)', () => {
 
 describe('Requisitos (A5)', () => {
     const units = derivePaperUnits({ kind: 'tp-por-pregunta', passage: { chapterStart: 5, chapterEnd: 5, verseStart: 1, verseEnd: 6 }, assignmentBrief: '1. ¿Qué es ὀλολύζοντες (Stg. 5:1)?' });
-    const rubric = { expectedLength: { unit: 'pages' as const, min: 2, max: 3 }, sourceRequirements: [{ sourceType: 'lexicon-technical' as const, minimum: 2, maximum: null, justification: '' }], qualityCriteria: [], courseBibliography: [] };
-    const montar = (marks = {}, onSave = vi.fn().mockResolvedValue(undefined)) => {
-        const reqs = paperRequirements({ profileKind: 'tp-por-pregunta', rubric, units, marks });
-        render(<PaperRequirementsCard requirements={reqs} warnings={requirementWarnings(reqs)} units={units} marks={marks} manual={[]} saving={false} onSave={onSave} />);
+    const rubric = { expectedLength: { unit: 'pages' as const, min: 2, max: 3 }, sourceRequirements: [{ sourceType: 'lexicon-technical' as const, minimum: 2, maximum: null, justification: '' }], qualityCriteria: [{ id: 'q1', name: 'Interacción con las fuentes', levels: [] }], courseBibliography: [] };
+    const measures = {
+        length: { verdict: 'short' as const, estimatedPages: 1.64, words: 700 },
+        sources: [{ sourceType: 'lexicon-technical', have: 2, required: 2 }],
+        answeredUnits: new Set<string>(),
+        framingInDocument: false,
+        readingsInCorpus: new Map<string, boolean>(),
+    };
+    const montar = (opts: { marks?: Record<string, RequirementMark>; kind?: 'tp-por-pregunta' | 'investigacion-tematica' } = {}) => {
+        const kind = opts.kind ?? 'tp-por-pregunta';
+        const onSave = vi.fn().mockResolvedValue(undefined);
+        const reqs = paperRequirements({ profileKind: kind, rubric, units, marks: opts.marks ?? {}, measures });
+        render(<PaperRequirementsCard requirements={reqs} warnings={requirementWarnings(reqs)} units={units} marks={opts.marks ?? {}} manual={[]} placement={requirementPlacementControls(kind)} saving={false} onSave={onSave} />);
         return onSave;
     };
 
-    it('cada pregunta se cumple en su sección; las fuentes van en plural con el nombre del tipo', () => {
+    it('lo medible sale medido y sin casilla (prueba de TP #10): extensión, fuentes, pregunta, marco', () => {
         montar();
-        const pregunta = screen.getByTestId('requisito-enunciado:pregunta:1');
-        expect((pregunta.querySelector('select') as HTMLSelectElement).value).toBe('pregunta-1');
-        expect(screen.getByTestId('requisito-rubrica:fuente:lexicon-technical').textContent).toContain('"count":2');
-        expect(screen.getByTestId('requisito-rubrica:fuente:lexicon-technical').textContent).toContain('sourceTypes.lexicon-technical.label');
+        const ext = screen.getByTestId('requisito-rubrica:extension');
+        expect(ext.querySelector('input[type=checkbox]')).toBeNull();
+        expect(ext.textContent).toContain('check.length.short');
+        expect(ext.textContent).toContain('"pages":"1,6"');
+        expect(screen.getByTestId('requisito-rubrica:fuente:lexicon-technical').textContent).toContain('"have":"2"');
+        expect(screen.getByTestId('requisito-enunciado:pregunta:1').textContent).toContain('check.question.pending');
+        expect(screen.getByTestId('requisito-tipo:sin-marco').querySelector('input')).toBeNull();
     });
 
-    it('«solo en un apéndice» se guarda y avisa la regla del cuerpo', async () => {
+    it('solo lo que juzga el autor lleva casilla, con «Lo reviso yo»', async () => {
         const onSave = montar();
-        fireEvent.click(screen.getByTestId('requisito-rubrica:extension').querySelectorAll('input[type=checkbox]')[1]!);
+        const criterio = screen.getByTestId('requisito-rubrica:criterio:q1');
+        expect(criterio.textContent).toContain('inputs.requirements.selfCheck');
+        fireEvent.click(criterio.querySelector('input[type=checkbox]')!);
+        await waitFor(() => expect(onSave).toHaveBeenCalledWith({ requirementMarks: { 'rubrica:criterio:q1': { done: true } } }));
+    });
+
+    it('en un TP no hay «se cumple en» ni «solo en un apéndice»; en una investigación sí, y avisa la regla del cuerpo', async () => {
+        montar();
+        expect(screen.queryByText('inputs.requirements.where')).toBeNull();
+        expect(screen.queryByText('inputs.requirements.appendixOnly')).toBeNull();
+        cleanup();
+        const onSave = montar({ kind: 'investigacion-tematica' });
+        fireEvent.click(screen.getByTestId('requisito-rubrica:extension').querySelectorAll('input[type=checkbox]')[0]!);
         await waitFor(() => expect(onSave).toHaveBeenCalledWith({ requirementMarks: { 'rubrica:extension': { inBody: false } } }));
         cleanup();
-        montar({ 'rubrica:extension': { inBody: false } });
+        montar({ kind: 'investigacion-tematica', marks: { 'rubrica:extension': { inBody: false } } });
         expect(screen.getByTestId('requisito-rubrica:extension').textContent).toContain('inputs.requirements.warning.appendix-only');
     });
 

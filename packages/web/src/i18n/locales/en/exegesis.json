@@ -3237,7 +3237,30 @@
     },
     "requirements": {
       "title": "Requirements",
-      "subtitle": "What the paper asks and where it is met. Every requirement is met in the body; an appendix only expands.",
+      "subtitle": "What the paper asks. What the system can measure shows measured; you only tick what says “I check it”.",
+      "bodyRule": "Every requirement is met in the body; an appendix only expands.",
+      "selfCheck": "I check it: tick it once you have checked it.",
+      "check": {
+        "length": {
+          "none": "There is no assembled document to measure yet.",
+          "ok": "Today it is {{pages}} pages.",
+          "short": "Today it is {{pages}} pages: too short.",
+          "long": "Today it is {{pages}} pages: too long."
+        },
+        "sources": "In the corpus: {{have}} of {{required}}.",
+        "question": {
+          "answered": "The section has text in the document.",
+          "pending": "The section has no text in the document yet."
+        },
+        "framing": {
+          "none": "The introduction and the conclusion stay out of the document.",
+          "included": "The introduction or the conclusion goes into the document: a weekly paper has none."
+        },
+        "reading": {
+          "inCorpus": "It is in the corpus.",
+          "missing": "It is not in the corpus."
+        }
+      },
       "where": "Met in",
       "wholePaper": "The whole paper",
       "appendixOnly": "Only in an appendix",

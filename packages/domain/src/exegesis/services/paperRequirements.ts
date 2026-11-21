@@ -13,7 +13,7 @@
  * ya no sale de la rúbrica queda marcado, para que el autor lo vea.
  */
 import type { PaperRubric } from '../entities/PaperRubric';
-import type { PaperProfileKind } from './paperProfile';
+import { PAPER_PROFILES, type PaperProfileKind } from './paperProfile';
 import type { PaperUnit } from './paperUnits';
 
 export type RequirementOrigin = 'rubrica' | 'enunciado' | 'tipo' | 'silabo' | 'manual';
@@ -28,8 +28,14 @@ export interface PaperRequirement {
     unitId: string | null;
     /** Se cumple en el cuerpo (no solo en un apéndice). */
     inBody: boolean;
-    /** El autor lo dio por cumplido. */
+    /** Cumplido: medido por el sistema, o marcado por el autor si no se puede medir. */
     done: boolean;
+    /**
+     * `measured`: el sistema lo mide (extensión, fuentes, preguntas, marco) y
+     * el autor no marca nada: una marca a mano se vuelve falsa cuando el texto
+     * cambia. `self`: lo juzga el autor («Lo reviso yo»).
+     */
+    check: { mode: 'measured'; value: { key: string; values?: Record<string, string | number> } } | { mode: 'self' };
 }
 
 /** Lo que el autor decide de cada requisito, por id. */
@@ -50,17 +56,67 @@ export interface ManualRequirement {
 export const MANUAL_REQUIREMENTS_MAX = 40;
 export const MANUAL_REQUIREMENT_TEXT_MAX = 400;
 
+/** Lo que la app ya sabe del trabajo, para medir los requisitos. */
+export interface RequirementMeasures {
+    /** La extensión del documento ensamblado; `null` = todavía no hay documento. */
+    length?: { verdict: 'unknown' | 'short' | 'ok' | 'long'; estimatedPages: number; words: number } | null;
+    /** Fuentes del corpus por tipo, contra la rúbrica (`computeRubricCompliance`). */
+    sources?: ReadonlyArray<{ sourceType: string; have: number; required: number }>;
+    /** Las unidades que ya tienen texto en el documento. */
+    answeredUnits?: ReadonlySet<string>;
+    /** Si la introducción o la conclusión entran al documento. */
+    framingInDocument?: boolean;
+    /**
+     * Las lecturas del sílabo enlazadas a un libro de la biblioteca
+     * (`silabo:<slug>` → está en el corpus). Una sin enlazar no se mide: «no
+     * está» sería falso si el libro está con otro nombre.
+     */
+    readingsInCorpus?: ReadonlyMap<string, boolean>;
+}
+
 export interface RequirementsInput {
     profileKind: PaperProfileKind;
     rubric: Pick<PaperRubric, 'expectedLength' | 'sourceRequirements' | 'qualityCriteria' | 'courseBibliography'> | null | undefined;
     units: ReadonlyArray<PaperUnit>;
     marks?: Readonly<Record<string, RequirementMark>> | null;
     manual?: ReadonlyArray<ManualRequirement> | null;
+    measures?: RequirementMeasures | null;
+}
+
+/**
+ * La medida de un requisito, si el sistema puede tomarla. `null`: lo juzga el
+ * autor. Sin el dato (el trabajo no se armó todavía) también se mide: «sin
+ * documento» es un estado, no una razón para pedirle al autor que marque.
+ */
+function measure(id: string, unitId: string | null, m: RequirementMeasures | null | undefined): { ok: boolean; value: { key: string; values?: Record<string, string | number> } } | null {
+    if (!m) return null;
+    if (id === 'rubrica:extension' && m.length !== undefined) {
+        if (!m.length || m.length.verdict === 'unknown') return { ok: false, value: { key: 'length.none' } };
+        return { ok: m.length.verdict === 'ok', value: { key: `length.${m.length.verdict}`, values: { pages: Math.round(m.length.estimatedPages * 10) / 10 } } };
+    }
+    if (id.startsWith('rubrica:fuente:') && m.sources) {
+        const tipo = id.slice('rubrica:fuente:'.length);
+        const c = m.sources.find(x => x.sourceType === tipo);
+        if (!c) return null;
+        return { ok: c.have >= c.required, value: { key: 'sources', values: { have: c.have, required: c.required } } };
+    }
+    if (id.startsWith('enunciado:pregunta:') && m.answeredUnits) {
+        const ok = !!unitId && m.answeredUnits.has(unitId);
+        return { ok, value: { key: ok ? 'question.answered' : 'question.pending' } };
+    }
+    if (id === 'tipo:sin-marco' && m.framingInDocument !== undefined) {
+        return { ok: !m.framingInDocument, value: { key: m.framingInDocument ? 'framing.included' : 'framing.none' } };
+    }
+    if (id.startsWith('silabo:') && m.readingsInCorpus?.has(id)) {
+        const ok = m.readingsInCorpus.get(id) === true;
+        return { ok, value: { key: ok ? 'reading.inCorpus' : 'reading.missing' } };
+    }
+    return null;
 }
 
 /** Lo que sale de lo ya escrito, antes de las marcas del autor. */
-function derived(input: RequirementsInput): Array<Omit<PaperRequirement, 'inBody' | 'done'>> {
-    const out: Array<Omit<PaperRequirement, 'inBody' | 'done'>> = [];
+function derived(input: RequirementsInput): Array<Omit<PaperRequirement, 'inBody' | 'done' | 'check'>> {
+    const out: Array<Omit<PaperRequirement, 'inBody' | 'done' | 'check'>> = [];
     const r = input.rubric;
     if (r?.expectedLength && (r.expectedLength.min !== null || r.expectedLength.max !== null)) {
         const { unit, min, max } = r.expectedLength;
@@ -75,7 +131,7 @@ function derived(input: RequirementsInput): Array<Omit<PaperRequirement, 'inBody
     }
     for (const b of r?.courseBibliography ?? []) {
         if (b.requirement !== 'required') continue;
-        out.push({ id: `silabo:${slug(b.title)}`, origin: 'silabo', unitId: null, text: { key: 'reading', values: { title: b.title } } });
+        out.push({ id: syllabusRequirementId(b.title), origin: 'silabo', unitId: null, text: { key: 'reading', values: { title: b.title } } });
     }
     for (const u of input.units) {
         if (u.kind !== 'pregunta') continue;
@@ -108,14 +164,30 @@ export function paperRequirements(input: RequirementsInput): PaperRequirement[] 
             ...d,
             unitId: m.unitId === undefined ? valida(d.unitId) : valida(m.unitId),
             inBody: m.inBody ?? true,
-            done: m.done ?? false,
         };
+    }).map(d => {
+        const medida = measure(d.id, d.unitId, input.measures);
+        // Medido: la marca a mano no cuenta (se vuelve falsa cuando el texto cambia).
+        return medida
+            ? { ...d, done: medida.ok, check: { mode: 'measured' as const, value: medida.value } }
+            : { ...d, done: marks[d.id]?.done ?? false, check: { mode: 'self' as const } };
     });
     const manuales = (input.manual ?? []).map(m => ({
         id: `manual:${m.id}`, origin: 'manual' as const, text: { literal: m.text },
-        unitId: valida(m.unitId), inBody: m.inBody, done: m.done,
+        unitId: valida(m.unitId), inBody: m.inBody, done: m.done, check: { mode: 'self' as const },
     }));
     return [...deRubrica, ...manuales];
+}
+
+/**
+ * Qué controles de ubicación tienen sentido en cada tipo: «se cumple en»
+ * cuando las secciones no salen solas de las preguntas, y «solo en un
+ * apéndice» donde el tipo lleva apéndices. En un TP, ninguno: cada pregunta ya
+ * tiene su sección y no hay apéndices.
+ */
+export function requirementPlacementControls(kind: PaperProfileKind): { unit: boolean; appendix: boolean } {
+    const p = PAPER_PROFILES[kind];
+    return { unit: p.unitKind !== 'pregunta', appendix: p.appendices };
 }
 
 export type RequirementWarning =
@@ -162,6 +234,11 @@ export function cleanManualRequirements(value: unknown): ManualRequirement[] {
         if (out.length >= MANUAL_REQUIREMENTS_MAX) break;
     }
     return out;
+}
+
+/** El id del requisito de una lectura exigida del sílabo. */
+export function syllabusRequirementId(title: string): string {
+    return `silabo:${slug(title)}`;
 }
 
 function slug(s: string): string {
