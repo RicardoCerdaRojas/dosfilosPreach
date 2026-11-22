@@ -23,6 +23,7 @@
  * sea un valor legítimo y no un error a resolver.
  */
 
+import { sheetPagesLabel, type SheetPages } from './pageMarkers';
 import {
     detectPrintedPageOffsetStaged,
     printedPageFor,
@@ -145,6 +146,30 @@ export type NumberingOrigin =
 export interface PageNumbering {
     segments: ReadonlyArray<NumberingSegment>;
     origin: NumberingOrigin;
+    /**
+     * Las páginas de cada hoja leídas de las marcas del texto («[p 667]»),
+     * por número de hoja. Manda sobre los tramos: un libro así no tiene
+     * desfase, y en una hoja caben varias páginas (`pageMarkers.ts`).
+     */
+    sheetPages?: Readonly<Record<string, SheetPages>>;
+}
+
+/** Las páginas que las marcas del texto le dan a una hoja, si las hay. */
+export function sheetPagesIn(numbering: PageNumbering | null | undefined, sheet: number): SheetPages | null {
+    return numbering?.sheetPages?.[String(sheet)] ?? null;
+}
+
+/** El libro marca sus páginas dentro del texto. */
+function tieneMarcas(numbering: PageNumbering | null | undefined): boolean {
+    return !!numbering?.sheetPages && Object.keys(numbering.sheetPages).length > 0;
+}
+
+/**
+ * La página como se escribe en una cita: «p. 42», o «pp. 666–667» cuando la
+ * hoja abarca varias páginas impresas.
+ */
+export function printedPageAbbrev(label: string): string {
+    return /[–-]/.test(label) ? `pp. ${label}` : `p. ${label}`;
 }
 
 /**
@@ -177,6 +202,9 @@ export function printedPageIn(
     numbering: PageNumbering | null | undefined,
     sheet: number,
 ): number | null {
+    // Una hoja con varias páginas devuelve la primera: es donde empieza.
+    const marcadas = sheetPagesIn(numbering, sheet);
+    if (marcadas) return marcadas.from;
     const found = segmentValueAt(numbering, sheet);
     // Un tramo romano devuelve `null` AQUÍ a propósito. Su valor es un número
     // —101— pero su página es «ci», y quien llame a esta función va a
@@ -233,6 +261,13 @@ export function sheetForPrintedIn(
     printed: number,
 ): number | null {
     if (!numbering || !Number.isFinite(printed)) return null;
+    // La primera hoja que contiene la página: la 667 empieza en la 525, no en la 526.
+    if (tieneMarcas(numbering)) {
+        const hojas = Object.entries(numbering.sheetPages!)
+            .filter(([, p]) => printed >= p.from && printed <= p.to)
+            .map(([h]) => Number(h));
+        if (hojas.length) return Math.min(...hojas);
+    }
     for (const segment of numbering.segments) {
         if (segment.offset === null) continue;
         if ((segment.style ?? 'arabic') !== 'arabic') continue;
@@ -247,6 +282,8 @@ export function printedLabelIn(
     numbering: PageNumbering | null | undefined,
     sheet: number,
 ): string | null {
+    const marcadas = sheetPagesIn(numbering, sheet);
+    if (marcadas) return sheetPagesLabel(marcadas);
     const found = segmentValueAt(numbering, sheet);
     if (!found) return null;
     if (found.style === 'roman') return toRomanNumeral(found.value);
@@ -605,7 +642,7 @@ export function citationAnchorFor(
     // que ya decimos de un libro del que no sabemos nada. Saber MÁS del libro
     // no puede dar una etiqueta peor.
     const page = printed !== null
-        ? `p. ${printed}`
+        ? printedPageAbbrev(printed)
         : chunk.sheet
             ? `hoja ${chunk.sheet}`
             : '';
@@ -629,7 +666,7 @@ export function citationAnchorFor(
  * llevar número de página.
  */
 export function hasResolvedNumbering(numbering: PageNumbering | null | undefined): boolean {
-    return !!numbering?.segments.some(segment => segment.offset !== null);
+    return tieneMarcas(numbering) || !!numbering?.segments.some(segment => segment.offset !== null);
 }
 
 /** Cuántos puntos se piden como mínimo, pase lo que pase. */
@@ -758,6 +795,8 @@ export function declaresNoFolios(numbering: PageNumbering | null | undefined): b
     // lectura fallida, y ahí corresponde «Resolver numeración», no la sección.
     return !!numbering
         && numbering.origin === 'confirmed'
+        // Un libro que marca sus páginas en el texto sí las tiene.
+        && !tieneMarcas(numbering)
         && numbering.segments.length > 0
         && numbering.segments.every(s => s.offset === null);
 }

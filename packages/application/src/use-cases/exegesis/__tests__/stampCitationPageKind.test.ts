@@ -128,3 +128,26 @@ describe('stampCitationPageKind — libros que numeran sólo una parte', () => {
         expect(sello(src)).toBe('printed');
     });
 });
+
+describe('stampCitationPageKind — páginas marcadas en el texto (Kittel, A8b)', () => {
+    // Tramos sin desfase, y las páginas por hoja leídas de «[p N]».
+    const KITTEL: PageNumbering = {
+        origin: 'confirmed',
+        segments: [{ fromSheet: 1, toSheet: 1120, offset: null }],
+        sheetPages: { '524': { from: 665, to: 666 }, '525': { from: 666, to: 667 }, '526': { from: 667, to: 667 } },
+    };
+    const con = (ranges: Array<{ start: number; end: number }> | null) => ({
+        ...fuente('k1', 'Kittel'),
+        excerptRecipe: ranges ? { sheetRanges: ranges, proposedRanges: [], pinnedRanges: [], passageFingerprint: 'fp' } : null,
+    } as ProjectSource);
+    const sello = (src: ProjectSource) => kindDe(stampCitationPageKind(analisis('Kittel'), [src], new Map([[src.id, KITTEL]])));
+
+    it('hojas elegidas con sus páginas marcadas: página impresa, no sección ni hoja', () => {
+        expect(sello(con([{ start: 524, end: 526 }]))).toBe('printed');
+        expect(sello(con(null))).toBe('printed');
+    });
+
+    it('una hoja del tramo sin páginas marcadas: hoja', () => {
+        expect(sello(con([{ start: 525, end: 527 }]))).toBe('sheet');
+    });
+});

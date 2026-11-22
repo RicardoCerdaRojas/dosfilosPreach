@@ -181,6 +181,7 @@ export * from './outline/textEditionPages';
 // Desfase entre la hoja física y el número que el libro imprime.
 export * from './outline/printedPageOffset';
 export * from './outline/pageNumbering';
+export * from './outline/pageMarkers';
 // «Ir a»: página impresa u hoja del archivo, dicho explícito (TP #9, B27).
 export * from './outline/pageJump';
 export * from './outline/findQuoteInPageText';

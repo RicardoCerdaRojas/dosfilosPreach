@@ -1,4 +1,4 @@
-import { declaresNoFolios, hasResolvedNumbering } from '@dosfilos/domain';
+import { declaresNoFolios, hasResolvedNumbering, sheetPagesIn } from '@dosfilos/domain';
 import type {
     CanonicalVerseAnalysis,
     CitationPageKind,
@@ -109,6 +109,15 @@ function kindFor(source: ProjectSource, numbering: PageNumbering | null | undefi
     const ranges = source.excerptRecipe?.sheetRanges ?? [];
     if (ranges.length === 0) return hasResolvedNumbering(numbering) ? 'printed' : 'sheet';
     if (!numbering) return 'sheet';
+    // Un libro que marca sus páginas en el texto: cada hoja del tramo tiene que
+    // traer las suyas. Sus tramos no tienen desfase, y mirarlos sellaría como
+    // hoja un número que el ancla dio como página (A8b).
+    if (numbering.sheetPages && Object.keys(numbering.sheetPages).length > 0) {
+        return ranges.every(r => {
+            for (let h = r.start; h <= r.end; h++) if (!sheetPagesIn(numbering, h)) return false;
+            return true;
+        }) ? 'printed' : 'sheet';
+    }
     // Se miran los SEGMENTOS que el tramo toca, no sus dos extremos: un tramo
     // 50-250 sobre un libro que no numera las hojas 101-200 tiene los dos
     // extremos resueltos y un hueco en el medio.
