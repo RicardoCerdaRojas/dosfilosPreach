@@ -105,12 +105,12 @@ export function ResultadosDeTemas({ libros, etiquetar, onAbrir, aproximado = fal
                         </div>
                     )}
                     <ol className="m-0 list-none divide-y divide-border/60 p-0">
-                        {libro.hojas.map(h => {
+                        {libro.hojas.map((h, i) => {
                             const fuente = comoFuente(libro, h);
                             const barras = barrasDePertinencia(h.pertinencia);
                             const seccion = seccionCorta(h.seccion, libro.titulo);
                             return (
-                                <li key={`${libro.resourceId}-${h.hoja}`}>
+                                <li key={`${libro.resourceId}-${h.hoja ?? `s${i}`}`}>
                                     <button
                                         type="button"
                                         onClick={() => onAbrir(fuente)}

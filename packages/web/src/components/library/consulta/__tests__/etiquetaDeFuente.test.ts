@@ -27,4 +27,10 @@ describe('etiquetaDeFuente', () => {
     it('la clave del visor manda sobre el apellido', () => {
         expect(etiquetaDeFuente(fuente(1, 'v', 192), { clave: 'Varner2014', author: 'William Varner', pageNumbering: calibrada })).toBe('(Varner2014, p. 188)');
     });
+    it('sin hoja, la sección: un libro compartido sin páginas (JFB) se cita por su versículo (A8c)', () => {
+        const jfb = { ...fuente(1, 'pd-jfb-1871', 0), hoja: null, autor: 'Jamieson, Robert', seccion: 'JAS 3:13 › JAS 3:17' } as FuenteDeConsulta;
+        expect(etiquetaDeFuente(jfb, undefined)).toBe('(Jamieson, § JAS 3:17)');
+        // Con hoja, la sección no se agrega.
+        expect(etiquetaDeFuente({ ...fuente(1, 'v', 192), seccion: 'Paragraph 17' }, { author: 'William Varner', pageNumbering: null })).toBe('(Varner, hoja 192)');
+    });
 });

@@ -8,8 +8,10 @@ import { apellidoDelAutor } from '../apellidoDelAutor';
  * la pestaña de la Biblioteca y en «Preguntar a este libro» del visor: UNA
  * sola regla para los dos (revisión adversarial). «(Varner, p. 188)» sólo con
  * la numeración CONFIRMADA —la regla del análisis, `citationAnchorFor`—; sin
- * ella, «hoja N»; sin hoja, «s. p.» (nunca la página de la hoja 1). Si el
- * libro se calibra después, la cita guardada se corrige sola.
+ * ella, «hoja N»; sin hoja, la sección (un libro compartido sin páginas, como
+ * JFB, llega con hoja null y sección «JAS 3:17», A8c); sin las dos, «s. p.»
+ * (nunca la página de la hoja 1). Si el libro se calibra después, la cita
+ * guardada se corrige sola.
  */
 
 /** Lo que hace falta saber del libro para citarlo. */
@@ -27,6 +29,8 @@ export function etiquetaDeFuente(fuente: FuenteDeConsulta, libro: LibroParaCitar
     // Sólo la numeración CONFIRMADA da página impresa: es la regla del visor
     // y del análisis (`DocumentPageNumberingReader`).
     const numeracion = libro?.pageNumbering?.origin === 'confirmed' ? libro.pageNumbering : null;
-    const ancla = citationAnchorFor({ sheet: fuente.hoja, section: null }, numeracion);
+    // La sección solo sin hoja: con hoja, la cita ya ubica, y la ruta entera es larga.
+    const seccion = fuente.hoja === null ? fuente.seccion?.split(' › ').pop()?.trim() || null : null;
+    const ancla = citationAnchorFor({ sheet: fuente.hoja, section: seccion }, numeracion);
     return citaParaInsertar(clave, ancla || 's. p.');
 }
