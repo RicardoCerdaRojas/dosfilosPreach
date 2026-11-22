@@ -48,8 +48,11 @@ export function LectorDeTexto({ fuente, cita, onCerrar }: {
                     ) : texto.isError ? (
                         <p className="text-sm text-destructive">{t('consult.reader.failed')}</p>
                     ) : texto.data ? (
-                        <div className="whitespace-pre-line font-serif text-[16px] leading-[1.8] text-foreground">
-                            <TextoConEscrituras texto={texto.data} />
+                        <div className="space-y-4 font-serif text-[16px] leading-[1.8] text-foreground">
+                            {/* El texto convertido corta las líneas a mitad de frase: se juntan en párrafos. */}
+                            {texto.data.split(/\n{2,}/).map(p => p.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean).map((p, i) => (
+                                <p key={i}><TextoConEscrituras texto={p} /></p>
+                            ))}
                         </div>
                     ) : (
                         <p className="text-sm text-muted-foreground">{t('consult.reader.empty')}</p>
