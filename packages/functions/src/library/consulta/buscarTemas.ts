@@ -2,7 +2,8 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { appCheckCallableOptions } from '../../config/appCheckOptions';
 import { consumeRateLimitToken } from '../../shared/rateLimit';
-import { extractoLegible, tituloDeConsulta, type FragmentoRecuperado } from './armarConsulta';
+import { tituloDeConsulta } from './armarConsulta';
+import { FRAGMENTOS_DE_TEMAS, MAX_CONSULTA, POR_HORA, agruparPorLibro, type LibroDelTema } from './agruparPorLibro';
 import { leerAlcance } from './alcance';
 import { buscarPertinentes, type Alcance } from './recuperarFragmentos';
 
@@ -15,51 +16,7 @@ import { buscarPertinentes, type Alcance } from './recuperarFragmentos';
  * como consulta del plan (tiene su propio tope por hora).
  */
 
-/** Fragmentos que se miran: más que en «Preguntar», porque acá no se leen enteros. */
-export const FRAGMENTOS_DE_TEMAS = 30;
-const MAX_CONSULTA = 300;
-const POR_HORA = 120;
-
-export interface HojaDelTema {
-    hoja: number | null;
-    seccion: string;
-    extracto: string;
-    score: number;
-    /** 0–10, del reordenador; `null` si no se pudo reordenar. La pantalla lo muestra en barras. */
-    pertinencia: number | null;
-}
-
-export interface LibroDelTema {
-    resourceId: string;
-    titulo: string;
-    autor: string;
-    hojas: HojaDelTema[];
-}
-
-/**
- * Agrupa por libro CONSERVANDO el orden recibido (ya viene de mayor a menor
- * pertinencia): los libros, en el orden de su mejor fragmento; dentro de un
- * libro, en ese mismo orden, y una hoja aparece una sola vez (la primera).
- */
-export function agruparPorLibro(fragmentos: ReadonlyArray<FragmentoRecuperado & { pertinencia?: number | null }>): LibroDelTema[] {
-    const libros = new Map<string, LibroDelTema>();
-    for (const f of fragmentos) {
-        let libro = libros.get(f.resourceId);
-        if (!libro) {
-            libro = { resourceId: f.resourceId, titulo: f.titulo, autor: f.autor, hojas: [] };
-            libros.set(f.resourceId, libro);
-        }
-        if (libro.hojas.some(h => h.hoja === f.hoja && f.hoja !== null)) continue;
-        libro.hojas.push({
-            hoja: f.hoja,
-            seccion: f.seccion,
-            extracto: extractoLegible(f.texto),
-            score: Math.round(f.score * 1000) / 1000,
-            pertinencia: f.pertinencia ?? null,
-        });
-    }
-    return [...libros.values()];
-}
+export { FRAGMENTOS_DE_TEMAS, agruparPorLibro, type HojaDelTema, type LibroDelTema } from './agruparPorLibro';
 
 /**
  * La búsqueda guardada en `library_consultations`, con `tipo: 'temas'` y el
