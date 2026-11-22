@@ -472,6 +472,15 @@
     "label": "Vistas de la biblioteca"
   },
   "consult": {
+    "reader": {
+      "loading": "Leyendo el comentario…",
+      "failed": "No se pudo leer este pasaje.",
+      "empty": "Este libro no trae texto para esta sección.",
+      "noPages": "Libro sin páginas: se cita por su sección",
+      "copy": "Copiar la cita",
+      "copied": "Cita copiada",
+      "copyFailed": "No se pudo copiar la cita."
+    },
     "title": "Pregúntale a tus libros",
     "subtitle": "Las respuestas salen sólo de los libros de tu biblioteca, con su cita. Toca una cita para ver la página en el libro.",
     "scopeLabel": "Buscar en:",

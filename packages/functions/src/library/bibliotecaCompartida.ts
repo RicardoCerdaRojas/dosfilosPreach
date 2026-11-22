@@ -31,6 +31,14 @@ export interface RecursoCompartido {
     citaPorSeccion: boolean;
 }
 
+/**
+ * Un libro sin hojas: ni páginas impresas resueltas ni más de una hoja (un
+ * texto convertido, como JFB). Se cita por sección y no tiene mapa por hojas.
+ */
+export function esLibroSinHojas(data: FirebaseFirestore.DocumentData): boolean {
+    return !numeracionResuelta(data.pageNumbering) && !(Number(data.pageCount) > 1);
+}
+
 /** Resuelve alguna página impresa: un tramo con desfase o páginas marcadas en el texto. */
 function numeracionResuelta(n: { segments?: Array<{ offset?: unknown }>; sheetPages?: Record<string, unknown> } | null | undefined): boolean {
     if (!n) return false;
@@ -43,7 +51,7 @@ export function aRecursoCompartido(id: string, data: FirebaseFirestore.DocumentD
     return {
         id,
         textoLegible: data.publiclyCitable === true,
-        citaPorSeccion: !numeracionResuelta(data.pageNumbering) && !(Number(data.pageCount) > 1),
+        citaPorSeccion: esLibroSinHojas(data),
     };
 }
 

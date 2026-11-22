@@ -2,6 +2,7 @@ import { citationAnchorFor, type PageNumbering } from '@dosfilos/domain';
 import type { FuenteDeConsulta } from '@dosfilos/infrastructure';
 import { citaParaInsertar } from '@/components/exegesis/citation/citarDesdeVisor';
 import { apellidoDelAutor } from '../apellidoDelAutor';
+import { seccionDeLaFuente } from './seccionDeLaFuente';
 
 /**
  * Cómo se cita una fuente de «Consultar» (fase «biblioteca consultable»), en
@@ -30,7 +31,7 @@ export function etiquetaDeFuente(fuente: FuenteDeConsulta, libro: LibroParaCitar
     // y del análisis (`DocumentPageNumberingReader`).
     const numeracion = libro?.pageNumbering?.origin === 'confirmed' ? libro.pageNumbering : null;
     // La sección solo sin hoja: con hoja, la cita ya ubica, y la ruta entera es larga.
-    const seccion = fuente.hoja === null ? fuente.seccion?.split(' › ').pop()?.trim() || null : null;
+    const seccion = fuente.hoja === null ? seccionDeLaFuente(fuente) : null;
     const ancla = citationAnchorFor({ sheet: fuente.hoja, section: seccion }, numeracion);
     return citaParaInsertar(clave, ancla || 's. p.');
 }

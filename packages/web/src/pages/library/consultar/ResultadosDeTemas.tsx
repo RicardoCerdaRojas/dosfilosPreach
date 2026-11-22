@@ -82,7 +82,8 @@ export function ResultadosDeTemas({ libros, etiquetar, onAbrir, aproximado = fal
                             <h3 className="m-0 font-serif text-[17px] font-bold leading-snug text-foreground">{libro.titulo}</h3>
                             <span className="text-[13px] text-muted-foreground">{[libro.autor, t('consult.topicPassages', { count: libro.hojas.length })].filter(Boolean).join(' · ')}</span>
                         </div>
-                        <button
+                        {/* Un libro sin hojas (JFB, A8c) no tiene mapa por hojas: el resumen leía solo su «hoja 1». */}
+                        {libro.hojas.some(h => h.hoja !== null) && <button
                             type="button"
                             ref={b => { if (b) botonesDeMapa.current.set(libro.resourceId, b); }}
                             onClick={() => alternarMapa(libro.resourceId)}
@@ -91,7 +92,7 @@ export function ResultadosDeTemas({ libros, etiquetar, onAbrir, aproximado = fal
                             className="inline-flex min-h-11 sm:min-h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[13px] font-medium text-foreground/80 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             <BookMarked className="h-3.5 w-3.5" aria-hidden="true" />{t('consult.summary.map')}
-                        </button>
+                        </button>}
                     </header>
                     {conMapa.has(libro.resourceId) && (
                         <div className="border-b border-border/60 px-5 py-4">

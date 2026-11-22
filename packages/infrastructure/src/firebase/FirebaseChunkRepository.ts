@@ -7,6 +7,7 @@ import {
     deleteDoc,
     query,
     where,
+    limit,
     writeBatch,
     Timestamp,
     VectorValue,
@@ -81,6 +82,29 @@ export class FirebaseChunkRepository {
             .map(d => this.firestoreToChunk(d.id, d.data()))
             .sort((a, b) => a.chunkIndex - b.chunkIndex)
             .map(c => c.text)
+            .join('\n\n');
+    }
+
+    /**
+     * El texto de una SECCIÓN de un libro sin hojas (A8c): JFB guarda cada
+     * versículo como sección («JAS 3:17») y todo en la «hoja 1», así que el
+     * visor de PDF no tiene qué abrir. Se lee lo propio o lo compartido
+     * (`duenosLegibles`); igualdades + `in`, sin índice compuesto.
+     */
+    async textoDeLaSeccion(resourceId: string, seccion: string, max = 24): Promise<string> {
+        const q = query(
+            collection(db, this.collectionName),
+            where('userId', 'in', duenosLegibles()),
+            where('resourceId', '==', resourceId),
+            where('metadata.section', '==', seccion),
+            limit(max),
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs
+            .map(d => this.firestoreToChunk(d.id, d.data()))
+            .sort((a, b) => a.chunkIndex - b.chunkIndex)
+            .map(c => c.text.trim())
+            .filter(Boolean)
             .join('\n\n');
     }
 

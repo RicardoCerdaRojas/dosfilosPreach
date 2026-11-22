@@ -3031,6 +3031,7 @@
     },
     "searchBookPlaceholder": "Buscar en todo el libro…",
     "bookSearching": "Buscando en el libro…",
+    "pdfFailed": "No se pudo abrir el PDF de este libro.",
     "bookSearchFailed": "No se pudo buscar en el libro. Intenta de nuevo.",
     "bookSearchEmpty": "Esa palabra no aparece en el texto extraído de este libro.",
     "bookSearchTruncated": "Hay más hojas con esa palabra. Prueba un término más preciso.",

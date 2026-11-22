@@ -472,6 +472,15 @@
     "label": "Library views"
   },
   "consult": {
+    "reader": {
+      "loading": "Reading the commentary…",
+      "failed": "This passage could not be read.",
+      "empty": "This book has no text for this section.",
+      "noPages": "Book without pages: cited by its section",
+      "copy": "Copy citation",
+      "copied": "Citation copied",
+      "copyFailed": "The citation could not be copied."
+    },
     "title": "Ask your books",
     "subtitle": "Answers come only from the books in your library, with their citation. Tap a citation to see the page in the book.",
     "scopeLabel": "Search in:",

@@ -14,7 +14,9 @@ vi.mock('@/hooks/exegesis/useExegesisPaper', () => ({
 }));
 vi.mock('@/hooks/exegesis/useDocumentPageIndex', () => ({
     useDocumentPageIndex: (id: string | null) => { pedidos.push(id); return { isLoading: false, data: undefined }; },
-    useDocumentPdfUrl: () => ({ isLoading: false, data: { url: 'https://pdf' } }),
+    useDocumentPdfUrl: (id: string | null) => (id === 'sin-pdf'
+        ? { isLoading: false, data: undefined, error: new Error('400') }
+        : { isLoading: false, data: { url: 'https://pdf' }, error: null }),
 }));
 vi.mock('@/hooks/library/usePageNumbering', () => ({ usePageNumbering: () => ({ isLoading: false, data: undefined }) }));
 const { useCitationSheet } = await import('../useCitationSheet');
@@ -44,5 +46,11 @@ describe('useCitationSheet — por recurso o por clave del trabajo', () => {
     it('una clave que no está en el trabajo y sin recurso: no hay documento', () => {
         const { result } = renderHook(() => useCitationSheet('p1', { sourceKey: 'Wallace', page: 165 }, true));
         expect(result.current.resourceId).toBeNull();
+    });
+    it('un libro sin PDF (JFB, A8c): lo dice, en vez de quedarse «Abriendo el documento…»', () => {
+        const { result } = renderHook(() => useCitationSheet(null, { sourceKey: 'Jamieson', page: 1, resourceId: 'sin-pdf' }, true));
+        expect(result.current.pdfFailed).toBe(true);
+        const otro = renderHook(() => useCitationSheet(null, { sourceKey: 'Motyer', page: 1, resourceId: 'res-motyer' }, true));
+        expect(otro.result.current.pdfFailed).toBe(false);
     });
 });

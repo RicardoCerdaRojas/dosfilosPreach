@@ -16,6 +16,8 @@ import { BarraDeConsulta } from './BarraDeConsulta';
 import { HistorialDeConsultas } from './HistorialDeConsultas';
 import { FuentesDeLaConsulta } from './FuentesDeLaConsulta';
 import { useConsultas } from './useConsultas';
+import { guardarPlegado, leerPlegado } from './historialPlegado';
+import { LectorDeTexto, useLectorDeTexto } from '@/components/library/consulta/LectorDeTexto';
 
 /**
  * La pestaña «Consultar» de la Biblioteca (fase «biblioteca consultable»,
@@ -30,6 +32,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     const { t } = useTranslation('library');
     const { user } = useFirebase();
     const visor = useSourceViewer();
+    const lector = useLectorDeTexto();
     const { consultas, cargando, errorHistorial, enCurso, error, limpiarError, recientes, preguntar, borrar } = useConsultas(user?.uid);
     /** Sin consultas guardadas: el único momento en que el título, la bajada y los ejemplos ayudan. */
     const primeraVez = !cargando && !errorHistorial && consultas.length === 0;
@@ -86,6 +89,8 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
     };
 
     const abrirFuente = (f: FuenteDeConsulta) => {
+        // Sin hoja (un libro de texto, como JFB): no hay PDF que abrir; se lee la sección.
+        if (f.hoja === null) { lector.abrir(f); return; }
         const libro = libros.get(f.resourceId);
         visor.open({
             paperId: null,
@@ -251,6 +256,7 @@ export function ConsultarBiblioteca({ resources, indexStatus }: {
                     </div>
                 </div>
             )}
+            <LectorDeTexto fuente={lector.fuente} cita={lector.fuente ? etiquetar(lector.fuente) : ''} onCerrar={lector.cerrar} />
         </div>
     );
 }
@@ -288,13 +294,4 @@ function CajaDePregunta({ texto, onTexto, onEnviar, onTeclear, enviando, placeho
             </button>
         </form>
     );
-}
-
-/** El historial plegado se recuerda en este navegador (una comodidad: si el almacenamiento falla, abre desplegado). */
-const CLAVE_PLEGADO = 'biblioteca.consultar.historialPlegado';
-function leerPlegado(): boolean {
-    try { return window.localStorage.getItem(CLAVE_PLEGADO) === '1'; } catch { return false; }
-}
-function guardarPlegado(v: boolean): void {
-    try { window.localStorage.setItem(CLAVE_PLEGADO, v ? '1' : '0'); } catch { /* sin almacenamiento: no se recuerda */ }
 }

@@ -3031,6 +3031,7 @@
     },
     "searchBookPlaceholder": "Search the whole book…",
     "bookSearching": "Searching the book…",
+    "pdfFailed": "The PDF of this book could not be opened.",
     "bookSearchFailed": "The book could not be searched. Try again.",
     "bookSearchEmpty": "That word does not appear in this book's extracted text.",
     "bookSearchTruncated": "More sheets contain that word. Try a narrower term.",
