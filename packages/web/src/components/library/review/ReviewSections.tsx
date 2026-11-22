@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { getBookById, type BibleBookId, type LibraryResource, type PdfReview, type PdfReviewInput } from '@dosfilos/domain';
+import { getBookById, printedPageAbbrev, type BibleBookId, type LibraryResource, type PdfReview, type PdfReviewInput } from '@dosfilos/domain';
 import { Evidence, ReviewAction, ReviewSection } from './ReviewSection';
 
 const nombre = (id: BibleBookId, lang: string) => {
@@ -89,12 +89,18 @@ export function PaginationSection({ review, ebook, storedConfirmed, canSave, onS
     const yaGuardada = storedConfirmed && p.storedAgrees;
     const [romanos, arabigos] = p.runs;
     const hueco = p.proposal?.segments.find((g, i) => i > 0 && g.offset === null) ?? null;
-    const tone = (verdict === 'una' || (verdict === 'tramos' && canSave)) && !p.storedDisagrees ? 'ok' : 'warn';
+    const tone = (verdict === 'una' || verdict === 'marcas' || (verdict === 'tramos' && canSave)) && !p.storedDisagrees ? 'ok' : 'warn';
+    // Con marcas, lo que muestra cada hoja son sus páginas del libro, no el número del archivo.
+    const rotulo = (x: { sheet: number; folio: string | null }) => !x.folio
+        ? t('review.pagination.pointNone', { sheet: x.sheet })
+        : verdict === 'marcas'
+            ? t('review.pagination.pointMarked', { sheet: x.sheet, pages: printedPageAbbrev(x.folio) })
+            : t('review.pagination.point', { sheet: x.sheet, folio: x.folio });
     return (
         <ReviewSection id="revision-paginas" title={t('review.pagination.title')} tone={tone}>
             <p>{t(`review.pagination.${verdict}`, {
                 sheet: ejemplo?.sheet, printed: ejemplo?.folio, rule: regla, have: leidas.length, total: p.points.length,
-                romanFrom: romanos?.fromSheet, arabicFrom: arabigos?.fromSheet,
+                romanFrom: romanos?.fromSheet, arabicFrom: arabigos?.fromSheet, count: p.markedSheets,
             })}</p>
             {verdict === 'tramos' && !canSave && <p>{t('review.pagination.tramosShort')}</p>}
             {verdict === 'tramos' && hueco && <p className="text-xs text-muted-foreground">{t('review.pagination.tramosGap', { from: hueco.fromSheet, to: hueco.toSheet })}</p>}
@@ -107,7 +113,7 @@ export function PaginationSection({ review, ebook, storedConfirmed, canSave, onS
                                 onClick={() => onShowSheet(x.sheet)}
                                 className="min-h-8 rounded-md border border-border px-2 text-xs text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
-                                {x.folio ? t('review.pagination.point', { sheet: x.sheet, folio: x.folio }) : t('review.pagination.pointNone', { sheet: x.sheet })}
+                                {rotulo(x)}
                             </button>
                         </li>
                     ))}

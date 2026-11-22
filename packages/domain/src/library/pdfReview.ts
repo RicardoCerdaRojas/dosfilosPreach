@@ -19,7 +19,8 @@ import { foldForSearch } from '../bible/searchMatching';
 import { inferBibleBooksFromTitle } from './inferBibleBooksFromTitle';
 import { creditsRegionOf, frontMatterOf, proposeIsbn } from '../exegesis/services/bibliographyFromText';
 import { compareEdition, type EditionMatch } from '../exegesis/services/corpusNeeds';
-import { parseRomanNumeral, printedLabelIn, type NumberingSegment, type PageNumbering } from '../exegesis/outline/pageNumbering';
+import { markedSheetCount, parseRomanNumeral, printedLabelIn, sheetPagesIn, type NumberingSegment, type PageNumbering } from '../exegesis/outline/pageNumbering';
+import { sheetPagesLabel } from '../exegesis/outline/pageMarkers';
 
 /** Una hoja leída del PDF: sus líneas, y el folio de la banda de arriba o de abajo si lo hay. */
 export interface ReviewSheet {
@@ -80,7 +81,8 @@ export interface PdfReviewEdition {
     vsBibliography: EditionMatch | null;
 }
 
-export type PaginationVerdict = 'una' | 'tramos' | 'varias' | 'parcial' | 'sin-folios' | 'sin-texto';
+/** `marcas`: el libro marca sus páginas dentro del texto («[p 667]») y ya están leídas (A8b). */
+export type PaginationVerdict = 'una' | 'tramos' | 'varias' | 'parcial' | 'sin-folios' | 'sin-texto' | 'marcas';
 
 /** Un tramo leído con su propia regla: la introducción en romanos, el cuerpo en arábigos. */
 export interface PaginationRun {
@@ -109,6 +111,8 @@ export interface PdfReviewPagination {
     storedDisagrees: boolean;
     /** La numeración guardada dice lo mismo que las hojas. */
     storedAgrees: boolean;
+    /** Con `marcas`: cuántas hojas tienen páginas leídas de las marcas del texto. */
+    markedSheets: number;
 }
 
 export type UnofficialSignal =
@@ -148,7 +152,7 @@ export function reviewPdf(input: PdfReviewInput): PdfReview {
     const signals = unofficialSignals(input);
     const needsAttention = identity.verdict === 'otro-libro'
         || edition.vsCited === 'distinta'
-        || !(pagination.verdict === 'una' || (pagination.verdict === 'tramos' && pagination.proposal))
+        || !(pagination.verdict === 'una' || pagination.verdict === 'marcas' || (pagination.verdict === 'tramos' && pagination.proposal))
         || pagination.storedDisagrees
         || signals.length > 0;
     return { identity, edition, pagination, signals, needsAttention };
@@ -264,6 +268,19 @@ function compareEditionOrIsbn(citedYear: number | null, copyYear: number | null,
 }
 
 function reviewPagination(input: PdfReviewInput): PdfReviewPagination {
+    // Un libro con sus páginas ya leídas de las marcas del texto: el número al
+    // pie o arriba de la hoja es del archivo (Kittel: «224» en la hoja 224, que
+    // trae las pp. 281–282). Compararlo con las marcas diría que no coinciden y
+    // ofrecería reemplazarlas por la cita falsa del TP #10. Se muestra lo que
+    // dicen las marcas en las hojas leídas, y no se propone nada.
+    const marcadas = markedSheetCount(input.declared.storedNumbering);
+    if (marcadas > 0) {
+        const points = input.samples.map(s => {
+            const pages = sheetPagesIn(input.declared.storedNumbering, s.sheet);
+            return { sheet: s.sheet, folio: pages ? sheetPagesLabel(pages) : null, style: null, offset: null };
+        });
+        return { verdict: 'marcas', points, offset: null, runs: [], proposal: null, storedDisagrees: false, storedAgrees: false, markedSheets: marcadas };
+    }
     const points = input.samples.map(s => {
         const folio = (s.folio?.trim() || romanInRunningHead(s.lines) || '').toLowerCase() || null;
         const arabigo = folio && /^\d+$/.test(folio) ? Number(folio) : null;
@@ -285,7 +302,7 @@ function reviewPagination(input: PdfReviewInput): PdfReviewPagination {
     // Dos desfases arábigos (láminas), o folios que no siguen ninguna regla.
     else verdict = 'varias';
     const offset = verdict === 'una' || verdict === 'parcial' ? desfases[0] ?? null : null;
-    const sinPropuesta: PdfReviewPagination = { verdict, points, offset, runs, proposal: null, storedDisagrees: false, storedAgrees: false };
+    const sinPropuesta: PdfReviewPagination = { verdict, points, offset, runs, proposal: null, storedDisagrees: false, storedAgrees: false, markedSheets: 0 };
     const proposal = input.file.numPages > 0 ? numberingFromReview(sinPropuesta, input.file.numPages) : null;
     return { ...sinPropuesta, proposal, ...compararConLaGuardada(points, input.declared.storedNumbering) };
 }

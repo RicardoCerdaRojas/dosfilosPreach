@@ -151,4 +151,18 @@ describe('Bandeja de revisión del PDF (A7)', () => {
         fireEvent.click(screen.getByText('review.pagination.saveRuns'));
         expect(a.onSave).toHaveBeenCalled();
     });
+
+    it('Kittel: páginas marcadas en el texto; se muestran las del libro y no se ofrece guardar ni reemplazar', () => {
+        const a = { onSave: vi.fn(), onSaveNone: vi.fn(), onCalibrate: vi.fn(), onShowSheet: vi.fn() };
+        const kittel = { ...martin, pageNumbering: { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 620, offset: null }], sheetPages: { '215': { from: 281, to: 282 } } } } as unknown as LibraryResource;
+        const r = reviewPdf(buildReviewInput(kittel, leido));
+        render(<PaginationSection review={r} ebook={false} storedConfirmed canSave={!!r.pagination.proposal} saving={false} {...a} />);
+        const sec = screen.getByTestId('revision-paginas');
+        expect(sec.dataset.tone).toBe('ok');
+        expect(sec.textContent).toContain('review.pagination.marcas');
+        expect(screen.getByText('review.pagination.pointMarked {"sheet":215,"pages":"pp. 281–282"}')).toBeTruthy();
+        expect(screen.queryByText('review.pagination.save')).toBeNull();
+        expect(screen.queryByText('review.pagination.replace')).toBeNull();
+        expect(screen.queryByText('review.pagination.storedDisagrees')).toBeNull();
+    });
 });

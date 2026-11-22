@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
 import { NumberingSegmentsPreview } from '@/components/library/NumberingSegmentsPreview';
+import { MarkedPagesPanel } from '@/components/library/MarkedPagesPanel';
 import { useDocumentPdfUrl } from '@/hooks/exegesis/useDocumentPageIndex';
 import { usePageNumbering, useSavePageNumbering } from '@/hooks/library/usePageNumbering';
 
@@ -155,7 +156,7 @@ export function PageNumberingPage() {
     }
 
     return (
-        <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
+        <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
             <div className="flex items-start gap-3">
                 <Button
                     variant="ghost"
@@ -167,10 +168,8 @@ export function PageNumberingPage() {
                 </Button>
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight">{t('numbering.title')}</h1>
-                    <p className="text-sm text-muted-foreground max-w-2xl">{t('numbering.pageIntro')}</p>
-                    {state.data.markedSheets > 0 ? (
-                        <p className="mt-2 max-w-2xl rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground">{t('numbering.markedPages', { count: state.data.markedSheets })}</p>
-                    ) : state.data.storedOrigin === 'confirmed' && (
+                    {state.data.markedSheets === 0 && <p className="text-sm text-muted-foreground max-w-2xl">{t('numbering.pageIntro')}</p>}
+                    {state.data.markedSheets === 0 && state.data.storedOrigin === 'confirmed' && (
                         <p className="mt-1 text-sm text-muted-foreground">{t('numbering.alreadyConfirmed')}</p>
                     )}
                 </div>
@@ -228,10 +227,12 @@ export function PageNumberingPage() {
                             zoom={zoom === 1 ? 'fit' : zoom}
                         />
                     </div>
-                    <p className="text-xs text-muted-foreground">{t('numbering.lookForFolio')}</p>
+                    {state.data.markedSheets === 0 && <p className="text-xs text-muted-foreground">{t('numbering.lookForFolio')}</p>}
                 </div>
 
-                <div className="space-y-5">
+                {state.data.markedSheets > 0 ? (
+                    <MarkedPagesPanel numbering={state.data.numbering} sheet={current?.sheet ?? 1} markedSheets={state.data.markedSheets} />
+                ) : <div className="space-y-5">
                     <div className="space-y-2">
                         <Label htmlFor="printed">{t('numbering.printedQuestion', { sheet: current?.sheet ?? 1 })}</Label>
                         <Input
@@ -307,7 +308,7 @@ export function PageNumberingPage() {
                     </div>
 
                     <NumberingSegmentsPreview numbering={numbering} />
-                </div>
+                </div>}
             </div>
         </div>
     );

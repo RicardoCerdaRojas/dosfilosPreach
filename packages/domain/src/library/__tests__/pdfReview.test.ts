@@ -260,3 +260,19 @@ describe('reviewSheets', () => {
         expect(reviewSheets(40).samples).toEqual([20, 30, 36]);
     });
 });
+
+describe('reviewPdf — libro con páginas marcadas en el texto (Kittel, A8b)', () => {
+    // Kittel: arriba de la hoja 224 dice «224» (el archivo) y el texto trae «[p 282]».
+    const kittel = { origin: 'confirmed' as const, segments: [{ fromSheet: 1, toSheet: 620, offset: null }], sheetPages: { '224': { from: 281, to: 282 }, '340': { from: 425, to: 425 } } };
+    const r = reviewPdf(martin({
+        declared: { ...martin().declared, storedNumbering: kittel, storedConfirmed: true },
+        samples: [{ sheet: 224, lines: [], folio: '224' }, { sheet: 340, lines: [], folio: '340' }, { sheet: 460, lines: [], folio: '460' }],
+    }));
+    it('no compara el número del archivo con las marcas ni propone reemplazarlas', () => {
+        expect(r.pagination).toMatchObject({ verdict: 'marcas', markedSheets: 2, proposal: null, storedDisagrees: false, offset: null });
+        expect(r.pagination.points.map(p => p.folio)).toEqual(['281–282', '425', null]);
+    });
+    it('no pide atención por las páginas', () => {
+        expect(r.needsAttention).toBe(false);
+    });
+});
