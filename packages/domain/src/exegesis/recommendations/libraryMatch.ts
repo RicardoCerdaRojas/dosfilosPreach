@@ -1,4 +1,6 @@
 import type { SourceRecommendation } from './types';
+import type { BibleBookId } from '../../bible/canon/BibleCanon';
+import { inferBibleBooksFromTitle } from '../../library/inferBibleBooksFromTitle';
 
 /**
  * v1.7.1 — Heuristic matcher for "is this curated recommendation
@@ -32,6 +34,8 @@ export interface LibraryResourceLike {
     id: string;
     title: string;
     author?: string | null;
+    /** Los libros que el registro dice cubrir: se suman a los que nombra el título. */
+    coversBibleBooks?: ReadonlyArray<BibleBookId> | null;
 }
 
 /**
@@ -42,6 +46,12 @@ export function matchRecommendationToResource(
     recommendation: SourceRecommendation,
     resource: LibraryResourceLike,
 ): boolean {
+    // 0. Libros bíblicos distintos: no es la obra. Si los dos títulos nombran
+    // libros y no comparten ninguno, ningún otro indicio vale. El «Santiago» de
+    // Burt quedaba ligado a su «Comentario Jonás», y el «Santiago y 1–3 Juan»
+    // de Kistemaker a su «1 y 2 de Pedro y Judas» (proyecto NT785, A8).
+    if (nombranLibrosDistintos(recommendation, resource)) return false;
+
     // 1. ISBN exact match (gold standard). Library uploads rarely
     // include ISBN today, but check anyway — when present it's
     // unambiguous.
@@ -60,7 +70,11 @@ export function matchRecommendationToResource(
         // «The Gospel according to…» o «Two Horizons…» ligaba la obra a
         // cualquier libro con «the» o «two» en el título (revisión de la 2c).
         const esSigla = /^[A-Z]{3,6}$/.test(acronym);
-        if (acronym && (esSigla || acronym.length >= 4)) {
+        // Una palabra común a muchas series («Comentario al Nuevo Testamento»,
+        // «Commentary on…») no distingue la serie: con el mismo autor ligaba
+        // cualquier libro suyo (A8). Vale solo si además comparten un libro bíblico.
+        const generica = PALABRAS_DE_SERIE_GENERICAS.has(normalizeForMatch(acronym));
+        if (acronym && (!generica || compartenLibro(recommendation, resource)) && (esSigla || acronym.length >= 4)) {
             const normalizedTitle = normalizeForMatch(resource.title);
             const normalizedAcronym = normalizeForMatch(acronym);
             // Use word boundary so "WBC" matches "WBC 47A" / "Hebrews WBC"
@@ -130,6 +144,34 @@ export function findLibraryResourceForRecommendation<R extends LibraryResourceLi
 }
 
 // ── Internals ───────────────────────────────────────────────────────────
+
+/** Primeras palabras de serie que no la distinguen de otras. */
+const PALABRAS_DE_SERIE_GENERICAS = new Set([
+    'comentario', 'comentarios', 'commentary', 'commentaries', 'biblical', 'biblico', 'biblica',
+    'nuevo', 'new', 'antiguo', 'old', 'serie', 'series', 'biblia', 'bible', 'estudios', 'studies',
+    'the', 'los', 'las',
+]);
+
+function librosDe(title: string, declarados?: ReadonlyArray<BibleBookId> | null): Set<BibleBookId> {
+    return new Set([...inferBibleBooksFromTitle(title).books, ...(declarados ?? [])]);
+}
+
+/** null: alguno de los dos no nombra libros; si los dos nombran, si comparten alguno. */
+function librosEnComun(recommendation: SourceRecommendation, resource: LibraryResourceLike): boolean | null {
+    const deLaObra = librosDe(recommendation.title);
+    if (deLaObra.size === 0) return null;
+    const delRecurso = librosDe(resource.title, resource.coversBibleBooks);
+    if (delRecurso.size === 0) return null;
+    return [...deLaObra].some(b => delRecurso.has(b));
+}
+
+function nombranLibrosDistintos(recommendation: SourceRecommendation, resource: LibraryResourceLike): boolean {
+    return librosEnComun(recommendation, resource) === false;
+}
+
+function compartenLibro(recommendation: SourceRecommendation, resource: LibraryResourceLike): boolean {
+    return librosEnComun(recommendation, resource) === true;
+}
 
 /**
  * Pull the leading acronym from a series string: "WBC 47A" → "WBC",

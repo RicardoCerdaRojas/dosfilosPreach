@@ -26,7 +26,7 @@ export function citedEditionFor(resource: LibraryResource): PdfReviewInput['cite
     const tipos = [propio, ...SOURCE_TYPE_ORDER.filter(t => t !== propio)];
     for (const libro of resource.coversBibleBooks ?? []) {
         for (const rec of tipos.flatMap(t => getSourceRecommendations(libro, t))) {
-            if (findLibraryResourceForRecommendation(rec, [{ id: resource.id, title: resource.title, author: resource.author ?? null }])) {
+            if (findLibraryResourceForRecommendation(rec, [{ id: resource.id, title: resource.title, author: resource.author ?? null, coversBibleBooks: resource.coversBibleBooks ?? null }])) {
                 return { title: rec.title, year: rec.year || null, publisher: rec.publisher || null, isbn: rec.isbn };
             }
         }
