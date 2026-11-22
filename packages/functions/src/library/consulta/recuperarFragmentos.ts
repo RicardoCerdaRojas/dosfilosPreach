@@ -4,13 +4,17 @@ import { sanitizeExtractedText } from '../sanitizeExtractedText';
 import type { FragmentoRecuperado } from './armarConsulta';
 import { aplicarReorden, puntuarCandidatos, type FragmentoReordenado } from './reordenar';
 import { refsDeConsulta } from '../pasajes/refsDeTexto';
+import { DUENO_COMPARTIDO, duenoDe, legibles, recursosCompartidos, type RecursoCompartido } from '../bibliotecaCompartida';
+
+export { duenoDe };
 
 /**
  * Los fragmentos de la biblioteca del usuario que mejor responden una
  * pregunta (fase «biblioteca consultable», U2 y U5).
  *
- * Sólo libros del propio usuario (`userId`): la consulta es de SU biblioteca.
- * No se reutiliza el callable `retrieveChunks` (callable → callable) ni se
+ * Libros del propio usuario (`userId`) y, desde A8c, los de la biblioteca
+ * compartida cuyo texto se puede leer (`bibliotecaCompartida.ts`). Nunca los
+ * de otro usuario. No se reutiliza el callable `retrieveChunks` (callable → callable) ni se
  * toca su código, que usan el trabajo exegético, el sermón y Facultad.
  */
 
@@ -60,6 +64,11 @@ export function enTandas<T>(ids: ReadonlyArray<T>, tam = MAX_IN): T[][] {
     return tandas;
 }
 
+/** Un libro compartido sin numeración se cita por sección: su «hoja» no es de nadie. */
+function conHojaCitable(f: FragmentoRecuperado, compartidos: ReadonlyMap<string, RecursoCompartido>): FragmentoRecuperado {
+    return compartidos.get(f.resourceId)?.citaPorSeccion ? { ...f, hoja: null } : f;
+}
+
 function aFragmento(d: FirebaseFirestore.QueryDocumentSnapshot): FragmentoRecuperado {
     const data = d.data();
     const sectionPath = (data.metadata?.sectionPath as string[] | undefined) ?? [];
@@ -86,30 +95,46 @@ export async function recuperarCandidatos(
     apiKey: string,
     limite: number,
 ): Promise<FragmentoRecuperado[]> {
-    const vector = await embedQuery(pregunta, apiKey);
-    // SIEMPRE por `userId`: la consulta es de la biblioteca del usuario, y un
-    // id de otro usuario en el alcance no puede traer sus fragmentos. Mismo
-    // orden de filtros que `retrieveChunks` (userId → resourceId): el índice
-    // vectorial que existe es (userId, resourceId, embedding).
-    const base = getFirestore().collection('document_chunks').where('userId', '==', userId);
+    const [vector, compartidos] = await Promise.all([embedQuery(pregunta, apiKey), recursosCompartidos()]);
+    // SIEMPRE por dueño: el `userId` de quien pregunta, o la biblioteca
+    // compartida SOLO con los ids de sus libros legibles. Un id de otro
+    // usuario en el alcance no puede traer sus fragmentos. Mismo orden de
+    // filtros que `retrieveChunks` (userId → resourceId): el índice vectorial
+    // que existe es (userId, resourceId, embedding).
+    const chunks = getFirestore().collection('document_chunks');
+    const propia = chunks.where('userId', '==', userId);
+    const compartida = chunks.where('userId', '==', DUENO_COMPARTIDO);
     const cercanos = async (q: FirebaseFirestore.Query, limite: number) => (await q.findNearest({
         vectorField: 'embedding',
         queryVector: vector,
         limit: limite,
         distanceMeasure: 'COSINE',
         distanceResultField: '_distance',
-    }).get()).docs.map(aFragmento);
+    }).get()).docs.map(d => conHojaCitable(aFragmento(d), compartidos));
+    const porSimilitud = (listas: FragmentoRecuperado[][]) => listas.flat().sort((a, b) => b.score - a.score);
 
     const ids = alcance.tipo === 'libros' ? [...new Set(alcance.ids)] : [];
+    // Toda la biblioteca: la propia y los compartidos legibles, mezclados por similitud.
+    if (ids.length === 0) {
+        const lim = Math.min(POZO_MAXIMO, limite);
+        const listas = await Promise.all([
+            cercanos(propia, lim),
+            ...enTandas(legibles(compartidos)).map(t => cercanos(compartida.where('resourceId', 'in', t), lim)),
+        ]);
+        return porSimilitud(listas).slice(0, lim);
+    }
     // Con más de 30 libros, una búsqueda por tanda de 30 y se mezclan por
     // similitud: buscar en toda la biblioteca y filtrar dejaba afuera libros
     // elegidos cuando la biblioteca es grande (revisión adversarial, U2).
-    if (ids.length === 0) return cercanos(base, Math.min(POZO_MAXIMO, limite));
     // Con varios libros elegidos, un pozo amplio por tanda y un tope por libro
     // ANTES de reordenar: si no, un comentario denso ocupa casi todos los
     // candidatos y un libro elegido no llega a verse (revisión adversarial, R1).
-    const pozo = (await Promise.all(enTandas(ids).map(t => cercanos(base.where('resourceId', 'in', t), POZO_MAXIMO))))
-        .flat().sort((a, b) => b.score - a.score);
+    const propios = ids.filter(id => duenoDe(id, userId, compartidos) === userId);
+    const delSistema = ids.filter(id => duenoDe(id, userId, compartidos) === DUENO_COMPARTIDO);
+    const pozo = porSimilitud(await Promise.all([
+        ...enTandas(propios).map(t => cercanos(propia.where('resourceId', 'in', t), POZO_MAXIMO)),
+        ...enTandas(delSistema).map(t => cercanos(compartida.where('resourceId', 'in', t), POZO_MAXIMO)),
+    ]));
     const pedidos = new Set(ids);
     return elegirDelPozo(pozo.filter(f => pedidos.has(f.resourceId)), { porLibro: Math.max(4, Math.ceil(limite / ids.length)), total: limite });
 }
@@ -179,16 +204,24 @@ export async function recuperarPorPasaje(
     cupo = CUPO_POR_PASAJE,
 ): Promise<FragmentoRecuperado[]> {
     if (refs.length === 0) return [];
-    // SIEMPRE por `userId`, también cuando el alcance trae ids: un id ajeno no lee nada.
-    const base = getFirestore().collection('document_chunks').where('userId', '==', userId);
-    const leer = async (resourceId: string) => (await base
+    // SIEMPRE por dueño, también cuando el alcance trae ids: un id ajeno no lee
+    // nada, y un compartido sin permiso de texto no se pide.
+    const compartidos = await recursosCompartidos();
+    const chunks = getFirestore().collection('document_chunks');
+    const leer = async (resourceId: string) => {
+        const dueno = duenoDe(resourceId, userId, compartidos);
+        if (dueno === null) return [];
+        return (await chunks.where('userId', '==', dueno)
         .where('resourceId', '==', resourceId)
         .where('refs', 'array-contains-any', refs.slice(0, 30))
         .select('resourceId', 'resourceTitle', 'resourceAuthor', 'metadata', 'text', 'refs')
         .limit(LECTURA_POR_LIBRO)
-        .get()).docs.map(d => ({ fragmento: { ...aFragmento(d), score: 0 }, refs: (d.get('refs') as string[] | undefined) ?? [] }));
+        .get()).docs.map(d => ({ fragmento: { ...conHojaCitable(aFragmento(d), compartidos), score: 0 }, refs: (d.get('refs') as string[] | undefined) ?? [] }));
+    };
     try {
-        const ids = alcance.tipo === 'libros' ? [...new Set(alcance.ids)] : await librosDelUsuario(userId);
+        const ids = alcance.tipo === 'libros'
+            ? [...new Set(alcance.ids)]
+            : [...await librosDelUsuario(userId), ...legibles(compartidos)];
         const docs = (await Promise.all(ids.map(leer))).flat();
         return elegirPorPasaje(docs, refs, cupo);
     } catch (err) {

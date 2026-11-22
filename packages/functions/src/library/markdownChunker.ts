@@ -30,6 +30,11 @@ export interface ChunkerOptions {
     overlapChars?: number;
 }
 
+import { encabezadosCorridosAIgnorar } from './encabezadosCorridos';
+
+/** Texto que puede ir antes del título de una página y que igual «abre» la página (un folio, una línea suelta). */
+const TEXTO_ANTES_DEL_TITULO_AL_TOPE = 40;
+
 const DEFAULT_MAX = 2000;
 const DEFAULT_MIN = 200;
 const DEFAULT_OVERLAP = 150;
@@ -54,12 +59,23 @@ export function chunkStructuredMarkdown(
     const rawChunks: MarkdownChunk[] = [];
     const headingStack: string[] = [];
 
-    for (const block of pageBlocks) {
-        const sections = splitBySections(block.content);
+    // Los encabezados corridos (el título del libro o del capítulo repetido
+    // arriba de cada página) no son títulos: no tocan la ruta de sección
+    // (`encabezadosCorridos.ts`).
+    const seccionesPorPagina = pageBlocks.map(block => splitBySections(block.content));
+    const alTope = seccionesPorPagina.map(indiceDelTituloAlTope);
+    const ignorar = encabezadosCorridosAIgnorar(
+        alTope.map((i, b) => (i === null ? null : seccionesPorPagina[b]![i]!.headingText)),
+        seccionesPorPagina.flat().flatMap(s => (s.headingText ? [s.headingText] : [])),
+    );
 
-        for (const section of sections) {
+    for (const [b, block] of pageBlocks.entries()) {
+        const sections = seccionesPorPagina[b]!;
+
+        for (const [s, section] of sections.entries()) {
+            const esCorrido = ignorar[b] === true && alTope[b] === s;
             // Update the heading stack when we encounter a heading
-            if (section.headingLevel !== null && section.headingText) {
+            if (!esCorrido && section.headingLevel !== null && section.headingText) {
                 // Pop stack to proper depth, then push new heading.
                 //
                 // The depth is clamped to the stack's current length on
@@ -129,6 +145,16 @@ export function chunkStructuredMarkdown(
 // ── Internal helpers ────────────────────────────────────────────────────────
 
 interface PageBlock { page: number; content: string; }
+
+/** El índice de la sección cuyo título abre la página (sin texto antes), o null. */
+function indiceDelTituloAlTope(sections: ReadonlyArray<Section>): number | null {
+    let antes = 0;
+    for (const [i, s] of sections.entries()) {
+        if (s.headingText !== null) return antes < TEXTO_ANTES_DEL_TITULO_AL_TOPE ? i : null;
+        antes += s.body.trim().length;
+    }
+    return null;
+}
 
 function splitByPageMarkers(md: string): PageBlock[] {
     const regex = /<!--\s*page:\s*(\d+)\s*-->/gi;

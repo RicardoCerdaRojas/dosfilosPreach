@@ -249,6 +249,8 @@ export const resumirEnBiblioteca = onCall(
         const recurso = (await db.collection('library_resources').doc(entrada.resourceId).get()).data();
         const dueno = recurso?.userId as string | undefined;
         if (!recurso || (dueno !== userId && dueno !== '__system__')) throw new HttpsError('not-found', 'No se encontró el libro.');
+        // Un libro compartido solo si su texto se puede leer (A8c, regla de derechos).
+        if (dueno === '__system__' && dueno !== userId && recurso.publiclyCitable !== true) throw new HttpsError('not-found', 'No se encontró el libro.');
         const titulo = String(recurso.title ?? 'Libro');
         const autor = String(recurso.author ?? '');
         // La versión del índice: si el libro se reindexa, el resumen guardado ya no vale.

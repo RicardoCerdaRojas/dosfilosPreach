@@ -3,6 +3,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
 import { embedQuery } from './retrieveChunks';
 import { sanitizeExtractedTextOnly } from './sanitizeExtractedText';
+import { DUENO_COMPARTIDO, duenoDe, recursosCompartidos } from './bibliotecaCompartida';
 
 /**
  * Ranking dentro del corpus curado de un trabajo.
@@ -239,7 +240,7 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
 
         const verseKeys = new Set(claveDeVersiculosDelPedido(data.verseKeys));
         const db = getFirestore();
-        const vector = await embedQuery(query, apiKey);
+        const [vector, compartidos] = await Promise.all([embedQuery(query, apiKey), recursosCompartidos()]);
         const queryVector = FieldValue.vector(vector);
 
         // Una consulta por fuente, en paralelo. El orden de las cláusulas NO es
@@ -250,6 +251,14 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
         const perSource = await Promise.all(
             [...byResource.entries()].map(async ([resourceId, scope]) => {
                 const ranges = scope.sheetRanges;
+                // De quién es el libro (A8c): del usuario, o de la biblioteca
+                // compartida si su texto se puede leer. Un compartido protegido
+                // no se lee: vuelve vacío y se informa.
+                const dueno = duenoDe(resourceId, uid, compartidos);
+                if (dueno === null) return { resourceId, pool: 0, kept: [] as RankedCuratedChunk[], failed: false, protegido: true };
+                // Un compartido sin numeración se cita por sección: su hoja no es de nadie.
+                const sinHoja = compartidos.get(resourceId)?.citaPorSeccion === true;
+                const citable = <T extends { sheet: number | null }>(c: T): T => (sinHoja ? { ...c, sheet: null } : c);
                 try {
                     // Buscar DENTRO de lo curado, cuando se puede.
                     //
@@ -274,14 +283,18 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
                             fieldMask: ['chunkIndex', 'text', 'metadata', 'userId', 'stores', 'embedding', 'refs'],
                         });
                         const kept = rankCuratedChunks({
-                            rows: docs.filter(doc => doc.exists).map(doc => doc.data()!),
-                            resourceId, uid, ranges, vector, pool, verseKeys,
+                            // Un fragmento de la biblioteca compartida solo si su libro
+                            // es legible: `isReadable` deja pasar todo lo que tenga
+                            // `stores`, y los compartidos los tienen (revisión de A8c).
+                            rows: docs.filter(doc => doc.exists).map(doc => doc.data()!)
+                                .filter(row => row.userId !== DUENO_COMPARTIDO || compartidos.get(resourceId)?.textoLegible === true),
+                            resourceId, uid: dueno, ranges, vector, pool, verseKeys,
                         });
-                        return { resourceId, pool: docs.length, kept, failed: false };
+                        return { resourceId, pool: docs.length, kept: kept.map(citable), failed: false };
                     }
                     const snapshot = await db
                         .collection(CHUNK_COLLECTION)
-                        .where('userId', '==', uid)
+                        .where('userId', '==', dueno)
                         .where('resourceId', '==', resourceId)
                         .findNearest({
                             vectorField: 'embedding',
@@ -299,13 +312,13 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
                     const porPasaje = verseKeys.size > 0
                         ? await db.collection(CHUNK_COLLECTION)
                             .where('resourceId', '==', resourceId)
-                            .where('userId', '==', uid)
+                            .where('userId', '==', dueno)
                             .where('refs', 'array-contains-any', [...verseKeys].slice(0, 30))
                             .select('chunkIndex', 'text', 'metadata', 'userId', 'stores', 'embedding', 'refs')
                             .limit(MAX_POR_PASAJE)
                             .get()
                             .then(snap => rankCuratedChunks({
-                                rows: snap.docs.map(doc => doc.data()), resourceId, uid, ranges, vector, pool, verseKeys,
+                                rows: snap.docs.map(doc => doc.data()), resourceId, uid: dueno, ranges, vector, pool, verseKeys,
                             }))
                             .catch(err => {
                                 console.warn('[CuratedCorpus] sin fragmentos por pasaje', { resourceId, error: (err as Error).message });
@@ -332,7 +345,7 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
                         }))).map(conMarcaDeVersiculo).filter(c => !vistos.has(c.chunkIndex));
                     const kept = [...porPasaje, ...cercanos];
 
-                    return { resourceId, pool: snapshot.size, kept, failed: false };
+                    return { resourceId, pool: snapshot.size, kept: kept.map(citable), failed: false };
                 } catch (err) {
                     // Una fuente rota no puede llevarse puesto el corpus entero:
                     // el paso se genera con las demás y se informa cuál faltó.
@@ -347,7 +360,10 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
 
         const chunks = perSource.flatMap(r => r.kept);
         const failedSources = perSource.filter(r => r.failed).map(r => r.resourceId);
+        // Libros de la biblioteca compartida sin permiso de texto: no se leyeron.
+        const protectedSources = perSource.filter(r => 'protegido' in r && r.protegido).map(r => r.resourceId);
         const emptySources = perSource
+            // Un protegido también vuelve vacío: quien solo lee `emptySources` avisa igual.
             .filter(r => !r.failed && r.kept.length === 0)
             .map(r => r.resourceId);
 
@@ -364,6 +380,7 @@ export const retrieveCuratedCorpus = onCall<RetrieveRequest>(
             sourcesQueried: byResource.size,
             failedSources,
             emptySources,
+            protectedSources,
         };
     },
 );
