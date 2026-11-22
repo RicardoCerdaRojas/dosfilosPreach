@@ -436,6 +436,7 @@
     "uncalibrated": "Not calibrated",
     "uncalibratedHint": "Citations from this resource will say “sheet N” until you confirm its numbering.",
     "pageIntro": "Look at each sheet and tell us the number printed on it, usually at the foot. With that, citations from this book can say “p. 28” instead of “sheet 32”.",
+    "markedPages": "This book marks its pages inside the text (\"[p 667]\"), and {{count}} sheets already have theirs read from those marks. A sheet may hold several pages, so its citations say \"pp. 666–667\". What you confirm here applies only to sheets without marks; the marks are kept.",
     "alreadyConfirmed": "You already confirmed this book's numbering. You can correct it.",
     "printedQuestion": "What number is printed on sheet {{sheet}}?",
     "lookForFolio": "The folio is usually at the foot, sometimes in the header. It may be arabic or roman — type it as printed. If this sheet doesn't show it, check the next one rather than marking it as unnumbered.",

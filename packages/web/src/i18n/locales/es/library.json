@@ -436,6 +436,7 @@
     "uncalibrated": "Sin calibrar",
     "uncalibratedHint": "Las citas de este recurso van a decir «hoja N» hasta que confirmes su numeración.",
     "pageIntro": "Ve mirando cada hoja y dinos qué número lleva impreso, normalmente al pie. Con eso las citas de este libro pueden decir «p. 28» en vez de «hoja 32».",
+    "markedPages": "Este libro marca sus páginas dentro del texto («[p 667]»), y {{count}} hojas ya tienen las suyas leídas de esas marcas. Una hoja puede traer varias páginas, por eso sus citas dicen «pp. 666–667». Lo que confirmes aquí vale solo para las hojas sin marcas; las marcas se conservan.",
     "alreadyConfirmed": "Ya confirmaste la numeración de este libro. Puedes corregirla.",
     "printedQuestion": "¿Qué número tiene impreso la hoja {{sheet}}?",
     "lookForFolio": "El folio suele estar al pie, a veces en el encabezado. Puede ser arábigo o romano; escríbelo tal como aparece. Si esta hoja no lo muestra, mira la siguiente en vez de marcar que no tiene número.",

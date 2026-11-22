@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
     calibrationSheets,
     declaresNoFolios,
+    keepSheetPages,
+    markedSheetCount,
     hasResolvedNumbering,
     printedPageAbbrev,
     citationAnchorFor,
@@ -758,5 +760,26 @@ describe('páginas marcadas en el texto (Kittel, A8b)', () => {
         expect(printedPageAbbrev('42')).toBe('p. 42');
         expect(printedPageAbbrev('ccxxii')).toBe('p. ccxxii');
         expect(printedPageAbbrev('666–667')).toBe('pp. 666–667');
+    });
+});
+
+describe('calibrar un libro con páginas marcadas no las borra (A8b)', () => {
+    const marcas = { '525': { from: 666, to: 667 } };
+    const guardada: PageNumbering = { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 1120, offset: null }], sheetPages: marcas };
+    const nueva: PageNumbering = { origin: 'confirmed', segments: [{ fromSheet: 1071, toSheet: 1120, offset: 300 }] };
+
+    it('la calibración nueva conserva las marcas, que siguen mandando en su hoja', () => {
+        const out = keepSheetPages(nueva, guardada);
+        expect(out.sheetPages).toEqual(marcas);
+        expect(out.segments).toEqual(nueva.segments);
+        expect(printedLabelIn(out, 525)).toBe('666–667');
+        expect(printedLabelIn(out, 1100)).toBe('1400');
+    });
+
+    it('sin marcas guardadas no agrega nada', () => {
+        expect(keepSheetPages(nueva, { ...guardada, sheetPages: {} })).toBe(nueva);
+        expect(keepSheetPages(nueva, null)).toBe(nueva);
+        expect(markedSheetCount(guardada)).toBe(1);
+        expect(markedSheetCount(null)).toBe(0);
     });
 });

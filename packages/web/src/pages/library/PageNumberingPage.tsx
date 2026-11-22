@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut } from 'lucide-react';
-import { numberingFromCalibrationPoints, parseRomanNumeral } from '@dosfilos/domain';
+import { keepSheetPages, numberingFromCalibrationPoints, parseRomanNumeral } from '@dosfilos/domain';
 import type { NumberingStyle } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -134,7 +134,7 @@ export function PageNumberingPage() {
             return;
         }
         try {
-            await save.mutateAsync({ resourceId, numbering });
+            await save.mutateAsync({ resourceId, numbering: keepSheetPages(numbering, state.data?.numbering) });
             toast.success(t('numbering.saved'));
             navigate('/dashboard/library');
         } catch {
@@ -168,7 +168,9 @@ export function PageNumberingPage() {
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight">{t('numbering.title')}</h1>
                     <p className="text-sm text-muted-foreground max-w-2xl">{t('numbering.pageIntro')}</p>
-                    {state.data.storedOrigin === 'confirmed' && (
+                    {state.data.markedSheets > 0 ? (
+                        <p className="mt-2 max-w-2xl rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground">{t('numbering.markedPages', { count: state.data.markedSheets })}</p>
+                    ) : state.data.storedOrigin === 'confirmed' && (
                         <p className="mt-1 text-sm text-muted-foreground">{t('numbering.alreadyConfirmed')}</p>
                     )}
                 </div>

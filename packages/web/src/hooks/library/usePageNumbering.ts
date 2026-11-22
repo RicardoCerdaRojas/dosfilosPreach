@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     calibrationSheets,
     detectNumberingSegments,
+    markedSheetCount,
+    sheetPagesIn,
     printedLabelIn,
     type PageNumbering,
 } from '@dosfilos/domain';
@@ -36,6 +38,8 @@ export interface NumberingState {
      */
     title: string | null;
     author: string | null;
+    /** Hojas con páginas leídas de las marcas del texto («[p 667]»): calibrar no las reemplaza. */
+    markedSheets: number;
 }
 
 /**
@@ -81,9 +85,11 @@ export function usePageNumbering(resourceId: string | null) {
                 ownerId: (resource as { userId?: string } | null)?.userId ?? null,
                 title: resource?.title?.trim() || null,
                 author: resource?.author?.trim() || null,
+                markedSheets: markedSheetCount(numbering),
                 points: calibrationSheets(numbering, lastSheet).map(sheet => ({
                     sheet,
-                    proposed: printedLabelIn(numbering, sheet),
+                    // Una hoja con varias páginas marcadas no tiene UN folio que proponer.
+                    proposed: sheetPagesIn(numbering, sheet) ? null : printedLabelIn(numbering, sheet),
                 })),
             };
         },

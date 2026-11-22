@@ -165,6 +165,21 @@ function tieneMarcas(numbering: PageNumbering | null | undefined): boolean {
 }
 
 /**
+ * Una calibración nueva conserva las páginas leídas de las marcas del texto.
+ * Las marcas siguen mandando en sus hojas; los tramos calibrados valen para
+ * las hojas sin marcas (los índices del final de Kittel). Sin esto, guardar
+ * la calibración de un libro así borraba sus páginas sin avisar.
+ */
+export function keepSheetPages(next: PageNumbering, stored: PageNumbering | null | undefined): PageNumbering {
+    return tieneMarcas(stored) ? { ...next, sheetPages: stored!.sheetPages } : next;
+}
+
+/** Cuántas hojas tienen páginas leídas de las marcas del texto. */
+export function markedSheetCount(numbering: PageNumbering | null | undefined): number {
+    return numbering?.sheetPages ? Object.keys(numbering.sheetPages).length : 0;
+}
+
+/**
  * La página como se escribe en una cita: «p. 42», o «pp. 666–667» cuando la
  * hoja abarca varias páginas impresas.
  */

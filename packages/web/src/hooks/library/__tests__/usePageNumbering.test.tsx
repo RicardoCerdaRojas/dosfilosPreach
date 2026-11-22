@@ -47,3 +47,23 @@ describe('usePageNumbering — título y autor', () => {
         expect(otro.result.current.data?.title).toBeNull();
     });
 });
+
+describe('usePageNumbering — páginas marcadas en el texto (A8b)', () => {
+    it('cuenta las hojas marcadas y no propone un rango como folio', async () => {
+        recurso = {
+            userId: 'yo', title: 'Kittel',
+            pageNumbering: {
+                origin: 'confirmed',
+                segments: [{ fromSheet: 1, toSheet: 2, offset: 10 }],
+                sheetPages: { '1': { from: 666, to: 667 } },
+            },
+        };
+        const { result } = renderHook(() => usePageNumbering('res-kittel'), { wrapper: envoltorio() });
+        await waitFor(() => expect(result.current.data).toBeDefined());
+        expect(result.current.data?.markedSheets).toBe(1);
+        const propuesta = Object.fromEntries((result.current.data?.points ?? []).map(p => [p.sheet, p.proposed]));
+        // La hoja 1 trae pp. 666–667: no hay UN folio que proponer. La 2 sigue su tramo.
+        expect(propuesta[1]).toBeNull();
+        expect(propuesta[2]).toBe('12');
+    });
+});
