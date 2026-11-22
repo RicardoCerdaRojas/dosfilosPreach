@@ -41,5 +41,43 @@
         "register": "The Spanish register (neutral Latin American, no voseo or vosotros) always applies and is not edited here.",
         "reset": "Use the system style",
         "saveHint": "It is saved with “Guardar Cambios” below."
+    },
+    "mcp": {
+        "consent": {
+            "title": "Connect {{cliente}}",
+            "subtitle": "{{cliente}} wants to read your library and your papers in Dos Filos Preach.",
+            "returnsTo": "Goes back to: {{destino}}",
+            "permissionsTitle": "It will be able to:",
+            "permSearch": "Search topics and passages in your books and in the shared public-domain library.",
+            "permRead": "Read whole sheets of your books, up to 60 per book per day.",
+            "permWorks": "See your papers, their sources and requirements, and the catalog of recommended works.",
+            "cannot": "It cannot write, change or delete anything. You can disconnect it anytime in Settings › Integrations.",
+            "allow": "Allow",
+            "deny": "Don't allow",
+            "returning": "Done. Going back to {{destino}}…",
+            "expired": "This request expired or was already used. Connect again from the app.",
+            "missing": "The connection request is missing. Connect again from the app.",
+            "loginTitle": "Sign in to connect",
+            "loginBody": "An app wants to read your library. Sign in and you'll come back here to decide.",
+            "login": "Sign in",
+            "failed": "It could not be completed. Try again.",
+            "loading": "Loading the request…",
+            "warning": "Approve only if you just connected {{cliente}} yourself and {{destino}} is that app's site. If you don't recognize this request, don't allow it."
+        },
+        "connections": {
+            "title": "Connected apps",
+            "description": "Apps like Claude that can read your library and your papers, read-only. To connect one, add this server in it:",
+            "copy": "Copy address",
+            "copied": "Address copied",
+            "empty": "No apps connected.",
+            "since": "Connected on {{fecha}}",
+            "readOnly": "Read-only",
+            "revoke": "Disconnect",
+            "revokeTitle": "Disconnect {{cliente}}?",
+            "revokeConfirm": "It will stop being able to read your library immediately.",
+            "revoked": "Disconnected.",
+            "revokeFailed": "It could not be disconnected.",
+            "loadFailed": "The connections could not be loaded."
+        }
     }
 }

@@ -14,8 +14,65 @@
             ],
             "rewrites": [
                 {
+                    "source": "/mcp",
+                    "function": {
+                        "functionId": "mcpGateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/oauth/**",
+                    "function": {
+                        "functionId": "mcpGateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/.well-known/oauth-authorization-server",
+                    "function": {
+                        "functionId": "mcpGateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/.well-known/oauth-authorization-server/**",
+                    "function": {
+                        "functionId": "mcpGateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/.well-known/oauth-protected-resource",
+                    "function": {
+                        "functionId": "mcpGateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/.well-known/oauth-protected-resource/**",
+                    "function": {
+                        "functionId": "mcpGateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
                     "source": "**",
                     "destination": "/index.html"
+                }
+            ],
+            "headers": [
+                {
+                    "source": "/conectar",
+                    "headers": [
+                        {
+                            "key": "X-Frame-Options",
+                            "value": "DENY"
+                        },
+                        {
+                            "key": "Content-Security-Policy",
+                            "value": "frame-ancestors 'none'"
+                        }
+                    ]
                 }
             ]
         },
@@ -61,6 +118,22 @@
             "source": "packages/functions",
             "codebase": "default",
             "runtime": "nodejs22",
+            "predeploy": [
+                "npm --prefix \"$RESOURCE_DIR\" run build"
+            ]
+        },
+        {
+            "source": "packages/mcp",
+            "codebase": "mcp",
+            "runtime": "nodejs22",
+            "ignore": [
+                "node_modules",
+                "src",
+                ".git",
+                "*.log",
+                "vitest.config.ts",
+                "tsconfig.json"
+            ],
             "predeploy": [
                 "npm --prefix \"$RESOURCE_DIR\" run build"
             ]

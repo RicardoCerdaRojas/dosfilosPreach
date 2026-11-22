@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { authService } from '../../../../application/src/services/AuthService';
 import { useTranslation } from '@/i18n';
 import { useTrackActivity } from '@/hooks/useTrackActivity';
+import { destinoTrasEntrar } from '@/lib/conexionMcp';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ export function LoginPage() {
       await authService.login(data.email, data.password);
       trackLogin();
       toast.success(t('login.welcome'));
-      navigate('/dashboard');
+      navigate(destinoTrasEntrar());
     } catch (error: any) {
       toast.error(error.message || t('login.errors.loginFailed'));
     } finally {
@@ -54,7 +55,7 @@ export function LoginPage() {
       await authService.loginWithGoogle();
       trackLogin();
       toast.success(t('login.welcome'));
-      navigate('/dashboard');
+      navigate(destinoTrasEntrar());
     } catch (error: any) {
       if (error?.code === 'auth/not-registered') {
         toast.error(t('login.errors.googleNotRegistered'), {

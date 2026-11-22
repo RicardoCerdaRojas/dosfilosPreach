@@ -44,10 +44,6 @@ export const leerHoja: Herramienta = {
             consulta = consulta.where('metadata.section', '==', seccion);
         } else {
             if (hoja === null) throw new ErrorDeHerramienta('Falta «hoja».');
-            if (recurso.propio) {
-                cupoRestante = await gastarCupo(ctx.db, ctx.uid, recurso.id, hoja);
-                if (cupoRestante === null) throw new ErrorDeHerramienta(`Llegaste al cupo de hoy para este libro (${HOJAS_POR_LIBRO_AL_DIA} hojas). Mañana se renueva.`);
-            }
             consulta = consulta.where('metadata.page', '==', hoja);
         }
         const snap = await consulta.limit(FRAGMENTOS_POR_LECTURA).get();
@@ -55,6 +51,11 @@ export const leerHoja: Herramienta = {
             .map(d => d.data())
             .sort((a, b) => Number(a.chunkIndex ?? 0) - Number(b.chunkIndex ?? 0));
         if (fragmentos.length === 0) throw new ErrorDeHerramienta(recurso.sinHojas ? 'Esa sección no está en el libro.' : 'Esa hoja no tiene texto en el índice.');
+        // El cupo se gasta solo si hay texto que entregar: una hoja vacía no lo consume.
+        if (!recurso.sinHojas && recurso.propio) {
+            cupoRestante = await gastarCupo(ctx.db, ctx.uid, recurso.id, hoja!);
+            if (cupoRestante === null) throw new ErrorDeHerramienta(`Llegaste al cupo de hoy para este libro (${HOJAS_POR_LIBRO_AL_DIA} hojas). Mañana se renueva.`);
+        }
         const textoDeLaHoja = fragmentos.map(f => sanitizeExtractedTextOnly(String(f.text ?? '')).trim()).filter(Boolean).join('\n\n');
         const seccionDeLaHoja = seccion ?? String(fragmentos[0]?.metadata?.section ?? '');
         return {

@@ -1,2 +1,4 @@
 node_modules
 dist
+# Configuración local de despliegue (p. ej. MCP_CONSENT_ORIGIN para probar con la web local)
+.env*

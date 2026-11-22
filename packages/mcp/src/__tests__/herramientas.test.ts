@@ -81,6 +81,11 @@ describe('herramientas del corpus (A9)', () => {
             const r = json(await herramienta('leer_hoja').ejecutar({ libro: 'varner', hoja: 192 }, ctxDe(db)));
             expect(r.hojasQueQuedanHoy).toBe(0);
         });
+        it('una hoja sin texto no gasta cupo', async () => {
+            const { db, store } = armar();
+            await expect(herramienta('leer_hoja').ejecutar({ libro: 'varner', hoja: 99999 }, ctxDe(db))).rejects.toThrow('no tiene texto');
+            expect(store.corpus_quota).toBeUndefined();
+        });
         it('argumentos: falta la hoja; hoja no entera', async () => {
             const { db } = armar();
             await expect(herramienta('leer_hoja').ejecutar({ libro: 'varner' }, ctxDe(db))).rejects.toThrow('Falta «hoja»');

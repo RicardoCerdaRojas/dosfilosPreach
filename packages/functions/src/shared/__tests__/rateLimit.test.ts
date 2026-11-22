@@ -55,3 +55,26 @@ describe('la unificación no puede perder los contadores existentes', () => {
         expect(rateLimitDocId('lead_magnet', primerSalto)).not.toBe(rateLimitDocId('lead_magnet', cadena));
     });
 });
+
+describe('consumeRateLimitToken — atómico (revisión de A9)', () => {
+    it('lee y escribe en una transacción: dos pedidos seguidos no ven el mismo contador', async () => {
+        const { consumeRateLimitToken } = await import('../rateLimit');
+        const docs = new Map<string, Record<string, unknown>>();
+        let transacciones = 0;
+        const db = {
+            collection: () => ({ doc: (id: string) => ({ id }) }),
+            runTransaction: async (fn: (tx: unknown) => Promise<boolean>) => {
+                transacciones++;
+                return fn({
+                    get: async (ref: { id: string }) => ({ exists: docs.has(ref.id), data: () => docs.get(ref.id) }),
+                    set: (ref: { id: string }, d: Record<string, unknown>) => { docs.set(ref.id, { ...(docs.get(ref.id) ?? {}), ...d }); },
+                });
+            },
+        } as unknown as FirebaseFirestore.Firestore;
+        const opts = { bucket: 'b', key: 'k', windowMs: 60_000, max: 2 };
+        expect(await consumeRateLimitToken(db, opts)).toBe(true);
+        expect(await consumeRateLimitToken(db, opts)).toBe(true);
+        expect(await consumeRateLimitToken(db, opts)).toBe(false);
+        expect(transacciones).toBe(3);
+    });
+});
