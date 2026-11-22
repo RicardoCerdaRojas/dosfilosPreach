@@ -21,7 +21,7 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 
-PAQUETES=(domain application infrastructure functions web)
+PAQUETES=(domain application infrastructure functions mcp web)
 FALLARON=()
 
 for p in "${PAQUETES[@]}"; do
