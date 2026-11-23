@@ -30,7 +30,8 @@ export interface ChunkerOptions {
     overlapChars?: number;
 }
 
-import { encabezadosCorridosAIgnorar } from './encabezadosCorridos';
+import { clasificarTitulosAlTope, esDelCorrido } from './encabezadosCorridos';
+import { cortarPorHermanosNumerados, lugarDelHermano, numeracionDe } from './encabezadosNumerados';
 
 /** Texto que puede ir antes del título de una página y que igual «abre» la página (un folio, una línea suelta). */
 const TEXTO_ANTES_DEL_TITULO_AL_TOPE = 40;
@@ -58,26 +59,68 @@ export function chunkStructuredMarkdown(
     // Step 2: for each page, split by headings and track the heading hierarchy
     const rawChunks: MarkdownChunk[] = [];
     const headingStack: string[] = [];
+    // Si cada título de la ruta entró como HERMANO numerado de otro (marcado
+    // o desde el texto): es una subsección que la numeración sabe cerrar.
+    const porNumeracion: boolean[] = [];
 
     // Los encabezados corridos (el título del libro o del capítulo repetido
-    // arriba de cada página) no son títulos: no tocan la ruta de sección
+    // arriba de cada página): el del libro no toca la ruta; el del capítulo
+    // en que ya se está tampoco, para no perder la subsección
     // (`encabezadosCorridos.ts`).
     const seccionesPorPagina = pageBlocks.map(block => splitBySections(block.content));
     const alTope = seccionesPorPagina.map(indiceDelTituloAlTope);
-    const ignorar = encabezadosCorridosAIgnorar(
+    const corridos = clasificarTitulosAlTope(
         alTope.map((i, b) => (i === null ? null : seccionesPorPagina[b]![i]!.headingText)),
         seccionesPorPagina.flat().flatMap(s => (s.headingText ? [s.headingText] : [])),
     );
+
+    const emitir = (body: string, page: number, charStart: number, charEnd: number) => {
+        const sectionPath = [...headingStack];
+        const currentSection = sectionPath[sectionPath.length - 1] ?? null;
+        // If the section body is small, keep it as one chunk
+        if (body.length <= maxChars) {
+            const text = quitarMarcasDeTitulo(body).trim();
+            // Un texto corto sin título (el final de un párrafo que viene de
+            // la página anterior, o el cuerpo de un título ilegible
+            // descartado) se conserva: mergeTinyChunks lo junta con el
+            // vecino. Antes se tiraba y ese texto no existía en el índice.
+            if (text.length > 0) {
+                rawChunks.push({ text, page, section: currentSection, sectionPath, chunkType: detectChunkType(text), charStart, charEnd });
+            }
+            return;
+        }
+        // Body too big — split into character-based chunks with overlap
+        for (const piece of splitIntoOverlappingChunks(quitarMarcasDeTitulo(body), maxChars, overlapChars, charStart)) {
+            rawChunks.push({
+                text: piece.text.trim(), page, section: currentSection, sectionPath,
+                chunkType: detectChunkType(piece.text), charStart: piece.charStart, charEnd: piece.charEnd,
+            });
+        }
+    };
 
     for (const [b, block] of pageBlocks.entries()) {
         const sections = seccionesPorPagina[b]!;
 
         for (const [s, section] of sections.entries()) {
-            const esCorrido = ignorar[b] === true && alTope[b] === s;
+            const corrido = alTope[b] === s ? corridos[b] : null;
+            const esDelLibro = corrido?.tipo === 'libro';
+            // El del capítulo en que ya se está: la página sigue en él y
+            // conserva su subsección, pero solo la que entró por numeración
+            // (la siguiente la va a cerrar). Lo que cuelga sin número no tiene
+            // quién lo cierre y se suelta; sin subsección numerada, el corrido
+            // cuenta como título, como antes: una ruta gruesa y cierta.
+            let sigueEnElCapitulo = false;
+            if (corrido?.tipo === 'capitulo') {
+                const capitulo = headingStack.findIndex(h => esDelCorrido(h, corrido.grupo));
+                const sub = capitulo < 0 ? -1 : porNumeracion.lastIndexOf(true);
+                if (sub > capitulo) {
+                    headingStack.length = sub + 1;
+                    porNumeracion.length = sub + 1;
+                    sigueEnElCapitulo = true;
+                }
+            }
             // Update the heading stack when we encounter a heading
-            if (!esCorrido && section.headingLevel !== null && section.headingText) {
-                // Pop stack to proper depth, then push new heading.
-                //
+            if (!esDelLibro && !sigueEnElCapitulo && section.headingLevel !== null && section.headingText) {
                 // The depth is clamped to the stack's current length on
                 // purpose. A document that SKIPS a heading level (`#` then
                 // `###` with no `##` between — routine in LlamaParse output
@@ -89,51 +132,34 @@ export function chunkStructuredMarkdown(
                 // metadata.sectionPath.`1`)" — killing the whole indexing job.
                 // Clamping collapses the skipped level instead, which also
                 // reads better as a breadcrumb.
-                headingStack.length = Math.min(section.headingLevel - 1, headingStack.length);
+                let largo = Math.min(section.headingLevel - 1, headingStack.length);
+                // Un encabezado numerado va en el lugar de su hermano anterior
+                // aunque la extracción le dio un nivel más hondo («###
+                // VIII.» tras «## VII.»). Solo para SUBIR: un «# III.» que
+                // llega como título de nivel 1 no baja a colgar del «II.» que
+                // repite un encabezado corrido (BECNT de Santiago, hoja 152).
+                const hermano = lugarDelHermano(headingStack, section.headingText);
+                if (hermano !== null && hermano < largo) largo = hermano;
+                headingStack.length = largo;
+                porNumeracion.length = largo;
                 headingStack.push(section.headingText);
+                // También una subsección numerada que no es la primera de su
+                // lista («2. CAUSAL SENTENCES», «VIII. The Genitive»): es parte
+                // de una numeración que la siguiente va a cerrar.
+                const num = numeracionDe(section.headingText);
+                porNumeracion.push((hermano !== null && hermano <= largo) || (!!num && num.estilo !== 'referencia' && num.n >= 2));
             }
 
-            const sectionPath = [...headingStack];
-            const currentSection = sectionPath[sectionPath.length - 1] ?? null;
-
-            // If the section body is small, keep it as one chunk
-            if (section.body.length <= maxChars) {
-                const text = quitarMarcasDeTitulo(section.body).trim();
-                // Un texto corto sin título (el final de un párrafo que viene de
-                // la página anterior, o el cuerpo de un título ilegible
-                // descartado) se conserva: mergeTinyChunks lo junta con el
-                // vecino. Antes se tiraba y ese texto no existía en el índice.
-                if (text.length > 0) {
-                    rawChunks.push({
-                        text,
-                        page: block.page,
-                        section: currentSection,
-                        sectionPath,
-                        chunkType: detectChunkType(text),
-                        charStart: section.charStart,
-                        charEnd: section.charEnd,
-                    });
+            // Los hermanos numerados que llegaron como texto común abren su
+            // propia subsección (`encabezadosNumerados.ts`).
+            for (const tramo of cortarPorHermanosNumerados(section.body, headingStack)) {
+                if (tramo.titulo !== null && tramo.indice !== null) {
+                    headingStack.length = tramo.indice;
+                    porNumeracion.length = tramo.indice;
+                    headingStack.push(tramo.titulo);
+                    porNumeracion.push(true);
                 }
-                continue;
-            }
-
-            // Body too big — split into character-based chunks with overlap
-            const pieces = splitIntoOverlappingChunks(
-                quitarMarcasDeTitulo(section.body),
-                maxChars,
-                overlapChars,
-                section.charStart
-            );
-            for (const piece of pieces) {
-                rawChunks.push({
-                    text: piece.text.trim(),
-                    page: block.page,
-                    section: currentSection,
-                    sectionPath,
-                    chunkType: detectChunkType(piece.text),
-                    charStart: piece.charStart,
-                    charEnd: piece.charEnd,
-                });
+                emitir(section.body.slice(tramo.desde, tramo.hasta), block.page, section.charStart + tramo.desde, section.charStart + tramo.hasta);
             }
         }
     }

@@ -38,6 +38,9 @@ npx tsx scripts/bench/corpus/correr.ts --comparar scripts/bench/corpus/linea-bas
   o la precisión mínima más de 2 puntos.
 
 Pruebas de las métricas: `npx vitest run --root scripts/bench/corpus`.
+- `SECCIONES_DESDE=<carpeta fuera del repo>`: si hay `<carpeta>/<resourceId>.md`, la ruta de sección de cada fragmento
+  se recalcula con el separador del código (`markdownChunker.ts`) en vez de la guardada. Sirve para medir un cambio del
+  separador ANTES de reescribir producción (A8d).
 
 ## Medidas
 
