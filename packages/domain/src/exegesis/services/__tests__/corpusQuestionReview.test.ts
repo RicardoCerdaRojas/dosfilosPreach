@@ -358,3 +358,65 @@ describe('evidenceFromReview', () => {
         expect(evidenceFromReview(null)).toEqual([]);
     });
 });
+
+// Fase «Asistente del corpus», A3 (banco del corpus, 2026-11-21): la tarjeta acertaba 8 de 18 citas de McCartney y
+// 0 de 12 de NA28 y Metzger en su pregunta, porque solo mostraba hojas que escriben «Stg 5:x».
+describe('reviewCorpusByQuestion · sección del comentario y porción del pasaje (A3)', () => {
+    const qs: BriefQuestion[] = [
+        { number: 1, text: '¿Qué significa τῆς παρουσίας (5:7)?', verses: [{ chapter: 5, verse: 7 }] },
+        { number: 2, text: '¿Cómo funciona κυρίου (5:11)?', verses: [{ chapter: 5, verse: 11 }] },
+    ];
+    const mccartney: QuestionReviewSource = {
+        sourceId: 'mccartney',
+        sourceType: 'commentary-critical',
+        selected: [{ start: 230, end: 245 }],
+        pinned: [],
+        verseHits: [{ sheet: 232, count: 2, verses: [7] }],
+        sectionsByVerse: { 7: [{ start: 231, end: 234 }], 11: [{ start: 240, end: 243 }] },
+        printedPages: 'resolved',
+    };
+    const na28: QuestionReviewSource = {
+        sourceId: 'na28',
+        sourceType: 'critical-apparatus',
+        selected: [{ start: 805, end: 805 }],
+        pinned: [],
+        verseHits: [],
+        passageSheets: [{ start: 805, end: 805 }],
+        printedPages: 'resolved',
+    };
+    const review = reviewCorpusByQuestion({ questions: qs, chapter: 5, sources: [mccartney, na28] });
+
+    it('agrega la sección del comentario sin repetir la hoja que nombra el versículo', () => {
+        const p1 = review.rows[0]!.sources.filter(s => s.sourceId === 'mccartney');
+        expect(p1.map(s => s.via)).toEqual(['verse', 'section']);
+        expect(p1[1]!.sheets.map(h => h.sheet)).toEqual([231, 233, 234]);
+        expect(p1[1]!.sheets.every(h => h.state === 'in-corpus')).toBe(true);
+    });
+
+    it('una pregunta cuyo versículo ninguna hoja nombra queda cubierta por la sección', () => {
+        const p2 = review.rows[1]!.sources.filter(s => s.sourceId === 'mccartney');
+        expect(p2.map(s => s.via)).toEqual(['section']);
+        expect(p2[0]!.sheets.map(h => h.sheet)).toEqual([240, 241, 242, 243]);
+        // Sin NA28, que cubre toda pregunta y escondería el caso.
+        const solo = reviewCorpusByQuestion({ questions: qs, chapter: 5, sources: [mccartney] });
+        expect(solo.warnings.filter(w => w.kind === 'question-uncovered')).toEqual([]);
+    });
+
+    it('el texto y su aparato sirven a toda pregunta', () => {
+        for (const row of review.rows) {
+            expect(row.sources.find(s => s.sourceId === 'na28')).toMatchObject({ via: 'passage', sheets: [{ sheet: 805, state: 'in-corpus' }] });
+        }
+    });
+
+    it('una sección fuera del corpus se muestra como «afuera»', () => {
+        const r = reviewCorpusByQuestion({ questions: qs, chapter: 5, sources: [{ ...mccartney, selected: [{ start: 230, end: 232 }] }] });
+        const sec = r.rows[1]!.sources.find(s => s.via === 'section')!;
+        expect(sec.sheets.every(h => h.state === 'outside')).toBe(true);
+        expect(r.warnings).toContainEqual({ kind: 'question-uncovered', question: 2 });
+    });
+
+    it('la evidencia para el plan de uso lleva la sección y el pasaje', () => {
+        const ev = evidenceFromReview(review);
+        expect(ev.filter(e => e.question === 2).map(e => [e.sourceId, e.via])).toEqual([['mccartney', 'section'], ['na28', 'passage']]);
+    });
+});

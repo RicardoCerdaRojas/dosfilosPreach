@@ -153,3 +153,75 @@ describe('findLibraryResourceForRecommendation', () => {
         expect(findLibraryResourceForRecommendation(rec, [])).toBeNull();
     });
 });
+
+describe('apellidos, no nombres de pila (bandeja de A7, 2026-11-21)', () => {
+    const dibelius = makeRec({ author: 'Dibelius, Martin', title: 'James: A Commentary on the Epistle of James', series: 'Hermeneia', year: 1976 });
+    it('el WBC 48 de Ralph P. Martin no es el Hermeneia de Martin Dibelius', () => {
+        expect(matchRecommendationToResource(dibelius, { id: 'm', title: 'James (Word Biblical Commentary 48)', author: 'Ralph P. Martin' })).toBe(false);
+        expect(matchRecommendationToResource(dibelius, { id: 'd', title: 'James: A Commentary on the Epistle of James', author: 'Martin Dibelius' })).toBe(true);
+    });
+    it('una palabra repetida del título no cuenta dos veces', () => {
+        // «james» dos veces en el título del catálogo: con el mismo autor, ya no llega al 70 %.
+        expect(matchRecommendationToResource(makeRec({ author: 'Martin, Ralph P.', title: 'James: A Commentary on the Epistle of James' }), { id: 'x', title: 'James (Word Biblical Commentary 48)', author: 'Ralph P. Martin' })).toBe(false);
+    });
+    it('«Apellido, Nombre», varios autores, apellidos compuestos y de tres letras', () => {
+        const titulo = 'The Letter of James';
+        expect(matchRecommendationToResource(makeRec({ author: 'Moo, Douglas J.', title: titulo }), { id: 'a', title: titulo, author: 'Douglas J. Moo' })).toBe(true);
+        expect(matchRecommendationToResource(makeRec({ author: 'Allison, Dale C., Jr.', title: titulo }), { id: 'b', title: titulo, author: 'Dale C. Allison Jr.' })).toBe(true);
+        expect(matchRecommendationToResource(makeRec({ author: 'Hawthorne, Gerald F.; Martin, Ralph P. (eds.)', title: titulo }), { id: 'c', title: titulo, author: 'Ralph P. Martin' })).toBe(true);
+        expect(matchRecommendationToResource(makeRec({ author: 'Cerda Rojas, Ricardo', title: titulo }), { id: 'e', title: titulo, author: 'Ricardo Cerda Rojas' })).toBe(true);
+        // El nombre de pila compartido no basta.
+        expect(matchRecommendationToResource(makeRec({ author: 'Johnson, Luke Timothy', title: titulo }), { id: 'f', title: titulo, author: 'Luke Timothy McCartney' })).toBe(false);
+        expect(matchRecommendationToResource(makeRec({ author: 'Dibelius, Martin', title: titulo }), { id: 'g', title: titulo, author: 'Martin, Ralph P.' })).toBe(false);
+        expect(matchRecommendationToResource(makeRec({ author: 'Martin, Ralph P.', title: titulo }), { id: 'h', title: titulo, author: 'Martin Dibelius' })).toBe(false);
+    });
+});
+
+describe('la sigla de la serie, escrita o desplegada en el título', () => {
+    it('BECNT en «Baker Exegetical Commentary on the New Testament»; WBC en «Word Biblical Commentary»', () => {
+        const mcc = makeRec({ author: 'McCartney, Dan G.', title: 'James', series: 'BECNT' });
+        expect(matchRecommendationToResource(mcc, { id: 'a', title: 'James — Baker Exegetical Commentary on the New Testament', author: 'McCartney, Dan G.' })).toBe(true);
+        const martin = makeRec({ author: 'Martin, Ralph P.', title: 'James', series: 'WBC 48' });
+        expect(matchRecommendationToResource(martin, { id: 'b', title: 'James (Word Biblical Commentary 48)', author: 'Ralph P. Martin' })).toBe(true);
+        // Otro autor de la misma serie: no.
+        expect(matchRecommendationToResource(martin, { id: 'c', title: 'Jude-2 Peter, Volume 50 (Word Biblical Commentary)', author: 'Richard Bauckham' })).toBe(false);
+        // Iniciales que no van seguidas no forman la sigla.
+        expect(matchRecommendationToResource(mcc, { id: 'd', title: 'Baker Commentary: Exegesis of the New Testament', author: 'McCartney' })).toBe(false);
+    });
+});
+
+describe('libros bíblicos distintos y series de nombre común (A8, proyecto NT785)', () => {
+    const burt = makeRec({ author: 'Burt, David F.', title: 'Santiago', series: 'Comentario Nuevo Testamento Andamio' });
+    const kistemaker = makeRec({ author: 'Kistemaker, Simon J.', title: 'Santiago y 1–3 Juan', series: 'Comentario al Nuevo Testamento' });
+
+    it('el «Santiago» de Burt no es su «Comentario Jonás»', () => {
+        expect(matchRecommendationToResource(burt, { id: 'j', title: 'Comentario Jonás', author: 'David F. Burt', coversBibleBooks: ['JON'] })).toBe(false);
+        expect(matchRecommendationToResource(burt, { id: 's', title: 'Comentario Santiago', author: 'David F. Burt' })).toBe(true);
+    });
+
+    it('el «Santiago y 1–3 Juan» de Kistemaker no es su «1 y 2 de Pedro y Judas»', () => {
+        expect(matchRecommendationToResource(kistemaker, { id: 'p', title: 'Comentario 1 y 2 de Pedro y Judas', author: 'Simon J. Kistemaker', coversBibleBooks: ['JUD'] })).toBe(false);
+        expect(matchRecommendationToResource(kistemaker, { id: 's', title: 'Comentario al Nuevo Testamento: Santiago y 1-3 Juan', author: 'Simon J. Kistemaker' })).toBe(true);
+    });
+
+    it('los libros del registro cuentan aunque el título no los nombre', () => {
+        // Sin libros en el título del recurso, pero el registro dice Jonás.
+        const rec = makeRec({ author: 'Burt, David F.', title: 'Santiago', series: 'Andamio' });
+        expect(matchRecommendationToResource(rec, { id: 'a', title: 'Andamio — tomo 3', author: 'David F. Burt', coversBibleBooks: ['JON'] })).toBe(false);
+        expect(matchRecommendationToResource(rec, { id: 'b', title: 'Andamio — tomo 3', author: 'David F. Burt', coversBibleBooks: ['JAS'] })).toBe(true);
+        expect(matchRecommendationToResource(rec, { id: 'c', title: 'Andamio — tomo 3', author: 'David F. Burt' })).toBe(true);
+    });
+
+    it('una palabra común de serie no liga por sí sola, aunque el autor coincida', () => {
+        // Sin libros en ninguno de los dos títulos: solo la serie y el autor.
+        const rec = makeRec({ author: 'Burt, David F.', title: 'Sermones escogidos', series: 'Comentario Andamio' });
+        expect(matchRecommendationToResource(rec, { id: 'x', title: 'Comentario de la vida cristiana', author: 'David F. Burt' })).toBe(false);
+        // Una palabra que sí distingue la serie («Anchor») sigue valiendo con el mismo apellido.
+        const anchor = makeRec({ author: 'Allison, Dale C.', title: 'James', series: 'Anchor Yale Bible' });
+        expect(matchRecommendationToResource(anchor, { id: 'y', title: 'Anchor Yale Bible: James', author: 'Dale C. Allison' })).toBe(true);
+    });
+
+    it('el mismo libro en inglés y en español sí comparte libro', () => {
+        expect(matchRecommendationToResource(makeRec({ author: 'Moo, Douglas J.', title: 'The Letter of James', series: 'PNTC' }), { id: 'z', title: 'Santiago (PNTC)', author: 'Douglas J. Moo' })).toBe(true);
+    });
+});

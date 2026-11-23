@@ -172,8 +172,8 @@
       "generateError": "Error generating exegesis",
       "refineError": "Error refining section",
       "updateError": "Error updating section",
-      "parseError": "Error parsing model response",
-      "invalidArray": "Model did not return a valid array"
+      "parseError": "Couldn't read the assistant's response",
+      "invalidArray": "The assistant did not return a valid list"
     },
     "success": {
       "generated": "Exegetical study generated",
@@ -705,7 +705,7 @@
     "completeStudy": "Complete the {{count}} study steps before moving on to the draft."
   },
   "paperReference": {
-    "title": "From your paper \u201c{{paperTitle}}\u201d \u00b7 {{count}} for this step",
+    "title": "From your paper “{{paperTitle}}” · {{count}} for this step",
     "disclaimer": "This is what you already established in your paper. It is here to consult: what you write in this step has to be yours. In word studies, tap a word to adapt its explanation into your study."
   },
   "citations": {

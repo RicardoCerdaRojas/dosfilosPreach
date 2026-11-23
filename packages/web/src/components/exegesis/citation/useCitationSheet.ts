@@ -82,6 +82,8 @@ export function useCitationSheet(paperId: string | null, citation: CitationTarge
         /** La clave con que se cita: la del trabajo, o la que trajo el destino. */
         citationKey: source?.citationKey ?? citation?.sourceKey ?? null,
         pdfUrl: pdf.data?.url ?? null,
+        /** El PDF no se pudo pedir (un libro de texto sin PDF, como JFB): se dice, no se queda cargando. */
+        pdfFailed: !!pdf.error,
         loading,
         totalSheets,
         anchorSheet,

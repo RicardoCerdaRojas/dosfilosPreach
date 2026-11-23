@@ -178,6 +178,10 @@ export function SourceViewerBody({ paperId, target, open, layout, actions, rende
                         <Centered icon={<SearchX className="h-5 w-5 text-warning" />}>
                             {t('citationViewer.sourceNotConfigured', { key: target?.sourceKey ?? '' })}
                         </Centered>
+                    ) : view.pdfFailed ? (
+                        <Centered icon={<SearchX className="h-5 w-5 text-warning" />}>
+                            {t('citationViewer.pdfFailed')}
+                        </Centered>
                     ) : view.loading ? (
                         <Centered icon={<Loader2 className="h-4 w-4 animate-spin" />}>
                             {t('citationViewer.loading')}

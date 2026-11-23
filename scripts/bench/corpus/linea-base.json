@@ -1,0 +1,393 @@
+{
+  "rutas": [
+    "inicial",
+    "pregunta",
+    "seccion",
+    "lema"
+  ],
+  "porConjunto": {
+    "desarrollo": {
+      "citadas": 130,
+      "acertadas": 92,
+      "propuestas": 713,
+      "recall": 0.7076923076923077,
+      "precisionMinima": 0.12903225806451613,
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 64,
+          "acertadas": 57,
+          "propuestas": 129,
+          "recall": 0.890625
+        },
+        "gramatica": {
+          "citadas": 58,
+          "acertadas": 29,
+          "propuestas": 310,
+          "recall": 0.5
+        },
+        "lexico": {
+          "citadas": 8,
+          "acertadas": 6,
+          "propuestas": 274,
+          "recall": 0.75
+        }
+      },
+      "enLaMismaPregunta": {
+        "acertadas": 11,
+        "citadas": 44
+      }
+    },
+    "prueba": {
+      "citadas": 115,
+      "acertadas": 97,
+      "propuestas": 799,
+      "recall": 0.8434782608695652,
+      "precisionMinima": 0.1214017521902378,
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 63,
+          "acertadas": 59,
+          "propuestas": 207,
+          "recall": 0.9365079365079365
+        },
+        "gramatica": {
+          "citadas": 37,
+          "acertadas": 24,
+          "propuestas": 213,
+          "recall": 0.6486486486486487
+        },
+        "lexico": {
+          "citadas": 15,
+          "acertadas": 14,
+          "propuestas": 379,
+          "recall": 0.9333333333333333
+        }
+      },
+      "enLaMismaPregunta": {
+        "acertadas": 55,
+        "citadas": 95
+      }
+    }
+  },
+  "total": {
+    "citadas": 245,
+    "acertadas": 189,
+    "propuestas": 1512,
+    "recall": 0.7714285714285715,
+    "precisionMinima": 0.125,
+    "porGrupo": {
+      "comentario-y-texto": {
+        "citadas": 127,
+        "acertadas": 116,
+        "propuestas": 336,
+        "recall": 0.9133858267716536
+      },
+      "gramatica": {
+        "citadas": 95,
+        "acertadas": 53,
+        "propuestas": 523,
+        "recall": 0.5578947368421052
+      },
+      "lexico": {
+        "citadas": 23,
+        "acertadas": 20,
+        "propuestas": 653,
+        "recall": 0.8695652173913043
+      }
+    },
+    "enLaMismaPregunta": {
+      "acertadas": 66,
+      "citadas": 139
+    }
+  },
+  "casos": [
+    {
+      "id": "ti-stg3-1",
+      "conjunto": "desarrollo",
+      "rutasMedidas": [
+        "inicial",
+        "pregunta",
+        "seccion",
+        "lema"
+      ],
+      "citadas": 86,
+      "acertadas": 59,
+      "propuestas": 329,
+      "enLaMismaPregunta": {
+        "acertadas": 0,
+        "citadas": 0
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 40,
+          "acertadas": 33,
+          "propuestas": 68
+        },
+        "gramatica": {
+          "citadas": 42,
+          "acertadas": 23,
+          "propuestas": 155
+        },
+        "lexico": {
+          "citadas": 4,
+          "acertadas": 3,
+          "propuestas": 106
+        }
+      },
+      "fueraDeLaBiblioteca": 76,
+      "perdidas": 27
+    },
+    {
+      "id": "ti3-sal23-1",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicial",
+        "pregunta",
+        "seccion",
+        "lema"
+      ],
+      "citadas": 20,
+      "acertadas": 9,
+      "propuestas": 44,
+      "enLaMismaPregunta": {
+        "acertadas": 0,
+        "citadas": 0
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 9,
+          "acertadas": 6,
+          "propuestas": 24
+        },
+        "gramatica": {
+          "citadas": 10,
+          "acertadas": 3,
+          "propuestas": 4
+        },
+        "lexico": {
+          "citadas": 1,
+          "acertadas": 0,
+          "propuestas": 16
+        }
+      },
+      "fueraDeLaBiblioteca": 40,
+      "perdidas": 11
+    },
+    {
+      "id": "tp10-stg5-1",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicial",
+        "pregunta",
+        "seccion",
+        "lema"
+      ],
+      "citadas": 23,
+      "acertadas": 20,
+      "propuestas": 185,
+      "enLaMismaPregunta": {
+        "acertadas": 16,
+        "citadas": 23
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 10,
+          "acertadas": 10,
+          "propuestas": 28
+        },
+        "gramatica": {
+          "citadas": 8,
+          "acertadas": 5,
+          "propuestas": 48
+        },
+        "lexico": {
+          "citadas": 5,
+          "acertadas": 5,
+          "propuestas": 109
+        }
+      },
+      "fueraDeLaBiblioteca": 0,
+      "perdidas": 3
+    },
+    {
+      "id": "tp11-stg5-7",
+      "conjunto": "desarrollo",
+      "rutasMedidas": [
+        "inicial",
+        "pregunta",
+        "seccion",
+        "lema"
+      ],
+      "citadas": 23,
+      "acertadas": 18,
+      "propuestas": 194,
+      "enLaMismaPregunta": {
+        "acertadas": 8,
+        "citadas": 23
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 13,
+          "acertadas": 13,
+          "propuestas": 30
+        },
+        "gramatica": {
+          "citadas": 7,
+          "acertadas": 2,
+          "propuestas": 110
+        },
+        "lexico": {
+          "citadas": 3,
+          "acertadas": 3,
+          "propuestas": 54
+        }
+      },
+      "fueraDeLaBiblioteca": 10,
+      "perdidas": 5
+    },
+    {
+      "id": "tp12-stg5-12",
+      "conjunto": "desarrollo",
+      "rutasMedidas": [
+        "inicial",
+        "pregunta",
+        "seccion",
+        "lema"
+      ],
+      "citadas": 21,
+      "acertadas": 15,
+      "propuestas": 190,
+      "enLaMismaPregunta": {
+        "acertadas": 3,
+        "citadas": 21
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 11,
+          "acertadas": 11,
+          "propuestas": 31
+        },
+        "gramatica": {
+          "citadas": 9,
+          "acertadas": 4,
+          "propuestas": 45
+        },
+        "lexico": {
+          "citadas": 1,
+          "acertadas": 0,
+          "propuestas": 114
+        }
+      },
+      "fueraDeLaBiblioteca": 22,
+      "perdidas": 6
+    },
+    {
+      "id": "tp7-stg3-13",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicial",
+        "pregunta",
+        "seccion",
+        "lema"
+      ],
+      "citadas": 16,
+      "acertadas": 12,
+      "propuestas": 67,
+      "enLaMismaPregunta": {
+        "acertadas": 5,
+        "citadas": 16
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 12,
+          "acertadas": 11,
+          "propuestas": 53
+        },
+        "gramatica": {
+          "citadas": 4,
+          "acertadas": 1,
+          "propuestas": 14
+        },
+        "lexico": {
+          "citadas": 0,
+          "acertadas": 0,
+          "propuestas": 0
+        }
+      },
+      "fueraDeLaBiblioteca": 0,
+      "perdidas": 4
+    },
+    {
+      "id": "tp8-stg4-1",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicial",
+        "pregunta",
+        "seccion",
+        "lema"
+      ],
+      "citadas": 23,
+      "acertadas": 23,
+      "propuestas": 289,
+      "enLaMismaPregunta": {
+        "acertadas": 16,
+        "citadas": 23
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 16,
+          "acertadas": 16,
+          "propuestas": 41
+        },
+        "gramatica": {
+          "citadas": 2,
+          "acertadas": 2,
+          "propuestas": 63
+        },
+        "lexico": {
+          "citadas": 5,
+          "acertadas": 5,
+          "propuestas": 185
+        }
+      },
+      "fueraDeLaBiblioteca": 0,
+      "perdidas": 0
+    },
+    {
+      "id": "tp9-stg4-11",
+      "conjunto": "prueba",
+      "rutasMedidas": [
+        "inicial",
+        "pregunta",
+        "seccion",
+        "lema"
+      ],
+      "citadas": 33,
+      "acertadas": 33,
+      "propuestas": 214,
+      "enLaMismaPregunta": {
+        "acertadas": 18,
+        "citadas": 33
+      },
+      "porGrupo": {
+        "comentario-y-texto": {
+          "citadas": 16,
+          "acertadas": 16,
+          "propuestas": 61
+        },
+        "gramatica": {
+          "citadas": 13,
+          "acertadas": 13,
+          "propuestas": 84
+        },
+        "lexico": {
+          "citadas": 4,
+          "acertadas": 4,
+          "propuestas": 69
+        }
+      },
+      "fueraDeLaBiblioteca": 0,
+      "perdidas": 0
+    }
+  ]
+}

@@ -48,6 +48,15 @@ describe('SaveWorkProfileFromPaperUseCase', () => {
         });
     });
 
+    it('el tipo de trabajo viaja al perfil solo si el autor lo eligió', async () => {
+        const conTipo = build({ paper: { ...paper, profileKind: 'tp-por-pregunta' } });
+        await conTipo.useCase.execute(input);
+        expect(conTipo.profileRepository.createProfile.mock.calls[0]![0].profileKind).toBe('tp-por-pregunta');
+        const sinTipo = build();
+        await sinTipo.useCase.execute(input);
+        expect(sinTipo.profileRepository.createProfile.mock.calls[0]![0].profileKind).toBeNull();
+    });
+
     it('la rúbrica y el encuadre viajan como punteros, no como copia', async () => {
         const { useCase, profileRepository, rubricRepository } = build({ paper: { ...paper, rubric: { sourceRequirements: [] } } });
         await useCase.execute({ ...input, rubricTemplateId: 'r1', briefTemplateId: 'b1' });
@@ -121,7 +130,9 @@ describe('defaultsOfProfile', () => {
             styleGuideId: 'g1',
             exegeticalStrategy: 'free',
             exegeticalMethod: null,
+            profileKind: null,
             cover: null,
         });
+        expect(defaultsOfProfile({ ...profile, profileKind: 'sintesis-sermon' }).profileKind).toBe('sintesis-sermon');
     });
 });

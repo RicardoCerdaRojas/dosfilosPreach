@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ClipboardList, Loader2, Plus, X } from 'lucide-react';
-import { newWorkTypeId, projectCourseInfo, projectWorkTypes, workTypeFromProfile, type AIProject, type ProjectWorkType } from '@dosfilos/domain';
+import { newWorkTypeId, projectCourseInfo, readPaperProfileKind, projectWorkTypes, workTypeFromProfile, type AIProject, type ProjectWorkType } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { MethodPicker } from '@/components/exegesis/MethodPicker';
+import { ProfileKindPicker } from '@/components/exegesis/ProfileKindPicker';
 import { useTranslation } from '@/i18n';
 import { useWorkProfiles } from '@/hooks/exegesis/useWorkProfiles';
 import { useUserRubrics } from '@/hooks/exegesis/useUserRubrics';
@@ -152,6 +153,14 @@ export function ProjectWorkTypesCard({ project, onSave, saving }: ProjectWorkTyp
                                                 <option value="free">{t('workTypes.free')}</option>
                                             </select>
                                         </label>
+                                        <div className="sm:col-span-2">
+                                            <ProfileKindPicker
+                                                id={`profile-kind-${x.id}`}
+                                                value={readPaperProfileKind(x).kind}
+                                                inferredReason={readPaperProfileKind(x).reason}
+                                                onChange={k => cambiar(x.id, { profileKind: k })}
+                                            />
+                                        </div>
                                         <div className="sm:col-span-2">
                                             <MethodPicker id={`method-${x.id}`} value={x.exegeticalMethod} onChange={m => cambiar(x.id, { exegeticalMethod: m })} />
                                         </div>

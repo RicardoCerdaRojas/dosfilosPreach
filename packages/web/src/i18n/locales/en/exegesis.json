@@ -54,6 +54,33 @@
       "hint": "The literature from the start, to understand and cite the positions while arguing."
     }
   },
+  "profileKind": {
+    "label": "Assignment type",
+    "labelShort": "Type",
+    "confirm": "Confirm",
+    "saveFailed": "Could not save the assignment type.",
+    "tp-por-pregunta": {
+      "label": "Question-by-question paper",
+      "hint": "One section per question in the brief, no introduction or conclusion; parenthetical citations. You choose each debatable decision."
+    },
+    "investigacion-tematica": {
+      "label": "Thematic research paper",
+      "hint": "Sections by theme, with introduction, thesis and conclusion; footnotes and appendices. You approve the outline and the thesis."
+    },
+    "sintesis-sermon": {
+      "label": "Synthesis + sermon",
+      "hint": "Part 1, the exegetical synthesis; Part 2, the sermon. You approve the order, the proposition and each part."
+    },
+    "inferred": {
+      "questions": "Inferred: the brief has numbered questions. Confirm it or pick another.",
+      "sermon": "Inferred: the brief asks for a synthesis and a sermon. Confirm it or pick another.",
+      "brief-tp": "Inferred: the brief says it is a weekly paper. Confirm it or pick another.",
+      "brief-research": "Inferred: the brief says it is a research paper. Confirm it or pick another.",
+      "method-research": "Inferred from the “Research” method. Confirm it or pick another.",
+      "method-mixed": "Inferred from the “Mixed (weekly paper)” method. Confirm it or pick another.",
+      "default": "No clues in the brief: the full research form is proposed. Confirm it or pick another."
+    }
+  },
   "studentReading": {
     "title": "My reading (optional)",
     "hint": "Your own reading of the verse before generating: what you see in the grammar, the lexis or the syntax. The analysis will say which commentators confirm it and which dispute it.",
@@ -609,6 +636,9 @@
       "backCta": "Back to list"
     },
     "subSteps": {
+      "inputs": {
+        "tab": "Inputs"
+      },
       "rubric": {
         "tab": "Rubric",
         "heading": "Paper rubric",
@@ -967,7 +997,7 @@
           "byQuestion": "See by question",
           "questionHeading": "Question {{number}} · {{verses}}",
           "noSource": "No source in the corpus names these verses.",
-          "page": "p. {{page}}",
+          "page": "{{page}}",
           "sheet": "sh. {{sheet}}",
           "warning": {
             "unindexed": "{{source}} has no indexed text: its pages per question cannot be reviewed.",
@@ -978,20 +1008,30 @@
             "missingEntry": "The entry for {{term}} in {{source}} (question {{question}}) is incomplete in the corpus (missing {{pages}}).",
             "missingEntryWhole": "The entry for {{term}} in {{source}} (question {{question}}, {{pages}}) is not in the corpus.",
             "questionUncovered": "No page in the corpus names {{verses}} (question {{question}}).",
-            "failed": "{{source}} could not be reviewed. Reopen this tab to try again."
+            "failed": "{{source}} could not be reviewed. Reopen this tab to try again.",
+            "unindexed_verse": "{{source}} has no indexed text: its pages per verse cannot be reviewed.",
+            "unrelated_verse": "{{source}} does not name any verse of the passage.",
+            "missingSheets_verse_one": "{{source}} discusses {{verses}} on {{pages}}, outside the corpus.",
+            "missingSheets_verse_other": "{{source}} discusses {{verses}} on {{pages}}, outside the corpus.",
+            "questionUncovered_verse": "No page in the corpus names {{verses}}."
           },
           "action": {
             "removeConfirm": "Remove? Click again",
             "remove": "Remove from corpus",
             "calibrate": "Resolve numbering",
             "pinForQuestion_one": "Pin for the question",
-            "pinForQuestion_other": "Pin for the questions"
+            "pinForQuestion_other": "Pin for the questions",
+            "pinForQuestion_verse_one": "Pin for the verse",
+            "pinForQuestion_verse_other": "Pin for the verses"
           },
           "chip": {
             "pinned": "{{page}}: pinned for the whole paper, goes into every step",
             "inCorpus": "{{page}}: in the corpus. Click to pin it for this question",
             "outside": "{{page}}: outside the corpus. Click to pin it for this question",
-            "stepPinned": "{{page}}: pinned for this question. Click to release it"
+            "stepPinned": "{{page}}: pinned for this question. Click to release it",
+            "inCorpus_verse": "{{page}}: in the corpus. Click to pin it for this verse",
+            "outside_verse": "{{page}}: outside the corpus. Click to pin it for this verse",
+            "stepPinned_verse": "{{page}}: pinned for this verse. Click to release it"
           },
           "toast": {
             "addFailed": "The page could not be pinned. Try again.",
@@ -1000,7 +1040,13 @@
             "releasedForQuestion_one": "Released {{pages}} from {{source}} from question {{questions}}.",
             "releasedForQuestion_other": "Released {{pages}} from {{source}} from questions {{questions}}.",
             "noStep_one": "Question {{questions}} does not fall on any step's verse: there is nowhere to pin the page.",
-            "noStep_other": "Questions {{questions}} do not fall on any step's verse: there is nowhere to pin the page."
+            "noStep_other": "Questions {{questions}} do not fall on any step's verse: there is nowhere to pin the page.",
+            "pinnedForQuestion_verse_one": "Pinned {{pages}} from {{source}} for {{verses}}.",
+            "pinnedForQuestion_verse_other": "Pinned {{pages}} from {{source}} for {{verses}}.",
+            "releasedForQuestion_verse_one": "Released {{pages}} from {{source}} from {{verses}}.",
+            "releasedForQuestion_verse_other": "Released {{pages}} from {{source}} from {{verses}}.",
+            "noStep_verse_one": "{{verses}} has no step in the paper: there is nowhere to pin the page.",
+            "noStep_verse_other": "{{verses}} have no step in the paper: there is nowhere to pin the page."
           },
           "uncovered": {
             "label": "Sources with nothing for this question",
@@ -1008,8 +1054,17 @@
             "lemmaMentioned": "checked: names the word, but no entry of its own found",
             "unindexed": "not indexed: could not be checked",
             "failed": "could not be checked",
-            "pending": "checking…"
-          }
+            "pending": "checking…",
+            "label_verse": "Sources with nothing for this verse"
+          },
+          "via": {
+            "section": "commentary section",
+            "passage": "the passage in the text"
+          },
+          "title_verse": "What does each verse cover?",
+          "allGood_verse": "Every verse has material in the corpus.",
+          "byQuestion_verse": "See by verse",
+          "questionHeading_verse": "Verse {{verses}}"
         },
         "gap": {
           "onlyExcluded": "{{have}} of {{required}}: no source in your library allowed in this paper covers this type; the ones of this type are excluded ({{sources}}). You can submit with {{have}} of {{required}} or upload another book.",
@@ -1205,7 +1260,7 @@
         },
         "roleCoverage": {
           "eyebrow": "Your corpus by dialectical role",
-          "balancedTitle": "Balanced corpus: meets strategy and rubric",
+          "balancedTitle": "Roles balanced: anchors, contrasts and technical sources",
           "missingTitle": "Non-compliant: entire roles are missing",
           "missingBody": "The dialectical strategy needs all three roles to function. Add at least one source per role before moving to the structural plan.",
           "partialTitle": "Partial compliance: all three roles present, depth still pending",
@@ -1627,7 +1682,7 @@
         "includeStepHint": "Tap one to include it; then propose the plan again to give it sources.",
         "tab": "Usage plan",
         "heading": "Corpus usage plan",
-        "description": "Assign specific sources to each verse or section. We propose a distribution based on the passage and your corpus; you review and adjust. Pinned sources get priority during generation, but the model can still reach for the others when relevant.",
+        "description": "Assign specific sources to each verse or section. We propose a distribution based on the passage and your corpus; you review and adjust. Assigned sources get priority during generation, but the assistant can still use the others when relevant.",
         "emptyCorpus": "No sources in the corpus yet. Add sources in the previous tab before planning usage.",
         "noSteps": "No generation steps yet. Configure the passage and come back here.",
         "seedingSteps": "Preparing the step list from the passage…",
@@ -1910,7 +1965,7 @@
     "status": {
       "planned-and-cited": "Planned and cited in {{citedCount}} step(s).",
       "planned-not-cited": "Planned in {{plannedCount}} step(s) but not cited — consider regenerating.",
-      "cited-not-planned": "Cited in {{citedCount}} step(s) without being planned (model adaptation).",
+      "cited-not-planned": "Cited in {{citedCount}} step(s) without being planned (the assistant used it on its own).",
       "never-cited": "Never cited — consider removing from the corpus if it adds nothing."
     }
   },
@@ -2976,10 +3031,11 @@
     },
     "searchBookPlaceholder": "Search the whole book…",
     "bookSearching": "Searching the book…",
+    "pdfFailed": "The PDF of this book could not be opened.",
     "bookSearchFailed": "The book could not be searched. Try again.",
     "bookSearchEmpty": "That word does not appear in this book's extracted text.",
     "bookSearchTruncated": "More sheets contain that word. Try a narrower term.",
-    "hitPage": "p. {{printed}} · sheet {{sheet}}",
+    "hitPage": "{{printed}} · sheet {{sheet}}",
     "hitSheet": "sheet {{sheet}}",
     "hitCount_one": "{{count}} time",
     "hitCount_other": "{{count}} times"
@@ -3077,5 +3133,230 @@
     "savedToast": "Headings saved: the Word file will use them.",
     "saveFailed": "The headings could not be saved. Try again.",
     "proposeFailed": "Headings could not be proposed. Try again."
+  },
+  "inputs": {
+    "title": "Inputs and requirements",
+    "subtitle": "What the course gave for this paper, what it asks and the rules in force. Gathered before anything else, with the deadline in view.",
+    "saveFailed": "Could not save. Try again.",
+    "optional": "optional",
+    "statusLine": {
+      "ready": "All the inputs this kind of paper needs are here.",
+      "missing_one": "{{count}} input missing: {{list}}.",
+      "missing_other": "{{count}} inputs missing: {{list}}."
+    },
+    "kind": {
+      "plazo": "Deadline",
+      "enunciado": "Assignment",
+      "rubrica": "Rubric",
+      "guia": "Style guide",
+      "devolucion": "Feedback on the previous delivery",
+      "trabajo-anterior": "Previous delivered paper",
+      "lectura-asignada": "Syllabus readings",
+      "gramatica-del-curso": "Course grammar",
+      "clase": "Class"
+    },
+    "state": {
+      "listo": "Here",
+      "revisar": "Review",
+      "falta": "Missing",
+      "no-aplica": "Not applicable"
+    },
+    "reason": {
+      "marked": "You marked it as not applying in this course.",
+      "markedRead": "You marked this input as reviewed.",
+      "plazo": {
+        "not-in-course": "This paper is not in a course with a calendar: the deadline is nowhere.",
+        "no-entry": "The paper is not in the course calendar. Link it from the course desk.",
+        "no-date": "The delivery is in the calendar, without a date.",
+        "due": "Due {{detail}}."
+      },
+      "enunciado": {
+        "empty": "There is no brief.",
+        "template-unfilled": "The template still has unfilled gaps (brackets).",
+        "present": "The professor's brief is here."
+      },
+      "rubrica": {
+        "none": "There is no rubric.",
+        "course": "The rubric is the course's.",
+        "course-gives-none": "The course gives no rubric: the system one applies.",
+        "system-default": "The system rubric applies. If the course gives one, load it with the “Rubric” button."
+      },
+      "guia": {
+        "none": "There is no style guide.",
+        "newer-version": "The guide has a newer version than the one this paper uses.",
+        "present": "The style guide is here."
+      },
+      "devolucion": {
+        "not-in-course": "Outside a course with a calendar the previous delivery is unknown.",
+        "not-in-calendar": "The paper is not in the course calendar: the previous delivery is unknown. Link it from the course desk.",
+        "first-delivery": "This is the first delivery of this type.",
+        "none-given": "The previous delivery got no feedback.",
+        "awaiting": "The previous delivery has no feedback from the professor yet.",
+        "not-delivered": "The previous delivery is not marked as delivered.",
+        "pending-patterns_one": "The feedback has {{count}} undecided correction: move it to the guide or discard it in the course.",
+        "pending-patterns_other": "The feedback has {{count}} undecided corrections: move them to the guide or discard them in the course.",
+        "recorded": "The feedback is recorded and its corrections decided."
+      },
+      "trabajo-anterior": {
+        "first-delivery": "This is the first delivery of this type.",
+        "found": "The previous paper is here: its sources are not repeated if the course forbids it.",
+        "not-found": "The previous paper was not found on the platform."
+      },
+      "lectura-asignada": {
+        "present_one": "The course syllabus lists {{count}} work.",
+        "present_other": "The course syllabus lists {{count}} works.",
+        "none": "No syllabus readings loaded."
+      },
+      "gramatica-del-curso": {
+        "no-grammar": "The corpus has no grammar.",
+        "no-ignored-list": "The list of categories the course does not accept as final (marked “IGNORE”) is missing.",
+        "with-ignored_one": "{{count}} category ruled out as final.",
+        "with-ignored_other": "{{count}} categories ruled out as final."
+      },
+      "clase": {
+        "none": "No class note.",
+        "note": "The class note is here."
+      }
+    },
+    "action": {
+      "read": "Mark as reviewed",
+      "notApplicable": "Not applicable",
+      "undo": "Undo"
+    },
+    "classNote": {
+      "label": "Class note",
+      "placeholder": "What the professor said in class about this paper: what they expect, what they do not accept, which sources they named.",
+      "save": "Save note"
+    },
+    "unit": {
+      "question": "Question {{number}} · {{verses}}",
+      "verse": "Verse {{verses}}",
+      "part": {
+        "sintesis": "Part 1 · Synthesis",
+        "sermon": "Part 2 · Sermon"
+      }
+    },
+    "requirements": {
+      "title": "Requirements",
+      "subtitle": "What the paper asks. What the system can measure shows measured; you only tick what says “I check it”.",
+      "bodyRule": "Every requirement is met in the body; an appendix only expands.",
+      "selfCheck": "I check it: tick it once you have checked it.",
+      "check": {
+        "length": {
+          "none": "There is no assembled document to measure yet.",
+          "ok": "Today it is {{pages}} pages.",
+          "short": "Today it is {{pages}} pages: too short.",
+          "long": "Today it is {{pages}} pages: too long."
+        },
+        "sources": "In the corpus: {{have}} of {{required}}.",
+        "question": {
+          "answered": "The section has text in the document.",
+          "pending": "The section has no text in the document yet."
+        },
+        "framing": {
+          "none": "The introduction and the conclusion stay out of the document.",
+          "included": "The introduction or the conclusion goes into the document: a weekly paper has none."
+        },
+        "reading": {
+          "inCorpus": "It is in the corpus.",
+          "missing": "It is not in the corpus."
+        }
+      },
+      "where": "Met in",
+      "wholePaper": "The whole paper",
+      "appendixOnly": "Only in an appendix",
+      "remove": "Remove requirement",
+      "add": "Add",
+      "addLabel": "New requirement",
+      "addPlaceholder": "Another requirement from the assignment or the class",
+      "warning": {
+        "appendix-only": "Met only in an appendix: the requirement has to be in the body.",
+        "no-unit": "This question has no section answering it."
+      },
+      "origin": {
+        "rubrica": "rubric",
+        "enunciado": "assignment",
+        "tipo": "paper type",
+        "silabo": "syllabus",
+        "manual": "yours"
+      },
+      "text": {
+        "length": {
+          "pages": "Length: {{min}} to {{max}} pages",
+          "words": "Length: {{min}} to {{max}} words",
+          "pagesMin": "Length: at least {{min}} pages",
+          "pagesMax": "Length: up to {{max}} pages",
+          "wordsMin": "Length: at least {{min}} words",
+          "wordsMax": "Length: up to {{max}} words"
+        },
+        "sources_one": "At least {{count}} source of type “{{sourceType}}”",
+        "sources_other": "At least {{count}} sources of type “{{sourceType}}”",
+        "reading": "Use {{title}} (required reading)",
+        "question": "Answer question {{number}}",
+        "profile": {
+          "noFraming": "No introduction or conclusion: each answer closes in its section",
+          "thesis": "The thesis, in the same words, in the introduction and the conclusion",
+          "inheritGlosses": "The sermon inherits the glosses and tenses of the synthesis"
+        }
+      }
+    },
+    "rules": {
+      "title": "Course rules",
+      "subtitle": "The ones in force for this paper, besides the guide.",
+      "guideHeading_one": "{{count}} rule in the guide",
+      "guideHeading_other": "{{count}} rules in the guide",
+      "guideEmpty": "The guide has no course rules yet.",
+      "toDesk": "Decide the corrections on the course desk",
+      "ignoredHeading": "Categories the course does not accept as final",
+      "ignoredHint": "One per line, as the course grammar marks them (“IGNORE”). The analysis may name them as a rival reading, never as the decision.",
+      "ignoredPlaceholder": "Genitive of production\nGenitive of content",
+      "ignoredSave": "Save categories",
+      "ignoredSaved": "Categories saved: they apply to the next analyses."
+    }
+  },
+  "corpusNeeds": {
+    "title": "What to get",
+    "coverage": "{{covered}} of {{total}} needs covered in the corpus.",
+    "coverageReach_one": "{{count}} more is covered with what you already have in the library.",
+    "coverageReach_other": "{{count}} more are covered with what you already have in the library.",
+    "reading": "Syllabus reading: {{title}}",
+    "count": "{{have}} of {{required}}",
+    "countOver": "{{have}} · {{required}} required",
+    "essential": "Essential",
+    "withinReach_one": "{{count}} in your library",
+    "withinReach_other": "{{count}} in your library",
+    "search": "Search",
+    "noCandidates": "Neither your library nor the catalog has a work of this type for this book.",
+    "showMore_one": "Show {{count}} more",
+    "showMore_other": "Show {{count}} more",
+    "showLess": "Show less",
+    "citedEdition": "Cited edition: {{edition}}",
+    "status": {
+      "en-corpus": "In the corpus",
+      "tengo": "You have it",
+      "edicion-distinta": "You have it, another edition",
+      "por-conseguir": "To get",
+      "sugerida": "Suggested",
+      "excluida": "Not repeated",
+      "descartada": "Discarded"
+    },
+    "note": {
+      "edition": "Your copy is from {{copy}}; the cited edition is from {{cited}}. Pagination may not match.",
+      "noFolios": "No printed pages: cited by section or entry.",
+      "excluded": "Used in {{previous}}: the course does not allow repeating it.",
+      "discarded": "Discarded: {{reason}}"
+    },
+    "action": {
+      "add": "Add to corpus",
+      "toAcquire": "To get",
+      "discard": "Discard",
+      "confirmDiscard": "Discard",
+      "cancel": "Cancel",
+      "undo": "Undo",
+      "review": "Review the PDF"
+    },
+    "reasonLabel": "Why you discard it",
+    "reasonPlaceholder": "Why you discard it (required)",
+    "saveFailed": "Could not save. Try again."
   }
 }

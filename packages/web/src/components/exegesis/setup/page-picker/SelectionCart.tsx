@@ -122,9 +122,11 @@ export function SelectionCart({
                 start: range.start, end: range.end, count: range.end - range.start + 1,
             });
         if (printedStart === null) return base;
+        // Con páginas por hoja («666–667»), el tramo va de la primera de la
+        // primera hoja a la última de la última, no «666–667–670–671».
         const printed = range.start === range.end
             ? printedStart
-            : `${printedStart}–${printedEnd ?? '?'}`;
+            : `${printedStart.split('–')[0]}–${printedEnd?.split('–').pop() ?? '?'}`;
         return t('paperSetup.subSteps.corpus.picker.cart.withPrinted', { base, printed });
     };
 

@@ -1,5 +1,5 @@
 import type { QuestionSourceCheck } from '@dosfilos/domain';
-import { useTranslation } from '@/i18n';
+import { useReviewTranslation } from './reviewUnitTranslation';
 
 /**
  * Debajo de las fuentes que aportan a una pregunta, las que no, con su
@@ -14,7 +14,7 @@ export function QuestionUncoveredSources({ checks, nombre }: {
     checks: ReadonlyArray<QuestionSourceCheck>;
     nombre: (sourceId: string) => string;
 }) {
-    const { t } = useTranslation('exegesis');
+    const { t } = useReviewTranslation();
     if (checks.length === 0) return null;
     const base = 'paperSetup.subSteps.corpus.questionReview.uncovered';
     const estado = (c: QuestionSourceCheck): string => {

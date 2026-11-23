@@ -65,12 +65,14 @@ export interface ProposeStepCorpusSourceInput {
 
 /**
  * Lo que una fuente del corpus trae para un paso: las hojas que nombran su
- * versículo o la entrada de un lema de su pregunta (A1–A3), con un renglón.
+ * versículo, la entrada de un lema de su pregunta (A1–A3), la sección del
+ * comentario que trata sus versículos o la porción del pasaje en el texto y su
+ * aparato (fase «Asistente del corpus», A3), con un renglón.
  */
 export interface ProposeStepCorpusEvidence {
     sourceId: string;
     sheets: ReadonlyArray<number>;
-    via: 'verse' | 'lemma';
+    via: 'verse' | 'lemma' | 'section' | 'passage';
     term?: string;
     /** Un renglón de contexto (≤ 300 caracteres), si lo hay. */
     line?: string;

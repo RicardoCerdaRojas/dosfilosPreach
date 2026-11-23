@@ -16,6 +16,10 @@ vi.mock('@dosfilos/infrastructure', () => ({
     borrarConsulta: vi.fn(),
     buscarTemasEnBiblioteca: (...a: unknown[]) => temas(...a),
 }));
+const leidas: Array<[string | null, string | null]> = [];
+vi.mock('@/hooks/library/useTextoDeSeccion', () => ({
+    useTextoDeSeccion: (r: string | null, s: string | null) => { if (r) leidas.push([r, s]); return { data: r ? 'Texto completo del comentario a 3:17.' : undefined, isLoading: false, isError: false }; },
+}));
 const { ConsultarBiblioteca } = await import('../ConsultarBiblioteca');
 
 const varner = {
@@ -145,5 +149,22 @@ describe('Consultar la biblioteca', () => {
         const { container } = render(<ConsultarBiblioteca resources={[varner] as never} indexStatus={{ v: 'indexed' }} />);
         expect(container.innerHTML).not.toContain('xl:grid-cols-[16rem_minmax(0,1fr)_17rem]');
     });
-});
 
+    it('un resultado sin hoja (JFB, A8c) no abre el visor de PDF: abre el lector con su sección y su cita', async () => {
+        open.mockClear(); leidas.length = 0;
+        const tema: ConsultaGuardada = {
+            id: 't2', tipo: 'temas', titulo: 'sabiduría de arriba', alcance: { tipo: 'todo' }, turnos: [], actualizada: new Date(),
+            temas: { consulta: 'sabiduría de arriba', reordenado: true, libros: [{ resourceId: 'pd-jfb-1871', titulo: 'Commentary Critical and Explanatory', autor: 'Jamieson, Robert', hojas: [{ hoja: null, seccion: 'GEN 1:1 › JAS 3:17', extracto: '17. first pure', score: 0.8 }] }] },
+        };
+        render(<ConsultarBiblioteca resources={[varner] as never} indexStatus={{ v: 'indexed' }} />);
+        act(() => alCambiar!([tema]));
+        fireEvent.click(screen.getByText('sabiduría de arriba', { selector: 'span' }));
+        // Sin «Mapa del libro» para un libro sin hojas.
+        expect(screen.queryByText('consult.summary.map')).toBeNull();
+        fireEvent.click(screen.getByText('§ JAS 3:17'));
+        expect(open).not.toHaveBeenCalled();
+        expect(await screen.findByText('Texto completo del comentario a 3:17.')).toBeTruthy();
+        expect(leidas).toContainEqual(['pd-jfb-1871', 'JAS 3:17']);
+        expect(screen.getByText('(Jamieson, § JAS 3:17)')).toBeTruthy();
+    });
+});

@@ -128,3 +128,15 @@ describe('inheritFromAnalysisCitations', () => {
         expect(b!.evidence).toBe('y');
     });
 });
+
+describe('una hoja con varias páginas (Kittel, revisión final de la fase A)', () => {
+    it('«pp. 666–667» es de la página citada 667, y queda primero', async () => {
+        const { isOnCitedPage, pageRangeOfHint, prioritizeChunksForCitedPage } = await import('../evidenceForCitation');
+        expect(pageRangeOfHint('pp. 666–667')).toEqual({ start: 666, end: 667 });
+        expect(pageRangeOfHint('p. 559, § 3:2')).toEqual({ start: 559, end: 559 });
+        const c = (pageHint: string) => ({ text: pageHint, pageHint } as never);
+        expect(isOnCitedPage(c('pp. 666–667'), '667')).toBe(true);
+        expect(isOnCitedPage(c('pp. 666–667'), '668')).toBe(false);
+        expect(prioritizeChunksForCitedPage([c('p. 600'), c('pp. 666–667')], '667').map((x: { pageHint: string }) => x.pageHint)).toEqual(['pp. 666–667', 'p. 600']);
+    });
+});

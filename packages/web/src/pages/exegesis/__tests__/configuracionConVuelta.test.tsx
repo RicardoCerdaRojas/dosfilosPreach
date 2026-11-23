@@ -19,6 +19,7 @@ vi.mock('@/hooks/exegesis/useExegesisPaper', () => ({
 }));
 const vacio = () => null;
 vi.mock('@/components/exegesis/setup/RubricSubStep', () => ({ RubricSubStep: vacio }));
+vi.mock('@/components/exegesis/inputs/PaperInputsSubStep', () => ({ PaperInputsSubStep: vacio }));
 vi.mock('@/components/exegesis/setup/StyleManifestSubStep', () => ({ StyleManifestSubStep: vacio }));
 vi.mock('@/components/exegesis/setup/CorpusSubStep', () => ({ CorpusSubStep: vacio }));
 vi.mock('@/components/exegesis/setup/StructuralPlanSubStep', () => ({ StructuralPlanSubStep: vacio }));
@@ -27,6 +28,7 @@ vi.mock('@/components/exegesis/setup/PaperCoverButton', () => ({ PaperCoverButto
 vi.mock('@/components/exegesis/setup/PaperRubricButton', () => ({ PaperRubricButton: vacio }));
 vi.mock('@/components/exegesis/setup/SaveWorkProfileButton', () => ({ SaveWorkProfileButton: vacio }));
 vi.mock('@/components/exegesis/setup/PaperMethodSelect', () => ({ PaperMethodSelect: vacio }));
+vi.mock('@/components/exegesis/setup/PaperProfileKindSelect', () => ({ PaperProfileKindSelect: vacio }));
 vi.mock('@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep', () => ({ CorpusUsagePlanSubStep: vacio }));
 const { ExegesisPaperSetupPage } = await import('../ExegesisPaperSetupPage');
 

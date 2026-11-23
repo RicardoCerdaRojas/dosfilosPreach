@@ -8,7 +8,7 @@ import type {
     IWorkProfileRepository,
     WorkProfile,
 } from '@dosfilos/domain';
-import { WORK_PROFILE_NAME_MAX_CHARS } from '@dosfilos/domain';
+import { WORK_PROFILE_NAME_MAX_CHARS, resolvePaperProfileKind, type PaperProfileKind } from '@dosfilos/domain';
 
 export interface SaveWorkProfileFromPaperInput {
     ownerId: string;
@@ -84,6 +84,8 @@ export class SaveWorkProfileFromPaperUseCase {
             styleGuideId: paper.styleGuideId ?? null,
             exegeticalStrategy: paper.exegeticalStrategy === 'free' ? 'free' : 'dialectical',
             exegeticalMethod: paper.exegeticalMethod ?? null,
+            // El tipo deducido no se guarda en el perfil: solo el que el autor eligió o confirmó.
+            profileKind: resolvePaperProfileKind(paper.profileKind),
             cover: coverDelCurso(paper.cover),
             isDefault: input.makeDefault ?? false,
         });
@@ -104,6 +106,7 @@ export interface WorkProfileDefaults {
     styleGuideId: string | null;
     exegeticalStrategy: 'free' | 'dialectical';
     exegeticalMethod: ExegeticalPaper['exegeticalMethod'];
+    profileKind: PaperProfileKind | null;
     cover: ExegeticalPaper['cover'];
 }
 
@@ -114,6 +117,7 @@ export function defaultsOfProfile(profile: WorkProfile): WorkProfileDefaults {
         styleGuideId: profile.styleGuideId,
         exegeticalStrategy: profile.exegeticalStrategy,
         exegeticalMethod: profile.exegeticalMethod ?? null,
+        profileKind: resolvePaperProfileKind(profile.profileKind),
         cover: profile.cover ?? null,
     };
 }

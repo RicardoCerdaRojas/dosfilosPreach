@@ -274,6 +274,22 @@ const PRIMERA_PALABRA_ORIGINAL = /[\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u
  */
 const LINEA_DE_FAMILIA = /^[ \t]*[\u0590-\u05FF\u0370-\u03FF\u1F00-\u1FFF][^\n]{0,160}\[[^\]\n\d]{1,60}\][^\n]{0,160}$/gm;
 const PALABRA_CON_GLOSA = /([\u0590-\u05FF]+|[\u0370-\u03FF\u1F00-\u1FFF\u0300-\u036F\u00B5]+)[ \t]*\[[^\]\n\d]{1,60}\]/g;
+/**
+ * La firma con que cierra un art\u00EDculo de Kittel y Friedrich abreviado:
+ * \u00AB[W. Foerster, II, 560\u2013575]\u00BB (autor, tomo del TDNT, p\u00E1ginas). Es el \u00FAnico
+ * l\u00EDmite confiable de ese diccionario: el art\u00EDculo siguiente empieza en el MISMO
+ * rengl\u00F3n, \u00AB\u202694] \u03C3\u03B1\u03BD\u03B4\u03AC\u03BB\u03B9\u03BF\u03BD \u2192 \u1F45\u03C0\u03BB\u03BF\u03BD \u03C3\u03B1\u03C0\u03C1\u03CC\u03C2 [podrido], \u03C3\u03AE\u03C0\u03C9 [podrirse] 1. \u2026\u00BB, as\u00ED
+ * que `LINEA_DE_FAMILIA` (que exige empezar rengl\u00F3n) no lo ve. Medido en el banco
+ * del corpus (2026-11-21): 1.049 firmas en 1.116 hojas; art\u00EDculos de 2 hojas de
+ * mediana, 10 como m\u00E1ximo.
+ */
+const FIRMA_DE_ARTICULO = /\[[A-Z\u00C1\u00C9\u00CD\u00D3\u00DA\u00C4\u00D6\u00DC][^\]\n]{1,60}?,\s*[IVX]{1,4},\s*\d{1,4}(?:\s*[\u2013-]\s*\d{1,4})?\]/g;
+/** Cu\u00E1nto texto despu\u00E9s de una firma se lee buscando la familia de palabras del art\u00EDculo nuevo. */
+const PREAMBULO_TRAS_FIRMA = 320;
+/** Un diccionario \u00ABfirma\u00BB si trae al menos esta cantidad: con menos, una firma suelta no ordena el libro. */
+const MIN_FIRMAS_PARA_ARTICULOS = 20;
+/** Apariciones m\u00EDnimas del lema para elegir un art\u00EDculo por densidad. */
+const MIN_APARICIONES_EN_ARTICULO = 2;
 
 /**
  * Las entradas de un léxico o diccionario: dónde empieza la de cada lema y
@@ -310,6 +326,14 @@ export function lemmaEntriesIn(
             const claves = [...linea[0].matchAll(PALABRA_CON_GLOSA)].map(m => claveDe(m[1]!)).filter(Boolean);
             if (claves.length > 0) enEste.push({ claves, at: linea.index ?? 0 });
         }
+        // Kittel abreviado: el artículo nuevo empieza tras la firma del anterior,
+        // en el mismo renglón. Su familia de palabras va con glosas entre corchetes.
+        for (const firma of texto.matchAll(FIRMA_DE_ARTICULO)) {
+            const desde = (firma.index ?? 0) + firma[0].length;
+            const preambulo = texto.slice(desde, desde + PREAMBULO_TRAS_FIRMA).split(/\s1\.\s/)[0]!;
+            const claves = [...preambulo.matchAll(PALABRA_CON_GLOSA)].map(m => claveDe(m[1]!)).filter(Boolean);
+            if (claves.length > 0) enEste.push({ claves, at: desde });
+        }
         for (const c of enEste.sort((a, b) => a.at - b.at)) cabezas.push({ claves: c.claves, sheet: chunk.sheet });
     }
     const out: Record<string, { startSheet: number; endSheet: number }> = {};
@@ -321,6 +345,63 @@ export function lemmaEntriesIn(
             out[clave] = { startSheet: cabeza.sheet, endSheet: Math.min(fin, cabeza.sheet + maxSheets - 1) };
         }
     });
+    const faltan = [...buscadas].filter(k => !out[k]);
+    if (faltan.length > 0) {
+        for (const [clave, articulo] of Object.entries(articlesByDensity(ordenados, faltan))) {
+            out[clave] = { startSheet: articulo.startSheet, endSheet: Math.min(articulo.endSheet, articulo.startSheet + maxSheets - 1) };
+        }
+    }
+    return out;
+}
+
+/**
+ * Para un diccionario que cierra cada artículo con su firma (Kittel abreviado),
+ * el artículo donde más aparece cada lema que no tiene cabeza reconocible.
+ *
+ * El texto se parte en la POSICIÓN de cada firma, no por fragmento: el artículo
+ * siguiente arranca en el mismo fragmento que cierra el anterior. Un libro con
+ * pocas firmas no se parte (devuelve nada): ahí una firma suelta sería una cita.
+ */
+function articlesByDensity(
+    ordenados: ReadonlyArray<{ text: string; sheet: number }>,
+    claves: ReadonlyArray<string>,
+): Record<string, { startSheet: number; endSheet: number }> {
+    let firmas = 0;
+    for (const c of ordenados) firmas += (c.text.match(FIRMA_DE_ARTICULO) ?? []).length;
+    if (firmas < MIN_FIRMAS_PARA_ARTICULOS) return {};
+
+    const buscadas = new Set(claves);
+    const articulos: Array<{ startSheet: number; endSheet: number; cuenta: Map<string, number> }> = [];
+    let actual = { startSheet: ordenados[0]?.sheet ?? 1, endSheet: ordenados[0]?.sheet ?? 1, cuenta: new Map<string, number>() };
+    const contar = (trozo: string) => {
+        for (const [clave, { at }] of wordKeysIn(trozo)) {
+            if (buscadas.has(clave)) actual.cuenta.set(clave, (actual.cuenta.get(clave) ?? 0) + at.length);
+        }
+    };
+    for (const chunk of ordenados) {
+        const texto = chunk.text.normalize('NFC');
+        let desde = 0;
+        actual.endSheet = Math.max(actual.endSheet, chunk.sheet);
+        for (const firma of texto.matchAll(FIRMA_DE_ARTICULO)) {
+            const hasta = (firma.index ?? 0) + firma[0].length;
+            contar(texto.slice(desde, hasta));
+            articulos.push(actual);
+            actual = { startSheet: chunk.sheet, endSheet: chunk.sheet, cuenta: new Map() };
+            desde = hasta;
+        }
+        contar(texto.slice(desde));
+    }
+    articulos.push(actual);
+
+    const out: Record<string, { startSheet: number; endSheet: number }> = {};
+    for (const clave of buscadas) {
+        let mejor: (typeof articulos)[number] | undefined;
+        for (const a of articulos) {
+            const n = a.cuenta.get(clave) ?? 0;
+            if (n >= MIN_APARICIONES_EN_ARTICULO && n > (mejor?.cuenta.get(clave) ?? 0)) mejor = a;
+        }
+        if (mejor) out[clave] = { startSheet: mejor.startSheet, endSheet: mejor.endSheet };
+    }
     return out;
 }
 

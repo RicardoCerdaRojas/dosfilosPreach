@@ -54,6 +54,33 @@
       "hint": "La literatura desde el principio, para entender y citar las posturas mientras se argumenta."
     }
   },
+  "profileKind": {
+    "label": "Tipo de trabajo",
+    "labelShort": "Tipo",
+    "confirm": "Confirmar",
+    "saveFailed": "No se pudo guardar el tipo de trabajo.",
+    "tp-por-pregunta": {
+      "label": "TP por pregunta",
+      "hint": "Una sección por pregunta del encuadre, sin introducción ni conclusión; citas entre paréntesis. Las decisiones discutibles las eliges tú."
+    },
+    "investigacion-tematica": {
+      "label": "Investigación temática",
+      "hint": "Secciones por tema, con introducción, tesis y conclusión; notas al pie y apéndices. Apruebas el esquema y la tesis."
+    },
+    "sintesis-sermon": {
+      "label": "Síntesis + sermón",
+      "hint": "Parte 1, la síntesis exegética; Parte 2, el sermón. Apruebas el orden, la proposición y cada parte."
+    },
+    "inferred": {
+      "questions": "Deducido: el encuadre trae preguntas numeradas. Confírmalo o elige otro.",
+      "sermon": "Deducido: el encuadre pide una síntesis y un sermón. Confírmalo o elige otro.",
+      "brief-tp": "Deducido: el encuadre dice que es un trabajo práctico. Confírmalo o elige otro.",
+      "brief-research": "Deducido: el encuadre dice que es un trabajo de investigación. Confírmalo o elige otro.",
+      "method-research": "Deducido del método «Investigación». Confírmalo o elige otro.",
+      "method-mixed": "Deducido del método «Mixto (TP)». Confírmalo o elige otro.",
+      "default": "Sin pistas en el encuadre: se propone la investigación, la forma completa. Confírmalo o elige otro."
+    }
+  },
   "studentReading": {
     "title": "Mi lectura (opcional)",
     "hint": "Tu propia lectura del versículo antes de generar: qué ves en la gramática, el léxico o la sintaxis. El análisis dirá qué comentaristas la confirman y cuáles la discuten.",
@@ -609,6 +636,9 @@
       "backCta": "Volver al listado"
     },
     "subSteps": {
+      "inputs": {
+        "tab": "Entradas"
+      },
       "rubric": {
         "tab": "Rúbrica",
         "heading": "Rúbrica del trabajo",
@@ -967,7 +997,7 @@
           "byQuestion": "Ver por pregunta",
           "questionHeading": "Pregunta {{number}} · {{verses}}",
           "noSource": "Ninguna fuente del corpus nombra estos versículos.",
-          "page": "p. {{page}}",
+          "page": "{{page}}",
           "sheet": "h. {{sheet}}",
           "warning": {
             "unindexed": "{{source}} no tiene su texto indexado: no se puede revisar qué páginas tratan cada pregunta.",
@@ -978,20 +1008,30 @@
             "missingEntry": "La entrada de {{term}} en {{source}} (pregunta {{question}}) está incompleta en el corpus (sin {{pages}}).",
             "missingEntryWhole": "La entrada de {{term}} en {{source}} (pregunta {{question}}, {{pages}}) no está en el corpus.",
             "questionUncovered": "Ninguna página del corpus nombra {{verses}} (pregunta {{question}}).",
-            "failed": "No se pudo revisar {{source}}. Vuelve a abrir esta pestaña para intentarlo de nuevo."
+            "failed": "No se pudo revisar {{source}}. Vuelve a abrir esta pestaña para intentarlo de nuevo.",
+            "unindexed_verse": "{{source}} no tiene su texto indexado: no se puede revisar qué páginas tratan cada versículo.",
+            "unrelated_verse": "{{source}} no nombra ningún versículo del pasaje.",
+            "missingSheets_verse_one": "{{source}} trata {{verses}} en {{pages}}, fuera del corpus.",
+            "missingSheets_verse_other": "{{source}} trata {{verses}} en {{pages}}, fuera del corpus.",
+            "questionUncovered_verse": "Ninguna página del corpus nombra {{verses}}."
           },
           "action": {
             "removeConfirm": "¿Quitar? Pulsa de nuevo",
             "remove": "Quitar del corpus",
             "calibrate": "Resolver numeración",
             "pinForQuestion_one": "Fijar para la pregunta",
-            "pinForQuestion_other": "Fijar para las preguntas"
+            "pinForQuestion_other": "Fijar para las preguntas",
+            "pinForQuestion_verse_one": "Fijar para el versículo",
+            "pinForQuestion_verse_other": "Fijar para los versículos"
           },
           "chip": {
             "pinned": "{{page}}: fijada para todo el trabajo, entra a todos los pasos",
             "inCorpus": "{{page}}: en el corpus. Pulsa para fijarla para esta pregunta",
             "outside": "{{page}}: fuera del corpus. Pulsa para fijarla para esta pregunta",
-            "stepPinned": "{{page}}: fijada para esta pregunta. Pulsa para soltarla"
+            "stepPinned": "{{page}}: fijada para esta pregunta. Pulsa para soltarla",
+            "inCorpus_verse": "{{page}}: en el corpus. Pulsa para fijarla para este versículo",
+            "outside_verse": "{{page}}: fuera del corpus. Pulsa para fijarla para este versículo",
+            "stepPinned_verse": "{{page}}: fijada para este versículo. Pulsa para soltarla"
           },
           "toast": {
             "addFailed": "No se pudo fijar la página. Inténtalo de nuevo.",
@@ -1000,7 +1040,13 @@
             "releasedForQuestion_one": "Se soltó {{pages}} de {{source}} de la pregunta {{questions}}.",
             "releasedForQuestion_other": "Se soltó {{pages}} de {{source}} de las preguntas {{questions}}.",
             "noStep_one": "La pregunta {{questions}} no cae en el versículo de ningún paso: no hay dónde fijar la página.",
-            "noStep_other": "Las preguntas {{questions}} no caen en el versículo de ningún paso: no hay dónde fijar la página."
+            "noStep_other": "Las preguntas {{questions}} no caen en el versículo de ningún paso: no hay dónde fijar la página.",
+            "pinnedForQuestion_verse_one": "Se fijó {{pages}} de {{source}} para {{verses}}.",
+            "pinnedForQuestion_verse_other": "Se fijó {{pages}} de {{source}} para {{verses}}.",
+            "releasedForQuestion_verse_one": "Se soltó {{pages}} de {{source}} de {{verses}}.",
+            "releasedForQuestion_verse_other": "Se soltó {{pages}} de {{source}} de {{verses}}.",
+            "noStep_verse_one": "{{verses}} no tiene paso en el trabajo: no hay dónde fijar la página.",
+            "noStep_verse_other": "{{verses}} no tienen paso en el trabajo: no hay dónde fijar la página."
           },
           "uncovered": {
             "label": "Fuentes sin aporte para esta pregunta",
@@ -1008,8 +1054,17 @@
             "lemmaMentioned": "revisada: nombra la palabra, pero sin entrada propia detectada",
             "unindexed": "sin índice: no se pudo revisar",
             "failed": "no se pudo revisar",
-            "pending": "revisando…"
-          }
+            "pending": "revisando…",
+            "label_verse": "Fuentes sin aporte para este versículo"
+          },
+          "via": {
+            "section": "sección del comentario",
+            "passage": "el pasaje en el texto"
+          },
+          "title_verse": "¿Qué trata cada versículo?",
+          "allGood_verse": "Cada versículo tiene material en el corpus.",
+          "byQuestion_verse": "Ver por versículo",
+          "questionHeading_verse": "Versículo {{verses}}"
         },
         "gap": {
           "onlyExcluded": "{{have}} de {{required}}: ninguna fuente de tu biblioteca permitida en este trabajo cubre este tipo; las de este tipo están excluidas ({{sources}}). Puedes entregar con {{have}} de {{required}} o subir otro libro.",
@@ -1205,7 +1260,7 @@
         },
         "roleCoverage": {
           "eyebrow": "Tu corpus por rol dialéctico",
-          "balancedTitle": "Corpus balanceado: cumple estrategia y rúbrica",
+          "balancedTitle": "Roles balanceados: anclas, contrastes y técnicas",
           "missingTitle": "Incumplimiento: te faltan roles enteros",
           "missingBody": "La estrategia dialéctica necesita los tres roles para funcionar. Suma al menos una fuente en cada uno antes de pasar al plan estructural.",
           "partialTitle": "Cumplimiento parcial: ya tienes los tres roles, falta profundizar",
@@ -1627,7 +1682,7 @@
         "includeStepHint": "Toca uno para incluirlo; después vuelve a proponer el plan para repartirle fuentes.",
         "tab": "Plan de uso",
         "heading": "Plan de uso del corpus",
-        "description": "Asigna fuentes específicas a cada verso o sección. Te proponemos una distribución basada en el pasaje y el corpus; tú revisas y ajustas. Las fuentes asignadas tienen prioridad en la generación, pero el modelo puede usar las demás cuando sea pertinente.",
+        "description": "Asigna fuentes específicas a cada verso o sección. Te proponemos una distribución basada en el pasaje y el corpus; tú revisas y ajustas. Las fuentes asignadas tienen prioridad al generar, pero el asistente puede usar las demás cuando sea pertinente.",
         "emptyCorpus": "Aún no hay fuentes en el corpus. Agrega fuentes en la pestaña anterior antes de planificar el uso.",
         "noSteps": "Aún no hay pasos generables. Configura el pasaje y vuelve aquí.",
         "seedingSteps": "Preparando lista de pasos a partir del pasaje…",
@@ -1910,7 +1965,7 @@
     "status": {
       "planned-and-cited": "Planificada y citada en {{citedCount}} paso(s).",
       "planned-not-cited": "Planificada en {{plannedCount}} paso(s) pero no citada — considera regenerar.",
-      "cited-not-planned": "Citada en {{citedCount}} paso(s) sin estar en el plan (adaptación del modelo).",
+      "cited-not-planned": "Citada en {{citedCount}} paso(s) sin estar en el plan (la usó el asistente por su cuenta).",
       "never-cited": "Nunca citada — considera removerla del corpus si no aporta."
     }
   },
@@ -2976,10 +3031,11 @@
     },
     "searchBookPlaceholder": "Buscar en todo el libro…",
     "bookSearching": "Buscando en el libro…",
+    "pdfFailed": "No se pudo abrir el PDF de este libro.",
     "bookSearchFailed": "No se pudo buscar en el libro. Intenta de nuevo.",
     "bookSearchEmpty": "Esa palabra no aparece en el texto extraído de este libro.",
     "bookSearchTruncated": "Hay más hojas con esa palabra. Prueba un término más preciso.",
-    "hitPage": "p. {{printed}} · hoja {{sheet}}",
+    "hitPage": "{{printed}} · hoja {{sheet}}",
     "hitSheet": "hoja {{sheet}}",
     "hitCount_one": "{{count}} vez",
     "hitCount_other": "{{count}} veces"
@@ -3077,5 +3133,230 @@
     "savedToast": "Títulos guardados: el Word los usará.",
     "saveFailed": "No se pudieron guardar los títulos. Intenta de nuevo.",
     "proposeFailed": "No se pudieron proponer títulos. Intenta de nuevo."
+  },
+  "inputs": {
+    "title": "Entradas y requisitos",
+    "subtitle": "Lo que el curso dio para este trabajo, lo que pide y las reglas que rigen. Se reúne antes de todo, con el plazo a la vista.",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+    "optional": "opcional",
+    "statusLine": {
+      "ready": "Están todas las entradas que pide este tipo de trabajo.",
+      "missing_one": "Falta {{count}} entrada: {{list}}.",
+      "missing_other": "Faltan {{count}} entradas: {{list}}."
+    },
+    "kind": {
+      "plazo": "Plazo",
+      "enunciado": "Enunciado",
+      "rubrica": "Rúbrica",
+      "guia": "Guía de estilo",
+      "devolucion": "Devolución de la entrega anterior",
+      "trabajo-anterior": "Trabajo anterior entregado",
+      "lectura-asignada": "Lecturas del sílabo",
+      "gramatica-del-curso": "Gramática del curso",
+      "clase": "Clase"
+    },
+    "state": {
+      "listo": "Está",
+      "revisar": "Revisar",
+      "falta": "Falta",
+      "no-aplica": "No aplica"
+    },
+    "reason": {
+      "marked": "Marcaste que no aplica en este curso.",
+      "markedRead": "Marcaste esta entrada como revisada.",
+      "plazo": {
+        "not-in-course": "Este trabajo no está en un curso con calendario: el plazo no se ve en ningún lado.",
+        "no-entry": "El trabajo no está en el calendario del curso. Vincúlalo desde el escritorio del curso.",
+        "no-date": "La entrega está en el calendario, sin fecha.",
+        "due": "Vence el {{detail}}."
+      },
+      "enunciado": {
+        "empty": "No hay encuadre.",
+        "template-unfilled": "Quedó la plantilla con huecos sin llenar (corchetes).",
+        "present": "Está el encuadre del profesor."
+      },
+      "rubrica": {
+        "none": "No hay rúbrica.",
+        "course": "La rúbrica es del curso.",
+        "course-gives-none": "El curso no da rúbrica: rige la del sistema.",
+        "system-default": "Rige la rúbrica del sistema. Si el curso da una, cárgala con el botón «Rúbrica»."
+      },
+      "guia": {
+        "none": "No hay guía de estilo.",
+        "newer-version": "La guía tiene una versión más nueva que la que usa este trabajo.",
+        "present": "Está la guía de estilo."
+      },
+      "devolucion": {
+        "not-in-course": "Fuera de un curso con calendario no se sabe cuál es la entrega anterior.",
+        "not-in-calendar": "El trabajo no está en el calendario del curso: no se sabe cuál es la entrega anterior. Vincúlalo desde el escritorio del curso.",
+        "first-delivery": "Es la primera entrega de este tipo.",
+        "none-given": "La entrega anterior quedó sin devolución.",
+        "awaiting": "La entrega anterior todavía no tiene la devolución del profesor.",
+        "not-delivered": "La entrega anterior no está marcada como entregada.",
+        "pending-patterns_one": "La devolución trae {{count}} corrección sin decidir: pásala a la guía o descártala en el curso.",
+        "pending-patterns_other": "La devolución trae {{count}} correcciones sin decidir: pásalas a la guía o descártalas en el curso.",
+        "recorded": "La devolución está registrada y sus correcciones, decididas."
+      },
+      "trabajo-anterior": {
+        "first-delivery": "Es la primera entrega de este tipo.",
+        "found": "Está el trabajo anterior: sus fuentes no se repiten si el curso lo prohíbe.",
+        "not-found": "No se encontró el trabajo anterior en la plataforma."
+      },
+      "lectura-asignada": {
+        "present_one": "El sílabo del curso trae {{count}} obra.",
+        "present_other": "El sílabo del curso trae {{count}} obras.",
+        "none": "No hay lecturas del sílabo cargadas."
+      },
+      "gramatica-del-curso": {
+        "no-grammar": "El corpus no tiene una gramática.",
+        "no-ignored-list": "Falta la lista de categorías que el curso no acepta como final (las marcadas «IGNORA»).",
+        "with-ignored_one": "{{count}} categoría vetada como final.",
+        "with-ignored_other": "{{count}} categorías vetadas como final."
+      },
+      "clase": {
+        "none": "Sin nota de clase.",
+        "note": "Está la nota de clase."
+      }
+    },
+    "action": {
+      "read": "Marcar como revisada",
+      "notApplicable": "No aplica",
+      "undo": "Deshacer"
+    },
+    "classNote": {
+      "label": "Nota de clase",
+      "placeholder": "Lo que dijo el profesor en clase sobre este trabajo: qué espera, qué no acepta, qué fuentes nombró.",
+      "save": "Guardar nota"
+    },
+    "unit": {
+      "question": "Pregunta {{number}} · {{verses}}",
+      "verse": "Versículo {{verses}}",
+      "part": {
+        "sintesis": "Parte 1 · Síntesis",
+        "sermon": "Parte 2 · Sermón"
+      }
+    },
+    "requirements": {
+      "title": "Requisitos",
+      "subtitle": "Lo que pide el trabajo. Lo que el sistema puede medir aparece medido; marca tú solo lo que dice «Lo reviso yo».",
+      "bodyRule": "Todo requisito se cumple en el cuerpo; un apéndice solo amplía.",
+      "selfCheck": "Lo reviso yo: márcalo cuando lo hayas comprobado.",
+      "check": {
+        "length": {
+          "none": "Todavía no hay documento armado para medir.",
+          "ok": "Hoy mide {{pages}} páginas.",
+          "short": "Hoy mide {{pages}} páginas: le falta.",
+          "long": "Hoy mide {{pages}} páginas: se pasa."
+        },
+        "sources": "En el corpus: {{have}} de {{required}}.",
+        "question": {
+          "answered": "La sección tiene texto en el documento.",
+          "pending": "La sección todavía no tiene texto en el documento."
+        },
+        "framing": {
+          "none": "La introducción y la conclusión quedan fuera del documento.",
+          "included": "La introducción o la conclusión entran al documento: un TP no las lleva."
+        },
+        "reading": {
+          "inCorpus": "Está en el corpus.",
+          "missing": "No está en el corpus."
+        }
+      },
+      "where": "Se cumple en",
+      "wholePaper": "Todo el trabajo",
+      "appendixOnly": "Solo en un apéndice",
+      "remove": "Quitar requisito",
+      "add": "Agregar",
+      "addLabel": "Requisito nuevo",
+      "addPlaceholder": "Otro requisito del enunciado o de la clase",
+      "warning": {
+        "appendix-only": "Se cumple solo en un apéndice: el requisito tiene que estar en el cuerpo.",
+        "no-unit": "Esta pregunta no tiene sección que la conteste."
+      },
+      "origin": {
+        "rubrica": "rúbrica",
+        "enunciado": "enunciado",
+        "tipo": "tipo de trabajo",
+        "silabo": "sílabo",
+        "manual": "tuyo"
+      },
+      "text": {
+        "length": {
+          "pages": "Extensión: de {{min}} a {{max}} páginas",
+          "words": "Extensión: de {{min}} a {{max}} palabras",
+          "pagesMin": "Extensión: al menos {{min}} páginas",
+          "pagesMax": "Extensión: hasta {{max}} páginas",
+          "wordsMin": "Extensión: al menos {{min}} palabras",
+          "wordsMax": "Extensión: hasta {{max}} palabras"
+        },
+        "sources_one": "Al menos {{count}} fuente de tipo «{{sourceType}}»",
+        "sources_other": "Al menos {{count}} fuentes de tipo «{{sourceType}}»",
+        "reading": "Usar {{title}} (lectura exigida)",
+        "question": "Responder la pregunta {{number}}",
+        "profile": {
+          "noFraming": "Sin introducción ni conclusión: cada respuesta cierra en su sección",
+          "thesis": "La tesis, con las mismas palabras, en la introducción y la conclusión",
+          "inheritGlosses": "El sermón hereda las glosas y los tiempos de la síntesis"
+        }
+      }
+    },
+    "rules": {
+      "title": "Reglas del curso",
+      "subtitle": "Las que rigen este trabajo, además de la guía.",
+      "guideHeading_one": "{{count}} regla en la guía",
+      "guideHeading_other": "{{count}} reglas en la guía",
+      "guideEmpty": "La guía no tiene reglas propias del curso todavía.",
+      "toDesk": "Decidir las correcciones en el escritorio del curso",
+      "ignoredHeading": "Categorías que el curso no acepta como final",
+      "ignoredHint": "Una por línea, como las marca la gramática del curso («IGNORA»). El análisis puede nombrarlas como lectura rival, nunca como la decisión.",
+      "ignoredPlaceholder": "Genitivo de producción\nGenitivo de contenido",
+      "ignoredSave": "Guardar categorías",
+      "ignoredSaved": "Categorías guardadas: rigen en los próximos análisis."
+    }
+  },
+  "corpusNeeds": {
+    "title": "Qué conseguir",
+    "coverage": "{{covered}} de {{total}} necesidades cubiertas en el corpus.",
+    "coverageReach_one": "{{count}} más se cubre con lo que ya tienes en la biblioteca.",
+    "coverageReach_other": "{{count}} más se cubren con lo que ya tienes en la biblioteca.",
+    "reading": "Lectura del sílabo: {{title}}",
+    "count": "{{have}} de {{required}}",
+    "countOver": "{{have}} · pide {{required}}",
+    "essential": "Esencial",
+    "withinReach_one": "{{count}} en tu biblioteca",
+    "withinReach_other": "{{count}} en tu biblioteca",
+    "search": "Buscar",
+    "noCandidates": "Ni tu biblioteca ni el catálogo tienen una obra de este tipo para este libro.",
+    "showMore_one": "Ver {{count}} más",
+    "showMore_other": "Ver {{count}} más",
+    "showLess": "Ver menos",
+    "citedEdition": "Edición citada: {{edition}}",
+    "status": {
+      "en-corpus": "En el corpus",
+      "tengo": "La tienes",
+      "edicion-distinta": "La tienes, otra edición",
+      "por-conseguir": "Por conseguir",
+      "sugerida": "Sugerida",
+      "excluida": "No se repite",
+      "descartada": "Descartada"
+    },
+    "note": {
+      "edition": "Tu copia es de {{copy}}; la edición citada es de {{cited}}. La paginación puede no coincidir.",
+      "noFolios": "Sin páginas impresas: se cita por sección o lema.",
+      "excluded": "Usada en {{previous}}: el curso no deja repetirla.",
+      "discarded": "Descartada: {{reason}}"
+    },
+    "action": {
+      "add": "Agregar al corpus",
+      "toAcquire": "Por conseguir",
+      "discard": "Descartar",
+      "confirmDiscard": "Descartar",
+      "cancel": "Cancelar",
+      "undo": "Deshacer",
+      "review": "Revisar el PDF"
+    },
+    "reasonLabel": "Por qué la descartas",
+    "reasonPlaceholder": "Por qué la descartas (obligatorio)",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
   }
 }

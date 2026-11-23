@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { printedPageAbbrev } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -40,7 +41,7 @@ export function IndiceDelLibro({ pages, printedOf, currentSheet, onGo }: {
                             >
                                 <span className="text-[11px] font-medium tabular-nums text-foreground">
                                     {printed !== null
-                                        ? t('citationViewer.hitPage', { printed, sheet: p.sheet })
+                                        ? t('citationViewer.hitPage', { printed: printedPageAbbrev(String(printed)), sheet: p.sheet })
                                         : t('citationViewer.hitSheet', { sheet: p.sheet })}
                                 </span>
                                 <span className="block truncate text-[11px] text-muted-foreground">{p.section ?? p.firstLine}</span>

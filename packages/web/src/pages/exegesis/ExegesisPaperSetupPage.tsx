@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, FileCheck2, FileStack, ListTree, BookOpen, Loader2, Lock, Sparkles } from 'lucide-react';
+import { ArrowLeft, FileCheck2, FileStack, ListChecks, ListTree, BookOpen, Loader2, Lock, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/i18n';
 import { useExegesisPaper } from '@/hooks/exegesis/useExegesisPaper';
 import { RubricSubStep } from '@/components/exegesis/setup/RubricSubStep';
+import { PaperInputsSubStep } from '@/components/exegesis/inputs/PaperInputsSubStep';
 import { StyleManifestSubStep } from '@/components/exegesis/setup/StyleManifestSubStep';
 import { CorpusSubStep } from '@/components/exegesis/setup/CorpusSubStep';
 import { StructuralPlanSubStep } from '@/components/exegesis/setup/StructuralPlanSubStep';
@@ -13,6 +14,7 @@ import { PaperCoverButton } from '@/components/exegesis/setup/PaperCoverButton';
 import { PaperRubricButton } from '@/components/exegesis/setup/PaperRubricButton';
 import { SaveWorkProfileButton } from '@/components/exegesis/setup/SaveWorkProfileButton';
 import { PaperMethodSelect } from '@/components/exegesis/setup/PaperMethodSelect';
+import { PaperProfileKindSelect } from '@/components/exegesis/setup/PaperProfileKindSelect';
 import { CorpusUsagePlanSubStep } from '@/components/exegesis/corpus-plan/CorpusUsagePlanSubStep';
 import { formatPassageReference, type SupportedLanguage } from '@dosfilos/domain';
 import { safeInternalPath } from './paperBackLink';
@@ -43,9 +45,11 @@ import { safeInternalPath } from './paperBackLink';
  * "Generate" CTA at the bottom of step 4 redirects to the paper
  * detail page where the wizard runs.
  */
-type SubStepKey = 'rubric' | 'manifest' | 'corpus' | 'corpus-plan' | 'plan';
+type SubStepKey = 'inputs' | 'rubric' | 'manifest' | 'corpus' | 'corpus-plan' | 'plan';
 
 const SUB_STEPS: ReadonlyArray<{ key: SubStepKey; iconKey: string }> = [
+    // A5: las entradas van primero, con el plazo a la vista (procedimiento, etapa 0).
+    { key: 'inputs', iconKey: 'ListChecks' },
     { key: 'rubric', iconKey: 'FileCheck2' },
     { key: 'manifest', iconKey: 'BookOpen' },
     { key: 'corpus', iconKey: 'FileStack' },
@@ -56,7 +60,7 @@ const SUB_STEPS: ReadonlyArray<{ key: SubStepKey; iconKey: string }> = [
 const VALID_KEYS: ReadonlySet<SubStepKey> = new Set(SUB_STEPS.map(s => s.key));
 
 function parseTab(raw: string | null): SubStepKey {
-    return raw && VALID_KEYS.has(raw as SubStepKey) ? (raw as SubStepKey) : 'rubric';
+    return raw && VALID_KEYS.has(raw as SubStepKey) ? (raw as SubStepKey) : 'inputs';
 }
 
 export function ExegesisPaperSetupPage() {
@@ -78,7 +82,7 @@ export function ExegesisPaperSetupPage() {
     const setActiveKey = useCallback((next: SubStepKey) => {
         setSearchParams(prev => {
             const updated = new URLSearchParams(prev);
-            if (next === 'rubric') updated.delete('tab');
+            if (next === 'inputs') updated.delete('tab');
             else updated.set('tab', next);
             return updated;
         }, { replace: true });
@@ -116,7 +120,7 @@ export function ExegesisPaperSetupPage() {
     return (
         <div className="flex flex-col h-full bg-background font-sans overflow-y-auto">
             <header className="border-b border-border bg-card px-6 py-4">
-                <div className="max-w-7xl mx-auto flex items-center gap-3">
+                <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-3">
                     <Link
                         to={paperPath}
                         className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -124,7 +128,9 @@ export function ExegesisPaperSetupPage() {
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Link>
-                    <div className="flex-1 min-w-0">
+                    {/* Con el tipo de trabajo (A4) los controles no caben en una fila: el
+                        título conserva su ancho y los controles bajan a la siguiente. */}
+                    <div className="flex-1 min-w-[12rem]">
                         {/* Same fallback as the directory list and the
                             paper detail page: explicit title wins,
                             otherwise show the formatted passage. The
@@ -150,16 +156,19 @@ export function ExegesisPaperSetupPage() {
                         un modal amplio y dejan la página entera a la
                         configuración. La key descarta un borrador a medio
                         escribir si la ruta cambia a otro trabajo. */}
-                    <PaperBriefButton key={`brief-${paper.id}`} paper={paper} />
-                    <PaperRubricButton key={`rubric-${paper.id}`} paper={paper} />
-                    <PaperCoverButton key={`cover-${paper.id}`} paper={paper} />
-                    <PaperMethodSelect key={`method-${paper.id}`} paper={paper} />
-                    <SaveWorkProfileButton key={`profile-${paper.id}`} paper={paper} />
+                    <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+                        <PaperBriefButton key={`brief-${paper.id}`} paper={paper} />
+                        <PaperRubricButton key={`rubric-${paper.id}`} paper={paper} />
+                        <PaperCoverButton key={`cover-${paper.id}`} paper={paper} />
+                        <PaperProfileKindSelect key={`kind-${paper.id}`} paper={paper} />
+                        <PaperMethodSelect key={`method-${paper.id}`} paper={paper} />
+                        <SaveWorkProfileButton key={`profile-${paper.id}`} paper={paper} />
+                    </div>
                 </div>
             </header>
 
             <div className="max-w-7xl w-full mx-auto px-6 py-6">
-                <nav className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
+                <nav className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
                     {SUB_STEPS.map((s, idx) => (
                         <SubStepTab
                             key={s.key}
@@ -173,6 +182,7 @@ export function ExegesisPaperSetupPage() {
                 </nav>
 
                 <main className="rounded-2xl border border-border bg-card p-6 space-y-6">
+                    {activeKey === 'inputs' && <PaperInputsSubStep paper={paper} />}
                     {activeKey === 'rubric' && <RubricSubStep paper={paper} />}
                     {activeKey === 'manifest' && <StyleManifestSubStep paper={paper} />}
                     {activeKey === 'corpus' && <CorpusSubStep paper={paper} />}
@@ -233,6 +243,7 @@ function SubStepIcon({ iconKey, active }: { iconKey: string; active: boolean }) 
         active ? 'text-success-subtle-foreground' : 'text-muted-foreground',
     ].join(' ');
     switch (iconKey) {
+        case 'ListChecks': return <ListChecks className={className} />;
         case 'FileCheck2': return <FileCheck2 className={className} />;
         case 'BookOpen': return <BookOpen className={className} />;
         case 'FileStack': return <FileStack className={className} />;

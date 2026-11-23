@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useTranslation } from '@/i18n';
 import { useConfirm } from '@/hooks/useConfirm';
+import { AplicacionesConectadas } from '@/components/settings/AplicacionesConectadas';
 
 /**
  * Settings panel for 3rd-party integrations. v1 ships WordPress; the page is
@@ -158,6 +159,8 @@ export function IntegrationsSettings() {
             <p className="text-sm text-muted-foreground">
                 {t('integrations.subtitle')}
             </p>
+
+            <AplicacionesConectadas />
 
             <Card className="overflow-hidden">
                 {/* Card header strip — integration identity + status, no per-tab color tint */}

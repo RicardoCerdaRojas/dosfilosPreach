@@ -70,9 +70,10 @@ describe('enlace manual', () => {
 describe('courseBibliographyCoverage', () => {
     it('cuenta sólo las obligatorias: lo recomendado no reprueba', () => {
         const c = courseBibliographyCoverage(matchCourseBibliography(SILABO, BIBLIOTECA, new Set(['r1', 'r2'])));
-        // Craigie no se empareja solo: «Psalms 1-50» tiene una sola palabra
-        // larga y el emparejador es conservador a propósito. Se enlaza a mano.
-        expect(c).toEqual({ required: 3, requiredInCorpus: 2, missing: 1 });
+        // Craigie ya se empareja solo: «Word Biblical Commentary Vol_ 19» es
+        // la sigla WBC desplegada, con el mismo autor (A7, 2026-11-21). Está
+        // en la biblioteca pero no en el corpus: no falta, falta agregarlo.
+        expect(c).toEqual({ required: 3, requiredInCorpus: 2, missing: 0 });
     });
 
     it('lo que falta es lo que ni siquiera está en la biblioteca', () => {

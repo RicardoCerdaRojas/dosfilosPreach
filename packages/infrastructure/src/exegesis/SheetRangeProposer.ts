@@ -11,15 +11,16 @@ import {
     resolveOutlineReferences,
     selectChunksForPassage,
     sheetsForChunkRanges,
+    shortResourceSheets,
     textEditionSheetsForPassage,
-    type DocumentOutlineEntry,
+    withCommentaryContour,
     type ExcerptSelectionMode,
     type PageIndexEntry,
     type PassageReference,
     type SheetRange,
     type SourceType,
 } from '@dosfilos/domain';
-import { searchDocumentByReference } from './DocumentPageIndexClient';
+import { fetchDocumentOutline, searchDocumentByReference } from './DocumentPageIndexClient';
 
 /**
  * Con qué hojas arranca el carrito del selector.
@@ -59,14 +60,6 @@ export function selectionModeOf(kind: ProposalKind): ExcerptSelectionMode {
 export interface SheetRangeProposal {
     ranges: SheetRange[];
     kind: ProposalKind;
-}
-
-interface OutlineSection {
-    startChunk: number;
-    endChunk: number;
-    page: number;
-    section: string | null;
-    sectionPath: string[];
 }
 
 interface RetrievedChunk {
@@ -124,6 +117,10 @@ const HOJAS_ANTES_POR_TIPO: Partial<Record<SourceType, number>> = {
 export async function proposeSheetRanges(
     input: ProposeSheetRangesInput,
 ): Promise<SheetRangeProposal> {
+    // Un extracto de pocas hojas (la BHS de un salmo) se propone entero.
+    const corto = shortResourceSheets(input.pageIndex);
+    if (corto.length > 0) return { ranges: corto, kind: 'structural' };
+
     if (isTextEditionSourceType(input.sourceType)) return proposeTextEdition(input);
 
     const porPaginas = input.sourceType ? isPickedByPages({ sourceType: input.sourceType }) : false;
@@ -180,7 +177,11 @@ async function proposePassage(input: ProposeSheetRangesInput): Promise<SheetRang
         );
         const antes = (input.sourceType && HOJAS_ANTES_POR_TIPO[input.sourceType]) ?? 0;
         const existentes = new Set(input.pageIndex.map(e => e.sheet));
-        const ranges = normalizeSheetRanges(elegidas.map(r => ({ start: Math.max(1, r.start - antes), end: r.end })))
+        const ranges = withCommentaryContour(
+            normalizeSheetRanges(elegidas.map(r => ({ start: Math.max(1, r.start - antes), end: r.end }))),
+            input.pageIndex,
+            input.sourceType,
+        )
             .map(r => ({ start: primeraExistente(r.start, r.end, existentes), end: r.end }))
             .filter(r => r.start <= r.end);
         return ranges.length > 0 ? { ranges, kind: 'passage' } : { ranges: [], kind: 'none' };
@@ -209,23 +210,7 @@ function primeraExistente(start: number, end: number, existentes: ReadonlySet<nu
  */
 async function proposeStructural(input: ProposeSheetRangesInput): Promise<SheetRangeProposal> {
     try {
-        const callable = httpsCallable<
-            { resourceId: string },
-            { sections: OutlineSection[] }
-        >(getFunctions(), 'getDocumentOutline', { timeout: TIMEOUT_MS });
-        const response = await callable({ resourceId: input.resourceId });
-
-        const entries: DocumentOutlineEntry[] = [];
-        for (const section of response.data?.sections ?? []) {
-            for (let i = section.startChunk; i <= section.endChunk; i++) {
-                entries.push({
-                    chunkIndex: i,
-                    page: section.page,
-                    section: section.section,
-                    sectionPath: section.sectionPath,
-                });
-            }
-        }
+        const entries = await fetchDocumentOutline(input.resourceId);
         if (entries.length === 0) return { ranges: [], kind: 'none' };
 
         const resolved = resolveOutlineReferences(entries, input.passage.bookId);
@@ -238,7 +223,8 @@ async function proposeStructural(input: ProposeSheetRangesInput): Promise<SheetR
         if (selection.chunkCount === 0) return { ranges: [], kind: 'none' };
 
         return {
-            ranges: sheetsForChunkRanges(input.pageIndex, selection.ranges),
+            // Con una hoja más a cada lado en un comentario (banco del corpus, A2).
+            ranges: withCommentaryContour(sheetsForChunkRanges(input.pageIndex, selection.ranges), input.pageIndex, input.sourceType),
             kind: 'structural',
         };
     } catch (err) {

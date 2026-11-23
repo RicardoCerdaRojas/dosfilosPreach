@@ -23,6 +23,7 @@ export type { ProposalKind, SheetRangeProposal, ProposeSheetRangesInput } from '
 // Índice de hojas y PDF original, para el selector de páginas.
 export {
     fetchDocumentPageIndex,
+    fetchDocumentOutline,
     searchDocumentByReference,
     searchDocumentText,
     searchLemmasInDocument,

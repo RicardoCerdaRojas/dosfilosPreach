@@ -65,6 +65,28 @@ export interface ExegeticalPaper {
     exegeticalStrategy?: ExegeticalStrategy;
     /** El método (capa 3). Ausente: el análisis de siempre. */
     exegeticalMethod?: ExegeticalMethod | null;
+    /**
+     * El tipo de trabajo: TP por pregunta, investigación temática, síntesis +
+     * sermón (procedimiento §4d). Decide las unidades y los puntos de
+     * aprobación. Ausente o `null`: se deduce (`readPaperProfileKind`) y el
+     * autor lo confirma una vez.
+     */
+    profileKind?: import('../services/paperProfile').PaperProfileKind | null;
+
+    /**
+     * Entradas del trabajo (A5): lo que el autor marcó de cada una («no
+     * aplica», «leída») y la nota de clase. El estado de cada entrada se
+     * deduce de lo que ya vive en la app (`paperInputStatuses`).
+     */
+    inputMarks?: import('../services/paperInputs').PaperInputMarks | null;
+    /** Requisitos (A5): dónde se cumple cada uno, si va en el cuerpo y si está cumplido. */
+    requirementMarks?: Readonly<Record<string, import('../services/paperRequirements').RequirementMark>> | null;
+    /** Requisitos que el autor agregó a mano. */
+    manualRequirements?: ReadonlyArray<import('../services/paperRequirements').ManualRequirement> | null;
+    /** Categorías que el curso no acepta como categoría final («IGNORA»). */
+    ignoredGrammarCategories?: ReadonlyArray<string> | null;
+    /** Qué conseguir (A6): candidatas marcadas «por conseguir» o «descartada», por clave. */
+    acquisitionMarks?: Readonly<Record<string, import('../services/corpusNeeds').AcquisitionMark>> | null;
 
     /** Optional human title; defaults to the formatted passage. */
     title?: string;

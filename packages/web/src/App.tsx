@@ -64,6 +64,8 @@ const ExpositoryAssistantPage = lazy(() => import('@/pages/series/ExpositoryAssi
 
 const LibraryManager = lazy(() => import('@/pages/library/LibraryManager').then(m => ({ default: m.LibraryManager })));
 const PageNumberingPage = lazy(() => import('@/pages/library/PageNumberingPage').then(m => ({ default: m.PageNumberingPage })));
+const ConectarPage = lazy(() => import('@/pages/mcp/ConectarPage').then(m => ({ default: m.ConectarPage })));
+const PdfReviewPage = lazy(() => import('@/pages/library/PdfReviewPage').then(m => ({ default: m.PdfReviewPage })));
 const PlannerWizard = lazy(() => import('@/pages/planner/PlannerWizard').then(m => ({ default: m.PlannerWizard })));
 const GeneratorSettings = lazy(() => import('@/pages/settings/GeneratorSettings').then(m => ({ default: m.GeneratorSettings })));
 const ConfessionSettings = lazy(() => import('@/pages/settings/ConfessionSettings').then(m => ({ default: m.ConfessionSettings })));
@@ -212,6 +214,8 @@ function App() {
 
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
+          {/* Consentimiento de una aplicación conectada por MCP (A9): maneja su propia sesión. */}
+          <Route path="/conectar" element={<ConectarPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/auth/registration-success" element={<RegistrationSuccessPage />} />
@@ -315,6 +319,7 @@ function App() {
             <Route path="planner" element={<PlannerWizard />} />
             <Route path="library" element={<LibraryManager />} />
             <Route path="library/:resourceId/numeracion" element={<PageNumberingPage />} />
+            <Route path="library/:resourceId/revision" element={<PdfReviewPage />} />
             {/* Legacy subscription route — folded into Settings tabs. Kept as a
                 redirect so Stripe success/cancel callbacks and external links keep working. */}
             <Route path="subscription" element={<Navigate to="/dashboard/settings?tab=subscription" replace />} />

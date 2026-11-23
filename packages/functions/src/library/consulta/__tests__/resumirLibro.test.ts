@@ -140,9 +140,26 @@ describe('resumirEnBiblioteca', () => {
         expect(pedidos).toHaveLength(0);
     });
 
-    it('un libro de la biblioteca común sí', async () => {
+    it('un libro de la biblioteca común sí, si su texto se puede leer (dominio público)', async () => {
         docs['library_resources/libro']!.userId = '__system__';
+        docs['library_resources/libro']!.publiclyCitable = true;
+        docs['library_resources/libro']!.pageCount = 300;
         await expect(llamar('cualquiera', { resourceId: 'libro', tipo: 'mapa' })).resolves.toMatchObject({ tipo: 'mapa' });
+    });
+
+    it('un libro de la biblioteca común sin hojas (JFB) no tiene mapa: se rechaza antes de la cuota y sin leerlo (A8c)', async () => {
+        docs['library_resources/libro']!.userId = '__system__';
+        docs['library_resources/libro']!.publiclyCitable = true;
+        docs['library_resources/libro']!.pageCount = 0;
+        await expect(llamar('cualquiera', { resourceId: 'libro', tipo: 'mapa' })).rejects.toMatchObject({ code: 'failed-precondition' });
+        expect(pedidos).toHaveLength(0);
+        expect(sumadas).toHaveLength(0);
+    });
+
+    it('un libro de la biblioteca común protegido, no (A8c)', async () => {
+        docs['library_resources/libro']!.userId = '__system__';
+        await expect(llamar('cualquiera', { resourceId: 'libro', tipo: 'mapa' })).rejects.toMatchObject({ code: 'not-found' });
+        expect(pedidos).toHaveLength(0);
     });
 
     it('más de 60 páginas: se rechaza antes de leer', async () => {

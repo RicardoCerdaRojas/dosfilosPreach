@@ -267,6 +267,8 @@ JUSTIFICATION: one sentence in English, NAME the roles explicitly. Example: "Anc
     const lineaDeEvidencia = (e: NonNullable<ProposeStepCorpusInput['steps'][number]['evidence']>[number]) =>
         `    · ${evidenciaDice}: id="${e.sourceId}" (${nombreDe(e.sourceId)}) ${hojasDice(e.sheets)}`
         + (e.via === 'lemma' && e.term ? ` — ${isSpanish ? 'entrada de' : 'entry for'} ${e.term}` : '')
+        + (e.via === 'section' ? ` — ${isSpanish ? 'sección del comentario que trata el versículo' : 'commentary section on the verse'}` : '')
+        + (e.via === 'passage' ? ` — ${isSpanish ? 'el pasaje en el texto y su aparato' : 'the passage in the text and its apparatus'}` : '')
         + (e.line ? ` — «${e.line.replace(/\s+/g, ' ').trim()}»` : '');
     const stepsList = input.steps
         .map(s => [

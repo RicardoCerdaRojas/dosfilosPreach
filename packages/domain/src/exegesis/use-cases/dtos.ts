@@ -75,6 +75,8 @@ export interface CreateExegeticalPaperInput {
     exegeticalStrategy?: 'free' | 'dialectical';
     /** El método del trabajo (capa 3). Ausente: el análisis de siempre. */
     exegeticalMethod?: import('../entities/ExegeticalPaper').ExegeticalMethod | null;
+    /** El tipo de trabajo (procedimiento §4d). Desde A4 la página de creación siempre lo manda. */
+    profileKind?: import('../services/paperProfile').PaperProfileKind | null;
     /**
      * Denormalized back-reference when this paper is being auto-created
      * by a SermonSeries pericope. Stored on the paper so downstream use

@@ -10,6 +10,7 @@ import {
     type PaperRubric,
     DEFAULT_STRATEGY_FOR_NEW_PAPER,
     projectWorkTypes,
+    resolvePaperProfileKind,
     type AIProject,
 } from '@dosfilos/domain';
 import { normalizeCover } from './UpdatePaperCoverUseCase';
@@ -121,6 +122,7 @@ export class CreateExegeticalPaperUseCase {
             displayLanguage: input.displayLanguage,
             exegeticalStrategy: input.exegeticalStrategy ?? DEFAULT_STRATEGY_FOR_NEW_PAPER,
             exegeticalMethod: input.exegeticalMethod ?? null,
+            profileKind: resolvePaperProfileKind(input.profileKind),
             title: input.title,
             assignmentBrief: normalizeBrief(input.assignmentBrief),
             styleGuideId: input.styleGuideId,

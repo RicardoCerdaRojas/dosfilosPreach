@@ -1,4 +1,4 @@
-import { usesExtractedExcerpts, stepCorpusQuery, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod
+import { usesExtractedExcerpts, stepCorpusQuery, hasCuratedScope, readFullText, effectiveScope, CURATED_CORPUS_BUDGET_CHARS, briefWithExclusions, fijadoPrimero, parseBriefQuestions, planNoteForPrompt, questionKinds, questionsOfStep, stepVerseKeys, resolveExegeticalMethod, cleanIgnoredGrammarCategories
 } from '@dosfilos/domain';
 import type {
     AnalyzeVerseInput,
@@ -36,7 +36,7 @@ import {
     verifyAttributedQuotes,
 } from '@dosfilos/domain';
 import { loadSourceNumberings } from './sourceNumberings';
-import { stampCitationPageKind } from './stampCitationPageKind';
+import { anchorNumberingFor, stampCitationPageKind } from './stampCitationPageKind';
 import { ExegesisCreditReservation } from '../../services/ExegesisCreditReservation';
 import { loadCourseStyleRules } from '../../services/exegesis/courseStyleRules';
 
@@ -189,6 +189,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // Etapa 2, capa 3: el método y «Mi lectura». Sin método, el
                 // prompt de siempre.
                 method: resolveExegeticalMethod(paper.exegeticalMethod),
+                // A5: lo que el curso no acepta como categoría final.
+                ignoredGrammarCategories: cleanIgnoredGrammarCategories(paper.ignoredGrammarCategories),
                 studentReading: paper.stepPlan.perStep[step.id]?.studentReading?.trim() || null,
                 verseMorphology,
                 // Las preguntas de este versículo como TAREA, con su tipo (C1).
@@ -533,7 +535,9 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // Mismos separadores con ancla que el camino anterior: el
                 // prompt y el verificador de citas no tienen por qué notar de
                 // dónde salió el fragmento.
-                const numbering = numberings.get(source.id) ?? null;
+                // En la unidad del sello de la fuente (`anchorNumberingFor`):
+                // si se sella «hoja», el ancla dice hoja aunque tenga página.
+                const numbering = anchorNumberingFor(source, numberings.get(source.id) ?? null);
                 const anchor = (c: { sheet: number | null; section: string | null }) =>
                     citationAnchorFor(c, numbering);
                 // Los fragmentos que el usuario editó (o sin hoja) no están en
@@ -601,7 +605,8 @@ export class AnalyzeVerseCanonicallyUseCase {
                 // numeración del recurso. Reetiquetarlas aquí es lo que hace
                 // que un trabajo ya empezado cite la página impresa sin tener
                 // que volver a extraer sus fuentes.
-                const storedNumbering = numberings.get(source.id) ?? null;
+                // También en la unidad del sello de la fuente.
+                const storedNumbering = anchorNumberingFor(source, numberings.get(source.id) ?? null);
                 const anchorOf = (e: { sourceLocation: string; sheet?: number; section?: string }) =>
                     relabelExcerptAnchor(e.sourceLocation, storedNumbering, e);
                 const textContent = source.excerpts

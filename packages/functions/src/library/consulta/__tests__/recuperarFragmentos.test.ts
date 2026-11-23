@@ -10,6 +10,8 @@ function consulta(filtros: Array<[string, string, unknown]>) {
 }
 vi.mock('firebase-admin/firestore', () => ({ getFirestore: () => ({ collection: () => consulta([]) }) }));
 vi.mock('../../retrieveChunks', () => ({ embedQuery: async () => [0.1, 0.2] }));
+// Sin libros compartidos: estas pruebas son de la biblioteca propia (los compartidos, en recuperarFragmentos.compartida).
+vi.mock('../../bibliotecaCompartida', async (orig) => ({ ...(await orig<object>()), recursosCompartidos: async () => new Map() }));
 const { recuperarFragmentos, enTandas } = await import('../recuperarFragmentos');
 
 beforeEach(() => { consultas.length = 0; });

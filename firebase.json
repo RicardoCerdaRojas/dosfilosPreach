@@ -14,8 +14,65 @@
             ],
             "rewrites": [
                 {
+                    "source": "/mcp",
+                    "run": {
+                        "serviceId": "mcpgateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/oauth/**",
+                    "run": {
+                        "serviceId": "mcpgateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/.well-known/oauth-authorization-server",
+                    "run": {
+                        "serviceId": "mcpgateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/.well-known/oauth-authorization-server/**",
+                    "run": {
+                        "serviceId": "mcpgateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/.well-known/oauth-protected-resource",
+                    "run": {
+                        "serviceId": "mcpgateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
+                    "source": "/.well-known/oauth-protected-resource/**",
+                    "run": {
+                        "serviceId": "mcpgateway",
+                        "region": "us-central1"
+                    }
+                },
+                {
                     "source": "**",
                     "destination": "/index.html"
+                }
+            ],
+            "headers": [
+                {
+                    "source": "/conectar",
+                    "headers": [
+                        {
+                            "key": "X-Frame-Options",
+                            "value": "DENY"
+                        },
+                        {
+                            "key": "Content-Security-Policy",
+                            "value": "frame-ancestors 'none'"
+                        }
+                    ]
                 }
             ]
         },
@@ -61,6 +118,22 @@
             "source": "packages/functions",
             "codebase": "default",
             "runtime": "nodejs22",
+            "predeploy": [
+                "npm --prefix \"$RESOURCE_DIR\" run build"
+            ]
+        },
+        {
+            "source": "packages/mcp",
+            "codebase": "mcp",
+            "runtime": "nodejs22",
+            "ignore": [
+                "node_modules",
+                "src",
+                ".git",
+                "*.log",
+                "vitest.config.ts",
+                "tsconfig.json"
+            ],
             "predeploy": [
                 "npm --prefix \"$RESOURCE_DIR\" run build"
             ]

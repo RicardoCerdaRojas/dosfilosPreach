@@ -269,4 +269,29 @@ describe('crear un estudio desde un proyecto', () => {
             expect(createPaper.mock.calls[0]![0]).toMatchObject({ exegeticalMethod: 'exegetical' });
         });
     });
+
+    describe('el tipo de trabajo (A4)', () => {
+        it('lo trae el tipo del proyecto; al pasar a uno sin tipo vuelve a deducirse, y siempre viaja', async () => {
+            proyectos = [{ ...curso, workTypes: [{ ...tp, profileKind: 'sintesis-sermon' }, { id: 'pf', label: 'Paper final', rubricTemplateId: 'rub-paper', exegeticalMethod: 'mixed' }] }];
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new?projectId=teo2']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'tp' } });
+            expect((screen.getByLabelText('profileKind.label') as HTMLSelectElement).value).toBe('sintesis-sermon');
+            fireEvent.change(screen.getByLabelText('create.project.workType'), { target: { value: 'pf' } });
+            // Sin tipo guardado, se deduce del método «Mixto (TP)» y se dice.
+            expect((screen.getByLabelText('profileKind.label') as HTMLSelectElement).value).toBe('tp-por-pregunta');
+            expect(screen.getByText(/profileKind\.inferred\.method-mixed/)).toBeInTheDocument();
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).toMatchObject({ profileKind: 'tp-por-pregunta' });
+        });
+
+        it('se elige a mano y viaja en la creación', async () => {
+            render(<MemoryRouter initialEntries={['/dashboard/exegesis/new']}><ExegesisCreatePage /></MemoryRouter>);
+            fireEvent.change(screen.getByLabelText('profileKind.label'), { target: { value: 'investigacion-tematica' } });
+            expect(screen.queryByText(/profileKind\.inferred/)).toBeNull();
+            crear();
+            await waitFor(() => expect(createPaper).toHaveBeenCalled());
+            expect(createPaper.mock.calls[0]![0]).toMatchObject({ profileKind: 'investigacion-tematica' });
+        });
+    });
 });

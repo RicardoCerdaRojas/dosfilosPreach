@@ -174,7 +174,7 @@
     "pdfparse": "Basic",
     "pdfparseHint": "Processed with the basic extractor — reduced quality; consider reprocessing",
     "textLayer": "Text layer",
-    "textLayerHint": "Read from the text the PDF already carries, line by line. Exact and model-free; only works when the PDF is not a scan."
+    "textLayerHint": "Read from the text the PDF already carries, line by line. Exact, with no assistant involved; only works when the PDF is not a scan."
   },
   "stores": {
     "exegesis": "Exegesis",
@@ -436,6 +436,11 @@
     "uncalibrated": "Not calibrated",
     "uncalibratedHint": "Citations from this resource will say “sheet N” until you confirm its numbering.",
     "pageIntro": "Look at each sheet and tell us the number printed on it, usually at the foot. With that, citations from this book can say “p. 28” instead of “sheet 32”.",
+    "markedPages": "This book marks its pages inside the text, as \"[p 667]\", and {{count}} sheets have theirs read from those marks. A sheet may hold several pages, so its citations say \"pp. 666–667\".",
+    "markedSheetOne": "Sheet {{sheet}} is p. {{pages}}.",
+    "markedSheetMany": "Sheet {{sheet}} holds pp. {{pages}}.",
+    "markedSheetNone": "Sheet {{sheet}} has no marks to place it: it is cited as \"sheet {{sheet}}\".",
+    "markedNoCalibration": "No manual calibration here: the number at the top or foot of the sheet may belong to the file, not the book. The book's page is the \"[p N]\" mark inside the text.",
     "alreadyConfirmed": "You already confirmed this book's numbering. You can correct it.",
     "printedQuestion": "What number is printed on sheet {{sheet}}?",
     "lookForFolio": "The folio is usually at the foot, sometimes in the header. It may be arabic or roman — type it as printed. If this sheet doesn't show it, check the next one rather than marking it as unnumbered.",
@@ -467,6 +472,15 @@
     "label": "Library views"
   },
   "consult": {
+    "reader": {
+      "loading": "Reading the commentary…",
+      "failed": "This passage could not be read.",
+      "empty": "This book has no text for this section.",
+      "noPages": "Book without pages: cited by its section",
+      "copy": "Copy citation",
+      "copied": "Citation copied",
+      "copyFailed": "The citation could not be copied."
+    },
     "title": "Ask your books",
     "subtitle": "Answers come only from the books in your library, with their citation. Tap a citation to see the page in the book.",
     "scopeLabel": "Search in:",
@@ -565,5 +579,82 @@
   "notices": {
     "pill_one": "{{count}} notice",
     "pill_other": "{{count}} notices"
+  },
+  "review": {
+    "open": "Review the PDF",
+    "title": "Review the PDF",
+    "back": "Back to the library",
+    "intro": "Before citing this book: whether it is the work you think, which edition it is, and how its pages are cited. The title page, the credits and four body pages are read, here in your browser.",
+    "reading": "Reading the title page, the credits and four pages…",
+    "loadFailed": "The PDF could not be opened.",
+    "notFound": "This book is not in your library.",
+    "allGood": "Everything matches: the work, the edition and the pages.",
+    "attention": "Something needs a look before citing this book.",
+    "saveFailed": "Could not save. Try again.",
+    "evidence": "It reads: “{{line}}”",
+    "viewerTitle": "Sheet {{sheet}} of the file",
+    "viewerHint": "Compare the printed number on the sheet with what was read.",
+    "identity": {
+      "title": "The work",
+      "coincide": "The title page or running heads name {{book}}, as the record says.",
+      "otro-libro": "The record says {{declared}}, but the title page or running heads name {{found}}. It may be another book.",
+      "sin-dato": "The sheets read do not name a biblical book. Compare it with your copy.",
+      "no-aplica": "It does not comment on one biblical book: there is no book to compare.",
+      "fix": "If it is another book, fix the title and covered books from the library."
+    },
+    "edition": {
+      "title": "The edition",
+      "year": "Year of the copy: {{year}}",
+      "isbn": "ISBN {{isbn}}",
+      "noCredits": "No credits page was found in the first sheets.",
+      "vsCited": {
+        "misma": "It is the edition the catalog cites ({{cited}}).",
+        "distinta": "The catalog cites the {{cited}} edition; yours is from {{year}}. Pages may not match other works.",
+        "sin-dato": "It cannot be compared with the catalog edition ({{cited}}): the year is missing.",
+        "distintaReimpresion": "The catalog cites the {{cited}} edition; your copy reprints the {{year}} one. Pages may not match other works.",
+        "mismaReimpresion": "It reprints the edition the catalog cites ({{cited}}): the pages are the same."
+      },
+      "noCited": "The catalog does not have this work to compare.",
+      "vsBibliography": "Your record says {{stored}}.",
+      "save": "Save to the record: {{fields}}",
+      "saved": "Record updated.",
+      "reprint": "{{year}} reprint of the {{original}} edition",
+      "reprintNote": "When citing, give the {{original}} edition and the {{year}} reprint. The record does not yet tell the two apart, so the year is not saved from here."
+    },
+    "pagination": {
+      "title": "The pages",
+      "una": "The sheets read carry printed numbers and follow one rule: sheet {{sheet}} is page {{printed}} ({{rule}}).",
+      "parcial": "{{have}} of {{total}} sheets show a number and follow one rule ({{rule}}); the others could not be read. Look at those sheets before saving, or calibrate sheet by sheet.",
+      "varias": "The pages do not follow a rule that can be inferred (plates, several offsets or unusual folios). Calibrate sheet by sheet.",
+      "sin-folios": "None of the sheets read has a printed number. If the book has none (for example, a converted e-book), cite it by chapter or section.",
+      "marcas": "This book marks its pages inside the text, as \"[p 667]\", and {{count}} sheets already have them read. The number at the top or foot of the sheet belongs to the file, not the book: there is nothing to save here.",
+      "sin-texto": "The PDF is an image with no text: the number cannot be read automatically. Calibrate by looking at the sheets.",
+      "ebook": "It is an e-book: it has no printed pages. Cite it by chapter or section.",
+      "minus_one": "subtract {{count}} from each sheet",
+      "minus_other": "subtract {{count}} from each sheet",
+      "plus_one": "add {{count}} to each sheet",
+      "plus_other": "add {{count}} to each sheet",
+      "point": "Sheet {{sheet}}: p. {{folio}}",
+      "pointMarked": "Sheet {{sheet}}: {{pages}}",
+      "pointNone": "Sheet {{sheet}}: no number",
+      "storedAgrees": "The saved numbering says the same.",
+      "storedDisagrees": "The saved numbering says otherwise: citations of this book may point to the wrong page.",
+      "save": "Save this numbering",
+      "replace": "Replace the saved numbering",
+      "saveNone": "Save: it has no printed pages",
+      "calibrate": "Calibrate sheet by sheet",
+      "saved": "Numbering saved.",
+      "tramos": "There are two runs, each with its own rule: the introduction in Roman numerals (p. i is sheet {{romanFrom}}) and the body in Arabic numerals (p. 1 is sheet {{arabicFrom}}).",
+      "tramosGap": "When saved, sheets {{from}}–{{to}} stay unnumbered: they were not read and where the Roman numerals end is unknown.",
+      "tramosShort": "Only one body page was read: not enough to save its rule. Confirm it by calibrating.",
+      "saveRuns": "Save both numberings",
+      "same": "sheet and page match"
+    },
+    "copy": {
+      "title": "The copy",
+      "none": "No signs of an unofficial copy in the file or in the sheets read.",
+      "marca-de-agua": "The file or the sheets carry “{{detail}}”, the mark of an unofficial library. For academic work, cite the published edition.",
+      "conversion": "The file was made from an e-book ({{detail}}): it does not have the printed pages."
+    }
   }
 }

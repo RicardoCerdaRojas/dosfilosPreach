@@ -174,7 +174,7 @@
     "pdfparse": "Básico",
     "pdfparseHint": "Procesado con extractor básico — calidad reducida; considera reprocesar",
     "textLayer": "Capa de texto",
-    "textLayerHint": "Se leyó el texto que el PDF ya trae, renglón por renglón. Es exacto y no usa el modelo; sólo sirve cuando el PDF no es un escaneo."
+    "textLayerHint": "Se leyó el texto que el PDF ya trae, renglón por renglón. Es exacto y no pasa por el asistente; sólo sirve cuando el PDF no es un escaneo."
   },
   "stores": {
     "exegesis": "Exégesis",
@@ -436,6 +436,11 @@
     "uncalibrated": "Sin calibrar",
     "uncalibratedHint": "Las citas de este recurso van a decir «hoja N» hasta que confirmes su numeración.",
     "pageIntro": "Ve mirando cada hoja y dinos qué número lleva impreso, normalmente al pie. Con eso las citas de este libro pueden decir «p. 28» en vez de «hoja 32».",
+    "markedPages": "Este libro marca sus páginas dentro del texto, como «[p 667]», y {{count}} hojas tienen las suyas leídas de esas marcas. Una hoja puede traer varias páginas: por eso sus citas dicen «pp. 666–667».",
+    "markedSheetOne": "La hoja {{sheet}} es la p. {{pages}}.",
+    "markedSheetMany": "La hoja {{sheet}} trae las pp. {{pages}}.",
+    "markedSheetNone": "La hoja {{sheet}} no tiene marcas que la acoten: se cita como «hoja {{sheet}}».",
+    "markedNoCalibration": "Aquí no se calibra a mano: el número arriba o al pie de la hoja puede ser del archivo y no del libro. La página del libro es la marca «[p N]» dentro del texto.",
     "alreadyConfirmed": "Ya confirmaste la numeración de este libro. Puedes corregirla.",
     "printedQuestion": "¿Qué número tiene impreso la hoja {{sheet}}?",
     "lookForFolio": "El folio suele estar al pie, a veces en el encabezado. Puede ser arábigo o romano; escríbelo tal como aparece. Si esta hoja no lo muestra, mira la siguiente en vez de marcar que no tiene número.",
@@ -467,6 +472,15 @@
     "label": "Vistas de la biblioteca"
   },
   "consult": {
+    "reader": {
+      "loading": "Leyendo el comentario…",
+      "failed": "No se pudo leer este pasaje.",
+      "empty": "Este libro no trae texto para esta sección.",
+      "noPages": "Libro sin páginas: se cita por su sección",
+      "copy": "Copiar la cita",
+      "copied": "Cita copiada",
+      "copyFailed": "No se pudo copiar la cita."
+    },
     "title": "Pregúntale a tus libros",
     "subtitle": "Las respuestas salen sólo de los libros de tu biblioteca, con su cita. Toca una cita para ver la página en el libro.",
     "scopeLabel": "Buscar en:",
@@ -565,5 +579,82 @@
   "notices": {
     "pill_one": "{{count}} aviso",
     "pill_other": "{{count}} avisos"
+  },
+  "review": {
+    "open": "Revisar el PDF",
+    "title": "Revisar el PDF",
+    "back": "Volver a la biblioteca",
+    "intro": "Antes de citar este libro: si es la obra que crees, de qué edición es y cómo se citan sus páginas. Se leen la portada, los créditos y cuatro hojas del cuerpo, aquí en tu navegador.",
+    "reading": "Leyendo la portada, los créditos y cuatro hojas…",
+    "loadFailed": "No se pudo abrir el PDF.",
+    "notFound": "Este libro no está en tu biblioteca.",
+    "allGood": "Todo cuadra: la obra, la edición y las páginas.",
+    "attention": "Hay algo que mirar antes de citar este libro.",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+    "evidence": "Se lee: «{{line}}»",
+    "viewerTitle": "Hoja {{sheet}} del archivo",
+    "viewerHint": "Compara el número impreso de la hoja con lo que se leyó.",
+    "identity": {
+      "title": "La obra",
+      "coincide": "La portada o los encabezados nombran {{book}}, como dice el registro.",
+      "otro-libro": "El registro dice {{declared}}, pero la portada o los encabezados nombran {{found}}. Puede ser otro libro.",
+      "sin-dato": "Las hojas leídas no nombran un libro bíblico. Compáralo con el ejemplar.",
+      "no-aplica": "No comenta un libro bíblico en particular: no hay libro que comparar.",
+      "fix": "Si es otro libro, corrige el título y los libros que comenta desde la biblioteca."
+    },
+    "edition": {
+      "title": "La edición",
+      "year": "Año de la copia: {{year}}",
+      "isbn": "ISBN {{isbn}}",
+      "noCredits": "No se encontró la página de créditos en las primeras hojas.",
+      "vsCited": {
+        "misma": "Es la edición que cita el catálogo ({{cited}}).",
+        "distinta": "El catálogo cita la edición de {{cited}}; la tuya es de {{year}}. Las páginas pueden no coincidir con las de otros trabajos.",
+        "sin-dato": "No se puede comparar con la edición del catálogo ({{cited}}): falta el año.",
+        "distintaReimpresion": "El catálogo cita la edición de {{cited}}; tu copia reimprime la de {{year}}. Las páginas pueden no coincidir con las de otros trabajos.",
+        "mismaReimpresion": "Reimprime la edición que cita el catálogo ({{cited}}): las páginas son las mismas."
+      },
+      "noCited": "El catálogo no tiene esta obra para compararla.",
+      "vsBibliography": "Tu ficha dice {{stored}}.",
+      "save": "Guardar en la ficha: {{fields}}",
+      "saved": "Ficha actualizada.",
+      "reprint": "Reimpresión de {{year}} de la edición de {{original}}",
+      "reprintNote": "Al citar, va la edición de {{original}} y la reimpresión de {{year}}. La ficha todavía no distingue las dos: el año no se guarda desde aquí."
+    },
+    "pagination": {
+      "title": "Las páginas",
+      "una": "Las hojas leídas tienen número impreso y siguen una misma regla: la hoja {{sheet}} es la página {{printed}} ({{rule}}).",
+      "parcial": "{{have}} de {{total}} hojas muestran número y siguen una misma regla ({{rule}}); en las otras no se leyó. Mira esas hojas antes de guardar, o calibra hoja por hoja.",
+      "varias": "Las hojas no siguen una regla que se pueda deducir (láminas, varios desfases o folios extraños). Hay que calibrar hoja por hoja.",
+      "sin-folios": "Ninguna hoja leída tiene número impreso. Si el libro no lo tiene (por ejemplo, un libro electrónico convertido), se cita por capítulo o sección.",
+      "marcas": "Este libro marca sus páginas dentro del texto, como «[p 667]», y {{count}} hojas ya las tienen leídas. El número arriba o al pie de la hoja es del archivo, no del libro: no hay nada que guardar aquí.",
+      "sin-texto": "El PDF es una imagen sin texto: el número no se puede leer solo. Calibra mirando las hojas.",
+      "ebook": "Es un libro electrónico: no tiene páginas impresas. Se cita por capítulo o sección.",
+      "minus_one": "a cada hoja se le resta {{count}}",
+      "minus_other": "a cada hoja se le restan {{count}}",
+      "plus_one": "a cada hoja se le suma {{count}}",
+      "plus_other": "a cada hoja se le suman {{count}}",
+      "point": "Hoja {{sheet}}: p. {{folio}}",
+      "pointMarked": "Hoja {{sheet}}: {{pages}}",
+      "pointNone": "Hoja {{sheet}}: sin número",
+      "storedAgrees": "La numeración guardada dice lo mismo.",
+      "storedDisagrees": "La numeración guardada dice otra cosa: las citas de este libro pueden estar apuntando a la página equivocada.",
+      "save": "Guardar esta numeración",
+      "replace": "Reemplazar la numeración guardada",
+      "saveNone": "Guardar: no tiene páginas impresas",
+      "calibrate": "Calibrar hoja por hoja",
+      "saved": "Numeración guardada.",
+      "tramos": "Hay dos tramos, cada uno con su regla: la introducción en romanos (la p. i es la hoja {{romanFrom}}) y el cuerpo en arábigos (la p. 1 es la hoja {{arabicFrom}}).",
+      "tramosGap": "Al guardar, las hojas {{from}}–{{to}} quedan sin número: no se leyeron y no se sabe dónde terminan los romanos.",
+      "tramosShort": "Del cuerpo se leyó una sola hoja: no basta para guardar la regla. Confírmala calibrando.",
+      "saveRuns": "Guardar las dos numeraciones",
+      "same": "la hoja y la página coinciden"
+    },
+    "copy": {
+      "title": "La copia",
+      "none": "Sin señales de copia no oficial en el archivo ni en las hojas leídas.",
+      "marca-de-agua": "El archivo o las hojas traen «{{detail}}», la marca de una biblioteca no oficial. Para un trabajo conviene citar la edición publicada.",
+      "conversion": "El archivo se hizo desde un libro electrónico ({{detail}}): no tiene las páginas del impreso."
+    }
   }
 }

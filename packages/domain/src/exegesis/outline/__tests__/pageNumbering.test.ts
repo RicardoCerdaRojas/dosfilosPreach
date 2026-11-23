@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
     calibrationSheets,
+    declaresNoFolios,
+    keepSheetPages,
+    markedSheetCount,
+    hasResolvedNumbering,
+    printedPageAbbrev,
     citationAnchorFor,
     detectNumberingSegments,
     printedRangeOf,
@@ -719,5 +724,62 @@ describe('sheetForPrintedIn — de la página impresa a la hoja, por tramos', ()
 
     it('sin calibración no convierte', () => {
         expect(sheetForPrintedIn(null, 440)).toBeNull();
+    });
+});
+
+describe('páginas marcadas en el texto (Kittel, A8b)', () => {
+    const kittel: PageNumbering = {
+        origin: 'confirmed',
+        segments: [{ fromSheet: 1, toSheet: 1120, offset: null }],
+        sheetPages: { '524': { from: 665, to: 666 }, '525': { from: 666, to: 667 }, '526': { from: 667, to: 667 } },
+    };
+
+    it('la hoja dice su rango, y la cita lo escribe con «pp.»', () => {
+        expect(printedLabelIn(kittel, 525)).toBe('666–667');
+        expect(printedLabelIn(kittel, 526)).toBe('667');
+        expect(printedPageIn(kittel, 525)).toBe(666);
+        expect(citationAnchorFor({ sheet: 525, section: null }, kittel)).toBe('pp. 666–667');
+        expect(citationAnchorFor({ sheet: 526, section: 'ὅλος' }, kittel)).toBe('p. 667, § ὅλος');
+        // Una hoja sin marca leída: hoja, no una página inventada.
+        expect(citationAnchorFor({ sheet: 9, section: null }, kittel)).toBe('hoja 9');
+    });
+
+    it('resuelve páginas y no declara un libro sin folios, aunque sus tramos no tengan desfase', () => {
+        expect(hasResolvedNumbering(kittel)).toBe(true);
+        expect(declaresNoFolios(kittel)).toBe(false);
+        expect(declaresNoFolios({ ...kittel, sheetPages: {} })).toBe(true);
+    });
+
+    it('la hoja de una página es la primera que la contiene', () => {
+        expect(sheetForPrintedIn(kittel, 667)).toBe(525);
+        expect(sheetForPrintedIn(kittel, 665)).toBe(524);
+        expect(sheetForPrintedIn(kittel, 900)).toBeNull();
+    });
+
+    it('«p.» o «pp.» según el rótulo', () => {
+        expect(printedPageAbbrev('42')).toBe('p. 42');
+        expect(printedPageAbbrev('ccxxii')).toBe('p. ccxxii');
+        expect(printedPageAbbrev('666–667')).toBe('pp. 666–667');
+    });
+});
+
+describe('calibrar un libro con páginas marcadas no las borra (A8b)', () => {
+    const marcas = { '525': { from: 666, to: 667 } };
+    const guardada: PageNumbering = { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 1120, offset: null }], sheetPages: marcas };
+    const nueva: PageNumbering = { origin: 'confirmed', segments: [{ fromSheet: 1071, toSheet: 1120, offset: 300 }] };
+
+    it('la calibración nueva conserva las marcas, que siguen mandando en su hoja', () => {
+        const out = keepSheetPages(nueva, guardada);
+        expect(out.sheetPages).toEqual(marcas);
+        expect(out.segments).toEqual(nueva.segments);
+        expect(printedLabelIn(out, 525)).toBe('666–667');
+        expect(printedLabelIn(out, 1100)).toBe('1400');
+    });
+
+    it('sin marcas guardadas no agrega nada', () => {
+        expect(keepSheetPages(nueva, { ...guardada, sheetPages: {} })).toBe(nueva);
+        expect(keepSheetPages(nueva, null)).toBe(nueva);
+        expect(markedSheetCount(guardada)).toBe(1);
+        expect(markedSheetCount(null)).toBe(0);
     });
 });

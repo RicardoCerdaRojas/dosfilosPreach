@@ -54,7 +54,7 @@ describe('BuscarEnElLibro', () => {
         escribir('dativus commodi');
         expect(buscados.at(-1)).toBe('dativus commodi');
         expect(onSearchTerm).toHaveBeenLastCalledWith('dativus commodi');
-        const hit = screen.getByText('citationViewer.hitPage {"printed":"538","sheet":617}');
+        const hit = screen.getByText('citationViewer.hitPage {"printed":"p. 538","sheet":617}');
         fireEvent.click(hit.closest('button')!);
         expect(onGo).toHaveBeenCalledWith(617);
     });

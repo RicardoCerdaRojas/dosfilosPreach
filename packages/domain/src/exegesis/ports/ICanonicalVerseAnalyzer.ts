@@ -178,6 +178,13 @@ export interface AnalyzeVerseInput {
     method?: import('../entities/ExegeticalPaper').ExegeticalMethod | null;
 
     /**
+     * Las categorías que el curso no acepta como categoría final («IGNORA»,
+     * A5). Se pueden nombrar como lectura rival, nunca como la decisión.
+     * Ausente o vacía: el prompt de siempre.
+     */
+    ignoredGrammarCategories?: ReadonlyArray<string> | null;
+
+    /**
      * «Mi lectura»: la observación propia del estudiante, escrita ANTES de
      * generar. Opcional. El diálogo tiene que decir qué comentaristas la
      * confirman y cuáles la discuten.

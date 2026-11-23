@@ -45,16 +45,21 @@ export async function consumeRateLimitToken(
     if (!key) return true;
     try {
         const ref = db.collection('rate_limits').doc(rateLimitDocId(bucket, key));
-        const snap = await ref.get();
-        const now = Date.now();
-        const recentRaw = ((snap.exists ? snap.data() : null)?.recentMs as number[] | undefined) ?? [];
-        const recent = recentRaw.filter((ms) => typeof ms === 'number' && ms >= now - windowMs);
+        // En una transacción: leer y escribir por separado dejaba pasar N
+        // pedidos simultáneos con el mismo contador (revisión de A9: un lote
+        // de 20 búsquedas del MCP pasaba entero).
+        return await db.runTransaction(async (tx) => {
+            const snap = await tx.get(ref);
+            const now = Date.now();
+            const recentRaw = ((snap.exists ? snap.data() : null)?.recentMs as number[] | undefined) ?? [];
+            const recent = recentRaw.filter((ms) => typeof ms === 'number' && ms >= now - windowMs);
 
-        if (recent.length >= max) return false;
+            if (recent.length >= max) return false;
 
-        recent.push(now);
-        await ref.set({ recentMs: recent, lastSeenAt: FieldValue.serverTimestamp(), key }, { merge: true });
-        return true;
+            recent.push(now);
+            tx.set(ref, { recentMs: recent, lastSeenAt: FieldValue.serverTimestamp(), key }, { merge: true });
+            return true;
+        });
     } catch (err) {
         console.warn(`[rateLimit] no se pudo evaluar ${bucket}; se permite (fail-open)`, err);
         return true;

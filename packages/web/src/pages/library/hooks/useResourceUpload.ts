@@ -42,6 +42,8 @@ interface UseResourceUploadOptions {
     onConsentRequired: () => void;
     /** Called after a successful upload — caller typically closes the form. */
     onSuccess?: () => void;
+    /** Ofrece abrir la bandeja de revisión del libro recién subido (A7). */
+    onReview?: (resourceId: string) => void;
 }
 
 /**
@@ -94,6 +96,7 @@ export function useResourceUpload({
     isAdmin,
     onConsentRequired,
     onSuccess,
+    onReview,
 }: UseResourceUploadOptions): UseResourceUploadResult {
     const { t } = useTranslation('library');
     const [file, setFile] = useState<File | null>(null);
@@ -182,7 +185,7 @@ export function useResourceUpload({
         setUploading(true);
         setUploadProgress(0);
         try {
-            await libraryService.uploadResource(
+            const subido = await libraryService.uploadResource(
                 userId,
                 file,
                 {
@@ -205,7 +208,10 @@ export function useResourceUpload({
                     setUploadProgress(progress);
                 },
             );
-            toast.success(t('toast.uploadSuccess'));
+            // ¿Es la obra que crees, de qué edición, cómo se citan sus páginas? Se mira al subir.
+            toast.success(t('toast.uploadSuccess'), onReview && subido?.id
+                ? { action: { label: t('review.open'), onClick: () => onReview(subido.id) }, duration: 10_000 }
+                : undefined);
             reset();
             onSuccess?.();
         } catch (error) {

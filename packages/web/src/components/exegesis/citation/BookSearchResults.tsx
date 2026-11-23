@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import type { DocumentSheetHit } from '@dosfilos/infrastructure';
+import { printedPageAbbrev } from '@dosfilos/domain';
 import { useTranslation } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -76,7 +77,7 @@ export function BookSearchResults({ hits, truncated, isLoading, isError, printed
                             >
                                 <span className="text-[11px] font-medium tabular-nums text-foreground">
                                     {printed !== null
-                                        ? t('citationViewer.hitPage', { printed, sheet: hit.sheet })
+                                        ? t('citationViewer.hitPage', { printed: printedPageAbbrev(String(printed)), sheet: hit.sheet })
                                         : t('citationViewer.hitSheet', { sheet: hit.sheet })}
                                 </span>
                                 {hit.count > 1 && (

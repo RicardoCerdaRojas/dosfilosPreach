@@ -41,5 +41,43 @@
         "register": "El registro del español (latinoamericano neutro, sin voseo ni vosotros) se aplica siempre y no se edita aquí.",
         "reset": "Usar el del sistema",
         "saveHint": "Se guarda con «Guardar Cambios», abajo."
+    },
+    "mcp": {
+        "consent": {
+            "title": "Conectar {{cliente}}",
+            "subtitle": "{{cliente}} quiere leer tu biblioteca y tus trabajos en Dos Filos Preach.",
+            "returnsTo": "Vuelve a: {{destino}}",
+            "permissionsTitle": "Podrá:",
+            "permSearch": "Buscar temas y pasajes en tus libros y en la biblioteca compartida de dominio público.",
+            "permRead": "Leer hojas enteras de tus libros, hasta 60 por libro al día.",
+            "permWorks": "Ver tus trabajos, sus fuentes y sus requisitos, y el catálogo de obras recomendadas.",
+            "cannot": "No podrá escribir, cambiar ni borrar nada. Puedes desconectarla cuando quieras en Configuración › Integraciones.",
+            "allow": "Permitir",
+            "deny": "No permitir",
+            "returning": "Listo. Volviendo a {{destino}}…",
+            "expired": "Esta solicitud venció o ya se usó. Vuelve a conectar desde la aplicación.",
+            "missing": "Falta la solicitud de conexión. Vuelve a conectar desde la aplicación.",
+            "loginTitle": "Inicia sesión para conectar",
+            "loginBody": "Una aplicación quiere leer tu biblioteca. Inicia sesión y vuelves aquí para decidir.",
+            "login": "Iniciar sesión",
+            "failed": "No se pudo completar. Intenta de nuevo.",
+            "loading": "Cargando la solicitud…",
+            "warning": "Aprueba solo si acabas de conectar {{cliente}} tú mismo y {{destino}} es el sitio de esa aplicación. Si no reconoces este pedido, no lo permitas."
+        },
+        "connections": {
+            "title": "Aplicaciones conectadas",
+            "description": "Aplicaciones como Claude que pueden leer tu biblioteca y tus trabajos, solo lectura. Para conectar una, agrega en ella este servidor:",
+            "copy": "Copiar dirección",
+            "copied": "Dirección copiada",
+            "empty": "No hay aplicaciones conectadas.",
+            "since": "Conectada el {{fecha}}",
+            "readOnly": "Solo lectura",
+            "revoke": "Desconectar",
+            "revokeTitle": "¿Desconectar {{cliente}}?",
+            "revokeConfirm": "Dejará de poder leer tu biblioteca de inmediato.",
+            "revoked": "Desconectada.",
+            "revokeFailed": "No se pudo desconectar.",
+            "loadFailed": "No se pudieron cargar las conexiones."
+        }
     }
 }

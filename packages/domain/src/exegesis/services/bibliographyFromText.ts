@@ -146,13 +146,16 @@ export function isbnsIn(text: string): string[] {
     // Declarado con su nombre: «ISBN 978-0-8254-2562-2», de diez o de trece.
     // La etiqueta puede traer su propio número —«ISBN-13:»—, y sin quitarlo
     // los dígitos de la etiqueta entran al ISBN y lo echan a perder.
-    recorrer(/isbn(?:-1[03])?[^0-9]{0,12}([0-9][0-9\s-]{8,16}[0-9x])/g, plegado, agregar);
+    // Sin saltos de línea dentro: «ISBN 0-8499-0247-9» seguido de una línea
+    // que empieza con número («1 Corinthians…») se leía como un ISBN de once
+    // cifras, inválido, y el libro quedaba sin ISBN (bandeja de A7, 2026-11-21).
+    recorrer(/isbn(?:-1[03])?[^0-9]{0,12}([0-9][0-9 \t-]{8,16}[0-9x])/g, plegado, agregar);
     // Sin su nombre, solo con el prefijo de libro. Aparece así en la URL del
     // catálogo de la editorial, que es de donde salió el de Arnold. Un número
     // suelto de DIEZ dígitos no se toma por esta vía: uno de cada once pasa
     // la comprobación por azar, y un ISBN equivocado apunta a otra edición,
     // que es justo el error que este módulo existe para no cometer.
-    recorrer(/(97[89][0-9\s-]{9,15}[0-9x])/g, plegado, agregar);
+    recorrer(/(97[89][0-9 \t-]{9,15}[0-9x])/g, plegado, agregar);
 
     return encontrados;
 }
