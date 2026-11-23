@@ -40,10 +40,14 @@ export function CitationCorrectionActions({ claim, viewed, isCorrecting, onCorre
     // La página que propone el botón es la que se está mirando: el folio
     // impreso si el libro está calibrado, y si no la hoja, que es la
     // unidad en que ese libro puede citarse.
-    const proposed = viewed && !viewed.isAnchor
-        ? (typeof viewed.printed === 'string' ? Number(viewed.printed) : viewed.printed) ?? viewed.sheet
-        : null;
-    const proposedKind = viewed && viewed.printed !== null ? 'printed' as const : 'sheet' as const;
+    // Un rótulo que no es UN número («666–667» de un libro con marcas, «ccxxii»
+    // en romanos) se propone como HOJA: el rotulador la pasa a su página al
+    // componer. Antes `Number('666–667')` daba NaN y el botón desaparecía
+    // (revisión final de la fase A).
+    const impresaNumerica = viewed && typeof viewed.printed === 'string' && /^\d+$/.test(viewed.printed) ? Number(viewed.printed)
+        : viewed && typeof viewed.printed === 'number' ? viewed.printed : null;
+    const proposed = viewed && !viewed.isAnchor ? impresaNumerica ?? viewed.sheet : null;
+    const proposedKind = impresaNumerica !== null ? 'printed' as const : 'sheet' as const;
     const canPropose = proposed !== null && Number.isInteger(proposed) && proposed >= 1;
 
     return (

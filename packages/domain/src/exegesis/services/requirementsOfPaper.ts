@@ -4,6 +4,8 @@ import { computeRubricCompliance } from '../entities/PaperRubric';
 import { answeredUnitIds, derivePaperUnits, framingInDocument, type PaperUnit } from './paperUnits';
 import { paperRequirements, requirementWarnings, syllabusRequirementId, type PaperRequirement } from './paperRequirements';
 import { readPaperProfileKind } from './paperProfile';
+import { sourceTypesForRubric } from './commentaryCoverage';
+import type { LibraryResource } from '../../entities/LibraryResource';
 
 /**
  * Los requisitos de un trabajo con lo que se puede medir y lo que el autor
@@ -11,7 +13,16 @@ import { readPaperProfileKind } from './paperProfile';
  * la pestaña «Entradas» de la web y la herramienta `leer_requisitos` del MCP
  * (A9): una sola regla, para que el asistente vea lo mismo que el autor.
  */
-export function requirementsOfPaper(paper: ExegeticalPaper): {
+export function requirementsOfPaper(
+    paper: ExegeticalPaper,
+    /**
+     * Los libros de las fuentes, para contar como «Qué conseguir»: un
+     * comentario a OTRO libro bíblico no suma (revisión final de la fase A:
+     * con un comentario a Jonás en un TP de Santiago, Requisitos decía «2 de
+     * 2» y Qué conseguir «1 de 2»). Sin él, toda fuente con texto cuenta.
+     */
+    resourceOf: (id: string) => Pick<LibraryResource, 'coversBibleBooks' | 'scope'> | null | undefined = () => null,
+): {
     profileKind: ReturnType<typeof readPaperProfileKind>['kind'];
     units: PaperUnit[];
     requirements: PaperRequirement[];
@@ -28,7 +39,7 @@ export function requirementsOfPaper(paper: ExegeticalPaper): {
     const measures = {
         length: documento && paper.rubric ? checkLength(documento, paper.rubric.expectedLength, paper.rubric.formatting) : null,
         sources: paper.rubric
-            ? computeRubricCompliance(paper.sources.map(s => s.sourceType), paper.rubric).requirements.map(r => ({ sourceType: r.sourceType, have: r.have, required: r.required }))
+            ? computeRubricCompliance(sourceTypesForRubric(paper.sources, resourceOf, paper.passage.bookId), paper.rubric).requirements.map(r => ({ sourceType: r.sourceType, have: r.have, required: r.required }))
             : [],
         answeredUnits: answeredUnitIds(units, paper.steps),
         framingInDocument: framingInDocument(paper.steps),

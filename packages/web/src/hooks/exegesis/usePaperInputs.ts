@@ -20,6 +20,7 @@ import { useFirebase } from '@/context/firebase-context';
 import { useFacultyProjects } from '@/hooks/faculty/useFacultyProjects';
 import { useExegesisPapers } from './useExegesisPapers';
 import { useUserStyleGuides } from './useUserStyleGuides';
+import { useLibrary } from '@/hooks/library/useLibrary';
 
 /**
  * «Entradas y requisitos» (A5): el estado de cada entrada, leído de lo que ya
@@ -30,6 +31,7 @@ export function usePaperInputs(paper: ExegeticalPaper) {
     const { projects } = useFacultyProjects();
     const { papers } = useExegesisPapers();
     const { guides } = useUserStyleGuides();
+    const { resources } = useLibrary();
     const proyecto = projects.find(p => p.id === paper.projectId) ?? null;
 
     return useMemo(() => {
@@ -55,7 +57,7 @@ export function usePaperInputs(paper: ExegeticalPaper) {
             },
             marks: paper.inputMarks,
         });
-        const { units, requirements, warnings } = requirementsOfPaper(paper);
+        const { units, requirements, warnings } = requirementsOfPaper(paper, id => resources.find(r => r.id === id));
         return {
             profileKind, statuses, units, requirements,
             placement: requirementPlacementControls(profileKind),
@@ -66,7 +68,7 @@ export function usePaperInputs(paper: ExegeticalPaper) {
             /** Sin preguntas, la tarjeta del corpus revisa por versículo; aquí solo informa. */
             reviewUnit: corpusReviewQuestions(paper).unitKind,
         };
-    }, [paper, proyecto, papers, guides]);
+    }, [paper, proyecto, papers, guides, resources]);
 }
 
 /** Guarda una parte de «Entradas y requisitos»; lo demás no se toca. */
@@ -78,6 +80,13 @@ export function useUpdatePaperInputs(paperId: string) {
             if (!user) throw new Error('No authenticated user');
             return exegesisService.updatePaperInputs.execute({ ownerId: user.uid, paperId, ...patch });
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] }),
+        // El trabajo devuelto se siembra ANTES de soltar el botón: con solo
+        // invalidar, la marca siguiente se escribía sobre el trabajo viejo y
+        // borraba la anterior (revisión final de la fase A; la relectura
+        // tarda 40–90 s en local).
+        onSuccess: (paper) => {
+            queryClient.setQueryData(['exegesis', 'papers', user?.uid, paper.id], paper);
+            queryClient.invalidateQueries({ queryKey: ['exegesis', 'papers', user?.uid] });
+        },
     });
 }

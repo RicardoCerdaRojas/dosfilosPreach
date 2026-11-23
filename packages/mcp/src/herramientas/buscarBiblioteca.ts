@@ -31,9 +31,10 @@ export const buscarBiblioteca: Herramienta = {
         if (!ctx.geminiKey) throw new ErrorDeHerramienta('La búsqueda no está disponible ahora.');
         const permitido = await consumeRateLimitToken(ctx.db, { bucket: 'library_topics', key: ctx.uid, windowMs: 60 * 60 * 1000, max: POR_HORA });
         if (!permitido) throw new ErrorDeHerramienta('Demasiadas búsquedas seguidas. Espera unos minutos.');
+        // Hosting corta a los 60 s: el reordenador tiene 25 y, si no llega, vuelve el orden por cercanía.
         const { fragmentos, reordenado } = await buscarPertinentes(
             consulta, ctx.uid, ids ? { tipo: 'libros', ids } : { tipo: 'todo' }, ctx.geminiKey,
-            { total: FRAGMENTOS_DE_TEMAS, timeoutSeconds: 40 },
+            { total: FRAGMENTOS_DE_TEMAS, timeoutSeconds: 25 },
         );
         const libros = agruparPorLibro(fragmentos);
         // La cita con la numeración de cada libro, como la ve el autor en la web.

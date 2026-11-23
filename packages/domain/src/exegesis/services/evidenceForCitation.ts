@@ -34,9 +34,9 @@ export function prioritizeChunksForCitedPage(
     const near: VerifierSourceChunk[] = [];
     const rest: VerifierSourceChunk[] = [];
     for (const chunk of chunks) {
-        const page = pageNumberOfHint(chunk.pageHint);
-        if (page !== null && page >= range.start && page <= range.end) cited.push(chunk);
-        else if (page !== null && page >= range.start - window && page <= range.end + window) near.push(chunk);
+        const pages = pageRangeOfHint(chunk.pageHint);
+        if (pages && pages.end >= range.start && pages.start <= range.end) cited.push(chunk);
+        else if (pages && pages.end >= range.start - window && pages.start <= range.end + window) near.push(chunk);
         else rest.push(chunk);
     }
     return [...cited, ...near, ...rest];
@@ -45,8 +45,22 @@ export function prioritizeChunksForCitedPage(
 /** Si el fragmento es de una página que la cita nombra (no una vecina). */
 export function isOnCitedPage(chunk: VerifierSourceChunk, citedPages: string | null): boolean {
     const range = parsePageRange(citedPages);
-    const page = pageNumberOfHint(chunk.pageHint);
-    return range !== null && page !== null && page >= range.start && page <= range.end;
+    const pages = pageRangeOfHint(chunk.pageHint);
+    return range !== null && pages !== null && pages.end >= range.start && pages.start <= range.end;
+}
+
+/**
+ * Las páginas de un rótulo: «p. 559» → 559–559; «pp. 666–667» (una hoja de
+ * Kittel con dos páginas) → 666–667. Con solo el primer número, una cita a la
+ * p. 667 no reconocía su fragmento como de la página citada (revisión final
+ * de la fase A).
+ */
+export function pageRangeOfHint(hint: string | null): { start: number; end: number } | null {
+    if (!hint) return null;
+    const pp = hint.match(/^pp\.\s*(\d+)\s*[–—-]\s*(\d+)/);
+    if (pp) return { start: parseInt(pp[1]!, 10), end: parseInt(pp[2]!, 10) };
+    const page = pageNumberOfHint(hint);
+    return page === null ? null : { start: page, end: page };
 }
 
 /** Primer número de un rótulo de página: «p. 559» → 559, «hoja 12» → 12, «p. ccxxii» → null. */

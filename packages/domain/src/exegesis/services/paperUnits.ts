@@ -112,10 +112,19 @@ export function passageVerses(
     steps: ReadonlyArray<StepLike>,
     passage: Pick<PassageReference, 'chapterStart' | 'chapterEnd' | 'verseStart' | 'verseEnd'> | null,
 ): VerseKey[] {
+    // Cada versículo del paso, no solo el primero: un paso «3:1–2» revisaba
+    // 3:1 y la tarjeta decía «cada versículo tiene material» sin mirar 3:2
+    // (revisión final de la fase A). Un paso que cruza capítulos da solo su
+    // primer versículo: sin el largo de cada capítulo no se puede recorrer.
     const dePasos = [...steps]
         .filter(s => s.kind === 'verse' && s.verseRef)
         .sort((a, b) => a.order - b.order)
-        .map(s => ({ chapter: s.verseRef!.chapterStart, verse: s.verseRef!.verseStart ?? 1 }));
+        .flatMap(s => {
+            const r = s.verseRef!;
+            const desde = r.verseStart ?? 1;
+            const hasta = (r.chapterEnd ?? r.chapterStart) === r.chapterStart && r.verseEnd && r.verseEnd >= desde ? r.verseEnd : desde;
+            return Array.from({ length: hasta - desde + 1 }, (_, i) => ({ chapter: r.chapterStart, verse: desde + i }));
+        });
     if (dePasos.length > 0) return unicos(dePasos);
     if (!passage || (passage.chapterEnd ?? passage.chapterStart) !== passage.chapterStart) return [];
     const desde = passage.verseStart;

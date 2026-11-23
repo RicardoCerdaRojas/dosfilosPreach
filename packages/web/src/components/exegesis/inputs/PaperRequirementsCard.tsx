@@ -33,12 +33,15 @@ export function PaperRequirementsCard({ requirements, warnings, units, marks, ma
     // «2,5 páginas» en español: los números de la medida con el formato del idioma.
     const numeros = (values: Record<string, string | number> | undefined) => Object.fromEntries(Object.entries(values ?? {})
         .map(([k, v]) => [k, typeof v === 'number' ? v.toLocaleString(i18n.language?.startsWith('en') ? 'en' : 'es') : v]));
-    const guardar = async (patch: Patch) => {
+    /** true si se guardó: quien llama decide qué limpiar. */
+    const guardar = async (patch: Patch): Promise<boolean> => {
         try {
             await onSave(patch);
+            return true;
         } catch (err) {
             console.error('[inputs] no se pudo guardar el requisito', err);
             toast.error(t('inputs.saveFailed'));
+            return false;
         }
     };
     const cambiar = (r: PaperRequirement, cambio: RequirementMark) => {
@@ -51,9 +54,10 @@ export function PaperRequirementsCard({ requirements, warnings, units, marks, ma
     const quitar = (r: PaperRequirement) => guardar({ manualRequirements: manual.filter(m => `manual:${m.id}` !== r.id) });
     const agregar = async () => {
         const texto = nuevo.trim();
-        if (!texto) return;
-        await guardar({ manualRequirements: [...manual, { id: `r${Date.now().toString(36)}`, text: texto, unitId: null, inBody: true, done: false }] });
-        setNuevo('');
+        // Mientras guarda, un segundo Enter escribiría sobre la lista vieja.
+        if (!texto || saving) return;
+        // Si no se guardó, lo escrito queda en el campo para reintentar.
+        if (await guardar({ manualRequirements: [...manual, { id: `r${Date.now().toString(36)}`, text: texto, unitId: null, inBody: true, done: false }] })) setNuevo('');
     };
     // Sin apéndices en el tipo, una marca vieja de «solo en un apéndice» no avisa.
     const avisoDe = (id: string) => warnings.filter(w => w.requirementId === id && (w.kind !== 'appendix-only' || placement.appendix));

@@ -997,7 +997,7 @@
           "byQuestion": "Ver por pregunta",
           "questionHeading": "Pregunta {{number}} · {{verses}}",
           "noSource": "Ninguna fuente del corpus nombra estos versículos.",
-          "page": "p. {{page}}",
+          "page": "{{page}}",
           "sheet": "h. {{sheet}}",
           "warning": {
             "unindexed": "{{source}} no tiene su texto indexado: no se puede revisar qué páginas tratan cada pregunta.",
@@ -3035,7 +3035,7 @@
     "bookSearchFailed": "No se pudo buscar en el libro. Intenta de nuevo.",
     "bookSearchEmpty": "Esa palabra no aparece en el texto extraído de este libro.",
     "bookSearchTruncated": "Hay más hojas con esa palabra. Prueba un término más preciso.",
-    "hitPage": "p. {{printed}} · hoja {{sheet}}",
+    "hitPage": "{{printed}} · hoja {{sheet}}",
     "hitSheet": "hoja {{sheet}}",
     "hitCount_one": "{{count}} vez",
     "hitCount_other": "{{count}} veces"
@@ -3162,8 +3162,8 @@
       "no-aplica": "No aplica"
     },
     "reason": {
-      "marked": "Marcaste que este curso no la da.",
-      "markedRead": "La revisaste.",
+      "marked": "Marcaste que no aplica en este curso.",
+      "markedRead": "Marcaste esta entrada como revisada.",
       "plazo": {
         "not-in-course": "Este trabajo no está en un curso con calendario: el plazo no se ve en ningún lado.",
         "no-entry": "El trabajo no está en el calendario del curso. Vincúlalo desde el escritorio del curso.",
@@ -3219,7 +3219,7 @@
       }
     },
     "action": {
-      "read": "Ya la revisé",
+      "read": "Marcar como revisada",
       "notApplicable": "No aplica",
       "undo": "Deshacer"
     },
@@ -3283,7 +3283,11 @@
       "text": {
         "length": {
           "pages": "Extensión: de {{min}} a {{max}} páginas",
-          "words": "Extensión: de {{min}} a {{max}} palabras"
+          "words": "Extensión: de {{min}} a {{max}} palabras",
+          "pagesMin": "Extensión: al menos {{min}} páginas",
+          "pagesMax": "Extensión: hasta {{max}} páginas",
+          "wordsMin": "Extensión: al menos {{min}} palabras",
+          "wordsMax": "Extensión: hasta {{max}} palabras"
         },
         "sources_one": "Al menos {{count}} fuente de tipo «{{sourceType}}»",
         "sources_other": "Al menos {{count}} fuentes de tipo «{{sourceType}}»",

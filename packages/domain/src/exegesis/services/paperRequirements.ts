@@ -9,8 +9,9 @@
  * Se arman sin el asistente, de lo que ya está escrito: la rúbrica (extensión,
  * fuentes por tipo, criterios, lecturas exigidas), las preguntas del encuadre y
  * el tipo de trabajo. El autor agrega los que falten, dice en qué sección se
- * cumple cada uno y si va en el cuerpo. Ninguno se borra en silencio: uno que
- * ya no sale de la rúbrica queda marcado, para que el autor lo vea.
+ * cumple cada uno y si va en el cuerpo. Los derivados se recalculan cada vez:
+ * si la rúbrica deja de pedir algo, ese requisito deja de aparecer (sus marcas
+ * quedan guardadas por id y vuelven si el requisito vuelve).
  */
 import type { PaperRubric } from '../entities/PaperRubric';
 import { PAPER_PROFILES, type PaperProfileKind } from './paperProfile';
@@ -120,7 +121,9 @@ function derived(input: RequirementsInput): Array<Omit<PaperRequirement, 'inBody
     const r = input.rubric;
     if (r?.expectedLength && (r.expectedLength.min !== null || r.expectedLength.max !== null)) {
         const { unit, min, max } = r.expectedLength;
-        out.push({ id: 'rubrica:extension', origin: 'rubrica', unitId: null, text: { key: `length.${unit}`, values: { min: min ?? '—', max: max ?? '—' } } });
+        // Con un solo extremo no se escribe «de — a 12»: «al menos 8» o «hasta 12».
+        const forma = min !== null && max !== null ? '' : min !== null ? 'Min' : 'Max';
+        out.push({ id: 'rubrica:extension', origin: 'rubrica', unitId: null, text: { key: `length.${unit}${forma}`, values: { min: min ?? 0, max: max ?? 0 } } });
     }
     for (const s of r?.sourceRequirements ?? []) {
         if (s.minimum <= 0) continue;

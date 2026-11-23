@@ -67,11 +67,18 @@ export function EditionSection({ review, resource, cited, onSave, saving }: {
     );
 }
 
-export function PaginationSection({ review, ebook, storedConfirmed, canSave, onSave, onSaveNone, onCalibrate, onShowSheet, saving }: {
+export function PaginationSection({ review, ebook, storedConfirmed, storedResolves = false, canSave, onSave, onSaveNone, onCalibrate, onShowSheet, saving }: {
     review: PdfReview;
     ebook: boolean;
     /** Ya hay una numeración confirmada: si coincide con las hojas, no hay nada que guardar. */
     storedConfirmed: boolean;
+    /**
+     * La numeración guardada y confirmada resuelve páginas: entonces «no tiene
+     * páginas impresas» no se ofrece con un clic. Que las muestras no lean un
+     * folio (va en el encabezado, no en la banda) no prueba que no lo haya
+     * (revisión final de la fase A).
+     */
+    storedResolves?: boolean;
     /** Hay una numeración que guardar: un desfase leído en al menos dos hojas (`numberingFromReview`). */
     canSave: boolean;
     onSave: () => void;
@@ -84,7 +91,7 @@ export function PaginationSection({ review, ebook, storedConfirmed, canSave, onS
     const p = review.pagination;
     const leidas = p.points.filter(x => x.style === 'arabic');
     const ejemplo = leidas[0];
-    const regla = p.offset === null ? '' : t(p.offset <= 0 ? 'review.pagination.minus' : 'review.pagination.plus', { count: Math.abs(p.offset) });
+    const regla = p.offset === null ? '' : p.offset === 0 ? t('review.pagination.same') : t(p.offset < 0 ? 'review.pagination.minus' : 'review.pagination.plus', { count: Math.abs(p.offset) });
     const verdict = ebook ? 'ebook' : p.verdict;
     const yaGuardada = storedConfirmed && p.storedAgrees;
     const [romanos, arabigos] = p.runs;
@@ -127,7 +134,7 @@ export function PaginationSection({ review, ebook, storedConfirmed, canSave, onS
                         {t(p.storedDisagrees ? 'review.pagination.replace' : verdict === 'tramos' ? 'review.pagination.saveRuns' : 'review.pagination.save')}
                     </ReviewAction>
                 )}
-                {(verdict === 'sin-folios' || verdict === 'ebook') && (
+                {(verdict === 'sin-folios' || verdict === 'ebook') && !(storedConfirmed && storedResolves) && (
                     <ReviewAction onClick={onSaveNone} disabled={saving}>{t('review.pagination.saveNone')}</ReviewAction>
                 )}
                 {!ebook && <ReviewAction onClick={onCalibrate}>{t('review.pagination.calibrate')}</ReviewAction>}

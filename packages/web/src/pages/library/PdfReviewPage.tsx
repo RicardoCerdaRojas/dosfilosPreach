@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { numberingFromCalibrationPoints, type PageNumbering } from '@dosfilos/domain';
+import { hasResolvedNumbering, keepSheetPages, numberingFromCalibrationPoints, type PageNumbering } from '@dosfilos/domain';
 import { Button } from '@/components/ui/button';
 import { PdfPageViewer } from '@/components/exegesis/setup/page-picker/PdfPageViewer';
 import { CopySection, EditionSection, IdentitySection, PaginationSection } from '@/components/library/review/ReviewSections';
@@ -50,7 +50,8 @@ export function PdfReviewPage() {
     const guardar = async (numbering: PageNumbering | null) => {
         if (!numbering) return;
         try {
-            await guardarNumeracion.mutateAsync({ resourceId: resource.id, numbering });
+            // Las páginas leídas de marcas del texto se conservan, guarde lo que guarde la bandeja.
+            await guardarNumeracion.mutateAsync({ resourceId: resource.id, numbering: keepSheetPages(numbering, resource.pageNumbering) });
             toast.success(t('review.pagination.saved'));
         } catch (err) {
             console.error('[revision] no se pudo guardar la numeración', err);
@@ -97,6 +98,7 @@ export function PdfReviewPage() {
                         review={review}
                         ebook={ebook}
                         storedConfirmed={resource.pageNumbering?.origin === 'confirmed'}
+                        storedResolves={hasResolvedNumbering(resource.pageNumbering)}
                         saving={guardarNumeracion.isPending}
                         canSave={!!propuesta}
                         onSave={() => void guardar(propuesta)}

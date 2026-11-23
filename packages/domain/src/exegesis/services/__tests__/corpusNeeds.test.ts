@@ -143,4 +143,15 @@ describe('cleanAcquisitionMarks', () => {
         expect(m.b!.reason).toHaveLength(300);
         expect(cleanAcquisitionMarks(null)).toEqual({});
     });
+
+    it('una sola copia no cubre dos obras del catálogo (revisión final de la fase A)', () => {
+        // Dos obras de Martin en el catálogo, una sola copia en la biblioteca.
+        const dos = { 'commentary-critical': [
+            rec({ author: 'Ralph P. Martin', title: 'James', series: 'Word Biblical Commentary 48', publisher: 'Word', year: 1988 }),
+            rec({ author: 'Ralph P. Martin', title: 'James', series: 'Word Biblical Commentary 48', publisher: 'Thomas Nelson', year: 2018 }),
+        ] } as Record<string, SourceRecommendation[]>;
+        const [criticos] = corpusNeeds(input({ corpusTypes: [], recommendationsFor: (t: string) => dos[t] ?? [] }));
+        expect(criticos!.candidates.filter(c => c.resourceId === 'martin')).toHaveLength(1);
+        expect(criticos!.withinReach).toBe(1);
+    });
 });

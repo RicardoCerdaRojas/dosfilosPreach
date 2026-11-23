@@ -177,7 +177,10 @@ function candidatesForType(type: SourceType, input: CorpusNeedsInput, marks: Rea
     const out: NeedCandidate[] = [];
     // El catálogo primero: trae la edición. Si el autor tiene la obra, la copia se le pega.
     for (const rec of input.recommendationsFor(type)) {
-        const libro = findLibraryResourceForRecommendation(rec, delTipo.map(b => ({ ...b, author: b.author ?? null })));
+        // Un libro ya tomado por otra obra del catálogo no cubre esta: una sola
+        // copia de Moo casaba con su TNTC y con su PNTC y contaba dos
+        // (revisión final de la fase A).
+        const libro = findLibraryResourceForRecommendation(rec, delTipo.filter(b => !usados.has(b.id)).map(b => ({ ...b, author: b.author ?? null })));
         if (libro) usados.add(libro.id);
         const excluido = libro?.excludedBy ?? input.excludedRecommendation?.(rec) ?? null;
         out.push(buildCandidate({

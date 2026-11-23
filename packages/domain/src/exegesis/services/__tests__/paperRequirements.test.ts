@@ -121,3 +121,30 @@ describe('categorías que el curso no acepta («IGNORA»)', () => {
         expect(ignoredCategoriesIn(null, vetadas)).toEqual([]);
     });
 });
+
+describe('requirementsOfPaper — cuenta las fuentes como «Qué conseguir» (revisión final de la fase A)', () => {
+    it('un comentario a OTRO libro bíblico no suma al requisito de comentarios', async () => {
+        const { requirementsOfPaper } = await import('../requirementsOfPaper');
+        const fuente = (id: string) => ({ id, corpusId: id, sourceLibraryResourceId: id, sourceType: 'commentary-critical', mode: 'full-text', excerpts: [], excerptRecipe: null });
+        const paper = {
+            passage: { bookId: 'JAS', chapterStart: 3, chapterEnd: 3, verseStart: 1, verseEnd: 5 }, steps: [], assignmentBrief: '',
+            rubric: { sourceRequirements: [{ sourceType: 'commentary-critical', minimum: 2, maximum: null, justification: '' }] },
+            sources: [fuente('santiago'), fuente('jonas')],
+        } as never;
+        const libros: Record<string, { coversBibleBooks: string[] }> = { santiago: { coversBibleBooks: ['JAS'] }, jonas: { coversBibleBooks: ['JON'] } };
+        const fuentes = (r: ReturnType<typeof requirementsOfPaper>) => r.requirements.find(x => x.id === 'rubrica:fuente:commentary-critical')!;
+        expect(fuentes(requirementsOfPaper(paper, id => libros[id] as never)).done).toBe(false);
+        // Sin saber de qué libro es cada uno, cuentan los dos (como antes).
+        expect(fuentes(requirementsOfPaper(paper)).done).toBe(true);
+    });
+
+    it('extensión con un solo extremo: «al menos» o «hasta», nunca «de — a»', () => {
+        const texto = (min: number | null, max: number | null) => paperRequirements({
+            profileKind: 'tp-por-pregunta', units, rubric: { ...rubric, expectedLength: { unit: 'pages' as const, min, max } },
+        }).find(x => x.id === 'rubrica:extension')?.text;
+        expect(texto(2, 3)).toEqual({ key: 'length.pages', values: { min: 2, max: 3 } });
+        expect(texto(8, null)).toEqual({ key: 'length.pagesMin', values: { min: 8, max: 0 } });
+        expect(texto(null, 12)).toEqual({ key: 'length.pagesMax', values: { min: 0, max: 12 } });
+        expect(texto(null, null)).toBeUndefined();
+    });
+});

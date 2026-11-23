@@ -173,7 +173,7 @@
       "refineError": "Error al refinar la sección",
       "updateError": "Error al actualizar la sección",
       "parseError": "No se pudo leer la respuesta del asistente",
-      "invalidArray": "El modelo no devolvió un array válido"
+      "invalidArray": "El asistente no devolvió una lista válida"
     },
     "success": {
       "generated": "Estudio exegético generado",

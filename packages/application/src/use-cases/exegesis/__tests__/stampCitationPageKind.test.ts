@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { buildEmptyCanonicalVerseAnalysis } from '@dosfilos/domain';
 import type { CanonicalVerseAnalysis, PageNumbering, ProjectSource } from '@dosfilos/domain';
-import { stampCitationPageKind } from '../stampCitationPageKind';
+import { anchorNumberingFor, stampCitationPageKind } from '../stampCitationPageKind';
+import { citationAnchorFor } from '@dosfilos/domain';
 
 const fuente = (id: string, citationKey: string): ProjectSource =>
     ({ id, citationKey } as ProjectSource);
@@ -32,7 +33,10 @@ describe('stampCitationPageKind', () => {
         expect(kindDe(out)).toBe('sheet');
     });
 
-    it('basta un tramo que resuelva para sellar página impresa', () => {
+    it('sin tramos, NO basta un tramo que resuelva: con hojas sin folio el sello es «hoja» (revisión final de la fase A)', () => {
+        // Antes bastaba, y la hoja 5 (sin folio) llegaba como «hoja 5», el
+        // asistente copiaba 5 y salía «p. 5». Con «hoja», el rotulador pasa
+        // cada hoja a su página (o la deja como hoja) al componer.
         const numbering: PageNumbering = {
             segments: [
                 { fromSheet: 1, toSheet: 18, offset: null },
@@ -46,7 +50,7 @@ describe('stampCitationPageKind', () => {
             [fuente('m1', 'Mayor')],
             new Map([['m1', numbering]]),
         );
-        expect(kindDe(out)).toBe('printed');
+        expect(kindDe(out)).toBe('sheet');
     });
 
     it('un desfase de cero es un desfase: Porter se cita por página', () => {
@@ -123,9 +127,14 @@ describe('stampCitationPageKind — libros que numeran sólo una parte', () => {
         expect(kindDe(stampCitationPageKind(analisis('Mayor'), [src], new Map([[src.id, conHueco]])))).toBe('sheet');
     });
 
-    it('sin tramos elegidos se sigue preguntando por el libro', () => {
+    it('sin tramos elegidos, un libro con hojas sin folio se sella «hoja» (Mayor: preliminares sin número)', () => {
+        // Antes daba «printed»: una cita copiada de una hoja sin folio («hoja
+        // 100») salía «p. 100». Ahora el ancla dice hoja y el rotulador la
+        // pasa a página impresa donde la hay (revisión final de la fase A).
         const src = { ...fuente('m1', 'Mayor'), excerptRecipe: null } as ProjectSource;
-        expect(sello(src)).toBe('printed');
+        expect(sello(src)).toBe('sheet');
+        const unico: PageNumbering = { origin: 'confirmed', segments: [{ fromSheet: 1, toSheet: 540, offset: -10 }] };
+        expect(kindDe(stampCitationPageKind(analisis('Mayor'), [src], new Map([['m1', unico]])))).toBe('printed');
     });
 });
 
@@ -144,7 +153,16 @@ describe('stampCitationPageKind — páginas marcadas en el texto (Kittel, A8b)'
 
     it('hojas elegidas con sus páginas marcadas: página impresa, no sección ni hoja', () => {
         expect(sello(con([{ start: 524, end: 526 }]))).toBe('printed');
-        expect(sello(con(null))).toBe('printed');
+        // Sin tramos, el libro tiene hojas sin marca: «hoja».
+        expect(sello(con(null))).toBe('sheet');
+    });
+
+    it('el ancla que ve el analizador va en la unidad del sello: un tramo mixto da «hoja», no «pp.»', () => {
+        const mixto = con([{ start: 525, end: 527 }]);
+        expect(anchorNumberingFor(mixto, KITTEL)).toBeNull();
+        expect(citationAnchorFor({ sheet: 525, section: null }, anchorNumberingFor(mixto, KITTEL))).toBe('hoja 525');
+        const marcado = con([{ start: 524, end: 526 }]);
+        expect(citationAnchorFor({ sheet: 525, section: null }, anchorNumberingFor(marcado, KITTEL))).toBe('pp. 666–667');
     });
 
     it('una hoja del tramo sin páginas marcadas: hoja', () => {

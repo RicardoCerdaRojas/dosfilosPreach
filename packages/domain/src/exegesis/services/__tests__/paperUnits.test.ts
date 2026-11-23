@@ -68,6 +68,16 @@ describe('passageVerses', () => {
         const steps = [paso('b', 2, undefined, 1), paso('a', 1, undefined, 0), paso('a2', 1, undefined, 3), { id: 'c', kind: 'conclusion' as const, order: 9, verseRef: null }];
         expect(passageVerses(steps, pasaje)).toEqual([{ chapter: 5, verse: 1 }, { chapter: 5, verse: 2 }]);
     });
+    it('cada versículo de un paso de varios, no solo el primero (revisión final de la fase A)', () => {
+        const r = (vs: number, ve: number, ce = 3) => ({ bookId: 'JAS', chapterStart: 3, chapterEnd: ce, verseStart: vs, verseEnd: ve });
+        const steps = [
+            { id: 'a', kind: 'verse' as const, order: 0, verseRef: r(1, 2) },
+            { id: 'b', kind: 'verse' as const, order: 1, verseRef: r(3, 5) },
+            // Cruza capítulos: solo su primer versículo.
+            { id: 'c', kind: 'verse' as const, order: 2, verseRef: r(18, 20, 4) },
+        ];
+        expect(passageVerses(steps as never, null).map(v => `${v.chapter}:${v.verse}`)).toEqual(['3:1', '3:2', '3:3', '3:4', '3:5', '3:18']);
+    });
 });
 
 describe('buildUnitStudyMap', () => {

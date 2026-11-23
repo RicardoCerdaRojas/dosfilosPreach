@@ -1,6 +1,7 @@
 import { Loader2, Pin, Plus } from 'lucide-react';
 import {
     printedLabelForSheet,
+    printedPageAbbrev,
     type QuestionReviewRow,
     type QuestionSheet,
     type QuestionSourceCheck,
@@ -24,7 +25,7 @@ type T = ReturnType<typeof useTranslation>['t'];
 export function pageLabel(t: T, fuente: ReviewedSource | undefined, sheet: number): string {
     const impresa = fuente ? printedLabelForSheet(sheet, fuente.resource.pageNumbering, null) : null;
     return impresa
-        ? t('paperSetup.subSteps.corpus.questionReview.page', { page: impresa })
+        ? t('paperSetup.subSteps.corpus.questionReview.page', { page: printedPageAbbrev(impresa) })
         : t('paperSetup.subSteps.corpus.questionReview.sheet', { sheet });
 }
 

@@ -33,7 +33,7 @@ export function stampCitationPageKind(
     const kindByCitationKey = new Map<string, CitationPageKind>();
     for (const source of sources) {
         if (!source.citationKey) continue;
-        kindByCitationKey.set(source.citationKey, kindFor(source, numberings.get(source.id)));
+        kindByCitationKey.set(source.citationKey, citationKindFor(source, numberings.get(source.id)));
     }
     if (kindByCitationKey.size === 0) return analysis;
 
@@ -102,12 +102,16 @@ export function stampCitationPageKind(
  * «Gramática Griega» TIENE numeración guardada y esa numeración no resuelve
  * una sola página —un tramo único, hojas 1-711, sin folio—.
  */
-function kindFor(source: ProjectSource, numbering: PageNumbering | null | undefined): CitationPageKind {
+export function citationKindFor(source: ProjectSource, numbering: PageNumbering | null | undefined): CitationPageKind {
     // Un libro que declara no tener páginas impresas se cita por sección
     // (`citationAnchorFor` le dio al analizador anclas «§ …»).
     if (declaresNoFolios(numbering)) return 'section';
     const ranges = source.excerptRecipe?.sheetRanges ?? [];
-    if (ranges.length === 0) return hasResolvedNumbering(numbering) ? 'printed' : 'sheet';
+    // Sin tramos, «página» solo si la numeración resuelve TODA hoja: Mayor
+    // (preliminares sin folio) y Kittel (marcas, con hojas sin marca) daban
+    // «printed» y una cita copiada de una hoja sin folio («hoja 510») salía
+    // «p. 510» (revisión final de la fase A).
+    if (ranges.length === 0) return resuelveTodaHoja(numbering) ? 'printed' : 'sheet';
     if (!numbering) return 'sheet';
     // Un libro que marca sus páginas en el texto: cada hoja del tramo tiene que
     // traer las suyas. Sus tramos no tienen desfase, y mirarlos sellaría como
@@ -132,4 +136,26 @@ function kindFor(source: ProjectSource, numbering: PageNumbering | null | undefi
         return declarado === r.end - r.start + 1 && tocados.every(g => g.offset !== null);
     };
     return ranges.every(cubierto) ? 'printed' : 'sheet';
+}
+
+/**
+ * Toda hoja tiene página impresa: todos los tramos con desfase. Las marcas
+ * solas no alcanzan (Kittel deja hojas sin marca); con un desfase en cada
+ * tramo, la hoja sin marca también resuelve.
+ */
+function resuelveTodaHoja(numbering: PageNumbering | null | undefined): boolean {
+    if (!numbering || !hasResolvedNumbering(numbering)) return false;
+    return numbering.segments.length > 0 && numbering.segments.every(s => s.offset !== null);
+}
+
+/**
+ * La numeración con que se rotulan las anclas que ve el analizador: la misma
+ * unidad que el sello. Si la fuente se sella «hoja», sus anclas dicen «hoja
+ * N» aunque alguna hoja tenga página: el asistente copia el número, y un
+ * «pp. 666–667» sellado como hoja se rotulaba después como la hoja 666 —una
+ * página que el libro no tiene en ese lugar— (revisión final de la fase A).
+ * Al componer, el rotulador pasa cada hoja a su página impresa.
+ */
+export function anchorNumberingFor(source: ProjectSource, numbering: PageNumbering | null | undefined): PageNumbering | null {
+    return citationKindFor(source, numbering) === 'sheet' ? null : numbering ?? null;
 }

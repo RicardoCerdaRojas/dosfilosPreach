@@ -647,7 +647,8 @@
       "tramos": "There are two runs, each with its own rule: the introduction in Roman numerals (p. i is sheet {{romanFrom}}) and the body in Arabic numerals (p. 1 is sheet {{arabicFrom}}).",
       "tramosGap": "When saved, sheets {{from}}–{{to}} stay unnumbered: they were not read and where the Roman numerals end is unknown.",
       "tramosShort": "Only one body page was read: not enough to save its rule. Confirm it by calibrating.",
-      "saveRuns": "Save both numberings"
+      "saveRuns": "Save both numberings",
+      "same": "sheet and page match"
     },
     "copy": {
       "title": "The copy",

@@ -53,6 +53,17 @@ describe('Bandeja de revisión del PDF (A7)', () => {
         expect(screen.getByTestId('revision-edicion').textContent).toContain('review.edition.noCited');
     });
 
+    it('las páginas: con desfase 0 dice que hoja y página coinciden, no «se le restan 0»', () => {
+        const a = { onSave: vi.fn(), onSaveNone: vi.fn(), onCalibrate: vi.fn(), onShowSheet: vi.fn() };
+        const r = reviewPdf(buildReviewInput(martin, leido));
+        const cero = { ...r, pagination: { ...r.pagination, offset: 0 } };
+        render(<PaginationSection review={cero} ebook={false} storedConfirmed={false} canSave saving={false} {...a} />);
+        const sec = screen.getByTestId('revision-paginas');
+        expect(sec.textContent).toContain('review.pagination.same');
+        expect(sec.textContent).not.toContain('review.pagination.minus');
+        cleanup();
+    });
+
     it('las páginas: una regla (resta 111), guardar, ver una hoja; con la misma numeración ya confirmada no se ofrece guardar', () => {
         const a = { onSave: vi.fn(), onSaveNone: vi.fn(), onCalibrate: vi.fn(), onShowSheet: vi.fn() };
         const r = reviewPdf(buildReviewInput(martin, leido));
@@ -164,5 +175,16 @@ describe('Bandeja de revisión del PDF (A7)', () => {
         expect(screen.queryByText('review.pagination.save')).toBeNull();
         expect(screen.queryByText('review.pagination.replace')).toBeNull();
         expect(screen.queryByText('review.pagination.storedDisagrees')).toBeNull();
+    });
+
+    it('con una numeración confirmada que resuelve páginas, «no tiene páginas impresas» no se ofrece aunque las muestras no lean folio', () => {
+        const a = { onSave: vi.fn(), onSaveNone: vi.fn(), onCalibrate: vi.fn(), onShowSheet: vi.fn() };
+        const sinFolio = { ...leido, samples: leido.samples.map(x => ({ ...x, folio: null })) };
+        const r = reviewPdf(buildReviewInput(martin, sinFolio));
+        render(<PaginationSection review={r} ebook={false} storedConfirmed storedResolves canSave={false} saving={false} {...a} />);
+        expect(screen.queryByText('review.pagination.saveNone')).toBeNull();
+        cleanup();
+        render(<PaginationSection review={r} ebook={false} storedConfirmed={false} canSave={false} saving={false} {...a} />);
+        expect(screen.getByText('review.pagination.saveNone')).toBeTruthy();
     });
 });

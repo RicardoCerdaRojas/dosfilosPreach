@@ -15,43 +15,43 @@
             "rewrites": [
                 {
                     "source": "/mcp",
-                    "function": {
-                        "functionId": "mcpGateway",
+                    "run": {
+                        "serviceId": "mcpgateway",
                         "region": "us-central1"
                     }
                 },
                 {
                     "source": "/oauth/**",
-                    "function": {
-                        "functionId": "mcpGateway",
+                    "run": {
+                        "serviceId": "mcpgateway",
                         "region": "us-central1"
                     }
                 },
                 {
                     "source": "/.well-known/oauth-authorization-server",
-                    "function": {
-                        "functionId": "mcpGateway",
+                    "run": {
+                        "serviceId": "mcpgateway",
                         "region": "us-central1"
                     }
                 },
                 {
                     "source": "/.well-known/oauth-authorization-server/**",
-                    "function": {
-                        "functionId": "mcpGateway",
+                    "run": {
+                        "serviceId": "mcpgateway",
                         "region": "us-central1"
                     }
                 },
                 {
                     "source": "/.well-known/oauth-protected-resource",
-                    "function": {
-                        "functionId": "mcpGateway",
+                    "run": {
+                        "serviceId": "mcpgateway",
                         "region": "us-central1"
                     }
                 },
                 {
                     "source": "/.well-known/oauth-protected-resource/**",
-                    "function": {
-                        "functionId": "mcpGateway",
+                    "run": {
+                        "serviceId": "mcpgateway",
                         "region": "us-central1"
                     }
                 },

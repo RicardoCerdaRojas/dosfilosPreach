@@ -104,7 +104,7 @@ describe('«¿Qué responde cada pregunta?»', () => {
     it('avisa la nota de Mayor sobre 4:3 con su página impresa, y la fija SOLA y solo para el paso de esa pregunta', async () => {
         montar(trabajo([fuente('mayor', 'commentary-critical', [{ start: 407, end: 410 }])]));
         const aviso = await screen.findByText(/warning\.missingSheets/);
-        expect(aviso.textContent).toContain('"pages":"paperSetup.subSteps.corpus.questionReview.page {\\"page\\":\\"133\\"}"');
+        expect(aviso.textContent).toContain('"pages":"paperSetup.subSteps.corpus.questionReview.page {\\"page\\":\\"p. 133\\"}"');
         expect(aviso.textContent).toContain('"verses":"4:3"');
         fireEvent.click(screen.getByText('paperSetup.subSteps.corpus.questionReview.action.pinForQuestion {"count":1}'));
         await waitFor(() => expect(setStepPinnedSheets).toHaveBeenCalledTimes(1));

@@ -997,7 +997,7 @@
           "byQuestion": "See by question",
           "questionHeading": "Question {{number}} · {{verses}}",
           "noSource": "No source in the corpus names these verses.",
-          "page": "p. {{page}}",
+          "page": "{{page}}",
           "sheet": "sh. {{sheet}}",
           "warning": {
             "unindexed": "{{source}} has no indexed text: its pages per question cannot be reviewed.",
@@ -3035,7 +3035,7 @@
     "bookSearchFailed": "The book could not be searched. Try again.",
     "bookSearchEmpty": "That word does not appear in this book's extracted text.",
     "bookSearchTruncated": "More sheets contain that word. Try a narrower term.",
-    "hitPage": "p. {{printed}} · sheet {{sheet}}",
+    "hitPage": "{{printed}} · sheet {{sheet}}",
     "hitSheet": "sheet {{sheet}}",
     "hitCount_one": "{{count}} time",
     "hitCount_other": "{{count}} times"
@@ -3162,8 +3162,8 @@
       "no-aplica": "Not applicable"
     },
     "reason": {
-      "marked": "You marked that this course does not give it.",
-      "markedRead": "You reviewed it.",
+      "marked": "You marked it as not applying in this course.",
+      "markedRead": "You marked this input as reviewed.",
       "plazo": {
         "not-in-course": "This paper is not in a course with a calendar: the deadline is nowhere.",
         "no-entry": "The paper is not in the course calendar. Link it from the course desk.",
@@ -3219,7 +3219,7 @@
       }
     },
     "action": {
-      "read": "I reviewed it",
+      "read": "Mark as reviewed",
       "notApplicable": "Not applicable",
       "undo": "Undo"
     },
@@ -3283,7 +3283,11 @@
       "text": {
         "length": {
           "pages": "Length: {{min}} to {{max}} pages",
-          "words": "Length: {{min}} to {{max}} words"
+          "words": "Length: {{min}} to {{max}} words",
+          "pagesMin": "Length: at least {{min}} pages",
+          "pagesMax": "Length: up to {{max}} pages",
+          "wordsMin": "Length: at least {{min}} words",
+          "wordsMax": "Length: up to {{max}} words"
         },
         "sources_one": "At least {{count}} source of type “{{sourceType}}”",
         "sources_other": "At least {{count}} sources of type “{{sourceType}}”",

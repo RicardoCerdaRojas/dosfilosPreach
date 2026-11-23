@@ -23,7 +23,11 @@ export const leerRequisitos: Herramienta = {
     alcance: 'corpus:read',
     async ejecutar(args, ctx) {
         const paper = await trabajoDelUsuario(ctx, texto(args, 'trabajo', { max: 200 }));
-        const { profileKind, units, requirements, warnings } = requirementsOfPaper(paper);
+        // Los libros de sus fuentes, para contar como la web (un comentario a otro libro no suma).
+        const ids = [...new Set(paper.sources.flatMap(s => [s.sourceLibraryResourceId, s.corpusId]).filter((x): x is string => !!x))];
+        const fichas = await Promise.all(ids.map(id => ctx.db.collection('library_resources').doc(id).get()));
+        const libros = new Map(fichas.filter(f => f.exists && (f.data()?.userId === ctx.uid || f.data()?.userId === '__system__')).map(f => [f.id, f.data()!]));
+        const { profileKind, units, requirements, warnings } = requirementsOfPaper(paper, id => libros.get(id) as never);
         return {
             texto: comoJson({
                 trabajo: paper.id,

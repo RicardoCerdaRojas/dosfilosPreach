@@ -173,7 +173,7 @@
       "refineError": "Error refining section",
       "updateError": "Error updating section",
       "parseError": "Couldn't read the assistant's response",
-      "invalidArray": "Model did not return a valid array"
+      "invalidArray": "The assistant did not return a valid list"
     },
     "success": {
       "generated": "Exegetical study generated",

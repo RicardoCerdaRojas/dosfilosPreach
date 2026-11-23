@@ -17,6 +17,6 @@
         "firebase-functions": "^7.3.2"
     },
     "devDependencies": {
-        "esbuild": "^0.25.12"
+        "esbuild": "^0.25.0"
     }
 }

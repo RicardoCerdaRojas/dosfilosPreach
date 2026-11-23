@@ -647,7 +647,8 @@
       "tramos": "Hay dos tramos, cada uno con su regla: la introducción en romanos (la p. i es la hoja {{romanFrom}}) y el cuerpo en arábigos (la p. 1 es la hoja {{arabicFrom}}).",
       "tramosGap": "Al guardar, las hojas {{from}}–{{to}} quedan sin número: no se leyeron y no se sabe dónde terminan los romanos.",
       "tramosShort": "Del cuerpo se leyó una sola hoja: no basta para guardar la regla. Confírmala calibrando.",
-      "saveRuns": "Guardar las dos numeraciones"
+      "saveRuns": "Guardar las dos numeraciones",
+      "same": "la hoja y la página coinciden"
     },
     "copy": {
       "title": "La copia",
