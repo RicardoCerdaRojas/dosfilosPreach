@@ -23,12 +23,15 @@
  *     en cuando, pero casi siempre van en medio. Y hay uno solo: el más
  *     frecuente de los que cumplen.
  *   - El del CAPÍTULO («MODE», «THE CASES»): corre solo dentro de su capítulo
- *     y sigue contando como título, como antes. Reinicia la ruta en cada
- *     página que abre, y eso es a propósito: medido en Robertson, las
- *     subsecciones «5. TEMPORAL CLAUSES», «8. CONDITIONAL SENTENCES» quedaron
- *     como texto plano en la extracción, y sin ese reinicio «2. CAUSAL
- *     SENTENCES» se arrastraba por 175 fragmentos que no son suyos. Una ruta
- *     gruesa y cierta («MODE») vale más que una fina y falsa en una cita.
+ *     y sigue contando como título. Si el capítulo ya está en la ruta, la
+ *     página sigue en él y CONSERVA su subsección (2026-11-23): antes
+ *     reiniciaba la ruta en cada página, y la hoja 575 de Robertson, citada en
+ *     el TP #7, perdía «VIII. The Genitive» (474 de 3.256 fragmentos, el 15 %,
+ *     terminaban en el nombre del capítulo). El reinicio existía porque
+ *     subsecciones como «5. TEMPORAL CLAUSES» llegaron como texto plano y, sin
+ *     él, «2. CAUSAL SENTENCES» se arrastraba por 175 fragmentos; ahora esos
+ *     hermanos numerados se reconocen en el texto (`encabezadosNumerados.ts`)
+ *     y cierran la subsección anterior.
  */
 
 /** Páginas que tiene que abrir un mismo título para ser un encabezado corrido. */
@@ -99,6 +102,22 @@ function parecido(a: string, b: string): number {
     return largo === 0 ? 1 : 1 - distancia(a, b) / largo;
 }
 
+/** Las cifras y los números romanos de una clave, en orden («capitulo 3» → ['3']). */
+function numerosDe(clave: string): string {
+    return clave.split(' ').filter(w => /^\p{N}+$/u.test(w) || /^[ivxlc]+$/.test(w)).join(' ');
+}
+
+/**
+ * Si dos claves son el mismo encabezado con errores del escaneo: largas,
+ * parecidas y con LOS MISMOS números. «capitulo 3» y «capitulo 4» se parecen
+ * en 0,9 y son capítulos distintos (revisión adversarial de A8d: el 4 heredaba
+ * la ruta del 3); también «santiago 1» / «santiago 2», «chapter xii» / «xiii».
+ */
+function esVariante(a: string, b: string): boolean {
+    return a.length >= LARGO_MINIMO_PARA_VARIANTE && b.length >= LARGO_MINIMO_PARA_VARIANTE
+        && numerosDe(a) === numerosDe(b) && parecido(a, b) >= PARECIDO_DE_UNA_VARIANTE;
+}
+
 /**
  * Para el título que abre cada página (null si la página no abre con uno),
  * si hay que ignorarlo por ser un encabezado corrido repetido.
@@ -108,36 +127,75 @@ export function encabezadosCorridosAIgnorar(
     /** Todos los títulos del documento, estén donde estén (para saber cuántos van en medio). */
     todosLosTitulos: ReadonlyArray<string> = [],
 ): boolean[] {
+    return clasificarTitulosAlTope(titulosAlTope, todosLosTitulos).map(c => c?.tipo === 'libro');
+}
+
+export interface TituloCorrido {
+    /** `libro`: se ignora. `capitulo`: cuenta como título, pero no reinicia el capítulo en que ya se está. */
+    tipo: 'libro' | 'capitulo';
+    /** La clave del encabezado corrido al que pertenece (la de su forma más frecuente). */
+    grupo: string;
+}
+
+/**
+ * Para el título que abre cada página, qué encabezado corrido es: el del
+ * libro, uno de capítulo, o ninguno. Uno de capítulo abre tres páginas o más
+ * y va arriba en al menos el 90 % de sus apariciones (como el del libro): los
+ * subtítulos de perícopa («Comment»), que abren una página de vez en cuando
+ * pero casi siempre van en medio, no lo son.
+ */
+export function clasificarTitulosAlTope(
+    titulosAlTope: ReadonlyArray<string | null>,
+    todosLosTitulos: ReadonlyArray<string> = [],
+): Array<TituloCorrido | null> {
     const claves = titulosAlTope.map(t => (t ? claveDeCorrido(t) : ''));
     const cuenta = new Map<string, number>();
     for (const k of claves) if (k) cuenta.set(k, (cuenta.get(k) ?? 0) + 1);
-    const corridos = [...cuenta].filter(([, n]) => n >= REPETICIONES_DE_UN_CORRIDO).map(([k]) => k);
-    if (corridos.length === 0) return claves.map(() => false);
+    // Los frecuentes, del más al menos. Una variante del escaneo que también
+    // abre tres páginas («A GRAMMAR OP THE…», 3 en Robertson) es la del más
+    // frecuente al que se parece, no un corrido aparte: suelta, quedaba como
+    // título de capítulo y, ahora que el capítulo conserva la ruta, se
+    // arrastraba (2026-11-23).
+    const frecuentes = [...cuenta].filter(([, n]) => n >= REPETICIONES_DE_UN_CORRIDO).sort((a, b) => b[1] - a[1]).map(([k]) => k);
+    const corridos: string[] = [];
+    const varianteDe = new Map<string, string>();
+    for (const k of frecuentes) {
+        const de = corridos.find(c => esVariante(k, c));
+        if (de) varianteDe.set(k, de);
+        else corridos.push(k);
+    }
+    if (corridos.length === 0) return claves.map(() => null);
 
     // Cada clave va al encabezado corrido que representa (ella misma, o el
     // frecuente al que más se parece), o a nada.
     const grupo = new Map<string, string | null>();
     for (const k of cuenta.keys()) {
         if (corridos.includes(k)) { grupo.set(k, k); continue; }
+        if (varianteDe.has(k)) { grupo.set(k, varianteDe.get(k)!); continue; }
         let mejor: string | null = null;
         let mejorParecido = 0;
-        if (k.length >= LARGO_MINIMO_PARA_VARIANTE) {
-            for (const c of corridos) {
-                if (c.length < LARGO_MINIMO_PARA_VARIANTE) continue;
-                const p = parecido(k, c);
-                if (p >= PARECIDO_DE_UNA_VARIANTE && p > mejorParecido) { mejor = c; mejorParecido = p; }
-            }
+        for (const c of corridos) {
+            if (!esVariante(k, c)) continue;
+            const p = parecido(k, c);
+            if (p > mejorParecido) { mejor = c; mejorParecido = p; }
         }
         grupo.set(k, mejor);
     }
 
-    // Una clave fuera de las del tope busca su grupo por parecido, como las demás.
+    // Una clave fuera de las del tope busca su grupo por parecido, como las
+    // demás. Cuántas veces aparece cada grupo en todo el documento se cuenta
+    // UNA vez: contarlo por página recorría todos los títulos con Levenshtein
+    // en cada una (1.500 páginas: de 0,6 s a 77 s; revisión adversarial).
     const grupoDe = (k: string): string | null => {
         if (!k) return null;
-        if (grupo.has(k)) return grupo.get(k) ?? null;
-        if (k.length < LARGO_MINIMO_PARA_VARIANTE) return null;
-        return corridos.find(c => c.length >= LARGO_MINIMO_PARA_VARIANTE && parecido(k, c) >= PARECIDO_DE_UNA_VARIANTE) ?? null;
+        if (!grupo.has(k)) grupo.set(k, corridos.find(c => esVariante(k, c)) ?? null);
+        return grupo.get(k) ?? null;
     };
+    const enTodoElDocumento = new Map<string, number>();
+    for (const t of todosLosTitulos) {
+        const g = grupoDe(claveDeCorrido(t));
+        if (g) enTodoElDocumento.set(g, (enTodoElDocumento.get(g) ?? 0) + 1);
+    }
     // Del libro: entre su primera y su última aparición abre páginas con los
     // encabezados de varios capítulos. Uno de capítulo, a lo sumo con el del libro.
     const posiciones = new Map<string, number[]>();
@@ -153,7 +211,7 @@ export function encabezadosCorridosAIgnorar(
         if (otros.size < CAPITULOS_QUE_ATRAVIESA_EL_DEL_LIBRO) continue;
         if (pos.length < PAGINAS_QUE_ABRE_EL_DEL_LIBRO * titulosAlTope.length) continue;
         if (hasta - desde < TRAMO_QUE_RECORRE_EL_DEL_LIBRO * titulosAlTope.length) continue;
-        const enTotal = todosLosTitulos.filter(t => grupoDe(claveDeCorrido(t)) === g).length;
+        const enTotal = enTodoElDocumento.get(g) ?? 0;
         if (enTotal > 0 && pos.length / enTotal < PARTE_AL_TOPE_DEL_DEL_LIBRO) continue;
         delLibro.add(g);
     }
@@ -162,8 +220,20 @@ export function encabezadosCorridosAIgnorar(
     // (cada libro tiene la suya) y no se puede ignorar.
     const [elDelLibro] = [...delLibro].sort((a, b) => posiciones.get(b)!.length - posiciones.get(a)!.length);
 
-    return claves.map(k => {
+    const alTopeCasiSiempre = (g: string) => {
+        const enTotal = enTodoElDocumento.get(g) ?? 0;
+        return enTotal === 0 || posiciones.get(g)!.length / enTotal >= PARTE_AL_TOPE_DEL_DEL_LIBRO;
+    };
+    return claves.map((k): TituloCorrido | null => {
         const g = k ? grupo.get(k) ?? null : null;
-        return !!g && g === elDelLibro;
+        if (!g) return null;
+        if (g === elDelLibro) return { tipo: 'libro', grupo: g };
+        return alTopeCasiSiempre(g) ? { tipo: 'capitulo', grupo: g } : null;
     });
+}
+
+/** Si un título es una forma (o una variante del escaneo) del encabezado corrido `grupo`. */
+export function esDelCorrido(titulo: string, grupo: string): boolean {
+    const k = claveDeCorrido(titulo);
+    return k === grupo || esVariante(k, grupo);
 }

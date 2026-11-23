@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { claveDeCorrido, claveDeEncabezado, encabezadosCorridosAIgnorar } from '../encabezadosCorridos';
+import { clasificarTitulosAlTope, claveDeCorrido, claveDeEncabezado, encabezadosCorridosAIgnorar, esDelCorrido } from '../encabezadosCorridos';
 import { chunkStructuredMarkdown } from '../markdownChunker';
 
 /** Medido en Robertson (A8c): el título del libro abre 357 páginas y reiniciaba la sección. */
@@ -62,16 +62,71 @@ describe('chunkStructuredMarkdown — encabezados corridos (Robertson, A8c)', ()
     it('el título del libro arriba de la página no reemplaza la sección', () => {
         // Hoja 2: la subsección sigue; hoja 4: tampoco la variante del escaneo la reemplaza.
         expect(rutaDe(2)).toEqual(['THE CASES', 'VIII. The Genitive']);
-        expect(rutaDe(4)).toEqual(['THE CASES', 'THE CASES']);
-        // La hoja 9 sigue de la 8 («## MODE», el del capítulo, que cuenta como antes).
-        expect(rutaDe(9)).toEqual(['MODE', 'MODE']);
+        expect(rutaDe(4)).toEqual(['THE CASES', 'VIII. The Genitive']);
+        expect(rutaDe(9)).toEqual(['MODE', '2. Causal sentences']);
         expect(cs.some(c => c.sectionPath.some(h => /GRAMMAR/.test(h)))).toBe(false);
     });
 
-    it('el del capítulo sigue contando como título, como antes: reinicia la ruta', () => {
-        expect(rutaDe(3)).toEqual(['THE CASES', 'THE CASES']);
+    it('el del capítulo en que ya se está no reinicia la ruta: la página conserva su subsección (2026-11-23)', () => {
+        // Antes la hoja 3 decía solo «THE CASES»: la 575 de Robertson perdía el genitivo.
+        expect(rutaDe(3)).toEqual(['THE CASES', 'VIII. The Genitive']);
+        expect(rutaDe(5)).toEqual(['THE CASES', 'VIII. The Genitive']);
         expect(rutaDe(6)).toEqual(['MODE', '2. Causal sentences']);
+        expect(rutaDe(10)).toEqual(['MODE', '2. Causal sentences']);
         expect(rutaDe(11)).toEqual(['TENSE', 'Aorist']);
+    });
+
+    it('al entrar en otro capítulo, su corrido reinicia la ruta: la subsección del anterior no pasa', () => {
+        // El capítulo nuevo llega SOLO por su corrido (sin «#» propio): no está en la ruta, y la reinicia.
+        const md3 = [
+            `<!-- page: 1 -->\n# THE CASES\n\n## VIII. The Genitive\n\n${relleno}\n`,
+            ...[2, 3, 4].map(n => `<!-- page: ${n} -->\n## THE CASES\n\n${relleno}\n`),
+            ...[5, 6, 7].map(n => `<!-- page: ${n} -->\n## MODE\n\n${relleno}\n`),
+        ].join('');
+        const cs3 = chunkStructuredMarkdown(md3);
+        expect(cs3.find(c => c.page === 4)?.sectionPath).toEqual(['THE CASES', 'VIII. The Genitive']);
+        expect(cs3.find(c => c.page === 6)?.sectionPath).toEqual(['THE CASES', 'MODE']);
+        expect(cs3.some(c => c.page >= 5 && c.sectionPath.includes('VIII. The Genitive'))).toBe(false);
+    });
+
+    it('un subtítulo que abre páginas pero casi siempre va en medio no es corrido: reinicia como siempre', () => {
+        // «Comment» abre 3 páginas y va en medio en 6: es un título real de cada perícopa.
+        const pericopas = [1, 2, 3, 4, 5, 6].map(n => `<!-- page: ${n} -->\n${n <= 3 ? '' : `${relleno}\n\n`}## Comment\n\n${relleno}\n\n### ${n + 1}. Detalle de la perícopa\n\n${relleno}\n`).join('')
+            + `<!-- page: 7 -->\n${relleno}\n\n## Comment\n\n${relleno}\n<!-- page: 8 -->\n${relleno}\n\n## Comment\n\n${relleno}\n<!-- page: 9 -->\n${relleno}\n\n## Comment\n\n${relleno}\n`;
+        const cs4 = chunkStructuredMarkdown(`<!-- page: 0 -->\n# Jas 1\n\n${relleno}\n${pericopas}`);
+        expect(cs4.filter(c => c.page === 7).at(-1)?.sectionPath).toEqual(['Jas 1', 'Comment']);
+        // Arriba de la hoja 2, «Comment» reinicia: el detalle de la perícopa anterior no pasa.
+        expect(cs4.find(c => c.page === 2)?.sectionPath).toEqual(['Jas 1', 'Comment']);
+        expect(cs4.filter(c => c.page === 2).at(-1)?.sectionPath).toEqual(['Jas 1', 'Comment', '3. Detalle de la perícopa']);
+    });
+
+    it('«CAPÍTULO 3» y «CAPÍTULO 4» no son variantes: el 4 no hereda la ruta del 3 (revisión adversarial)', () => {
+        const md5 = [
+            `<!-- page: 1 -->\n## CAPÍTULO 3\n\n### El pecado\n\n${relleno}\n`,
+            ...[2, 3, 4, 5].map(n => `<!-- page: ${n} -->\n## CAPÍTULO 3\n\n${relleno}\n`),
+            `<!-- page: 6 -->\n## CAPÍTULO 4\n\n### La gracia\n\n${relleno}\n`,
+            ...[7, 8, 9].map(n => `<!-- page: ${n} -->\n## CAPÍTULO 4\n\n${relleno}\n`),
+        ].join('');
+        const cs5 = chunkStructuredMarkdown(md5);
+        // Como en main: «CAPÍTULO 4» entra como título; lo que importa es que «El pecado» no pasa.
+        expect(cs5.filter(c => c.page >= 6).every(c => c.sectionPath.includes('CAPÍTULO 4') && !c.sectionPath.includes('El pecado'))).toBe(true);
+        expect(esDelCorrido('CAPÍTULO 4', claveDeCorrido('CAPÍTULO 3'))).toBe(false);
+        expect(esDelCorrido('SANTIAGO 2', claveDeCorrido('SANTIAGO 1'))).toBe(false);
+        expect(esDelCorrido('CHAPTER XIII', claveDeCorrido('CHAPTER XII'))).toBe(false);
+        expect(esDelCorrido('A GRAMMAR OP THE GREEK NEW TESTAMENT', claveDeCorrido(LIBRO))).toBe(true);
+    });
+
+    it('una subsección sin número no pasa la página del capítulo: sin numeración que la cierre, vuelve a lo grueso', () => {
+        const md6 = `<!-- page: 1 -->\n# MODE\n\n### Causal sentences\n\n${relleno}\n` + [2, 3, 4].map(n => `<!-- page: ${n} -->\n# MODE\n\n${relleno}\n`).join('');
+        expect(chunkStructuredMarkdown(md6).find(c => c.page === 3)?.sectionPath).toEqual(['MODE']);
+    });
+
+    it('una variante del escaneo que abre tres páginas es del título del libro, no un capítulo aparte', () => {
+        const variante = 'A GRAMMAR OP THE GREEK NEW TESTAMENT';
+        const caps = ['THE CASES', 'THE CASES', 'THE CASES', 'MODE', 'MODE', 'MODE', 'TENSE', 'TENSE', 'TENSE'];
+        const topes = caps.flatMap((c, i) => [i % 3 === 1 ? variante : LIBRO, c]);
+        expect(clasificarTitulosAlTope(topes).filter((c, i) => topes[i] === variante).every(c => c?.tipo === 'libro')).toBe(true);
+        expect(clasificarTitulosAlTope(topes)[1]).toEqual({ tipo: 'capitulo', grupo: 'the cases' });
     });
 
     it('títulos numerados siguen siendo distintos (revisión adversarial: JFB quedaba todo en «GEN 1:1»)', () => {

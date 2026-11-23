@@ -6,6 +6,8 @@
  * memoria durante la corrida y nunca se escribe a disco.
  */
 import type { Firestore } from 'firebase-admin/firestore';
+import { existsSync, readFileSync } from 'node:fs';
+import { chunkStructuredMarkdown } from '../../../packages/functions/src/library/markdownChunker';
 
 export interface FragmentoLibro {
   chunkIndex: number;
@@ -51,6 +53,28 @@ export function cargarLibro(db: Firestore, resourceId: string): Promise<LibroCar
   return p;
 }
 
+/**
+ * Con `SECCIONES_DESDE=<carpeta>` (fuera del repo), la ruta de sección de cada fragmento se
+ * recalcula con el separador del código, desde `<carpeta>/<resourceId>.md`: mide un cambio del
+ * separador ANTES de reescribir producción (A8d). Empareja por hoja y comienzo del texto, como
+ * `scripts/.secciones-a8d.ts`; sin pareja única, el fragmento queda como está.
+ */
+function seccionesDelSeparadorActual(resourceId: string, fragmentos: FragmentoLibro[]): void {
+  const dir = process.env.SECCIONES_DESDE;
+  const archivo = dir ? `${dir}/${resourceId}.md` : '';
+  if (!dir || !existsSync(archivo)) return;
+  const plano = (t: string) => t.replace(/\s+/g, ' ').trim();
+  const porHoja = new Map<number, Array<{ text: string; sectionPath: string[] }>>();
+  for (const c of chunkStructuredMarkdown(readFileSync(archivo, 'utf8'))) porHoja.set(c.page, [...(porHoja.get(c.page) ?? []), { text: plano(c.text), sectionPath: c.sectionPath }]);
+  for (const f of fragmentos) {
+    const cabeza = plano(f.text).slice(0, 80);
+    const rutas = [...new Set((porHoja.get(f.sheet) ?? []).filter(c => c.text.includes(cabeza)).map(c => JSON.stringify(c.sectionPath)))];
+    if (rutas.length !== 1) continue;
+    f.sectionPath = JSON.parse(rutas[0]!) as string[];
+    f.section = f.sectionPath[f.sectionPath.length - 1] ?? null;
+  }
+}
+
 async function leer(db: Firestore, resourceId: string): Promise<LibroCargado> {
   const recurso = (await db.doc(`library_resources/${resourceId}`).get()).data();
   if (!recurso) throw new Error(`library_resources/${resourceId} no existe`);
@@ -68,6 +92,7 @@ async function leer(db: Firestore, resourceId: string): Promise<LibroCargado> {
       refs: c.refs,
     }))
     .sort((a, b) => a.chunkIndex - b.chunkIndex);
+  seccionesDelSeparadorActual(resourceId, fragmentos);
 
   const porHoja = new Map<number, HojaIndice>();
   for (const c of fragmentos) {
