@@ -910,6 +910,24 @@
       "collectionGroup": "document_chunks",
       "fieldPath": "refs",
       "indexes": []
+    },
+    {
+      "collectionGroup": "mcp_auth_requests",
+      "fieldPath": "expiraEn",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "mcp_codes",
+      "fieldPath": "expiraEn",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "mcp_tokens",
+      "fieldPath": "expiraEn",
+      "ttl": true,
+      "indexes": []
     }
   ]
 }

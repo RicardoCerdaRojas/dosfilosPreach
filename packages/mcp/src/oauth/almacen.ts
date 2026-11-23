@@ -17,7 +17,10 @@ import { VIGENCIA } from './configuracion';
  * la suya: revocar y volver a aprobar no revive los tokens viejos (revisión
  * de A9). Presentar otra vez un código o un refresco ya usados revoca la
  * conexión entera (OAuth 2.1: quien lo presenta puede ser un ladrón).
- * `expiraEn` es para una política de TTL de Firestore que limpie lo vencido.
+ * `expiraEn` lleva la política de TTL de Firestore (`firestore.indexes.json`,
+ * fieldOverrides con `ttl: true`): Firestore borra lo vencido, por lo general
+ * dentro de las 24 h siguientes. Un código o un refresco ya borrado que alguien
+ * presenta otra vez es solo «inválido» (no revoca): para entonces ya venció.
  */
 
 export interface Cliente {
