@@ -20,6 +20,7 @@ import { PdfPreflightNotice } from './PdfPreflightNotice';
 import { MAX_UPLOAD_SIZE_MB } from '../hooks/useResourceUpload';
 import { usePdfPreflight } from '../hooks/usePdfPreflight';
 import { useUploadFormSync } from '../hooks/useUploadFormSync';
+import { useSaldoPremium } from '../hooks/useSaldoPremium';
 import { ModeAdvice, ModeTile, Paso, SmartMatchPreview, TierCallout } from './UploadFormParts';
 
 export type ExtractionMode = 'standard' | 'premium';
@@ -110,6 +111,7 @@ export function LibraryUploadForm({
     // Lee el PDF elegido en el navegador y advierte si no va a servir.
     // No bloquea: el botón de subir sigue disponible pase lo que pase.
     const preflight = usePdfPreflight(file);
+    const saldoPremium = useSaldoPremium();
     // El tope de la ruta por imágenes SÓLO se conoce con el número de páginas:
     // hasta que la lectura previa termina se aplica el conservador, y al llegar
     // el dato se recalcula. Sin esto, un escaneo de 148 MB y 355 páginas —que la
@@ -139,6 +141,7 @@ export function LibraryUploadForm({
         diagnosis: preflight.status === 'done' ? preflight.diagnosis : null,
         requiredScripts: requiredScriptsFor({ type: metadata.type, title: metadata.title }),
         evidence: preflight.status === 'done' ? preflight.evidence : null,
+        saldoPremium,
     });
 
     useUploadFormSync(preflight, recommendation, onMetadataChange);

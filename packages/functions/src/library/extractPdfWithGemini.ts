@@ -7,6 +7,7 @@ import * as path from 'path';
 import { LlamaParseClient, pagesToMarkedText, pagesToMarkdown } from './llamaParseClient';
 import { recordLlamaParseUsage, selectAllLlamaParseAccounts, type SelectedLlamaParseAccount } from './llamaParseAccountSelector';
 import { consumePagesAdmin } from './processingBalance';
+import { avisoSinSaldoPremium, revisarSaldoPremium } from './saldoPremium';
 import { extractWithGemini, BATCH_THRESHOLD_PAGES } from './geminiExtraction';
 import { arrancarExtraccionEnCola } from './arrancarExtraccionEnCola';
 import { describeSanitization, sanitizeExtractedText } from './sanitizeExtractedText';
@@ -427,6 +428,16 @@ export const extractPdfWithGemini = onObjectFinalized(
             //                it falls back.
             const requestedMode = resourceDoc.data()?.requestedExtractionMode as 'standard' | 'premium' | undefined;
             const userOptedOutOfPremium = requestedMode === 'standard';
+            // Premium sin saldo pasa a Estándar antes de llamar a LlamaParse:
+            // el cobro va después de extraer y no tiene piso (`saldoPremium`).
+            const revisionPremium = userOptedOutOfPremium
+                ? null
+                : await revisarSaldoPremium(userId, expectedPageCount);
+            const premiumSinSaldo = revisionPremium !== null && !revisionPremium.alcanza;
+            if (premiumSinSaldo) {
+                console.warn(`💳 [Extract] Saldo premium insuficiente para ${resourceId} (${revisionPremium.saldo} de ${expectedPageCount ?? '?'} páginas); se extrae en Estándar`);
+            }
+            const saltarPremium = userOptedOutOfPremium || premiumSinSaldo;
 
             // Resolve every eligible LlamaParse account upfront so the
             // cascade can iterate them on per-account failure (rate limit,
@@ -434,14 +445,14 @@ export const extractPdfWithGemini = onObjectFinalized(
             // Gemini. Empty list when user opted into Standard, file
             // exceeds LlamaParse's 100 MB cap, or no account is configured.
             let llamaAccounts: SelectedLlamaParseAccount[] = [];
-            if (!userOptedOutOfPremium && stats.size <= MAX_LLAMAPARSE_FILE_SIZE) {
+            if (!saltarPremium && stats.size <= MAX_LLAMAPARSE_FILE_SIZE) {
                 try {
                     llamaAccounts = await selectAllLlamaParseAccounts();
                 } catch (selectErr: any) {
                     console.warn(`⚠️ [Extract] LlamaParse account lookup failed: ${selectErr.message}`);
                 }
-            } else if (userOptedOutOfPremium) {
-                console.log(`📄 [Extract] User opted for STANDARD; skipping LlamaParse for resource ${resourceId}`);
+            } else if (saltarPremium) {
+                console.log(`📄 [Extract] ${premiumSinSaldo ? 'Sin saldo premium' : 'User opted for STANDARD'}; skipping LlamaParse for resource ${resourceId}`);
             }
             const canUseLlamaParse = llamaAccounts.length > 0;
 
@@ -478,6 +489,11 @@ export const extractPdfWithGemini = onObjectFinalized(
                 // cola quita el techo pero no puede ser un punto único de fallo.
                 if (!encolado) return false;
 
+                // La cola termina en `extractRangeTask`, que no escribe avisos:
+                // el de «sin saldo premium» queda escrito desde ya.
+                if (premiumSinSaldo) {
+                    await resourceRef.update({ extractionWarning: avisoSinSaldoPremium(revisionPremium.saldo, expectedPageCount, false) });
+                }
                 motores.push({ engine: 'gemini-queue', outcome: 'queued', ms: 0 });
                 await anotarEncolado(db, runId, motores, expectedPageCount);
 
@@ -642,7 +658,7 @@ export const extractPdfWithGemini = onObjectFinalized(
                 // No LlamaParse path AND file fits Gemini's 50MB cap.
                 // Batched extraction now handles long page counts by
                 // splitting, so the old 12MB heuristic is gone.
-                console.log(`🤖 [Extract] Using Gemini (${userOptedOutOfPremium ? 'user opted standard' : 'no LlamaParse key'})`);
+                console.log(`🤖 [Extract] Using Gemini (${premiumSinSaldo ? 'sin saldo premium' : userOptedOutOfPremium ? 'user opted standard' : 'no LlamaParse key'})`);
 
                 if (await intentarEncolar()) return;
 
@@ -764,7 +780,9 @@ export const extractPdfWithGemini = onObjectFinalized(
             // Always cleared (set to null) on success-at-requested-tier
             // so a successful reprocess removes any stale warning.
             let extractionWarning: string | null = null;
-            if (requestedMode === 'premium' && extractionVersion !== '3.0-llamaparse') {
+            if (premiumSinSaldo && extractionVersion !== '3.0-llamaparse') {
+                extractionWarning = avisoSinSaldoPremium(revisionPremium.saldo, expectedPageCount, extractionVersion === '7.0-pdfjs-lineas');
+            } else if (requestedMode === 'premium' && extractionVersion !== '3.0-llamaparse') {
                 const accountSummary = llamaErrors.length > 0
                     ? `Premium falló en ${llamaErrors.length} cuenta(s)`
                     : 'Premium no estuvo disponible';

@@ -150,16 +150,16 @@ describe('recommendExtractionMode — la capa existe pero miente', () => {
 
     it('no acusa a la capa cuando el libro no declara necesitar la escritura', () => {
         // Un comentario en español sobre Jonás puede no traer una letra hebrea
-        // y estar perfecto. No se lo marca como capa rota — pero tampoco se
-        // afirma Premium: no se sabe, y eso se dice.
+        // y estar perfecto. No se lo marca como capa rota; se recomienda
+        // «Por imágenes», que sirve en los dos casos y no gasta premium
+        // (decisión del fundador, 2026-11-28).
         const r = recommendExtractionMode({
             sizeBytes: 12 * MB,
             diagnosis: dx('sin-escritura-original'),
             requiredScripts: [],
             evidence: { hebrewLetters: 0, greekLetters: 0 },
         });
-        expect(r.reasonKey).toBe('no-script-found');
-        expect(r.strong).toBe(false);
+        expect(r).toEqual({ recommended: 'standard', reasonKey: 'no-script-found', strong: true });
     });
 
     it('sin evidencia no acusa a la capa, y tampoco afirma Premium', () => {
@@ -170,7 +170,7 @@ describe('recommendExtractionMode — la capa existe pero miente', () => {
             evidence: null,
         });
         expect(r.reasonKey).toBe('no-script-found');
-        expect(r.recommended).toBeNull();
+        expect(r.recommended).toBe('standard');
     });
 
     it('capa rota y archivo que no entra en visión: ningún motor sirve', () => {
@@ -200,17 +200,27 @@ describe('recommendExtractionMode — la capa existe pero miente', () => {
  * recomendaciones DÉBILES, que existen precisamente para no afirmar de más.
  */
 describe('recommendExtractionMode — no afirmar lo que no se sabe', () => {
-    it('sin escritura hallada y sin saber si el libro la necesita, devuelve la pregunta', () => {
+    it('sin escritura hallada: «Por imágenes», que sirve se necesite o no', () => {
+        // Antes devolvía la pregunta y dejaba Premium marcado de fábrica. Caso
+        // real 2026-11-17: Grudem y Berkhof en español gastaron 2.332 páginas
+        // premium así. Las dos respuestas a la pregunta llevan a Estándar.
         const r = recommendExtractionMode({
             sizeBytes: 24 * MB,
             diagnosis: dx('sin-escritura-original'),
             requiredScripts: [],
             evidence: { hebrewLetters: 0, greekLetters: 0 },
         });
-        expect(r.recommended).toBeNull();
-        expect(r.reasonKey).toBe('no-script-found');
-        // Débil a propósito: no se sabe, así que no se marca nada como bueno.
-        expect(r.strong).toBe(false);
+        expect(r).toEqual({ recommended: 'standard', reasonKey: 'no-script-found', strong: true });
+    });
+
+    it('sin escritura hallada y sin entrar en visión, sigue devolviendo la pregunta', () => {
+        const r = recommendExtractionMode({
+            sizeBytes: 70 * MB,
+            diagnosis: dx('sin-escritura-original'),
+            requiredScripts: [],
+            evidence: { hebrewLetters: 0, greekLetters: 0 },
+        });
+        expect(r).toEqual({ recommended: null, reasonKey: 'no-script-found-too-large', strong: false });
     });
 
     it('y con la categoría puesta, ya decide', () => {
@@ -355,5 +365,42 @@ describe('disponibilidadDeRutas', () => {
     it('«ninguna» sólo cuando de verdad no entra en ninguna', () => {
         expect(disponibilidadDeRutas({ sizeBytes: 148 * MB, pageCount: 355 }).ninguna).toBe(false);
         expect(disponibilidadDeRutas({ sizeBytes: 148 * MB, pageCount: 40 }).ninguna).toBe(true);
+    });
+});
+
+/**
+ * El saldo premium. La extracción cobra después de extraer y sin piso: Grudem
+ * (1.368 páginas) con 150 de saldo dejó la cuenta en −2.270 (2026-11-17).
+ */
+describe('recommendExtractionMode — saldo premium', () => {
+    const capaSana = { sizeBytes: 12 * MB, pageCount: 300, diagnosis: dx('apto') };
+
+    it('capa sana y saldo que alcanza: sigue sugiriendo Premium', () => {
+        const r = recommendExtractionMode({ ...capaSana, saldoPremium: 300 });
+        expect(r.recommended).toBe('premium');
+    });
+
+    it('capa sana y saldo que no alcanza: Estándar, y lo aplica', () => {
+        const r = recommendExtractionMode({ ...capaSana, saldoPremium: 299 });
+        expect(r).toEqual({ recommended: 'standard', reasonKey: 'premium-sin-saldo', strong: true });
+    });
+
+    it('saldo negativo cuenta como que no alcanza', () => {
+        expect(recommendExtractionMode({ ...capaSana, saldoPremium: -2270 }).reasonKey).toBe('premium-sin-saldo');
+    });
+
+    it('sin saber el saldo o las páginas no se juzga', () => {
+        expect(recommendExtractionMode({ ...capaSana, saldoPremium: null }).recommended).toBe('premium');
+        expect(recommendExtractionMode({ ...capaSana, pageCount: null, saldoPremium: 0 }).recommended).toBe('premium');
+    });
+
+    it('si ninguna ruta sirve, el saldo no la inventa', () => {
+        const r = recommendExtractionMode({ sizeBytes: 400 * MB, pageCount: 300, diagnosis: dx('apto'), saldoPremium: 0 });
+        expect(r.reasonKey).toBe('over-every-cap');
+    });
+
+    it('sin saldo y sin diagnóstico: Estándar (no queda Premium marcado de fábrica)', () => {
+        const r = recommendExtractionMode({ sizeBytes: 12 * MB, pageCount: 300, diagnosis: null, saldoPremium: 10 });
+        expect(r).toEqual({ recommended: 'standard', reasonKey: 'premium-sin-saldo', strong: true });
     });
 });
