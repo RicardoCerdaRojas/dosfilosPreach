@@ -65,7 +65,6 @@ export function ExegesisQuotaBadge({
                                 ? t('quota.badge.noAccessTitle')
                                 : t('quota.badge.bannerTitle', {
                                     studies: quota.remainingStudies.toFixed(1),
-                                    total: ((quota.totalBudgetUsd) / 2).toFixed(0),
                                 })}
                         </p>
                         <p className="text-[11px] opacity-90 mt-0.5">

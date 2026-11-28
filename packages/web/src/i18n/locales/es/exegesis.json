@@ -2424,7 +2424,7 @@
       "compactRemaining": "{{studies}} estudios",
       "compactNoAccess": "Sin acceso",
       "compactTooltip": "Cuota de estudios bíblicos profundos. Click para ver detalles.",
-      "bannerTitle": "{{studies}} estudios disponibles · cuota total {{total}}/mes",
+      "bannerTitle": "{{studies}} estudios disponibles",
       "noAccessTitle": "Estudios bíblicos profundos · upgrade requerido",
       "noAccessHint": "Tu plan actual no incluye este módulo. Upgrade a Pro o Equipo para activarlo.",
       "hardCapHint": "Cuota agotada este ciclo. Compra un pack para continuar.",

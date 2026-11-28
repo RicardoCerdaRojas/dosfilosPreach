@@ -2424,7 +2424,7 @@
       "compactRemaining": "{{studies}} studies",
       "compactNoAccess": "No access",
       "compactTooltip": "Deep biblical study quota. Click for details.",
-      "bannerTitle": "{{studies}} studies available · monthly cap {{total}}",
+      "bannerTitle": "{{studies}} studies available",
       "noAccessTitle": "Deep biblical studies · upgrade required",
       "noAccessHint": "Your current plan doesn't include this module. Upgrade to Pro or Team to enable it.",
       "hardCapHint": "Quota exhausted for this cycle. Buy a pack to continue.",
