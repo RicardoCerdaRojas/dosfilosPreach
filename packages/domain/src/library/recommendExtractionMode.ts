@@ -162,6 +162,8 @@ export interface ModeRecommendation {
     | 'no-script-found-too-large'
     /** Premium convendría o venía marcado, pero el saldo premium no cubre el libro. */
     | 'premium-sin-saldo'
+    /** Lo mismo, y el archivo no entra en visión: sólo queda leer su texto (básico). */
+    | 'premium-sin-saldo-too-large'
     | 'text-layer-premium'
     | 'over-every-cap'
     | 'unknown';
@@ -194,7 +196,11 @@ export function recommendExtractionMode(input: Parameters<typeof recomendarPorAr
     const { saldoPremium, pageCount } = input;
     if (saldoPremium === null || saldoPremium === undefined || !pageCount || !Number.isFinite(pageCount)) return base;
     if (saldoPremium >= pageCount) return base;
-    if (input.sizeBytes > topeDeVisionPara(pageCount)) return base;
+    // Sin saldo y sin visión, el servidor caería a leer la capa de texto: se
+    // dice antes de subir, no después.
+    if (input.sizeBytes > topeDeVisionPara(pageCount)) {
+        return { recommended: null, reasonKey: 'premium-sin-saldo-too-large', strong: false };
+    }
     return { recommended: 'standard', reasonKey: 'premium-sin-saldo', strong: true };
 }
 

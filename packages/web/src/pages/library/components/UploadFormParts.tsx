@@ -85,6 +85,7 @@ export function ModeAdvice({ recommendation, availability, t }: {
 const PREGUNTAS: ReadonlySet<ModeRecommendation['reasonKey']> = new Set([
     'no-script-found',
     'no-script-found-too-large',
+    'premium-sin-saldo-too-large',
     'unknown',
     'layer-without-marks-too-large',
 ]);

@@ -167,7 +167,7 @@ export default function SubscriptionPage() {
                   )}
                 </CardDescription>
               </div>
-              {isSubscriptionActive && !esCortesia && (
+              {isSubscriptionActive && !esCortesia && !isFreeUser && (
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -226,7 +226,8 @@ export default function SubscriptionPage() {
                   if (!selectedPlanData || isCurrent) return;
 
                   // If user doesn't have a subscription, create checkout
-                  if (!userProfile?.subscription || !isSubscriptionActive || esCortesia) {
+                  // Gratis también va al checkout: el perfil gratuito nace con status 'active'.
+                  if (!userProfile?.subscription || !isSubscriptionActive || esCortesia || isFreeUser) {
                     // Default to monthly billing for now. Swap to a billing-cycle
                     // toggle here when the UI for yearly checkout lands.
                     const priceId = selectedPlanData.stripePriceIds?.monthly;

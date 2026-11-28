@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { processingBalanceService } from '@dosfilos/application';
 import { useFirebase } from '@/context/firebase-context';
+import { useAuthorization } from '@/hooks/useAuthorization';
 
 /**
  * Páginas premium disponibles del usuario, en vivo. `null` mientras carga o si
@@ -11,6 +12,9 @@ import { useFirebase } from '@/context/firebase-context';
  */
 export function useSaldoPremium(): number | null {
     const { user } = useFirebase();
+    // El servidor no revisa el saldo del admin (`saldoPremium`): aquí tampoco,
+    // o el formulario le cambiaría solo a Estándar las subidas de la biblioteca común.
+    const { isAdmin } = useAuthorization();
     const [saldo, setSaldo] = useState<number | null>(null);
 
     useEffect(() => {
@@ -26,5 +30,5 @@ export function useSaldoPremium(): number | null {
         return () => unsubscribe();
     }, [user]);
 
-    return saldo;
+    return isAdmin ? null : saldo;
 }

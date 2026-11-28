@@ -35,8 +35,9 @@ describe('avisoSinSaldoPremium', () => {
         );
     });
 
-    it('nombra la caída a Básico cuando Estándar también falló', () => {
+    it('nombra la caída a Básico sin afirmar que Estándar corrió', () => {
         expect(avisoSinSaldoPremium(0, undefined, true)).toContain('Básico (pdf-parse) sin cobro');
+        expect(avisoSinSaldoPremium(0, undefined, true)).not.toContain('Estándar');
         expect(avisoSinSaldoPremium(0, undefined, true)).toContain('(0 de ? páginas)');
     });
 });

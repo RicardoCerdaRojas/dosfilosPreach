@@ -143,6 +143,7 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = {
     rate_limits: 'contadores por IP, caducan solos',
     daily_metrics: 'métricas agregadas, sin datos personales',
     metricas_cobro_exegesis: 'conteo diario de llamadas por etiqueta, sin usuario',
+    renovaciones_cortesia: 'resumen mensual de la renovación de cuentas de cortesía: sólo conteos por plan, sin usuario',
     global_metrics: 'métricas agregadas, sin datos personales',
     global_metrics_daily: 'métricas agregadas, sin datos personales',
     admin_audit_log: 'registro de auditoría: se conserva por obligación (el borrado mismo queda anotado, sin correo)',

@@ -97,6 +97,7 @@ export const changePlanForUser = onCall<ChangePlanForUserRequest>(
             // For downgrades to free, we cancel the subscription at period end so the
             // user keeps current-period access without further billing.
             const customerId: string | undefined = userData.stripeCustomerId;
+            let haySuscripcionEnStripe = false;
 
             if (customerId) {
                 const subscriptions = await stripe.subscriptions.list({
@@ -105,6 +106,7 @@ export const changePlanForUser = onCall<ChangePlanForUserRequest>(
                     limit: 1,
                 });
                 const subscription = subscriptions.data[0];
+                haySuscripcionEnStripe = Boolean(subscription);
 
                 if (subscription) {
                     if (goingToFree) {
@@ -134,6 +136,13 @@ export const changePlanForUser = onCall<ChangePlanForUserRequest>(
                     : {}),
                 'subscription.status': goingToFree ? 'cancelled' : 'active',
                 'subscription.cancelAtPeriodEnd': goingToFree,
+                // Plan pagado sin suscripción activa en Stripe = cortesía. Se
+                // borra el id de una suscripción ya muerta (un ex cliente):
+                // con él la cuenta se leía como de pago y no se renovaba, y
+                // «Cancelar» y el cambio de plan llamaban a Stripe sobre nada.
+                ...(!goingToFree && !haySuscripcionEnStripe
+                    ? { 'subscription.id': FieldValue.delete(), 'subscription.stripeSubscriptionId': FieldValue.delete() }
+                    : {}),
                 'subscription.updatedAt': FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp(),
             });

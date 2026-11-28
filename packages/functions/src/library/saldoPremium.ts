@@ -6,7 +6,10 @@ import { readBalance } from './processingBalance';
  *
  * La extracción cobra DESPUÉS de extraer, y `consumePagesAdmin` no tiene piso:
  * sin esta revisión, un libro de 1.368 páginas con 150 de saldo dejaba la
- * cuenta en negativo (caso real 2026-11-17: −2.270). Cuando no alcanza, la
+ * cuenta en negativo (caso real 2026-11-17: −2.270). LÍMITE CONOCIDO: lee el
+ * saldo sin reservarlo, así que varias subidas premium simultáneas pueden pasar
+ * todas la revisión y sumar más que el saldo. Cubre el caso real (un libro que
+ * el saldo no cubre), no la concurrencia. Cuando no alcanza, la
  * extracción pasa a Estándar y deja el aviso en el libro; nunca se bloquea la
  * subida (decisión del fundador, 2026-11-28).
  *
@@ -53,6 +56,8 @@ export async function revisarSaldoPremium(userId: string, paginas: number | unde
  * mismo formato que los demás avisos de `extractionWarning`.
  */
 export function avisoSinSaldoPremium(saldo: number, paginas: number | undefined, cayoABasico: boolean): string {
-    const motor = cayoABasico ? 'Estándar y, como falló, Básico (pdf-parse) sin cobro' : 'Estándar';
+    // «Básico» sin decir por qué: puede ser que Estándar falló o que el archivo
+    // no entraba en visión; afirmar una de las dos sería inventar.
+    const motor = cayoABasico ? 'Básico (pdf-parse) sin cobro' : 'Estándar';
     return `Saldo premium insuficiente (${saldo} de ${paginas ?? '?'} páginas); usamos ${motor}. Compra un pack premium si quieres reprocesarlo.`;
 }

@@ -399,6 +399,11 @@ describe('recommendExtractionMode — saldo premium', () => {
         expect(r.reasonKey).toBe('over-every-cap');
     });
 
+    it('sin saldo y sin entrar en visión: lo dice antes de subir', () => {
+        const r = recommendExtractionMode({ sizeBytes: 80 * MB, pageCount: 30, diagnosis: dx('apto'), saldoPremium: 10 });
+        expect(r).toEqual({ recommended: null, reasonKey: 'premium-sin-saldo-too-large', strong: false });
+    });
+
     it('sin saldo y sin diagnóstico: Estándar (no queda Premium marcado de fábrica)', () => {
         const r = recommendExtractionMode({ sizeBytes: 12 * MB, pageCount: 300, diagnosis: null, saldoPremium: 10 });
         expect(r).toEqual({ recommended: 'standard', reasonKey: 'premium-sin-saldo', strong: true });
