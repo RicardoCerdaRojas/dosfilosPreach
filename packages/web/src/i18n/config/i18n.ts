@@ -178,6 +178,15 @@ export const initI18n = () => {
             },
         });
 
+    // `<html lang>` sigue al idioma de la interfaz. Con `lang="en"` fijo, Chrome
+    // creía que la página en español estaba en inglés y ofrecía traducirla; la
+    // traducción reescribe los nodos de texto y React falla al insertar.
+    const sincronizarLang = (lng: string | undefined) => {
+        if (typeof document !== 'undefined' && lng) document.documentElement.lang = lng.split('-')[0]!;
+    };
+    sincronizarLang(i18n.resolvedLanguage ?? i18n.language);
+    i18n.on('languageChanged', sincronizarLang);
+
     return i18n;
 };
 

@@ -1,5 +1,5 @@
 import type { ProcessingBalance } from '../entities/User';
-import { STUDY_UNIT_USD } from '../entities/ExegesisOperationCatalog';
+import { EXEGESIS_OPERATION_CATALOG, STUDY_UNIT_USD } from '../entities/ExegesisOperationCatalog';
 
 /**
  * Pure helper that derives the UI-friendly state of a user's
@@ -53,6 +53,24 @@ export interface ExegesisQuotaState {
 
 const SOFT_WARN_THRESHOLD = 0.8;
 
+/**
+ * La operación más barata del catálogo. Con menos saldo que esto no se puede
+ * hacer ninguna, aunque el saldo no sea cero.
+ */
+export const MIN_EXEGESIS_OPERATION_USD = Math.min(
+    ...Object.values(EXEGESIS_OPERATION_CATALOG)
+        .map(op => op.estimatedCostUsd)
+        .filter(costo => costo > 0),
+);
+
+/**
+ * Por debajo de un estudio se avisa (caso real 2026-11-28: US$0,01 restantes
+ * mostraban la tarjeta verde «Cuota disponible»). El cobro en el servidor descuenta del
+ * balde del plan, así que plan + pack es lo que QUEDA, no lo que se asignó en
+ * el mes: la fracción gastada casi siempre da 0 y no alcanza para avisar.
+ */
+const SOFT_WARN_USD = STUDY_UNIT_USD;
+
 export function computeExegesisQuotaState(
     balance: ProcessingBalance | undefined | null,
 ): ExegesisQuotaState {
@@ -69,11 +87,15 @@ export function computeExegesisQuotaState(
     // soft-warn near the line, ok otherwise.
     let capState: 'ok' | 'soft-warn' | 'hard-cap';
     let noAccess = false;
-    if (totalBudgetUsd === 0) {
+    if (totalBudgetUsd === 0 && spentTotalUsd === 0) {
+        // Nunca tuvo saldo: su plan no incluye exégesis.
         capState = 'hard-cap';
         noAccess = true;
-    } else if (remainingUsd <= 0) {
+    } else if (remainingUsd < MIN_EXEGESIS_OPERATION_USD) {
+        // Gastó todo, o lo que queda no paga ni la operación más barata.
         capState = 'hard-cap';
+    } else if (remainingUsd < SOFT_WARN_USD) {
+        capState = 'soft-warn';
     } else {
         // Spent-fraction comparison avoids floating-point traps that
         // sneak into "remaining / budget <= 1 - threshold" (e.g.

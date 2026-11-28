@@ -158,6 +158,12 @@ export interface ModeRecommendation {
     | 'layer-without-marks-too-large'
     /** No se halló escritura original y no se sabe si el libro la necesita. */
     | 'no-script-found'
+    /** Lo mismo, y no entra en visión: la decisión vuelve al usuario. */
+    | 'no-script-found-too-large'
+    /** Premium convendría o venía marcado, pero el saldo premium no cubre el libro. */
+    | 'premium-sin-saldo'
+    /** Lo mismo, y el archivo no entra en visión: sólo queda leer su texto (básico). */
+    | 'premium-sin-saldo-too-large'
     | 'text-layer-premium'
     | 'over-every-cap'
     | 'unknown';
@@ -174,7 +180,31 @@ export interface ModeRecommendation {
  */
 const MIN_LETRAS_EN_MUESTRA = 20;
 
-export function recommendExtractionMode(input: {
+export function recommendExtractionMode(input: Parameters<typeof recomendarPorArchivo>[0] & {
+    /**
+     * Páginas premium disponibles. `null`/ausente = no se sabe y no se juzga.
+     *
+     * La extracción cobra después de extraer: sin esta revisión un libro de
+     * 1.368 páginas con 150 de saldo dejaba la cuenta en −2.270 (caso real
+     * 2026-11-17). El servidor tiene la misma barrera (`saldoPremium`).
+     */
+    saldoPremium?: number | null;
+}): ModeRecommendation {
+    const base = recomendarPorArchivo(input);
+    // Ya recomienda Estándar, o ninguna ruta sirve: el saldo no cambia nada.
+    if (base.recommended === 'standard' || (base.recommended === null && base.strong)) return base;
+    const { saldoPremium, pageCount } = input;
+    if (saldoPremium === null || saldoPremium === undefined || !pageCount || !Number.isFinite(pageCount)) return base;
+    if (saldoPremium >= pageCount) return base;
+    // Sin saldo y sin visión, el servidor caería a leer la capa de texto: se
+    // dice antes de subir, no después.
+    if (input.sizeBytes > topeDeVisionPara(pageCount)) {
+        return { recommended: null, reasonKey: 'premium-sin-saldo-too-large', strong: false };
+    }
+    return { recommended: 'standard', reasonKey: 'premium-sin-saldo', strong: true };
+}
+
+function recomendarPorArchivo(input: {
     sizeBytes: number;
     /**
      * Cuántas páginas tiene el archivo.
@@ -274,10 +304,17 @@ export function recommendExtractionMode(input: {
     // el motor que lee justamente esa capa. Afirmar Premium acá contradice al
     // diagnóstico que la misma pantalla acaba de mostrar.
     //
-    // No se elige por el usuario: se le devuelve la pregunta que sólo él puede
-    // contestar, que es si este libro DEBERÍA traer griego o hebreo.
+    // Las dos respuestas posibles llevan al mismo motor (decisión del fundador,
+    // 2026-11-28): si el libro no usa griego ni hebreo, «Por imágenes» lo lee
+    // igual de bien y no gasta páginas premium, que son las escasas; si debería
+    // traerlos, la capa los perdió y la visión es la única que los recupera.
+    // Caso real: Grudem y Berkhof en español, con este veredicto, se
+    // procesaron en Premium porque venía marcado y gastaron 2.332 páginas.
+    // Si no entra en visión, se devuelve la pregunta, con su propio texto.
     if (diagnosis.verdict === 'sin-escritura-original') {
-        return { recommended: null, reasonKey: 'no-script-found', strong: false };
+        return sizeBytes <= topeDeVision
+            ? { recommended: 'standard', reasonKey: 'no-script-found', strong: true }
+            : { recommended: null, reasonKey: 'no-script-found-too-large', strong: false };
     }
 
     // Con capa de texto sana, Premium es lo que era: reconstruye maquetación.

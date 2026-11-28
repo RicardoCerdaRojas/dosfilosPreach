@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ProcessingBalance } from '../../entities/User';
 import {
     computeExegesisQuotaState,
+    MIN_EXEGESIS_OPERATION_USD,
     previewSpend,
 } from '../computeExegesisQuotaState';
 
@@ -18,6 +19,64 @@ const baseBalance = (overrides: Partial<ProcessingBalance> = {}): ProcessingBala
 });
 
 describe('computeExegesisQuotaState', () => {
+    // Caso real 2026-11-28: el cobro en el servidor descuenta del plan, así
+    // que plan + pack es lo que queda. Con US$0,01 la tarjeta salía verde.
+    it('US$0,01 restantes avisan (ámbar), no «Cuota disponible» (verde)', () => {
+        const state = computeExegesisQuotaState(baseBalance({
+            planExegesisUsd: 0.01,
+            packExegesisUsd: 0,
+            exegesisUsdAvailable: 0.01,
+            exegesisSpentTotalUsd: 9.99,
+        }));
+        expect(state.capState).toBe('soft-warn');
+        expect(state.noAccess).toBe(false);
+    });
+
+    it('hard-cap cuando lo que queda no paga la operación más barata', () => {
+        const resto = MIN_EXEGESIS_OPERATION_USD / 2;
+        const state = computeExegesisQuotaState(baseBalance({
+            planExegesisUsd: resto,
+            exegesisUsdAvailable: resto,
+            exegesisSpentTotalUsd: 9.99,
+        }));
+        expect(state.capState).toBe('hard-cap');
+        expect(state.noAccess).toBe(false);
+    });
+
+    it('la operación más barata del catálogo cuesta más que cero', () => {
+        expect(MIN_EXEGESIS_OPERATION_USD).toBeGreaterThan(0);
+        expect(Number.isFinite(MIN_EXEGESIS_OPERATION_USD)).toBe(true);
+    });
+
+    it('justo con la operación más barata todavía puede operar (avisa, no bloquea)', () => {
+        const state = computeExegesisQuotaState(baseBalance({
+            planExegesisUsd: MIN_EXEGESIS_OPERATION_USD,
+            exegesisUsdAvailable: MIN_EXEGESIS_OPERATION_USD,
+            exegesisSpentTotalUsd: 5,
+        }));
+        expect(state.capState).toBe('soft-warn');
+    });
+
+    it('soft-warn con menos de un estudio aunque la fracción gastada dé 0', () => {
+        const state = computeExegesisQuotaState(baseBalance({
+            planExegesisUsd: 1.5,
+            exegesisUsdAvailable: 1.5,
+            exegesisSpentTotalUsd: 8.5,
+        }));
+        expect(state.capState).toBe('soft-warn');
+    });
+
+    it('gastó todo: hard-cap, no «sin acceso»', () => {
+        const state = computeExegesisQuotaState(baseBalance({
+            planExegesisUsd: 0,
+            packExegesisUsd: 0,
+            exegesisUsdAvailable: 0,
+            exegesisSpentTotalUsd: 10,
+        }));
+        expect(state.capState).toBe('hard-cap');
+        expect(state.noAccess).toBe(false);
+    });
+
     it('returns noAccess + hard-cap when plan + pack are both 0', () => {
         const state = computeExegesisQuotaState(baseBalance());
         expect(state.noAccess).toBe(true);

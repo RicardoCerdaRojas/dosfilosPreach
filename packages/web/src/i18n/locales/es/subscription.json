@@ -60,5 +60,10 @@
             "selectReason": "Por favor selecciona un motivo",
             "submit": "Error al enviar feedback"
         }
+    },
+    "cortesia": {
+        "title": "Tu plan {{plan}} es de cortesía",
+        "body": "Te lo asignó el equipo de Dos Filos y no tiene cobro. Si quieres seguir con él pagando con tu tarjeta, activa el pago: el cobro empieza hoy y tu cuota mensual se renueva con cada factura.",
+        "activateButton": "Activar pago con tarjeta"
     }
 }
