@@ -60,5 +60,10 @@
             "selectReason": "Please select a reason",
             "submit": "Error submitting feedback"
         }
+    },
+    "cortesia": {
+        "title": "Your {{plan}} plan is complimentary",
+        "body": "The Dos Filos team assigned it to you and it has no charge. If you want to keep it paying with your card, activate payment: billing starts today and your monthly quota renews with each invoice.",
+        "activateButton": "Activate card payment"
     }
 }

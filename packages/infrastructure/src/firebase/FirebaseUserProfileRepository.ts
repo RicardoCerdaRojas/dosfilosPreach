@@ -199,7 +199,9 @@ export class FirebaseUserProfileRepository implements IUserProfileRepository {
 
     private mapSubscription(data: any): Subscription {
         return {
-            id: data.id,
+            // El registro con pago primero guarda el id de Stripe en
+            // `stripeSubscriptionId`; el webhook de un usuario existente, en `id`.
+            id: data.id ?? data.stripeSubscriptionId,
             planId: data.planId,
             status: data.status,
             stripePriceId: data.stripePriceId,

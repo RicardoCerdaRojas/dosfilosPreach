@@ -39,3 +39,20 @@ export interface Subscription {
     // Metadata
     updatedAt: Date;
 }
+
+/**
+ * Un plan pagado, activo y SIN suscripción en Stripe: lo asignó el super admin
+ * desde el panel (`changePlanForUser`). No tiene factura, así que su cuota la
+ * renueva `renovarCuotaDeCortesia` y no se puede cancelar ni cambiar por Stripe;
+ * para pagarlo, el usuario pasa por el checkout.
+ *
+ * `id` es el id de Stripe (`sub_…`). Copia en functions:
+ * `esCuentaDeCortesia` (functions no importa domain, ADR-025).
+ */
+export function esSuscripcionDeCortesia(
+    sub: Pick<Subscription, 'status' | 'planId' | 'id'> | null | undefined,
+): boolean {
+    if (!sub || sub.status !== SubscriptionStatus.ACTIVE) return false;
+    if (!sub.planId || sub.planId === 'free') return false;
+    return !(typeof sub.id === 'string' && sub.id.startsWith('sub_'));
+}

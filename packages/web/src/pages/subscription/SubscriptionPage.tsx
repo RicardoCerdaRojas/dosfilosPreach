@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Crown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { authService } from '@dosfilos/application';
+import { esSuscripcionDeCortesia } from '@dosfilos/domain';
 import { FirebaseUserProfileRepository } from '@dosfilos/infrastructure';
 import { toast } from 'sonner';
 import { CancelSubscriptionDialog } from '@/components/subscription/dialogs/CancelSubscriptionDialog';
@@ -15,6 +16,7 @@ import { usePlans } from '@/hooks/usePlans';
 import { PlanCard } from '@/components/plans';
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
 import { ProcessingQuotaUsageCard } from '@/components/usage/ProcessingQuotaUsageCard';
+import { CortesiaPaymentCard } from '@/components/subscription/CortesiaPaymentCard';
 
 const userProfileRepository = new FirebaseUserProfileRepository();
 
@@ -82,6 +84,8 @@ export default function SubscriptionPage() {
   const isSubscriptionCancelled = userProfile?.subscription?.status === 'cancelled';
   const currentPlan = plans.find(p => p.id === currentPlanId);
   const isFreeUser = currentPlanId === 'free';
+  // Plan asignado desde el panel, sin Stripe: se paga por el checkout, no se cancela ni se cambia por Stripe.
+  const esCortesia = esSuscripcionDeCortesia(userProfile?.subscription);
 
   // Show loading state
   if (loading || plansLoading) {
@@ -137,7 +141,7 @@ export default function SubscriptionPage() {
                   {t('currentPlan.title')}
                 </CardTitle>
                   {isSubscriptionCancelled && (
-                    <Badge variant="outline" className="ml-2 text-orange-600">
+                    <Badge variant="outline" className="ml-2 text-warning">
                       {t('currentPlan.badges.cancelled')}
                     </Badge>
                   )}
@@ -163,7 +167,7 @@ export default function SubscriptionPage() {
                   )}
                 </CardDescription>
               </div>
-              {isSubscriptionActive && (
+              {isSubscriptionActive && !esCortesia && (
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -186,17 +190,19 @@ export default function SubscriptionPage() {
         </Card>
       )}
 
+      {esCortesia && currentPlan?.stripePriceIds?.monthly && (
+        <CortesiaPaymentCard planName={currentPlan.localizedName} loading={loading} onActivatePayment={() => handleSubscribe(currentPlan.stripePriceIds!.monthly!)} />
+      )}
+
       {/* Free Plan Upgrade Message */}
       {isFreeUser && !isSubscriptionActive && (
         <Card className="mb-8 border-primary/50 bg-primary/5">
           <CardHeader>
             <CardTitle className="text-lg">
-              🎁 {t('freePlan.upgradeTitle', { defaultValue: 'Estás usando el Plan Gratuito' })}
+              {t('freePlan.upgradeTitle')}
             </CardTitle>
             <CardDescription className="mt-2">
-              {t('freePlan.upgradeMessage', { 
-                defaultValue: 'Desbloquea todo el potencial de DosFilos.Preach con acceso a generación avanzada de sermones, análisis homilético y mucho más.'
-              })}
+              {t('freePlan.upgradeMessage')}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -220,7 +226,7 @@ export default function SubscriptionPage() {
                   if (!selectedPlanData || isCurrent) return;
 
                   // If user doesn't have a subscription, create checkout
-                  if (!userProfile?.subscription || !isSubscriptionActive) {
+                  if (!userProfile?.subscription || !isSubscriptionActive || esCortesia) {
                     // Default to monthly billing for now. Swap to a billing-cycle
                     // toggle here when the UI for yearly checkout lands.
                     const priceId = selectedPlanData.stripePriceIds?.monthly;

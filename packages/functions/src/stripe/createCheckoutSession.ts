@@ -3,6 +3,7 @@ import { stripe } from '../config/stripe';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getPackById, resolveStripePriceId } from './creditPackCatalog';
 import { appCheckCallableOptions } from '../config/appCheckOptions';
+import { esCuentaDeCortesia } from '../admin/renovarCuotaDeCortesia';
 
 interface CheckoutSessionData {
     /** When `packId` is set, `priceId` is ignored — the catalog resolves the
@@ -89,6 +90,9 @@ export const createCheckoutSession = onCall<CheckoutSessionData>(
         const db = getFirestore();
         let customerId: string = '';
         let customerEmail: string;
+        // Una cuenta de cortesía que pasa a pagar ya usó el plan gratis: paga
+        // desde hoy, sin los 30 días de prueba (decisión del fundador, 2026-11-28).
+        let sinPrueba = false;
 
         // NEW REGISTRATION: no Stripe customer is pre-created — Checkout will create
         // one from `customer_email` and attach it to the subscription, avoiding
@@ -108,6 +112,7 @@ export const createCheckoutSession = onCall<CheckoutSessionData>(
             const userData = userDoc.data()!;
             customerEmail = userData.email;
             customerId = userData.stripeCustomerId;
+            sinPrueba = esCuentaDeCortesia(userData.subscription);
 
             // Create Stripe customer if doesn't exist
             if (!customerId) {
@@ -217,10 +222,9 @@ export const createCheckoutSession = onCall<CheckoutSessionData>(
                 metadata,
                 allow_promotion_codes: true,
                 billing_address_collection: 'required',
-                subscription_data: {
-                    trial_period_days: 30,
-                    metadata,
-                },
+                subscription_data: sinPrueba
+                    ? { metadata }
+                    : { trial_period_days: 30, metadata },
             });
         }
 
