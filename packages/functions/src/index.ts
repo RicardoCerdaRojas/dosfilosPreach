@@ -152,6 +152,7 @@ export { impersonateUser } from './admin/impersonateUser';
 export { stopImpersonating } from './admin/stopImpersonating';
 export { grantUserCredits } from './admin/grantUserCredits';
 export { resetUserPlanQuota } from './admin/resetUserPlanQuota';
+export { renovarCuotaDeCortesia } from './admin/renovarCuotaDeCortesia';
 export { extendUserTrialAdmin } from './admin/extendUserTrialAdmin';
 export { setUserFeatureFlags } from './admin/setUserFeatureFlags';
 export { ingestCoreLibraryConfessions } from './admin/confessions/ingestCoreLibrary';
